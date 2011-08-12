@@ -1,0 +1,6 @@
+.plrc
+*~*
+*.log
+*.o
+*.so
+/docs/advertiser
