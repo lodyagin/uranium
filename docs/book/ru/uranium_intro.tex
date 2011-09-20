@@ -1359,9 +1359,9 @@ Surname = 'Buravin'.
 
 \begin{description}
 \item \verb|db_put_object(+DB_Key, +Object)| поместить объект в
-  базу (\ref{db_put_object})
+  базу (\ref{db_put_object/2})
 \item \verb|db_recorded(+DB_Key, ?Term)| унифицировать Term с
-  базой (\ref{db_recorded})
+  базой (\ref{db_recorded/2})
 %db_recorded(+DB_Key, ?Term, -DB_Ref)
 %db_record_all(+DB_Key, :Pred)
 \item \verb|bind_term_in_db(+DB_Key, ?Term)| унифицировать термы в
@@ -1379,7 +1379,7 @@ Surname = 'Buravin'.
 \item \verb|db_iterate_replace(+DB_Key, :Pred, +Query)| с помощью
   предиката \verb|Pred(+Obj_In, -Obj_Out, -Is_Succ)| провести
   замену всех объектов, удовлетворяющих Query
-  (\ref{db_iterate_replace})
+  (\ref{db_iterate_replace/3})
 \item \verb|db_iterate_replace(+DB_Key, :Pred, +Query, +Lim)|
   заменить не более Lim объектов
 \item
@@ -1410,34 +1410,38 @@ Surname = 'Buravin'.
 \end{description}
 
 
-\section{Добавление и чтение объектов (db\_put\_object,
-  db\_recorded)}
-\label{db_put_object}
-\label{db_recorded}
+\section{Добавление и чтение объектов (db\_put\_object/2,
+  db\_recorded/2)}
+\label{db_put_object/2}
+\label{db_recorded/2}
 
 db\_put\_object помещает объект в базу DB\_Key, db\_recorded -
 читает (унифицирует) объект
 
 \begin{example}{База people}{people_db}
-?- obj_construct(man_v, [sex, name], [man, 'Adam'], Man), 
+?- obj_construct(man_v, 
+      [sex, name], 
+      [man, 'Adam'], Man), 
    db_put_object(people, Man).
 
-?- obj_construct(man_v, [sex, name], [woman, 'Eva'], Man), 
+?- obj_construct(man_v, 
+      [sex, name], 
+      [woman, 'Eva'], Man), 
    db_put_object(people, Man).
 
 ?- db_recorded(people, X).
 X = man_v(man, 'Adam', _G741, _G742, _G743) ;
 X = man_v(woman, 'Eva', _G741, _G742, _G743).
 
-?- obj_construct(citizen_v, [sex, surname, country], 
-                 [man, 'Mayakovsky', ['Soviet Union']], Man), 
+?- obj_construct(citizen_v, 
+      [sex, surname, country], 
+      [man, 'Mayakovsky', ['Soviet Union']], Man), 
    db_put_object(people, Man). 
 
 ?- db_recorded(people, X).
 X = man_v(man, 'Adam', _G1027, _G1028, _G1029) ;
 X = man_v(woman, 'Eva', _G1027, _G1028, _G1029) ;
-X = citizen_v(man, _G1026, 'Mayakovsky', _G1028, _G1029, 
-              ['Soviet Union'], _G1031, _G1032).
+X = citizen_v(man, _G1026, 'Mayakovsky', _G1028, _G1029, ['Soviet Union'], _G1031, _G1032).
 \end{example}
 
 как видите, в базу можно помещать разные объекты. И в самом деле
@@ -1449,7 +1453,9 @@ X = citizen_v(man, _G1026, 'Mayakovsky', _G1028, _G1029,
 obj\_pretty\_print. 
 
 \begin{example}{Печать всех объектов базы}{all_db_print}
-?- db_recorded(people, X), obj_pretty_print(X), fail ; true.
+?- db_recorded(people, X), 
+   obj_pretty_print(X), 
+   fail ; true.
 
 man_v ( 
   sex : man 
@@ -1867,7 +1873,8 @@ X = shampoo_v.
 (в этом разделе мы будем работать с базой people, созданной в
 примере \ref{people_db}).
 
-\begin{example}{}{}
+\begin{example}{Называние всех Маяковских Владимирами}%
+               {vladimir_to_all_mayakovsky}
 ?- clear_db(people1), db_copy(people, people1).
 true.
 
@@ -2377,9 +2384,218 @@ callup_v. Это потому, что, как мы помним (\ref{downcast})
 вычисление class_descendant/2 потребовало загрузить определение
 этого объекта.
 
+В качестве 5-го параметра можно передавать также предикат,
+выполняющий какое-либо действие. Например, для печати всех
+объектов базы можно было бы использовать
+
+\begin{example}{}{}
+?- db_iterate(people, true, _, _, obj_pretty_print), fail; true.
+\end{example}
+
+Однако, это уже похоже на трюки.
+
+\subsection{db_iterate_replace/3}
+\label{db_iterate_replace/3}
+
+Как было сказано в \ref{bind_term_in_db}, предикаты, работающие с
+поисковыми выражениями (они были отнесены к предикатам высокого
+уровня) позволяют писать более простые запросы, которые меняют
+объекты в базе, в частности, заполняют несвязанные поля, чем
+предикаты низкого уровня, к которым относятся db_recorded, \na,
+db_erase и bind_term_in_db.
+
+Сейчас мы это продемонстрируем. В разделе \ref{bind_term_in_db}
+был рассмотрен пример (\ref{vladimir_to_all_mayakovsky}), в
+котором все Маяковские получали имя Владимир. Вот как его можно
+переписать с использованием db_iterate_replace/3. Для начала, как
+и для db_iterate, определим вспомогательный предикат. Только это
+будет предикат-заменитель объекта, его арность должна быть не
+менее 3:
+
+\begin{example}{}{}
+set_fields(Fields, Values, Obj_In, Obj_Out, true) :- 
+   obj_reset_fields(Fields, Obj_In, Obj_Out), 
+   named_args_unify(Obj_Out, Fields, Values). 
+\end{example}
+
+Мы использовали универсальный подход, и, вместо того, чтобы
+задать предикат, устанавливающий имя, создали предикат, который
+может списку полей присвоить список значений, предварительно
+сбросив их, если данные поля были уже связанными. Предикат, как
+было сказано, должен иметь арность не меньше 3-х и
+db_iterate_replace будет вызывать его как Pred/3, \te два первых
+аргумента мы будем задавать при вызове. Из последних 3-х
+аргументов первый получает объект, найденный в базе, второй
+должен вернуть ему замену, и в последнем мы будем возвращать
+всегда true при использовании с db_iterate_replce/3.
+
+Теперь, собственно, задание имени (аналог примера
+\ref{vladimir_to_all_mayakovsky}):
+
+\begin{example}{}{}
+?- clear_db(people1), db_copy(people, people1).
+
+?- db_iterate_replace(people1, 
+      set_fields([name], ['Vladimir']), 
+      surname('Mayakovsky') /\ name(+free)
+      ).
+
+?- dump_db([lf(1)], people1).
+[6]: man_v(man,Adam,_G384,_G385,_G386) 
+man_v(woman,Eva,_G384,_G385,_G386) 
+shampoo_v(_G382,Schwarzkopf,man) 
+citizen_v(man,Vladimir,Mayakovsky,_G385,_G386,[Soviet Union],_G388,
+_G389)                                                            
+ :[logging]
+\end{example}
+
+Очевидно, это читается гораздо проще, чем в примере
+\ref{vladimir_to_all_mayakovsky}. К тому же, в данном случае,
+имеет б\'oльшую гибкость:
+
+\begin{example}{}{}
+?- db_iterate_replace(people1, 
+      set_fields([surname], ['Smith']), 
+      surname(+free)
+   ). 
+
+?- dump_db([lf(1)], people1).
+[7]: shampoo_v(_G382,Schwarzkopf,man) 
+citizen_v(man,Vladimir,Mayakovsky,_G385,_G386,[Soviet Union],_G388,
+_G389)                                                            
+man_v(man,Adam,Smith,_G385,_G386) 
+man_v(woman,Eva,Smith,_G385,_G386) 
+ :[logging]
+\end{example}
+
+(можно даже сбрасывать поля:)
+
+\begin{example}{}{}
+?- db_iterate_replace(people1, 
+      set_fields([sex, surname], [_, _]), 
+      sex(+bound)
+   ).                                                     
+
+?- dump_db([lf(1)], people1).
+[10]: shampoo_v(_G385,Schwarzkopf,man) 
+citizen_v(_G385,Vladimir,_G387,_G388,_G389,[Soviet Union],_G391,_G3
+92)                                                               
+man_v(_G385,Adam,_G387,_G388,_G389) 
+man_v(_G385,Eva,_G387,_G388,_G389) 
+ :[logging]
+\end{example}
+
+(вопрос внимательному читателю - почему шампунь не сбросил
+значение man в последнем примере?)
+
+Во всех трёх примерах запрос поиска содержит компонент, который
+исключает повторное попадание изменённой записи на вход базы. Как
+было показано в \ref{bind_term_in_db} это обязательно.
+
+Можно построить запрос меняющий также классы объектов. Для этого
+подойдёт такой рабочий предикат:
+
+\begin{example}{obj_downcast для db_iterate_replace}{downcast/3}
+downcast(Obj_In, Obj_Out, true) :- obj_downcast(Obj_In, Obj_Out).
+\end{example}
+
+Вопрос в заключается в правильном поисковом
+запросе. \verb|db_iterate_replace(people1, downcast, true)|
+использовать не получится, так как \verb|true| не задерживает уже
+обработанные записи. По некотором размышлении, можно прийти к
+выводу, что в данном случае необходимо задействоват
+дополнительные поля. Их можно задать в общем предке (что-то вроде
+\verb|flag|), однако, на практике, зачастую можно использовать
+уже имеющиеся в объекте поля. Попробуем решить задачу ``в лоб''
+(предупреждение - решение крайне не элегантное). Мы знаем, что у
+всех объектов базы people есть поле sex. Его и постараемся
+задействовать.
+
+\begin{example}{}{}
+ugly_downcast(Obj_In, Obj_Out, true) :- 
+   obj_downcast(Obj_In, Obj2),
+   obj_reset_fields([sex], Obj2, Obj_Out),
+   obj_field(Obj_In, sex, Sex),
+   atom_concat(Sex, '_', New_Sex),
+   obj_field(Obj_Out, sex, New_Sex).
+\end{example}
+
+\begin{example}{Уродливый downcast}{ugly_downcast_replacing}
+?- clear_db(people1), db_copy(people, people1).
+
+?- db_iterate_replace(people1, 
+      ugly_downcast, sex(man) \/ sex(woman)).
+
+?- dump_db([lf(1)], people1).
+[12]: man_v(man_,Adam,_G2468,_G2469,_G2470) 
+man_v(woman_,Eva,_G2468,_G2469,_G2470) 
+callup_v(man_,_G2467,Mayakovsky,_G2469,_G2470,[Soviet Union],_G2472
+,_G2473,_G2474)                                                   
+shampoo_v(_G2466,Schwarzkopf,man_) 
+ :[logging]
+\end{example}
+
+теперь вернёмся к нормальным значениям поля sex
+
+\begin{example}{}{}
+?- db_iterate_replace(people1, 
+      set_fields([sex], [man]), sex(man_)).
+
+?- db_iterate_replace(people1, 
+      set_fields([sex], [woman]), sex(woman_)).
+
+?- dump_db([lf(1)], people1).
+[13]: man_v(man,Adam,_G2468,_G2469,_G2470) 
+callup_v(man,_G2467,Mayakovsky,_G2469,_G2470,[Soviet Union],_G2472,
+_G2473,_G2474)                                                    
+shampoo_v(_G2466,Schwarzkopf,man) 
+man_v(woman,Eva,_G2468,_G2469,_G2470) 
+ :[logging]
+\end{example}
+
+не то, чтобы мы не достигли результата, но, правильная, с точки
+зрения математики, последовательность оказывается неподходящей
+для написания программ. Поэтому, логично ожидать наличия других
+вариантов функции db_iterate_replace.
+
+\subsection{db_iterate_replcae/5}
+
+Как и db_iterate/5 этот предикат использует дополнительный
+предикат для добавления к поисковому выражению. С его помощью мы
+можем переписать \ref{ugly_downcast_replcaing}. Добавим, только,
+ещё один предикат:
+
+\begin{example}{}{}
+not_downcasted(Obj) :- 
+   obj_field(Obj, class, Class1),
+   obj_field(Obj, functor, Class2),
+   Class1 \= Class2.
+\end{example}
+
+\begin{example}{}{}
+?- db_iterate_replace(people1, downcast, true, _, not_downcasted).
+
+?- dump_db([lf(1)], people1).
+[14]: man_v(man,Adam,_G2468,_G2469,_G2470) 
+man_v(woman,Eva,_G2468,_G2469,_G2470) 
+shampoo_v(_G2466,Schwarzkopf,man) 
+callup_v(man,_G2467,Mayakovsky,_G2469,_G2470,[Soviet Union],_G2472,
+_G2473,_G2474)                                                    
+ :[logging]
+\end{example}
+
+Итак, как оказалось, наличие языка запросов не ограничивает нас в
+использовании обычных предикатов Пролога для поиска значений. В
+самых ``безнадёжных'' случаях поисковое выражение выраждается,
+как в данном случае, в простое \verb|true|. Однако учтите, в этом
+случае Пролог будет просматривать всю базу. Потому решение с
+флагом в объекте-предке, упомянутое в \ref{db_iterate_replace/3}
+оказывается эффективнее для больших SQL баз.
+
 \section{Использование ключей}
 \label{keys}
 
++ опция overwrite в db_iterate_replace/3
 + несовершенства примера низкоуровневая унификация в базу
 
 В примере \ref{db_erase_example} было показано использование
@@ -2443,9 +2659,33 @@ obj\_diff и obj\_merge
 
 могут ли вычислимые поля перекрывать обычные. Country\_List
 
-Упражнения
+\section{Упражнения}
 
+\begin{enumerate}
+\item Объясните данный пример
 
+\begin{example}{}{}
+?- clear_db(people1), db_copy(people, people1).
+
+?- db_iterate_replace(people1, set_fields([sex, weight, height], [A
+, A, 4]), height(+free)).                                         
+
+?- db_iterate_replace(people1, set_fields([sex, height], [unisex, _
+]), weight(+free)).                                               
+
+?- dump_db([lf(1)], people1).
+[22]: shampoo_v(_G2962,Schwarzkopf,man) 
+man_v(unisex,Adam,_G2964,unisex,_G2966) 
+man_v(unisex,Eva,_G2964,unisex,_G2966) 
+citizen_v(unisex,_G2963,Mayakovsky,unisex,_G2966,[Soviet Union],_G2
+968,_G2969)                                                       
+ :[logging]
+\end{example}
+
+Правильно ли подобраны поисковые выражения. Что произойдёт при
+использовании внешней SQL базы?
+
+\end{enumerate}
 
 
 
