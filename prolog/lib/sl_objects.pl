@@ -1,47 +1,40 @@
-%% This file is a part of Uranium, a general-purpose functional test platform.
-%% Copyright (C) 2011  Sergei Lodyagin
-%%
-%% This library is free software; you can redistribute it and/or
-%% modify it under the terms of the GNU Lesser General Public
-%% License as published by the Free Software Foundation; either
-%% version 2.1 of the License, or (at your option) any later version.
-%% 
-%% This library is distributed in the hope that it will be useful,
-%% but WITHOUT ANY WARRANTY; without even the implied warranty of
-%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-%% Lesser General Public License for more details.
+%  This file is a part of Uranium, a general-purpose functional
+%  test platform.
+% 
+%  Copyright (C) 2011  Sergei Lodyagin
+% 
+%  This library is free software; you can redistribute it and/or
+%  modify it under the terms of the GNU Lesser General Public
+%  License as published by the Free Software Foundation; either
+%  version 2.1 of the License, or (at your option) any later
+%  version.
+%  
+%  This library is distributed in the hope that it will be
+%  useful, but WITHOUT ANY WARRANTY; without even the implied
+%  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+%  PURPOSE.  See the GNU Lesser General Public License for more
+%  details.
+% 
+%  You should have received a copy of the GNU Lesser General
+%  Public License along with this library; if not, write to the
+%  Free Software Foundation, Inc., 51 Franklin Street, Fifth
+%  Floor, Boston, MA 02110-1301 USA
+% 
+%  e-mail: lodyagin@gmail.com
+%  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
+%  --------------------------------------------------------------
+%   Description      : Data abstraction mechanismes.
+%   Created On       : Apr 3 2009
 
-%% You should have received a copy of the GNU Lesser General Public
-%% License along with this library; if not, write to the Free Software
-%% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-%%
-%% e-mail: lodyagin@gmail.com
-%% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
-%% -------------------------------------------------------------------------------
-%%
-
-%  -*-coding: mule-utf-8-unix; fill-column: 58-*-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  Copyright (C) 2009, 2011 Kogorta
-%
-%  Description      : Data abstraction mechanismes.
-%
-%  Author           : Sergei Lodyagin
-%
-%  Created On       : Apr 3 2009
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :- module(sl_objects, 
           [
            named_arg/3,
            named_arg/4,
-           named_arg_unify/4,
            named_arg_unify/5,
            named_arg_unify/6,
            named_args_unify/3,
            named_args_weak_unify/3,
-           named_args_unify/4,
            named_args_unify/5,
            named_args_unify/6,
            class_create/3,
@@ -59,7 +52,10 @@
            obj_copy/2,       % +From, -To
            obj_copy/3,       % +Field_List, +From, -To
            obj_field/3,
+           obj_reset_fields/3, % +[Field|...], +Obj_In, -Obj_Out
            obj_reset_fields/4, % +[Field|...], +Obj_In, -Obj_Out, Is_Succ
+           obj_reset_fields_weak/3, % +[Field|...], +Obj_In, -Obj_Out
+           obj_reset_fields_weak/4, % +[Field|...], +Obj_In, -Obj_Out, I
            obj_merge/4,
            obj_pretty_print/1,
            obj_pretty_print/2,
@@ -70,7 +66,8 @@
 
            % low level 
            spec_term/2,     % +Class, -Spec_Term
-           class_arg_num/3  % +Class, ?Arg_Num, +Arg_Name
+           class_arg_num/3, % +Class, ?Arg_Num, +Arg_Name
+           class_arg_num_weak/3  % +Class, ?Arg_Num, +Arg_Name
            ]).        
 
 :- use_module(lib/sl_lists).
@@ -84,17 +81,24 @@
 %:- multifile db_recorded/3, db_erase/1, db_recordz/2.
 
 
+/** <module> Uranium Objects
+
+  
+  
+  */
+
 %
 % Доступ к полю Term по имени
 % (через описательный терм '...#').
 %
 % named_arg(+Term, +Field_Name, ?Value)
-%
+% (booked)
 
 named_arg(Term, Field_Name, Value) :-
 
    named_arg(Term, Field_Name, Value, _).
 
+% unbooked
 
 named_arg(Term, Field_Name, Value, Type) :-
 
@@ -120,36 +124,10 @@ named_arg(Term, Field_Name, Value, Type) :-
     
 
 %
-% Унификация с базой данных пролога по полю Field_Name
+% Унификация с расширенной базой данных пролога по полю Field_Name
 % и значению Value для тех фактов, для
 % которых есть описатель '...#'.
-%
-% named_arg_unify(?Functor, +Field_Name, ?Value, ?Term)
-%
-
-named_arg_unify(Functor, Field_Name, Value, Term) :-
-
-    objects:current_predicate(Functor, FTerm1),         
-    functor(FTerm1, Functor, Arity),         % находим этот функтор
-    atom_concat(Functor, '#', Spec_Functor),
-    
-    objects:current_functor(Spec_Functor, Arity),
-    % находим функтор-описатель
-
-    %!,                             % если арность совпала - считаем,
-                                    % что нашли то, что надо
-
-    functor(Spec_Term, Spec_Functor, Arity), 
-    objects:Spec_Term,
-    
-    (arg(Field_Pos, Spec_Term, Field_Name) -> true; false),
-    % нашли позицию поля по имени (первую!)
-
-    functor(Term, Functor, Arity), 
-    objects:Term, 
-    arg(Field_Pos, Term, Value).             % связали Value со значением
-
-% То же, но унификация с базой `recorded database'
+% booked
 
 named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
 
@@ -208,15 +186,6 @@ named_args_unify(Term,
   obj_field(Term, Field_Name, Value),
   named_args_unify(Term, FN_Tail, V_Tail).
 
-named_args_unify(Functor,
-                 [Field_Name | FN_Tail],
-                 [Value | V_Tail],
-                 Term
-                ) :-
-
-    named_arg_unify(Functor, Field_Name, Value, Term),
-    named_args_unify2(Term, FN_Tail, V_Tail).
-
 named_args_unify(DB_Key,
                  Functor,
                  Field_Names,
@@ -224,7 +193,8 @@ named_args_unify(DB_Key,
                  Term
                  ) :-
 
-  named_args_unify(DB_Key, Functor, Field_Names, Field_Values, Term, _).
+  named_args_unify(DB_Key,
+                   Functor, Field_Names, Field_Values, Term, _).
 
 named_args_unify(DB_Key,
                  Functor,
@@ -259,6 +229,11 @@ obj_field(Object, Field_Name, Value) :-
 % Set the field as unbound
 %
 
+obj_reset_fields(Fields_List, Object_In, Object_Out) :-
+
+  obj_reset_fields(Fields_List, Object_In, Object_Out, _).
+
+  
 obj_reset_fields(Fields_List, Object_In, Object_Out, true) :-
 
     functor(Object_In, Class, _),
@@ -266,8 +241,25 @@ obj_reset_fields(Fields_List, Object_In, Object_Out, true) :-
     duplicate_term(Object_In, Object_Out),
     length(Fields_List, N),
     length(Free_Var_List, N),
-    maplist(setarg_tnv(Object_Out), Arg_Nums, Free_Var_List).
+    maplist(setarg_tnv(Object_Out), Arg_Nums, Free_Var_List), !.
 
+obj_reset_fields_weak(Fields_List, Object_In, Object_Out) :-
+
+  obj_reset_fields_weak(Fields_List, Object_In, Object_Out, _).
+
+  
+obj_reset_fields_weak(Fields_List, Object_In, Object_Out, true) :-
+
+    functor(Object_In, Class, _),
+    maplist(class_arg_num_weak(Class), Arg_Nums0, Fields_List),
+    delete(Arg_Nums0, 0, Arg_Nums),
+    duplicate_term(Object_In, Object_Out),
+    length(Arg_Nums, N),
+    length(Free_Var_List, N),
+    maplist(setarg_tnv(Object_Out), Arg_Nums, Free_Var_List), !.
+
+
+  
 %
 % Сборка экземпляра класса с установкой только заданных полей
 %
@@ -700,6 +692,7 @@ class_parent(Class, Parent) :-
                              
 class_descendant(Class, Descendant) :-
 
+  class_ensure_created(Descendant),
   class_parent(Descendant, Class)
   ;
   class_parent(Descendant, X),
@@ -728,6 +721,12 @@ class_ensure_created(Class) :-
    ;
 
    atom(Class),
+
+   Class = object_base_v -> true % object_base_v is implicitly
+                                 % defined
+
+   ;
+                             
    (find_class_module(Class, Module_Path) -> true; %NB implies '!'
     write_log(['A definition module for the class', Class, 
                'is not found']), fail
@@ -747,7 +746,8 @@ obj_pretty_print(Options, Object) :-
   %open_log([lf(2, before)]),
   log_piece([Class, '('], Options),
   change_indent(Options, O2, 2),
-  maplist(field_pretty_print(O2, Object), Fields).
+  maplist(field_pretty_print(O2, Object), Fields),
+                             log_piece([')'], Options).
   %close_log([lf(2, after)]).                           
 
 
@@ -917,6 +917,18 @@ class_arg_num(Class, Arg_Num, Arg_Name) :-
    objects:Descr_Term,
    arg(Arg_Num, Descr_Term, Arg_Name), !.
 
+% in the weak version it sets Arg_Num=0 when the field Arg_Name
+% is absent
+class_arg_num_weak(Class, Arg_Num, Arg_Name) :-
+
+   atom_concat(Class, '#', Descr_Functor),
+   objects:current_predicate(Descr_Functor, Descr_Term),
+   objects:Descr_Term,
+   (  arg(Arg_Num, Descr_Term, Arg_Name)
+   -> true
+   ;  Arg_Num = 0
+   ), !.
+                             
 class_field_type(Class, Field, Type) :-
 
    class_arg_num(Class, Arg_Num, Field),
