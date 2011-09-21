@@ -802,6 +802,7 @@ most_narrowed(Class1, Class2, Most_Narrowed_Class) :-
 get_key(Class, Key) :-
 
   atom(Class), !,
+  class_ensure_created(Class),
   (objects:key(Class, Key) -> true ; Key = []).
 
 
