@@ -603,6 +603,7 @@ named\_args\_unify, который сопоставляет не одно пол
 техники).
 
 \section{Жизнь и метаморфозы объектов в \ur}
+\label{object_life}
 
 Стоит сказать пару слов о времени жизни объекта. В других
 системах (например, в Java) подразумевается, что объект
@@ -1091,7 +1092,7 @@ C = citizen_v(_G15, _G16, _G17, _G18, _G19, _G20, _G21, _G22).
 ... Впрочем, этому посвящена отдельная глава.
 
 
-\section{Путешествия вниз по лестнице наследования}
+\section{Downcast или путешествие вниз по лестнице наследования}
 \label{downcast}
 
 Вернёмся теперь к вопросу наследования. Введём новый объект -
@@ -1247,6 +1248,24 @@ citizen_v (
 
 чтобы сделать Роберта Шумана гражданином Украины.
 
+\section{Upcast или путешествие вверх по лестнице наследования}
+\label{upcast}
+
+Для выполнения upcast в \ur нет специально выделенного
+предиката. Но при необходимости, upcast можно просто реализовать
+на базе следующих предикатов:
+
+\begin{itemize}
+\item \verb|class_fields/2|
+\item \verb|object_construct/4|
+\item \verb|named_args_unify/3|
+\end{itemize}
+
+При освоении предыдущего материала данный вопрос не должен
+вызвать затруднение у читателя. Оставим реализацию функции
+obj_upcast на самостоятельную проработку.
+
++ obj_diff
 
 \chapter{Объектная база данных}
 \label{ur_recorded_db}
@@ -2586,7 +2605,7 @@ _G2473,_G2474)
 
 Итак, как оказалось, наличие языка запросов не ограничивает нас в
 использовании обычных предикатов Пролога для поиска значений. В
-самых ``безнадёжных'' случаях поисковое выражение выраждается,
+самых ``безнадёжных'' случаях поисковое выражение вырождается,
 как в данном случае, в простое \verb|true|. Однако учтите, в этом
 случае Пролог будет просматривать всю базу. Потому решение с
 флагом в объекте-предке, упомянутое в \ref{db_iterate_replace/3}
@@ -2594,9 +2613,6 @@ _G2473,_G2474)
 
 \section{Использование ключей}
 \label{keys}
-
-+ опция overwrite в db_iterate_replace/3
-+ несовершенства примера низкоуровневая унификация в базу
 
 В примере \ref{db_erase_example} было показано использование
 предиката db\_copy/2 для создания двух вспомогательных
@@ -2643,8 +2659,354 @@ Adam должно обозначаться единственным объект
 это аналог указателя в C++ или Java. В соответствии с моделями
 этих языков два разных указателя - это два объекта.
 
+Однако, модель ``памяти объектов'' в Uranium несколько иная.
+
+\begin{enumerate}
+
+\item Объект может претерпевать изменения downcast
+  (\ref{downcast}). Соответственно, при использовании той же SQL
+  базы один и тот же объект будет представлен разными таблицами,
+  а следовательно, он будет менять физический адрес.
+
+\item При сколько-нибудь сложной обработке реальных
+  бизнес-объектов в \ur{} мы будем часто использовать несколько
+  баз. Например, статья на сайте может представляться
+  \begin{itemize}
+  \item[а)] в виде заголовка;
+  \item[б)] в виде краткой аннотации (в общем списке);
+  \item[в)] в виде полной версии на отдельной странице
+  \end{itemize}
+
+  но это будет одна и та же статья и, в терминах MVC
+  (Model-Controller-View) архитектуры, это есть один объект,
+  имеющий разнообразные View. При извлечении её с сайта (анализе
+  различных страниц) разные её View могут помещаться в разное
+  время в разные базы, однако, эти разные записи будут относиться
+  к одному объекту и могут, например, потом дополнять друг друга
+  (см. \ref{db_merge}).
+
+\item И, наконец, идентификация объектов с помощью физических
+  адресов - не гибкий механизм, он зависит от реализации
+  базы. Для него нет общей схемы.
+
+\end{enumerate}
 
 
+\subsection{Другие способы различения объектов}
+
+К другим способам различения объектов относятся различение по
+специальному идентификатору, уникальному для каждого объекта и с
+помощью функции тестирования двух объектов, которая должна
+вернуть true, если это один и тот же объект. Оба этих способа
+укладываются в концепцию ключевых полей.
+
+
+\subsection{Концепция ключевых полей \ur}
+
+В \ur{} ключевое поле --- это свойство объекта. В других
+системах, как правило, о ключах говорят только применительно к
+базе. В \ur{} можно сказать, что ключ существует вместе с
+объектом, но автоматически обрабатывается только при операциях с
+базой. Давайте рассмотрим, для начала, концепцию ключа в
+непривычной, оторванной от базы форме.
+
+Изменим определение объекта man_v
+
+\begin{example}{}{}
+:- module(man_v, []).
+
+new_class(man_v, object_v, [sex, name, surname, weight, height]
+         , [name, surname]
+         ).
+\end{example}
+
+Мы всегда можем проверить наличие ключа в объекте с помощью
+предиката get_key/2 модуля ur_objects. Это, в некотором роде,
+аналог class_fields, о котором шла речь в \ref{upcast} за тем
+исключением, что предикат get_key/2 может работать с двумя типами
+данных - именами классов и объектами.
+
+\begin{example}{}{}
+?- get_key(man_v, Key).
+
+Key = [name, surname].
+\end{example}
+
+\begin{example}{}{}
+?- obj_construct(man_v, [], [], Obj), 
+   get_key(Obj, Key).
+
+Obj = man_v(_G15, _G16, _G17, _G18, _G19),
+Key = [name, surname].
+\end{example}
+
+Ключ наследуется
+
+\begin{example}{}{}
+?- get_key(callup_v, Key).
+
+Key = [name, surname].
+\end{example}
+
+(более подробно наследование ключей рассматривается в
+\ref{keys_inheritance}).
+
+Также можно, одним предикатом, получить значение полей,
+соответствующих ключам:
+
+\begin{example}{}{}
+?- obj_construct(man_v, [name], ['Alex'], Obj), 
+   get_key_value(Obj, Key_Vals).                                                        
+
+Obj = man_v(_G918, 'Alex', _G920, _G921, _G922),
+Key_Vals = ['Alex', _G920].
+\end{example}
+
+\subsection{Работа с ключами ``в ручную''}
+
+Для иллюстрации ручной работы с ключами давайте воспользуемся
+``нерекоммендованным приёмом'' (он может быть очень ресурсоёмким)
+и перекачаем базу people из примера \ref{people_db} в список. Для
+нерекоммендованных приёмов в \ur, естественно, существуют
+нерекоммендованные функции:
+
+\begin{bigexample}{}{}
+?- db_to_list(people, _, L), 
+   maplist(obj_pretty_print, L).
+
+man_v ( 
+  sex : man 
+  name : Adam 
+) 
+man_v ( 
+  sex : woman 
+  name : Eva 
+) 
+citizen_v ( 
+  sex : man 
+  surname : Mayakovsky 
+  country : [Soviet Union] 
+) 
+\end{bigexample}
+ 
+Здесь \verb|maplist(obj_pretty_print, L)| используется для
+распечатки списка (предикат maplist/2 вызывает первый предикат с
+арностью 1 для каждого элемента списка L).
+
+(В качестве второго параметра db_to_list/3 может принимать
+функтор объекта, так, для извлечения в список только \verb|man_v|
+можно сделать следующее:)
+
+\begin{bigexample}{}{}
+?- db_to_list(people, man_v, L), maplist(obj_pretty_print, L).     
+man_v ( 
+  sex : man 
+  name : Adam 
+) 
+man_v ( 
+  sex : woman 
+  name : Eva 
+) 
+\end{bigexample}
+
+Давайте реализуем предикат, проверяющий существование {\it
+  конкретного\/} объекта в списке.
+
+Первое, что может прийти на ум, это использовать, в каком-то
+виде, унификацию:
+
+\begin{example}{}{}
+?- db_to_list(people, _, L), 
+   obj_construct(man_v, [surname], ['Strauss'], Obj), 
+
+   %% our predicate
+   findall(Obj, member(Obj, L), Found_List), 
+   %%
+
+   maplist(obj_ pretty_print, Found_List).                         
+
+man_v ( 
+  sex : man 
+  name : Adam 
+  surname : Strauss 
+) 
+man_v ( 
+  sex : woman 
+  name : Eva 
+  surname : Strauss 
+) 
+\end{example}
+
+Естественно, как уже было показано, несвязанные поля ``рады''
+принять любое значение.
+
+Можно потребовать, чтобы все ключевые поля в поисковом запросе
+были связаны. Действительно, только ключ идентифицирует объект, а
+мы договорились искать {\it конкретный\/} объект.
+
+\begin{example}{}{}
+?- db_to_list(people, _, L), 
+   obj_construct(man_v, 
+      [name, surname], ['Adam', 'Mitskevich'], Obj), 
+
+   %%
+   get_key_value(Obj, Key_Val), 
+   ground(Key_Val), % search only if the key is bound
+
+   findall(Obj, member(Obj, L), Found_List), 
+   %%
+
+   maplist(obj_pret ty_print, Found_List).
+
+man_v ( 
+  sex : man 
+  name : Adam 
+  surname : Mitskevich 
+) 
+\end{example}
+
+Уже лучше. Если вспомнить, что говорилось в \ref{object_life} о
+жизни объектов, то результат вполне адекватный --- полученный на
+выходе предиката список Found_List можно воспринимать как
+поправку-условие, то есть, предикат сообщает нам, при каком
+допущении производился поиск. В данном случае, мы допустили, что
+фамилия Адама была Мицкевич и честно об этом сообщили. Для более
+корректной формы входных/выходных данных, однако,
+список-допущение не следует смешивать со
+списком-результатом. Тогда мы можем написать следующее:
+
+\begin{bigexample}{Предикат поиска объекта в списке}{obj_search}
+obj_search(List_In, List_Out, Obj, Found_List) :-
+
+   get_key_value(Obj, Key_Val), 
+   (   ground(Key_Val)
+   ->  true
+   ;   throw(unbound_key(Obj))
+   ),
+   obj_search2(List_In, List_Out, Obj, [], Found_Rev),
+   reverse(Found_Rev, Found_List).
+
+
+obj_search2([], [], _, Found_List, Found_List) :- !.
+
+obj_search2([H_In|T_In], [H_Out|T_Out], Obj, Found_In, Found_Out) :-
+
+   H_Out = H_In,
+
+   (   Obj = H_In 
+   ->  Found2 = [Obj|Found_In]
+   ;   Found2 = Found_In
+   ),
+   
+   obj_search2(T_In, T_Out, Obj, Found2, Found_Out).
+\end{bigexample}
+
+\begin{example}{}{}
+?- db_to_list(people, _, L), 
+   obj_construct(man_v, 
+      [name, surname], ['Adam', 'Mitskevich'], Obj), 
+   obj_search(L, L2, Obj, Found_List).  
+
+L = [man_v(man, 'Adam', 'Mitskevich', _G56, _G57), man_v(woman, 'Ev
+a', _G46, _G47, _G48), citizen_v(man, _G30, 'Mayakovsky', _G32, _G3
+3, ['Soviet Union'], _G35, _G36)],                                
+
+L2 = [man_v(man, 'Adam', 'Mitskevich', _G56, _G57), man_v(woman, 'E
+va', _G46, _G47, _G48), citizen_v(man, _G30, 'Mayakovsky', _G32, _G
+33, ['Soviet Union'], _G35, _G36)],                               
+
+Found_List = [man_v(man, 'Adam', 'Mitskevich', _G56, _G57)].
+\end{example}
+
+Можно видеть, что приведённая реализация предиката работает
+вполне корректно.
+
+Давайте теперь немного поэкспериментируем с самими объектами.
+
+Для удобства напишем предикат, который создаёт сразу множество
+объектов:
+
+\begin{example}{}{}
+make_obj_list(List, Objects) :-
+
+   maplist(make_obj_list2, List, Objects2),
+   flatten(Objects2, Objects).
+
+make_obj_list2((Class, Fields, List), Objects) :-
+
+   findall(Object,
+           (  member(Values, List),
+              obj_construct(Class, Fields, Values, Object)
+           ),
+           Objects
+          ).
+\end{example}
+
+теперь создадим с помощью него такой список:
+
+\begin{bigexample}{}{}
+?- make_obj_list([
+     (man_v, [sex, name, height],
+        [[man, 'Adam', 1.74], 
+         [women, 'Eva', 1.68]]
+     ),
+     (man_v, [sex, name, surname, weight, height],
+        [[man, 'Mike', 'Tison', 4.1, 0.54],
+         [man, 'Mike', 'Tison', 16, 1.1],
+         [man, 'Mike', 'Tison', 99, 2.1],
+         [man, 'Vladimir', 'Klichko', 99, 2]]
+     ),
+     (citizen_v, [sex, name, surname, country, birthday],
+        [[man, 'Vladimir', 'Mayakovsky', ['Soviet Union'], 1900],
+         [man, 'Adam', 'Mitskevich', ['Poland'], 1920],
+         [women, 'Clara', 'Wieck', ['Germany'], 1800]]
+     )],
+     Src_List).
+\end{bigexample}
+
+В дальнейшем мы будем обращаться к этому списку как \$Src_List
+(если вы используете SWI Prolog, то можете использовать
+\$Src_List непосредственно, \$Var означает в командной строке SWI
+Prolog переменную Var из предыдущего выражения <ссылка>).
+
+Давайте поищем теперь Майка Тайсона
+
+\begin{example}{}{}
+?- obj_construct(man_v, [name, surname], ['Mike', 'Tison'], Obj), 
+   obj_search($Src_List, New_List, Obj, Found).
+
+Found = [man_v(man, 'Mike', 'Tison', 4.1, 0.54)].
+\end{example}
+
+Но позвольте, почему только один и, притом, самый маленький?
+Ответ кроется в ``жадности'' несвязанных полей Пролога. Как
+только они получают значение, они с ним уже не могут расстаться.
+
+Логика поиска подсказывает нам, что поля объекта-шаблона должны
+оставаться несвязанными. К счастью, в Прологе существует предикат
+copy_term, который позволяет создать ``отвязанную'' копию объекта
+прежде, чем он унифицируется. Вот соответсвующая модификация
+предиката \ref{obj_search}:
+
+\begin{example}{}{}
+\end{example}
+
+
+% Упражнение - реализовать сортировку объектов по ключу
+
+
+\subsection{Ключи в базе}
+
++db_put_object
++db_erase_object/3
++db_merge
+
++ опция overwrite в db_iterate_replace/3 + несовершенства примера
+низкоуровневая унификация в базу
+
+
+\subsection{Ключи и наследование}
+\label{keys_inheritance}
 
 Определение базового класса базы.
 
