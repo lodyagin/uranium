@@ -301,6 +301,7 @@ obj_construct(Class, Field_Names, Field_Values, Term, Weak) :-
      ),
     !.
 
+% todo it duplicates class_fields
 field_names_list(Class, Field_Names) :-
 
    atom_concat(Class, '#', Meta_Pred_Functor),
@@ -835,20 +836,23 @@ obj_diff(Obj1, Obj2, Diff_List) :-
   functor(Obj1, Functor1, _),
   functor(Obj2, Functor2, _),
 
-  field_names_list(Functor1, Obj1_Fields),
-  field_names_list(Functor2, Obj2_Fields),
+  class_fields(Functor1, Obj1_Fields),
+  class_fields(Functor2, Obj2_Fields),
   
   % TODO track list of eval fields for each objects,
   % check for repeats in all field list
   %
   findall(Field, 'object_v?'(object_v, Field, _), Object_V_Fields),
 
-  append(Obj1_Fields, Object_V_Fields, Fields1),
-  append(Obj2_Fields, Object_V_Fields, Fields2),
+  append(Obj1_Fields, Object_V_Fields, Fields1u),
+  append(Obj2_Fields, Object_V_Fields, Fields2u),
 
-  check_fields(Functor1, Fields1),
-  check_fields(Functor2, Fields2),
+  check_fields(Functor1, Fields1u),
+  check_fields(Functor2, Fields2u),
 
+  sort(Fields1u, Fields1),
+  sort(Fields2u, Fields2),
+                             
   merge_set(Fields1, Fields2, Fields_For_Diff),
 
   build_diff_list(Obj1, Obj2, Fields_For_Diff, [], Diff_List).
@@ -858,9 +862,9 @@ build_diff_list(_, _, [], Diff, Diff) :- !.
 
 build_diff_list(Obj1, Obj2, [Field|Tail], Diff_In, Diff_Out) :- 
 
-  (obj_field(Obj1, Field, V1) -> true ; V1 = '-'),
-  (obj_field(Obj2, Field, V2) -> true ; V2 = '-'),
-  (V1 = V2 -> Diff_In = Diff2
+  (obj_field(Obj1, Field, V1) -> true ; V1 = _),
+  (obj_field(Obj2, Field, V2) -> true ; V2 = _),
+  (V1 =@= V2 -> Diff_In = Diff2
    ; selectchk(diff(Field, V1, V2), Diff2, Diff_In)
    ),
   build_diff_list(Obj1, Obj2, Tail, Diff2, Diff_Out).
