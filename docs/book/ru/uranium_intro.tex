@@ -64,6 +64,8 @@
 \date{\today}
 \maketitle
 
+\tableofcontents
+
 \chapter{Введение в \ur-автоматизацию}
 
 Разработка программного обеспечения всегда являлась отраслью, где
@@ -629,7 +631,7 @@ named\_args\_unify, который сопоставляет не одно пол
 \begin{example}{}{}
 ?- obj_construct(man_v, [sex, name, surname], 
                         [woman, 'Clara', 'Wieck'], Woman), 
-   obj_field(Woman, surname, 'Schubert').
+   obj_field(Woman, surname, 'Schumann').
 \end{example}
 
 даст просто false.
@@ -1261,11 +1263,52 @@ citizen_v (
 \item \verb|named_args_unify/3|
 \end{itemize}
 
+% аналог class_fields для вычислимых полей
+
 При освоении предыдущего материала данный вопрос не должен
 вызвать затруднение у читателя. Оставим реализацию функции
 obj_upcast на самостоятельную проработку.
 
-+ obj_diff
+\section{Сравнение двух объектов}
+\label{obj_diff}
+
+Часто (особенно, в процессе написания автоматических тестов)
+необходимо сравнивать объекты. Для этого предназначен предикат
+\verb|obj_diff/3|:
+
+\begin{example}{Сравнение двух объектов}{obj_diff_sample}
+?- obj_construct(man_v, 
+      [sex, name, surname, weight], 
+      [women, 'Clara', 'Wieck', 62], Obj1), 
+   
+   obj_construct(citizen_v, 
+      [sex, name, surname, weight, country], 
+      [women, 'Clara', 'Schumann', 72, ['Germany']], Obj2), 
+
+   obj_diff(Obj1, Obj2, Diff).
+
+Diff = [diff(weight, 62, 72), diff(surname, 'Wieck', 'Schumann'), diff(functor, man_v, citizen_v), diff(country, _G51, ['Germany']), diff(class, man_v, citizen_v)].
+\end{example}
+
+Как видно, он умеет сравнивать также вычислимые поля.
+
+% На самом деле только те, что присутствуют в object_v.
+
+Результат можно напечатать в удобочитаемой форме с помощью
+\verb|obj_diff_print|:
+
+\begin{example}{}{}
+?- ..., obj_diff_print(Diff).
+
+( 
+  class : man_v -> citizen_v 
+  country : _G14 -> [Germany] 
+  functor : man_v -> citizen_v 
+  surname : Wieck -> Schumann 
+  weight : 62 -> 72 
+) 
+\end{example}
+
 
 \chapter{Объектная база данных}
 \label{ur_recorded_db}
@@ -2766,47 +2809,47 @@ Key_Vals = ['Alex', _G920].
 
 Для иллюстрации ручной работы с ключами давайте воспользуемся
 ``нерекоммендованным приёмом'' (он может быть очень ресурсоёмким)
-и перекачаем базу people из примера \ref{people_db} в список. Для
-нерекоммендованных приёмов в \ur, естественно, существуют
-нерекоммендованные функции:
+и поместим объекты в список. Для удобства напишем предикат,
+который создаёт сразу множество объектов:
 
-\begin{bigexample}{}{}
-?- db_to_list(people, _, L), 
-   maplist(obj_pretty_print, L).
+\begin{example}{}{}
+make_obj_list(List, Objects) :-
 
-man_v ( 
-  sex : man 
-  name : Adam 
-) 
-man_v ( 
-  sex : woman 
-  name : Eva 
-) 
-citizen_v ( 
-  sex : man 
-  surname : Mayakovsky 
-  country : [Soviet Union] 
-) 
-\end{bigexample}
- 
-Здесь \verb|maplist(obj_pretty_print, L)| используется для
-распечатки списка (предикат maplist/2 вызывает первый предикат с
-арностью 1 для каждого элемента списка L).
+   maplist(make_obj_list2, List, Objects2),
+   flatten(Objects2, Objects).
 
-(В качестве второго параметра db_to_list/3 может принимать
-функтор объекта, так, для извлечения в список только \verb|man_v|
-можно сделать следующее:)
+make_obj_list2((Class, Fields, List), Objects) :-
 
-\begin{bigexample}{}{}
-?- db_to_list(people, man_v, L), maplist(obj_pretty_print, L).     
-man_v ( 
-  sex : man 
-  name : Adam 
-) 
-man_v ( 
-  sex : woman 
-  name : Eva 
-) 
+   findall(Object,
+           (  member(Values, List),
+              obj_construct(Class, Fields, Values, Object)
+           ),
+           Objects
+          ).
+\end{example}
+
+теперь можно создать с помощью него список таким образом:
+
+\begin{bigexample}{Список для ручной работы с ключами}%
+                  {key_sample_list}
+?- make_obj_list([
+     (man_v, [sex, name, height],
+        [[man, 'Adam', 1.74], 
+         [women, 'Eva', 1.68]]
+     ),
+     (man_v, [sex, name, surname, weight, height],
+        [[man, 'Mike', 'Tison', 4.1, 0.54],
+         [man, 'Mike', 'Tison', 16, 1.1],
+         [man, 'Mike', 'Tison', 99, 2.1],
+         [man, 'Vladimir', 'Klichko', 99, 2]]
+     ),
+     (citizen_v, [sex, name, surname, country, birthday],
+        [[man, 'Vladimir', 'Mayakovsky', ['Soviet Union'], 1900],
+         [man, 'Adam', 'Mitskevich', ['Poland'], 1920],
+         [women, 'Clara', 'Wieck', ['Germany'], 1800]]
+     )],
+     Src_List),
+   assert(src_list(Src_List)).
 \end{bigexample}
 
 Давайте реализуем предикат, проверяющий существование {\it
@@ -2816,24 +2859,26 @@ man_v (
 виде, унификацию:
 
 \begin{example}{}{}
-?- db_to_list(people, _, L), 
+?- src_list(Src_List),
    obj_construct(man_v, [surname], ['Strauss'], Obj), 
 
    %% our predicate
-   findall(Obj, member(Obj, L), Found_List), 
+   findall(Obj, member(Obj, Src_List), Found_List), 
    %%
 
-   maplist(obj_ pretty_print, Found_List).                         
+   maplist(obj_pretty_print, Found_List).                         
 
 man_v ( 
   sex : man 
   name : Adam 
   surname : Strauss 
+  height : 1.74 
 ) 
 man_v ( 
   sex : woman 
   name : Eva 
   surname : Strauss 
+  height : 1.68 
 ) 
 \end{example}
 
@@ -2845,7 +2890,7 @@ man_v (
 мы договорились искать {\it конкретный\/} объект.
 
 \begin{example}{}{}
-?- db_to_list(people, _, L), 
+?- src_list(L), 
    obj_construct(man_v, 
       [name, surname], ['Adam', 'Mitskevich'], Obj), 
 
@@ -2856,12 +2901,13 @@ man_v (
    findall(Obj, member(Obj, L), Found_List), 
    %%
 
-   maplist(obj_pret ty_print, Found_List).
+   maplist(obj_pretty_print, Found_List).
 
 man_v ( 
   sex : man 
   name : Adam 
   surname : Mitskevich 
+  height : 1.74 
 ) 
 \end{example}
 
@@ -2873,7 +2919,8 @@ man_v (
 фамилия Адама была Мицкевич и честно об этом сообщили. Для более
 корректной формы входных/выходных данных, однако,
 список-допущение не следует смешивать со
-списком-результатом. Тогда мы можем написать следующее:
+списком-результатом. Тогда мы можем написать, в первом
+приближении, следующее:
 
 \begin{bigexample}{Предикат поиска объекта в списке}{obj_search}
 obj_search(List_In, List_Out, Obj, Found_List) :-
@@ -2922,52 +2969,6 @@ Found_List = [man_v(man, 'Adam', 'Mitskevich', _G56, _G57)].
 вполне корректно.
 
 Давайте теперь немного поэкспериментируем с самими объектами.
-
-Для удобства напишем предикат, который создаёт сразу множество
-объектов:
-
-\begin{example}{}{}
-make_obj_list(List, Objects) :-
-
-   maplist(make_obj_list2, List, Objects2),
-   flatten(Objects2, Objects).
-
-make_obj_list2((Class, Fields, List), Objects) :-
-
-   findall(Object,
-           (  member(Values, List),
-              obj_construct(Class, Fields, Values, Object)
-           ),
-           Objects
-          ).
-\end{example}
-
-теперь создадим с помощью него такой список:
-
-\begin{bigexample}{}{}
-?- make_obj_list([
-     (man_v, [sex, name, height],
-        [[man, 'Adam', 1.74], 
-         [women, 'Eva', 1.68]]
-     ),
-     (man_v, [sex, name, surname, weight, height],
-        [[man, 'Mike', 'Tison', 4.1, 0.54],
-         [man, 'Mike', 'Tison', 16, 1.1],
-         [man, 'Mike', 'Tison', 99, 2.1],
-         [man, 'Vladimir', 'Klichko', 99, 2]]
-     ),
-     (citizen_v, [sex, name, surname, country, birthday],
-        [[man, 'Vladimir', 'Mayakovsky', ['Soviet Union'], 1900],
-         [man, 'Adam', 'Mitskevich', ['Poland'], 1920],
-         [women, 'Clara', 'Wieck', ['Germany'], 1800]]
-     )],
-     Src_List).
-\end{bigexample}
-
-В дальнейшем мы будем обращаться к этому списку как \$Src_List
-(если вы используете SWI Prolog, то можете использовать
-\$Src_List непосредственно, \$Var означает в командной строке SWI
-Prolog переменную Var из предыдущего выражения <ссылка>).
 
 Давайте поищем теперь Майка Тайсона
 
