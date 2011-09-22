@@ -1,24 +1,31 @@
-%% This file is a part of Uranium, a general-purpose functional test platform.
-%% Copyright (C) 2011  Sergei Lodyagin
-%%
-%% This library is free software; you can redistribute it and/or
-%% modify it under the terms of the GNU Lesser General Public
-%% License as published by the Free Software Foundation; either
-%% version 2.1 of the License, or (at your option) any later version.
-%% 
-%% This library is distributed in the hope that it will be useful,
-%% but WITHOUT ANY WARRANTY; without even the implied warranty of
-%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-%% Lesser General Public License for more details.
+%  -*-coding: mule-utf-8-unix; fill-column: 65-*-
+%
+%  This file is a part of Uranium, a general-purpose functional
+%  test platform.
 
-%% You should have received a copy of the GNU Lesser General Public
-%% License along with this library; if not, write to the Free Software
-%% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-%%
-%% e-mail: lodyagin@gmail.com
-%% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
-%% -------------------------------------------------------------------------------
-%%
+%  Copyright (C) 2011  Sergei Lodyagin
+% 
+%  This library is free software; you can redistribute it and/or
+%  modify it under the terms of the GNU Lesser General Public
+%  License as published by the Free Software Foundation; either
+%  version 2.1 of the License, or (at your option) any later
+%  version.
+%  
+%  This library is distributed in the hope that it will be
+%  useful, but WITHOUT ANY WARRANTY; without even the implied
+%  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+%  PURPOSE.  See the GNU Lesser General Public License for more
+%  details.
+
+%  You should have received a copy of the GNU Lesser General
+%  Public License along with this library; if not, write to the
+%  Free Software Foundation, Inc., 51 Franklin Street, Fifth
+%  Floor, Boston, MA 02110-1301 USA
+% 
+%  e-mail: lodyagin@gmail.com
+%  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
+%  --------------------------------------------------------------
+
 
 :- module(sl_recorded_db,
           [clear_db/1,
@@ -197,7 +204,7 @@ filter_on_db(DB_Key, Field_Names, Field_Values) :-
 db_search(DB_In, DB_Out, Pred) :-
 
   db_recorded(DB_In, Term),
-  call(Pred, Term),
+  once(call(Pred, Term)),
   db_recordz(DB_Out, Term),
   fail
   ;
@@ -268,14 +275,14 @@ db_iterate(DB_Key, Query, Pred, DB_Ref, Pred2) :-
    check_record(Arg_Query, Pred),
    ( Pred2 = true
    -> true
-   ; call(Pred2, Pred)
+   ; once(call(Pred2, Pred))
    ).
 
 
 db_iterate_replace2(DB_Key, Pred, Query, Pred2) :-
 
    db_iterate(DB_Key, Query, Obj_In, DB_Ref, Pred2),
-   call(Pred, Obj_In, Obj_Out, _),
+   once(call(Pred, Obj_In, Obj_Out, _)),
    db_erase(DB_Ref),
    db_put_object(DB_Key, Obj_Out, [overwrite]),
    fail
@@ -305,7 +312,7 @@ db_iterate_replace(DB_Key, Pred, Query, Lim, Pred2) :-
    ;   integer(Lim), Lim > 0,
        nb_setval(db_iterate_replace_counter, 0),
        (   db_iterate(DB_Key, Query, Obj_In, DB_Ref),
-           call(Pred, Obj_In, Obj_Out, Is_Succ),
+           once(call(Pred, Obj_In, Obj_Out, Is_Succ)),
            db_erase(DB_Ref),
            db_put_object(DB_Key, Obj_Out, [overwrite]),
            (  Is_Succ
