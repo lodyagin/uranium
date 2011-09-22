@@ -20,17 +20,51 @@
 %% -------------------------------------------------------------------------------
 %%
 
-:- module(sl_io,
-          [stream_to_string/2
-]).
+:- module(ur_math,
+          [part_fact/3,
+           binomial_coeff/3,
+           nearest_binomial_coeff/4,
+           random_list/3
+           ]).
 
-%% Read whole file into string
-stream_to_string(Stream, String) :-
-    stream_to_string2(Stream, Reverse_String, []),
-    reverse(Reverse_String, String).
+binomial_coeff(N, K, C) :-
+    integer(N), N >= 0,
+    integer(K), K >= 0,
+    N1 is N - K + 1,
+    part_fact(N1, N, A),
+    part_fact(1, K, B),
+    C is A / B.
 
-stream_to_string2(Stream, String_Out, String_In) :-
-    (at_end_of_stream(Stream), String_Out = String_In, !;
-     get_code(Stream, Code),
-     stream_to_string2(Stream, String_Out, [Code|String_In])).
+% Found mimimal N: C(N, K) > C
+% C1 = C(N, K)
+nearest_binomial_coeff(N, K, C, C1) :-
+    integer(C),
+    integer(K),
+    between(2, 2000, N1),
+    binomial_coeff(N1, K, CC),
+    CC >= C,
+    C1 = CC, N = N1,
+    !.
+
+% C = A * (A+1) * (A+2) * ... * B
+part_fact(A, B, C) :-
+    part_fact(A, B, 1, C), !.
+
+part_fact(A, A, U, C) :- C is A * U.
+
+part_fact(A, B, U, C) :-
+    A1 is A + 1,
+    U1 is U * A,
+    part_fact(A1, B, U1, C).
     
+% random list - return Num random numbers 0..Ceil
+random_list(Num, Ceil, List) :-
+    random_list(Num, Ceil, [], List).
+    
+random_list(0, _, List, List) :- !.
+
+random_list(Num, Ceil, List, Out) :-
+    Num > 0,
+    Num1 is Num - 1,
+    R is random(Ceil),
+    random_list(Num1, Ceil, [R|List], Out).

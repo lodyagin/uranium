@@ -27,7 +27,7 @@
 %  --------------------------------------------------------------
 
 
-:- module(sl_recorded_db,
+:- module(ur_recorded_db,
           [clear_db/1,
            bind_term_in_db/2,
            db_put_object/2,  % +DB_Key, ?Object
@@ -53,7 +53,7 @@
            db_merge/3,  % by custom values
 
           % named_arg[s]_unify(DB_Key, ...) methods
-          % are in sl_objects
+          % are in ur_objects
 
            db_recorded/2,
            db_recorded/3,
@@ -61,7 +61,7 @@
            db_recordz/2
            ]).
 
-:- use_module(lib/sl_objects).
+:- use_module(library(ur_objects)).
 :- use_module(library(lists)).
 :- use_module(logging/logging).
 

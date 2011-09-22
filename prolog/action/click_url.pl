@@ -28,7 +28,7 @@
                       ]).
 
 :- use_module(html/http_ops).
-:- use_module(lib/sl_objects).
+:- use_module(library(ur_objects)).
 :- use_module(html/http_page). 
 
 % TODO add actor (cookies etc.)

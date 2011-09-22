@@ -24,7 +24,7 @@
           [unify_cookie/4
            ]).
 
-:- use_module(lib/sl_objects).
+:- use_module(library(ul_objects)).
 
 :- module_transparent unify_cookie/4.
 

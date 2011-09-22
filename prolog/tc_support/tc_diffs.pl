@@ -26,7 +26,7 @@
           [show_diff/3
           ]).
 
-:- use_module(library(sl_objects)).
+:- use_module(library(ur_objects)).
 
 
 show_diff(A, B, Options) :-

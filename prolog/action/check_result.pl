@@ -37,9 +37,9 @@
            check/2
           ]).
 
-:- use_module(lib/sl_objects).
-:- use_module(lib/sl_lists).
-:- use_module(lib/fixed).
+:- use_module(library(ur_objects)).
+:- use_module(library(ur_lists)).
+:- use_module(library(fixed)).
 
 % arithmetic evaluations
 

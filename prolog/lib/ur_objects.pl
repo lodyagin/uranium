@@ -26,7 +26,7 @@
 %   Description      : Data abstraction mechanismes.
 %   Created On       : Apr 3 2009
 
-:- module(sl_objects, 
+:- module(ur_objects, 
           [
            named_arg/3,
            named_arg/4,
@@ -71,9 +71,9 @@
            class_arg_num_weak/3  % +Class, ?Arg_Num, +Arg_Name
            ]).        
 
-:- use_module(lib/sl_lists).
-:- use_module(lib/sl_terms).
-:- use_module(lib/sl_recorded_db).
+:- use_module(library(ur_lists)).
+:- use_module(library(ur_terms)).
+:- use_module(library(ur_recorded_db)).
 :- use_module(logging/logging).
 
 :- dynamic objects:key/2, objects:copy/3, 
@@ -419,8 +419,8 @@ find_class_module(Class, Module_Path) :-
 load_class_module(Class, Meta, Module_Path) :-
 
   (flag(objects_module_created, 0, true) ->
-   % sl_objects must be imported in the objects din module
-   objects:use_module(lib/sl_objects) ; true),
+   % ur_objects must be imported in the objects din module
+   objects:use_module(library(ur_objects)) ; true),
 
   use_module(Module_Path), %% NB can't redefine
 

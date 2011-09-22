@@ -24,8 +24,8 @@
           [html_page_parse/3
           ]).
 
-:- use_module(lib/sl_recorded_db).
-:- use_module(lib/sl_objects).
+:- use_module(library(ur_recorded_db)).
+:- use_module(library(ur_objects)).
 :- use_module(library(xpath)).
 
 %

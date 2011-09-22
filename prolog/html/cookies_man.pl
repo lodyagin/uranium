@@ -29,8 +29,8 @@
             cookies_headers/2
           ]).
 
-:- use_module(lib/sl_objects).
-:- use_module(lib/sl_recorded_db).
+:- use_module(library(ur_objects)).
+:- use_module(library(ur_recorded_db)).
 :- use_module(html/cookie_v).
 :- use_module(logging/logging).
 

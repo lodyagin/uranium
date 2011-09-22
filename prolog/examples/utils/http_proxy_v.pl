@@ -25,7 +25,7 @@
 
 :- use_module(parser/general/dcg_entities).
 :- use_module(library(http/dcg_basics)).
-:- use_module(library(sl_lists)).
+:- use_module(library(ur_lists)).
 
 new_class(thread_object_v, object_v, [thread_id]).
 

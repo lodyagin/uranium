@@ -22,10 +22,10 @@
 
 :- module(find, [find/5]).
 
-:- use_module(lib/sl_words).
-:- use_module(lib/sl_lists).
-:- use_module(lib/sl_recorded_db).
-:- use_module(lib/sl_objects).
+:- use_module(library(ur_words)).
+:- use_module(library(ur_lists)).
+:- use_module(library(ur_recorded_db)).
+:- use_module(library(ur_objects)).
 :- use_module(tc_support/load_action_module).
 :- use_module(logging/logging).
 

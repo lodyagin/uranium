@@ -24,8 +24,8 @@
 
 :- use_module(state/general/html_user_v).
 :- use_module(action/find).
-:- use_module(library(sl_objects)).
-:- use_module(library(sl_recorded_db)).
+:- use_module(library(ur_objects)).
+:- use_module(library(ur_recorded_db)).
 
 query_locale_info :-
 

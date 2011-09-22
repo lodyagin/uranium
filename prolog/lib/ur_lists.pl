@@ -33,7 +33,7 @@
 %  Created On       : Apr 6 2009
 %
 
-:- module(sl_lists,
+:- module(ur_lists,
 	  [corteging/4,  %+Functor, ?List1, ?List2, ?List3
            list_head/4,
            mapkeys/3,
@@ -278,7 +278,7 @@ write_delimited2(Write_Pred, Delimiter, El) :-
   call(Write_Pred, El).
 
 
-% LU is a list of lists of the same size Sort the first list and
+% LU is a list of lists of the same size. Sort the first list and
 % change the order of elements in others lists like all elements
 % with the same index are linked in all lists.
 sort_linked(LU, LS) :-

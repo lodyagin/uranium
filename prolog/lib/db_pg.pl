@@ -30,8 +30,8 @@
            ]).
 
 :- use_module(db/postgres/postgres).
-:- use_module(library(sl_lists)).
-:- use_module(library(sl_objects)).
+:- use_module(library(ur_lists)).
+:- use_module(library(ur_objects)).
 :- use_module(logging/logging).
 
 :- dynamic pl_pg_type/3,  % Prolog_Type, Postgres_Type, Conv_Pred

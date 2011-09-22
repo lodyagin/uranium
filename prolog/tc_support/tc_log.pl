@@ -24,7 +24,7 @@
 
 :- module(tc_log, [log_step_goal/2]).
 
-:- use_module(library(sl_objects)).
+:- use_module(library(ur_objects)).
 :- use_module(logging/logging).
 
 

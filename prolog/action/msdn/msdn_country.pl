@@ -22,9 +22,9 @@
 
 :- module(msdn_country, []).
 
-:- use_module(library(sl_objects)).
-:- use_module(library(sl_recorded_db)).
-:- use_module(library(sl_lists)).
+:- use_module(library(ur_objects)).
+:- use_module(library(ur_recorded_db)).
+:- use_module(library(ur_lists)).
 :- use_module(html/http_page).
 :- use_module(html/http_ops).
 :- use_module(parser/html/html_page_parse).

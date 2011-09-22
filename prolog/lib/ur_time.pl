@@ -32,7 +32,7 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-:- module(sl_time, [date_to_YYYYMMDDHH24MISS/2]).
+:- module(ul_time, [date_to_YYYYMMDDHH24MISS/2]).
 
 % Parse time in ICTS format
 date_to_YYYYMMDDHH24MISS(Date, Time_String) :-

@@ -20,14 +20,14 @@
 %% -------------------------------------------------------------------------------
 %%
 
-:- module(sl_atoms,
+:- module(ur_atoms,
           [tolower/2,
            trim_string/4,
            remove_quotes/2,
            replace_chars/4
 ]).
 
-:- use_module(sl_lists).
+:- use_module(ur_lists).
 
 tolower(From, To) :-
     (

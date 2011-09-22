@@ -26,11 +26,11 @@
            normalize_row_name/2
            ]).
 
-:- use_module(lib/sl_atoms).
-:- use_module(lib/sl_terms).
-:- use_module(lib/sl_lists).
-:- use_module(lib/sl_objects).
-:- use_module(lib/sl_recorded_db).
+:- use_module(library(ur_atoms)).
+:- use_module(library(ur_terms)).
+:- use_module(library(ur_lists)).
+:- use_module(library(ur_objects)).
+:- use_module(library(ur_recorded_db)).
 :- use_module(logging/logging).
 :- use_module(library(xpath)).
 :- use_module(library(lists)).

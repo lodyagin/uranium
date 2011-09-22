@@ -32,8 +32,8 @@
 :- use_module(parser/general/dcg_entities).
 :- use_module(library(http/dcg_basics)).
 :- use_module(html/browsers/browsers).
-:- use_module(lib/sl_objects).
-:- use_module(lib/sl_recorded_db).
+:- use_module(library(ur_objects)).
+:- use_module(library(ur_recorded_db)).
 :- use_module(html/http_ops).
 :- use_module(html/http_page).
 :- use_module(library(time)).

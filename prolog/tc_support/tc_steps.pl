@@ -42,7 +42,7 @@
 
 :- use_module(logging/logging).
 :- use_module(state/state).
-:- use_module(lib/sl_objects).
+:- use_module(library(ur_objects)).
 :- use_module(tc_support/tc_log).
 
 % Выполнение тест-кейса

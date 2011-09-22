@@ -22,7 +22,7 @@
 
 :- module(http_page, [http_page/3]).
 
-:- use_module(lib/sl_objects).
+:- use_module(library(ur_objects)).
 :- use_module(library(url)).
 
 % Get an http response as a page_v descendant

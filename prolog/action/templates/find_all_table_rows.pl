@@ -24,7 +24,7 @@
 
 :- module(find_all_table_rows, [find_all_table_rows/5]).
 
-:- use_module(library(sl_recorded_db)).
+:- use_module(library(ur_recorded_db)).
 :- use_module(parser/html/html_page_parse).
 :- use_module(parser/html/html_page_find).
 :- use_module(parser/html/table_v_parse).

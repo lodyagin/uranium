@@ -22,8 +22,8 @@
 
 :- module(page_v, ['page_v?'/3]).
 
-:- use_module(lib/sl_atoms).
-:- use_module(lib/sl_objects).
+:- use_module(library(ur_atoms)).
+:- use_module(library(ur_objects)).
 :- use_module(library(xpath)).
 :- use_module(library(js)).
 
