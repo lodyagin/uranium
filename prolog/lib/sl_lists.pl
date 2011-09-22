@@ -1,28 +1,30 @@
-%% This file is a part of Uranium, a general-purpose functional test platform.
-%% Copyright (C) 2011  Sergei Lodyagin
-%%
-%% This library is free software; you can redistribute it and/or
-%% modify it under the terms of the GNU Lesser General Public
-%% License as published by the Free Software Foundation; either
-%% version 2.1 of the License, or (at your option) any later version.
-%% 
-%% This library is distributed in the hope that it will be useful,
-%% but WITHOUT ANY WARRANTY; without even the implied warranty of
-%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-%% Lesser General Public License for more details.
-
-%% You should have received a copy of the GNU Lesser General Public
-%% License along with this library; if not, write to the Free Software
-%% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-%%
-%% e-mail: lodyagin@gmail.com
-%% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
-%% -------------------------------------------------------------------------------
-%%
-
-%  -*-coding: mule-utf-8-unix; fill-column: 58-*-
+%  -*-coding: mule-utf-8-unix; fill-column: 65-*-
 %
-%  Copyright (C) 2009, 2011 Kogorta
+%  This file is a part of Uranium, a general-purpose functional
+%  test platform.
+%
+%  Copyright (C) 2009, 2011  Sergei Lodyagin
+% 
+%  This library is free software; you can redistribute it and/or
+%  modify it under the terms of the GNU Lesser General Public
+%  License as published by the Free Software Foundation; either
+%  version 2.1 of the License, or (at your option) any later
+%  version.
+%  
+%  This library is distributed in the hope that it will be
+%  useful, but WITHOUT ANY WARRANTY; without even the implied
+%  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+%  PURPOSE.  See the GNU Lesser General Public License for more
+%  details.
+
+%  You should have received a copy of the GNU Lesser General
+%  Public License along with this library; if not, write to the
+%  Free Software Foundation, Inc., 51 Franklin Street, Fifth
+%  Floor, Boston, MA 02110-1301 USA
+% 
+%  e-mail: lodyagin@gmail.com
+%  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
+%  ---------------------------------------------------------------
 %
 %  Description      : Data abstraction mechanismes.
 %
@@ -39,7 +41,10 @@
            index_list/4,
            extract_by_key_order/3,
            select_value/4,
+           sort_linked/2,
+           swap_keyed_list/2,
            switch_by_value/4,
+           transpose_list_matrix/2,
            check_option_list/2,
            count_el/3,
            trim_list/4,
@@ -61,7 +66,33 @@ corteging(Functor, [A1|T1], [A2|T2], [Res|T_Res]) :-
   Res =.. [Functor, A1, A2],
   corteging(Functor, T1, T2, T_Res).
 
-%% Head is the first M = min(N, length of List) elements of a List.
+% [v, b, c, u], [_, _, 4, 2], [a, b, c, d] ->
+% [c(v, _G5407563, a), c(b, _G5407671, b), c(c, 4, c), c(u, 2,
+%  d)]
+%corteging(Functor, LL, Res_List) :-
+
+%  findall(H, member([H|_], LL), HL),
+
+%  (   HL = []
+%  ->  Res_List = []
+%  ;   findall(T, member([_|T], LL), TL),
+%      Res =.. [Functor|HL],
+%      corteging(Functor, TL, T_Res),
+%      Res_List = [Res|T_Res]
+%  ).
+
+transpose_list_matrix([], []) :- !.
+
+transpose_list_matrix(L, []) :- flatten(L, []), !.
+
+transpose_list_matrix(A, B) :-
+
+   findall(H, member([H|_], A), A1),
+   findall(T, member([_|T], A), A_),
+   transpose_list_matrix(A_, B_),
+   B = [A1|B_].
+
+%  Head is the first M = min(N, length of List) elements of a List.
 list_head(List, N, Head, M) :- list_head2(List, N, Head, M, 0).
 
 list_head2(_, 0, [], M, M) :- !.
@@ -74,15 +105,16 @@ list_head2([El|List], N, [El|Head], M, M_In) :-
 	succ(M_In, M_In1),
 	list_head2(List, N1, Head, M, M_In1).
 
-%% mapkeys
+%  mapkeys
 mapkeys(_, [], []) :- !.
 
 mapkeys(Pred, [Key1 - Val | Tail1], [Key2 - Val | Tail2]) :-
     call(Pred, Key1, Key2),
     mapkeys(Pred, Tail1, Tail2).
 
-%% Return elements of keyed list in order of keys, defined by another list, 
-%% i.e., extract_by_key_order([1, 5, 2], [2 - abc, 1 - ddd, 5 - 4], [1 - ddd, 5 - 4, 2 - abc])
+%  Return elements of keyed list in order of keys, defined by
+%  another list, i.e., extract_by_key_order([1, 5, 2], [2 - abc,
+%  1 - ddd, 5 - 4], [1 - ddd, 5 - 4, 2 - abc])
 extract_by_key_order([], [], []) :- !.
 
 extract_by_key_order(Order, Source, Destination) :-
@@ -96,9 +128,9 @@ key_order_compare(Order_SSI, Ord, AI - _, BI - _) :-
     ord_memberchk(BI - K2, Order_SSI),
     compare(Ord, K1, K2).
 
-%% return difference between elements for numeric lists, i.e.
-%% In_List - [10, 20, 15, 16, 33]
-%% Diff_List - [10, -5, 1, 17]
+%  return difference between elements for numeric lists, i.e.
+%  In_List - [10, 20, 15, 16, 33]
+%  Diff_List - [10, -5, 1, 17]
 
 num_diff_list([], []) :- !.
 
@@ -110,14 +142,14 @@ num_diff_list(In_List, Diff_List) :-
     Diff_List = [C | Diff_Tail],
     num_diff_list([B | Tail], Diff_Tail).
 
-%% Add indexes to the list from Start in order Succ_Pred(Start, Next) ...
+%  Add indexes to the list from Start in order Succ_Pred(Start, Next) ...
 index_list([], [], _, _) :- !.
 
 index_list([A | Tail], [Start - A | I_Tail], Start, Succ_Pred) :-
     call(Succ_Pred, Start, I1),
     index_list(Tail, I_Tail, I1, Succ_Pred).
 
-%% 
+%  
 swap_keyed_list([], []) :- !.
 
 swap_keyed_list([A - B | T1], [B - A | T2]) :-
@@ -245,5 +277,15 @@ write_delimited2(Write_Pred, Delimiter, El) :-
   call(Write_Pred, Delimiter),
   call(Write_Pred, El).
 
-    
-    
+
+% LU is a list of lists of the same size Sort the first list and
+% change the order of elements in others lists like all elements
+% with the same index are linked in all lists.
+sort_linked(LU, LS) :-
+
+   transpose_list_matrix(LU, LU_Tr),
+   findall(H-T, member([H|T], LU_Tr), Keyed_LU_Tr),
+   keysort(Keyed_LU_Tr, Keyed_LS_Tr),
+   findall([H|T], member(H-T, Keyed_LS_Tr), LS_Tr),
+   transpose_list_matrix(LS_Tr, LS).
+   
