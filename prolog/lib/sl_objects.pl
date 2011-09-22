@@ -26,7 +26,6 @@
 %   Description      : Data abstraction mechanismes.
 %   Created On       : Apr 3 2009
 
-
 :- module(sl_objects, 
           [
            named_arg/3,
@@ -47,6 +46,8 @@
            obj_construct/4,
            obj_construct/5,
            obj_diff/3,
+           obj_diff_print/1,
+           obj_diff_print/2,
            obj_downcast/2,   % +Parent, -Descendant
            obj_downcast/3,   % +Parent, +Class_To, -Descendant
            obj_copy/2,       % +From, -To
@@ -748,10 +749,28 @@ obj_pretty_print(Options, Object) :-
   log_piece([Class, '('], Options),
   change_indent(Options, O2, 2),
   maplist(field_pretty_print(O2, Object), Fields),
-                             log_piece([')'], Options).
+  log_piece([')'], Options).
   %close_log([lf(2, after)]).                           
 
+obj_diff_print(Diff_List) :-
 
+   obj_diff_print([lf(1)], Diff_List).
+
+
+obj_diff_print(Options, Diff_List_U) :-
+
+   sort(Diff_List_U, Diff_List),
+   log_piece('(', Options),
+   change_indent(Options, O2, 2),
+   maplist(one_diff_print(O2), Diff_List),
+   log_piece(')', Options).
+
+
+one_diff_print(Options, diff(Field, Before, After)) :-
+
+   log_piece([Field, ':', Before, '->', After], Options).
+
+                             
 field_pretty_print(Options, Object, Field) :-
 
   named_arg(Object, Field, Value, Type),
@@ -897,18 +916,19 @@ obj_copy(From, To) :-
 % obj_copy(+Field_List, +From, -To)
 %                             
                              
-obj_copy(Field_List, From, To) :-
+obj_copy(Field_List_U, From, To) :-
 
-   ground(Field_List),
-   is_set(Field_List),
+   ground(Field_List_U),
+   is_set(Field_List_U),
+   sort(Field_List_U, Field_List),
    compound(From),
+   functor(From, Functor, _),
 
-   duplicate_term(From, Raw_Copy),
-   length(Field_List, Field_List_Len),
-   length(Var_List, Field_List_Len),
-   maplist(arg_bac(Raw_Copy), Arg_Nums, Field_List),
-   maplist(setarg_tnv(Raw_Copy), Arg_Nums, Var_List), !,
-
+   class_fields(Functor, Obj_Fields_U),
+   sort(Obj_Fields_U, Obj_Fields),
+   ord_subtract(Obj_Fields, Field_List, Reset_List),
+   obj_reset_fields(Reset_List, From, Raw_Copy),
+                             
    obj_copy(Raw_Copy, To).
 
 %
