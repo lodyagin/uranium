@@ -5,7 +5,8 @@
 \selectlanguage{russian}
 \usepackage{listings}
 \usepackage{hyperref}
-\usepackage{underscore}
+\usepackage{underscore} % no need to escape underscore with this pack
+%\usepackage{verbatim}   % multi-line comments
 %\usepackage{sectsty}
 %\usepackage[normalem]{ulem}
 %\usepackage{indentfirst}
@@ -526,7 +527,7 @@ Man1 = man_v(_G3601, 'Tom', _G3603, 3.9, 54).
 другой функтор и арность.
 \end{enumerate}
 
-Поэтому для доступа к полям объекта {\itвсегда\/} используются
+Поэтому для доступа к полям объекта {\it всегда\/} используются
 имена полей. Иными словами, верхний пример нужно переписать таким
 образом:
 
@@ -2420,7 +2421,7 @@ true
 Во всех приведённых примерах в качестве Value использовались
 конкретные значения. Разумеется, можно использовать переменные
 Пролога. Но. Все переменные в поисковом выражении должны быть
-связаны до вызова предиката. Иначе выражение {\bfвсегда} даёт
+связаны до вызова предиката. Иначе выражение {\bf всегда} даёт
 пустое множество найденных элементов.
 
 Перейдём к рассмотрению конкретных предикатов.
@@ -3372,6 +3373,7 @@ true.
 необходимы.)
 
 \section{Термы}
+\label{terms}
 
 Терм - это ёмкое понятие, которое объединяет числа, атомы,
 переменные и структуры. Строго говоря, кроме термов, скобок и
@@ -3745,6 +3747,7 @@ C = 1+1.
 Представьте, что у вас есть указатель, на который вы наложили
 такие правила:
 
+\label{unify_rules}
 \begin{itemize}
 \item[1)] любой указатель всегда имеет начальное значение ---
   неинициализированный указатель указывает сам на себя (1);
@@ -4359,8 +4362,10 @@ sites (\ref{module_sites_sample}).
 \end{example}
 
 Ссылки могут получиться двух типов --- локальные (на тот же сайт)
-и глобальные. Для того, чтобы их отличать, можно воспользоваться
-библиотечным модулем работы с URI:
+и глобальные. Нас, в первую очередь, будут интересовать
+глобальные ссылки, так как именно они обеспечивают продвижение
+``вглубь''. Для того, чтобы их отличать локальных ссылок, можно
+воспользоваться библиотечным модулем работы с URI:
 
 \begin{example}{}{}
 ?- [library(uri)].
@@ -4371,97 +4376,577 @@ sites (\ref{module_sites_sample}).
    fail ; true.
 \end{example}
 
-В данном случае, uri_is_clobal/1 откатывает все локальные
-Url. Но, для общности, их тоже можно преобразовать к глобальным
-следующим образом:
+Как видите, довольно смешанный список. В нём могут присутствовать
+ссылки на разные страницы одного и того же сайта. Можно уменьшить
+немного количество информации, заменив ссылки на страницы одной
+единственной ссылкой на корень сайта. Воспользуемся предикатом
+uri_components/2. С его помощью можно как разобрать URI, так и
+собрать, в зависимости от направления потока данных:
 
 \begin{example}{}{}
-?- site(Site), !, 
-   atom_concat('http://', Site, Base_Url), 
-   http_get(Site, Html, []), 
+?- uri_components('http://example.com/file?a=1&b=2#part2', C).              
+C = uri_components(http, 'example.com', '/file', 'a=1&b=2', part2).
+
+?- uri_components(Url, uri_components(https, 'bank.com', '/deposit', 'sum=30
+00', 'window2')).                                                           
+Url = 'https://bank.com/deposit?sum=3000#window2'.
+\end{example}
+
+По сути, в первом случае, мы получаем то, что в других языках
+называется record (обратите внимание --- её имя совпадает с
+именем предиката, в этом нет особого смысла, просто так захотели
+разработчики библиотеки, вероятно, для того, чтобы не плодить
+новых имён).
+
+Для доступа к структуре uri_components/5 можно было бы
+использовать банальную унификацию в сочетании с анонимными
+переменными:
+
+\begin{example}{}{}
+?- uri_components('http://example.com/file?a=1&b=2#part2', C),
+   C = uri_components(_, Site, _, _, _).
+
+Site = 'example.com'.
+\end{example}
+
+(помните правило (6) унификации \ref{unify_rules}?)
+
+Кстати, мы использовали анонимную переменную `_' --- это особая
+переменная, единственная в своём роде. Сколько бы \verb|_| не
+встречалась, она всегда означает новую переменную, анонимную
+(попробуйте \verb|write((_, _, _)).|) В Прологе она используется,
+в зависимости от направления движения --- либо чтобы
+проигнорировать результат, либо, чтобы передать в предикат
+несвязанную переменную. В данном примере мы скормили ей все
+неинтересные части.
+
+Однако, возвращаясь к последнему примеру. Зависимость от арности
+и позиционная привязанность давно считаются mauvais ton. Та же
+библиотека \verb|uri| предоставляет аксессор к структуре:
+
+\begin{example}{}{}
+?- uri_components('http://example.com/file?a=1&b=2#part2', C),
+   uri_data(Field, C, Value), 
+   format("uri_data(~a, C, ~q)\n", [Field, Value]), 
+   fail ; true.                                                             
+
+uri_data(scheme, C, http)
+uri_data(authority, C, 'example.com')
+uri_data(path, C, '/file')
+uri_data(search, C, 'a=1&b=2')
+uri_data(fragment, C, part2)
+\end{example}
+
+То есть, как вы поняли, в нашем случае 
+
+\begin{example}{}{}
+?- uri_components('http://example.com/file?a=1&b=2#part2', C),
+   uri_data(authority, C, Value).                                           
+
+Value = 'example.com'.
+\end{example}
+
+Это даёт нам возможность написать следующий предикат:
+
+\begin{example}{}{}
+:- module(sites, [site/1, page_link/2]).
+
+...
+
+% page_link(+Page, ?Link_To_Site) is nondet
+page_link(Page, Link_To_Site) :-
+
+   http_get(Page, Html, []),
    xpath(Html, //a(@href), Href), 
-   uri_resolve(Href, Base_Url, Url), 
-   writeln(Url), 
-   fail ; true.
+   uri_is_global(Href), uri_components(Href, Comps), 
+   uri_data(scheme, Comps, http), % it counts only http links
+   uri_data(authority, Comps, Link_To_Site).
 \end{example}
 
-Всю работу делает за нас uri_resolve/3. Нам остаётся только
-дополнять сайты префиксом 'http://' для получения Base_Url,
-соответствующего Url синтаксису. Эту работу за нас может делать
-отдельный предикат, который проверит, в какой форме хранится
-ссылка:
+Логический смысл page_link/2 следующий: предикат истенен тогда и
+только тогда, когда страница Page содержит ссылку на сайт
+Link_To_Site. Допустимые направления движения отмечены в
+комментарии. \verb|+Page| означает, что страница должна
+подаваться на вход (иными словами, Page должна быть уже связана),
+а Link_To_Site допускает любые формы унификации (иными словами,
+мы можем давать готовое имя на проверку или получать список
+ссылок с помощью одного и того же предиката). Комментарий is
+nondet --- это предупреждение программисту о том, что предикат
+может оставлять choise point (недетерминированные предикаты
+требуют либо циклов либо отсечений; даже если мы подаём оба
+аргумента связанными, мы можем получить столько решений true,
+сколько раз на странице будет встречена ссылка на Link_To_Site).
 
-\begin{example}{Предикат site_url}{site_url_sample}
-?- site_url(Url) :- 
-
-  site(Site),
-  (  atom_concat('http://', _, Site)
-  -> Url = Site
-  ;  atom_concat('http://', Site, Url)
-  ). 
-\end{example}
-
-Некоторая замысловатость условия объясняется тем, что
-atom_concat/3, предикат конкатенации атомов --- это улица с
-четырёхсторонним движением. Два любых аргумента должны быть
-связаны:
+Давайте построим на основе page_link ещё один предикат, на этот
+раз детерминированный.
 
 \begin{example}{}{}
-?- atom_concat('Yes, it is Prolog, ', 'baby', X).
-X = 'Yes, it is Prolog baby'.
+:- module(sites, [site/1, page_link/2, page_links/2]).
 
-?- atom_concat('Yes, it is not ', X, 'Yes, it is not A wimp').
+...
+
+% page_links(+Page, -Site_List) is det
+page_links(Page, Site_List) :-
+
+  findall(Link, page_link(Page, Link), Link_List),
+  sort(Link_List, Site_List).
+\end{example}
+
+findall/3 действует по такой схеме. Запускает второй аргумент
+столько раз, сколько решений он содержит, на каждом проходе
+заново унифицирует свой первый аргумент и составляет список по
+результатам всех проходов, который возвращает в третьем
+аргументе. sort/2 сортирует полученный список, удаляя все
+повторения. \To, на выходе получаем не просто список, а
+множество (= список без повторений). Предикат детерминированный и
+допускает только одно направление движения (на это указывают
+знаки \verb|+| и \verb|-| в комментарии)
+
+\begin{example}{}{}
+?- site(Site), !, page_links(Site, Links).
+
+Site = 'www.classicfm.co.uk',
+Links = ['123sing.classicfm.com', 'adserver.adtech.de', 'dating.classicfm.co
+.uk', 'icls.fimc.net', 'moviemusicchart.classicfm.co.uk', 'promo.classicfm.c
+o.uk', 'ukrp.musicradio.com', 'www.classicfm.co.uk', 'www.classicfm.com'|...
+].                                                                         
+\end{example}
+
+В принципе, можно было бы так и оставить, но, для того, чтобы
+привести пару дополнительных примеров и дать полезный набор
+Пролог-приёмов, давайте избавимся от многоуровневых
+доменов. Строго говоря, 123sing.classicfm.com и
+moviemusicchart.classicfm.co.uk - это ссылки на один и тот же
+сайт.
+
+\section{Большой и нужный пример}
+
+Можно было бы иметь список доменов верхнего уровня (.com, .de,
+.co.uk) и сокращать все остальные ссылки до доменов следующего
+уровня - classicfm.com, adtech.de, classicfm.co.uk. Но для этого
+надо разбить доменное имя на компоненты.
+
+Я не льщу себя надеждой, что вы помните, как это
+делается. Но о предикате, который способен это делать я
+уже говорил.
+
+Небольшая подсказка:
+
+\begin{example}{}{}
+?- concat_atom([www, kogorta, dp, ua], '.', A).
+A = 'www.kogorta.dp.ua'.
+\end{example}
+
+Подсказка номер 2: \verb|concat_atom(?List, +Separator, ?Atom)|
+
+Итого
+
+\begin{example}{}{}
+?- concat_atom(L, '.', 'www.kogorta.dp.ua').
+
+L = [www, kogorta, dp, ua].
+\end{example}
+
+Да, он работает в обе стороны. Как и большинство предикатов,
+принимающих списки.
+
+Алогритм решения проблемы я предлагаю следующий
+
+
+\begin{enumerate}
+\item Создаём базу доменов верхнего уровня.
+\item Для каждого элемента списка Site_List в начале
+  ``откусываем'' домен верхнего уровня, если он присутствует в
+  базе.
+\item Если домен верхнего уровня в базе отсутствует, то, берём
+  хвостовой компонент имени и помещаем его в базу доменов
+  верхнего уровня, предупреждая пользователя.
+\item От оставшегося имени оставляем только последний компонент и
+  заново склеиваем с откусанным хвостом.
+\item Заново сортируем список получившихся сайтов, удаляя дубликаты.
+\end{enumerate}
+
+Вот таким может быть начальный список высокоуровневых доменов:
+
+\begin{example}{}{}
+:- module(sites, [top_level/1, ....]).
+
+:- dynamic top_level/1.
+
+top_level('.com').
+top_level('.net').
+top_level('.org').
+top_level('.info').
+top_level('.co.uk').
+top_level('.dp.ua').
+
+....
+\end{example}
+
+\verb|:- dynamic| говорит о том, что предикат top_level/1
+будет дополняться программой в процессе выполнения.
+
+Откусывание хвоста будем производить с помощью тоже уже
+известного нам atom_concat/3.
+
+atom_concat/3, предикат конкатенации атомов --- это улица с
+четырёхсторонним движением. Его ``дорожные знаки'':
+\verb|atom_concat(?A1, ?A2, ?A3)|, но есть ещё ``регулировщик'':
+хотя бы один аргумент должен быть связан:
+
+\begin{bigexample}{}{}
+?- atom_concat('It is Prolog, ', 'baby', X).
+X = 'It is Prolog, baby'.
+
+?- atom_concat('Yes, I am not ', X, 'Yes, I am not A wimp').
 X = 'A wimp'.
 
-?- atom_concat(X, atom, 'has no deal with that atom').
-X = 'has no deal with that '.
+?- atom_concat(X, atom, 'has deal with that atom').
+X = 'has deal with that '.
+
+?- atom_concat('Do you know ', 'Prolog baby?', 'Do you know me?').
+false.
  
 ?- atom_concat('Do you know ', X, 'I know Prolog ').
 false.
 
-?- atom_concat('Do you know ', 'Prolog baby?', 'Do you know me?').
+?- atom_concat(X, X, 'But I know Prolog!').
+false. % Oops
+
+?- atom_concat(X, Y, 'Really I know it?'), 
+   format("~a * ~a\n", [X, Y]),                                             
+   fail; writeln('shure!').                                                
+
+ * Really I know it?
+R * eally I know it?
+Re * ally I know it?
+Rea * lly I know it?
+Real * ly I know it?
+Reall * y I know it?
+Really *  I know it?
+Really  * I know it?
+Really I *  know it?
+Really I  * know it?
+Really I k * now it?
+Really I kn * ow it?
+Really I kno * w it?
+Really I know *  it?
+Really I know  * it?
+Really I know i * t?
+Really I know it * ?
+Really I know it? * 
+shure!
+
+?- atom_concat(X, X, 'more more ').
+X = 'more '. 
+% Dude
+
+?- atom_concat(Ido, Ido, Ido).
+ERROR: atom_concat/3: Arguments are not sufficiently instantiated
+\end{bigexample}
+
+Для ``откусывания'' хвоста нам нужно использовать его в форме
+\verb|atom_concat(-A1, +A2, +A3)|:
+
+\begin{example}{}{}
+?- atom_concat(X, '.org', 'www.swi-prolog.org').
+
+X = 'www.swi-prolog'.
+\end{example}
+
+Этап, который называется ``откусываем хвостовой компонент имени и
+помещаем его в базу доменов верхнего уровня, предупреждая
+пользователя'' логически разбивается на 3 части: определение
+потенциального домена верхнего уровня, помещение домена в базу и
+предупреждение пользователя.
+
+Первое действие можно запрограммировать, основываясь на таком
+эвристическом правиле: если домен первого уровня содержит больше
+2-х букв, то считать его верхним, иначе, если домен второго низкого
+уровня содержит не более 3-х букв, то считать домен 2-го уровня
+верхним, иначе считать верхним уровнем только 1-ый:
+
+\begin{example}{Эвристическое определение домена верхнего уровня}{top_level2}
+top_level(Domain, Top_Domain) :-
+
+  concat_atom(Parts_R, '.', Domain),
+  reverse(Parts_R, [First, Second|_]),
+  (  atom_length(First, First_Len), First_Len > 2
+  -> Top = [First]
+  ;  atom_length(Second, Second_Len), Second_Len =< 3
+  -> Top = [First, Second]
+  ;  Top = [First]
+  ),
+  reverse(Top, Top_R),
+  concat_atom([''|Top_R], '.', Top_Domain).
+\end{example}
+
+Здесь унификация второго аргумента с выражением
+\verb|[First, Second|_]| это аналог:
+
+\begin{example}{}{}
+?- [a, b, c] = [Head|Tail].
+
+Head = a,
+Tail = [b, c].
+\end{example}
+
+(Пролог очень любит лакомиться списками, в частности, откусывать
+от них голову. В примере \ref{top_level2} мы лакомимся также
+шеей, зато всё остальное скармливаем анонимной
+переменной. Запомните --- Пролог всегда ест списки с головы!
+Потому мы его переворачиваем два раза --- до и после трапезы).
+
+Вопросы любознательным --- что будет, если Domain содержит только
+один компонент ($Domain = com$)? Зачем мы приставляем ``пустую
+голову'' к списку в последнем concat_atom?
+
+\begin{example}{}{}
+?- top_level('www.example.com', T).                                         
+T = '.com'.
+
+?- top_level('example.com.ua', T).                                          
+T = '.com.ua'.
+
+?- top_level('www.example.co.uk', T).                                       
+T = '.co.uk'.
+\end{example}
+
+Для добавление предиката в базу Пролога используется предиакт
+assertz. Буква `z' говорит о том, что мы хотим добавить в конец
+базы (база Пролога упорядочена).
+
+\begin{example}{}{}
+?- top_level('.name').
+false.
+
+?- assertz(top_level('.name')).
+
+?- top_level('.name').
+true.
+\end{example}
+
+Предикаты, добавленные в базу будут там, пока мы не выйдем из
+Пролога. Для удаления ошибочных записей делайте так:
+
+\begin{example}{}{}
+?- retractall(top_level('.name')).
+\end{example}
+
+(retractall удаляет все записи, унифицирующиеся с
+аргументов. Если вы добавили .name два раза, то retractall
+удалит оба вхождения, в отличии от retract/1).
+
+\begin{example}{}{}
+?- top_level('.name').
+false.
+
+?- assertz(top_level('.name')).
+
+?- assertz(top_level('.name')).
+
+?- top_level('.name').
+true ;
+true.
+\end{example}
+
+Обычно, дублирование фактов, это не то, что мы ожидаем.
+Потому лучше лишний раз от этого застраховаться:
+
+\begin{example}{}{}
+?- A = top_level('.name'), \+ A -> assertz(A).
+A = top_level('.name').
+
+?- A = top_level('.name'), \+ A -> assertz(A).
 false.
 \end{example}
 
-То есть, в примере \ref{site_url_sample} мы дополняем только те
-Url, которые не содержат префикс 'http://'. Кстати, мы
-использовали переменную `_' --- это особая переменная,
-единственная в своём роде. Сколько бы \verb|_| не встречалась,
-она всегда означает новую переменную, анонимную (попробуйте
-\verb|write((_, _, _)).|) В Прологе она используется, в
-зависимости от направления движения --- либо чтобы
-проигнорировать результат, либо, чтобы передать в предикат
-несвязанную переменную. \verb|atom_concat('http://', _, Site)|
-будет извлекать в неё часть после 'http://', поскольку нас здесь
-интересует только тот факт, начинается ли Site с http://.
+(Вспомните раздел \ref{terms}. Мы там говорили о том, что
+предикат или структура --- это в зависимости от контекса. Данный
+пример показывает, как можно в одном выражении использовать
+top_level/2 в двух контекстах. Если вас всё ещё смущает выражение
+\verb|\+ A|, то попробуйте следующий пример:
 
 \begin{example}{}{}
-?- site_url(Base_Url),                                             
-   http_get(Base_Url, Html, []),                                  
-   xpath(Html, //a(@href), Href), 
-   uri_resolve(Href, Base_Url, Url), 
-   writeln(Url), 
-   assertz(site(Url)), 
+?- X = 'Hello again!',
+   Y = writeln(X), Z = writeln(Y), 
+   Y, Z.
+\end{example}
+
+Итак, мы умеем проверить наличие факта в базе и добавить его,
+если он отсутствует.
+
+Нам, для реализации задуманного, осталась часть, которая будет
+проходиться по списку и менять имена.
+
+Для начала предлагаю оформить операцию замены одиночного имени в
+отдельный предикат:
+
+\begin{example}{}{}
+% domain_site(+Domain, ?Site) is det
+domain_site(Domain, Site) :-
+
+  (
+      % The Top domain is already present in top_level/1
+      top_level(Top)
+  ;
+      % There is not known top level for Domain
+      % Try determine it by top_level/2
+      top_level(Domain, Top),
+      format("Add the new top level: [~a]\n", Top),
+      assertz(top_level(Top)),
+   ),
+
+   atom_concat(Subdomain, Top, Domain), !,
+   concat_atom(Subdomain_R, '.', Subdomain),
+   reverse(Subdomain_R, [Site_Part|_]),
+   atom_concat(Site_Part, Top, Site).
+\end{example}
+
+Предикат domain_site состоит из двух частей. Первая часть
+генерирует домены верхнего уровня. Сначала идёт перебор базы
+top_level/1 и, если ничего не нашли, выполняется вторая часть ИЛИ
+--- ``выкусывание'' домена верхнего уровня с помощью top_level/2
+и добавление его в базу.
+
+Вторая часть начинается с atom_concat/3. Она одновременно
+тестирует, что Domain заканчивается на Top и, в случае успеха,
+унифицирует Subdomain с начальной частью. Как только это удаётся,
+сразу выполняется отсечение (!). Срабатывание отсечения
+заключается в том, что после перехода потока управления через
+отсечения все закладки, видимые в данном предикате, будут сразу
+вытащены\footnote{Видимые в предикате означает, что для choice
+  point, поставленной не в процессе выполнения предиката и всех
+  его вложенных вызовов (например, choice point предиката,
+  вызвавшего domain_site/2) закладка сохранится.}. Отсечение
+здесь необходимо, чтобы больше не происходил возврат в
+генераторную часть (fail может быть также в предикате, который
+нас вызовет, а правила хорошего тона программирования на Прологе
+обязывают разработчика предиката никогда ``не подсовывать
+свинью'' тому, кто будет нас вызывать. ``Не подсовывать свинью''
+--- это значит не оставлять бессмыесленных choice points, а тем
+более, нарушать конвенкцию is det, объявленную в
+комментарии. Иными словами --- всегда следите за возможными
+choice points --- восклицательный знак вам в руки!)
+
+Внимательный читатель может сказать, что предикат сделан не очень
+оптимально. Действительно, зачем генерировать все возможные
+варианты, а потом их проверять. Это равносильно написанию:
+
+\begin{example}{}{}
+?- between(1, 1000, X),
+   between(1, 1000, Y),
+   between(1, 1000, Z),
+   Z2 is Z * Z,
+   Z2 is X * X + Y * Y,
+   format("~d^2 + ~d^2 = ~d^2\n", [X, Y, Z]),
    fail ; true.
 \end{example}
 
+(\verb|=:=| - это арифметическое равенство, не путать с \verb|=|
+--- унификацией).
+
+То есть работает, но большую часть времени тратит в пустую
+(сравните по скорости, хотя бы с)
 
 \begin{example}{}{}
-lets_play(Weather, Game) :-
-
-   ( Weather = 'black ice' -> Game = skate ; true ),
-   ( Weather = fog         -> Game = 'hide-and-seek' ; true ),
-   ( Weather = snow        -> Game = snowball ; true ).
+?- between(1, 1000, Z),
+   Z2 is Z * Z,
+   Max_X is floor(sqrt(Z2)),
+   between(1, Max_X, X),
+   Y2 is Z2 - X * X,
+   Y2 > 0, Y is round(sqrt(Y2)), Y2 =:= Y * Y, % test whether Y2 is Y^2
+   format("~d^2 + ~d^2 = ~d^2\n", [X, Y, Z]),
+   fail ; true.
 \end{example}
 
+(Если вы до сих пор считаете, что оптимизация --- это потеря
+времени, выполните оба примера).
 
-Давайте рассмотрим ещё один пример.
+Вот тут есть корень проблем горе-программистов. То, что на
+Прологе можно написать выражение с декларативной семантикой не
+означает, что не надо думать о производительности.
+
+Потому, давайте, не откладывая оптимизацию в долгий ящик,
+сразу попробуем писать эффективно (хотя бы для того, чтобы нас не
+считали горе-программистами):
 
 \begin{example}{}{}
-?- weather(England_Weather), weather(Spain_Weather), 
-   format("~a\t~a\n", [England_Weather, Spain_Weather]), 
-   fail; true.
+% domain_site(+Domain, ?Site) is det
+domain_site(Domain, Site) :-
+
+  (
+      % The Top domain is confirm our rules and 
+      % is already present in top_level/1
+      top_level(Domain, Top),
+      top_level(Top)
+  ;
+      % May be it is an exception from top_level/2 rule
+      top_level(Top)
+  ;
+      % There is not known top level for Domain
+      % Try determine it by top_level/2
+      top_level(Domain, Top),
+      format("\nAdd the new top level: [~a]", Top),
+      assertz(top_level(Top))
+   ),
+
+   atom_concat(Subdomain, Top, Domain), !,
+   concat_atom(Subdomain_R, '.', Subdomain),
+   reverse(Subdomain_R, [Site_Part|_]),
+   atom_concat(Site_Part, Top, Site).
 \end{example}
 
+Мы сразу попытались использовать нашу эвристику, чтобы не вести
+полный перебор. Если не угадали --- будем перебирать
+всё. Заметте, однако, что во втором случае top_level/1 просмотрит
+тот домен, который уже просматривался в первом --- choice point
+--- это вещь очень статическая, она не мигрирует между двумя
+вызовами одного и того же предиката (вспомните long jump). Однако
+данная потеря не значительная.
+
+Ну что, по-сути предикат обработки одного элемента списка у нас
+есть. Для того, чтобы, как сейчас принято умно выражаться,
+``масштабировать'' наш алгоритм, достаточно познакомиться с
+операцией maplist (она имеет арность от 2 и выше, по количеству
+обрабатываемых списков - 1). Нам, для данного случая, подойдёт
+maplist/2:
+
+\begin{example}{}{}
+?- maplist(domain_site, 
+           ['www3.ibm.com', 'www.kogorta.dp.ua',
+             'farnell.co.uk'], L).
+
+L = ['ibm.com', 'kogorta.dp.ua', 'farnell.co.uk'].
+\end{example}
+
+Итак, мы добрались до финального примера раздела!
+
+\begin{example}{}{}
+?- site(Site), !,  % Get our favorit site
+   page_links(Site, Links), % Find all links from it
+   maplist(domain_site, Links, Sites_Rep), % Domains to sites cancellation
+   sort(Sites_Rep, Sites). % Remove all dups
+
+Add the new top level: [.de]
+
+Site = 'www.classicfm.co.uk',
+
+Links = ['123sing.classicfm.com', 'adserver.adtech.de',
+  'dating.classicfm.co .uk', 'icls.fimc.net',
+  'moviemusicchart.classicfm.co.uk', 'promo.classicfm.c o.uk',
+  'ukrp.musicradio.com', 'www.classicfm.co.uk',
+  'www.classicfm.com'|...],                                                                        
+ 
+Sites_Rep = ['classicfm.com', 'adtech.de', 'classicfm.co.uk',
+  'fimc.net', 'c lassicfm.co.uk', 'classicfm.co.uk',
+  'musicradio.com', 'classicfm.co.uk', 'cl assicfm.com'|...],                                                        
+ 
+Sites = ['adtech.de', 'classicfm.co.uk', 'classicfm.com',
+  'fimc.net', 'music radio.com', 'omniture.com'].                                               
+\end{example}
+
+Последняя из распечатанных переменных, Sites, содержит как раз
+то, что мы искали.
 
 \end{document}
