@@ -133,7 +133,7 @@ write_piece(Stream, Options, Piece) :-
 
 check_logger(Options) :-
 
-    % Если задан логгер, то он должен быть включен.
+    % If logger/1 is present in options it should be enabled
     (   memberchk(logger(Logger_Name), Options)
     -> logging:logger(Logger_Name, enabled), !
     ;  true
