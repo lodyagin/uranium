@@ -438,6 +438,9 @@ load_class_module(Class, Meta, Module_Path) :-
   % import copy/3 predicates
   dynamic_import(Class, objects, copy),
  
+  % import downcast/4 predicates
+  dynamic_import(Class, objects, downcast),
+
   % process typedefs
   (  Class:current_predicate(typedef/2),
      Class:typedef(TD_Type, TD_List),
@@ -478,11 +481,11 @@ load_class_module(Class, Meta, Module_Path) :-
   % process new_class/3,4
        
   (
-     (  current_predicate(Class:new_class/3),
-        Class:new_class(Class_X, Parent_X, Add_Fields_X)
-     ;  
-        current_predicate(Class:new_class/4),
-        Class:new_class(Class_X, Parent_X, Add_Fields_X, Key_X)
+     Class:current_predicate(new_class, New_Class_Head),
+     functor(New_Class_Head, _, New_Class_Arity),
+     (  New_Class_Arity =:= 3
+     -> Class:new_class(Class_X, Parent_X, Add_Fields_X)
+     ;  Class:new_class(Class_X, Parent_X, Add_Fields_X, Key_X)
      ),
 
      % import class with its descendants
@@ -502,12 +505,8 @@ load_class_module(Class, Meta, Module_Path) :-
                    'does not contain a definition for a class',
                    Class, '(no new_class/3 predicate was found)'])
      )
-  ),
+  ).
 
-  % import downcast/4 predicates
-  
-  (current_predicate(Class:downcast/4) ->
-   objects:import(Class:downcast/4) ; true).
                             
 %
 % import all predicates with head Functor as dynamic assert
