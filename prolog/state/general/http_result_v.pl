@@ -22,4 +22,5 @@
 
 :- module(http_result_v, []).
 
-new_class(http_result_v, object_v, [url, timestamp]).
+new_class(http_result_v, object_v, [url, timestamp],
+          [url, timestamp]).
