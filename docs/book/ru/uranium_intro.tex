@@ -1520,7 +1520,7 @@ Site = 'example.com'.
 и позиционная привязанность давно считаются mauvais ton. Та же
 библиотека \verb|uri| предоставляет аксессор к структуре:
 
-\begin{example}{}{}
+\begin{example}{Использование uri_data}{uri_data_sample}
 ?- uri_components('http://example.com/file?a=1&b=2#part2', C),
    uri_data(Field, C, Value), 
    format("uri_data(~a, C, ~q)\n", [Field, Value]), 
@@ -4087,7 +4087,7 @@ citizen_v(man,Vladimir,Pickwick,_G2582,_G2583,[Soviet Union],_G2585
 правильном построении выражения запроса и использовании
 предикатов данного раздела.
 
-Вот определение языка запроса в нотации Бэкуса-Науэра:
+Вот определение языка запроса в виде нотации Бэкуса-Науэра:
 
 \begin{genexample}{}{}
 expr ::= expr \/ expr
@@ -4095,6 +4095,7 @@ expr ::= expr /\ expr
 expr ::= ( expr )
 expr ::= field(Value) | field(+bound) | field(+free) | true
 expr ::= field(\+ Value)
+expr ::= functor(Functor) | functor(\+ Functor)
 \end{genexample}
  
 Операция \verb|\/| означает слияние двух подвыражений по ИЛИ,
@@ -4127,6 +4128,9 @@ country(\+ 'Soviet Union') /\ country(+bound)
 
 (country('Soviet Union') \/ country(+free)) /\ name('Vladimir') 
 % человек, потенциально, из SU
+
+functor(callup_v)
+% военнообязанный
 
 true
 % выбор всех объектов
@@ -4242,13 +4246,14 @@ citizen_v(man,_G1843,Mayakovsky,_G1845,_G1846,[Soviet Union],_G1848
 работать не будет:
 
 \begin{example}{}{}
-?- db_iterate(people, sex(\+ man) \/ (class(\+ man_v) \/ class(\+ ci tizen_v)), _, Ref), 
+?- db_iterate(people, 
+      sex(\+ man) \/ (class(\+ man_v) \/ class(\+ citizen_v)), 
+      _, Ref), 
    db_erase(Ref), fail; true.                    
 
 ?- dump_db([lf(1)], people).
 [90]: man_v(man,Adam,_G1844,_G1845,_G1846) 
-citizen_v(man,_G1843,Mayakovsky,_G1845,_G1846,[Soviet Union],_G1848
-,_G1849)                                                          
+citizen_v(man,_G1843,Mayakovsky,_G1845,_G1846,[Soviet Union],_G1848,_G1849)                                                          
 shampoo_v(_G1842,Schwarzkopf,man) 
  :[logging]
 \end{example}
@@ -4257,8 +4262,19 @@ shampoo_v(_G1842,Schwarzkopf,man)
 
 Данное свойство поисковых выражением объясняется требованием их
 эффективной реализации. Вычислимые поля на Прологе нельзя
-подставить в SQL запрос при использовании внешней базы. В данном
-случае, на помощь приходит третья форма предиката -
+подставить в SQL запрос при использовании внешней
+базы. Единственным исключением является поле functor, для
+которого предусмотрен соответствующий запрос (functor --- это, по
+сути, имя таблицы, при использовании SQL).
+
+\begin{example}{}{}
+?- db_iterate(people, functor(shampoo_v), _, Ref).
+
+?- db_iterate(people, functor(\+ shampoo_v), _, Ref).
+\end{example}
+
+В случае необходимости фильтрации по другим вычислимым полям
+(например, class), на помощь приходит третья форма предиката -
 db\_iterate/5.
 
 \subsection{db\_iterate/5}

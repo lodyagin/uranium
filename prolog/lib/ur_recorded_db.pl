@@ -438,6 +438,7 @@ and_list_query([Head | Tail], Head /\ QTail) :-
 % expr ::= ( expr )
 % expr ::= field(Value) | field(+bound) | field(+free) | true
 % expr ::= field(\+ Value)
+% expr ::= functor(Functor) | functor(\+ Functor)
 %
 
 check_record(true, _) :- !.
@@ -463,6 +464,14 @@ check_record(not_value(Num, Val), Record) :-
    !, arg(Num, Record, Value), !,
    ground(Value),
    Val \= Value.
+
+check_record(functor(Functor), Record) :-
+
+   !, functor(Record, Functor, _).
+
+check_record(not_functor(Functor), Record) :-
+
+   !, \+ functor(Record, Functor, _).
 
 check_record(/\(Expr1, Expr2), Record) :-
 
@@ -490,6 +499,10 @@ resolve_args(Class, Query, Arg_Query) :-
    resolve_args2(Descriptor, Query, Arg_Query), !.
 
 resolve_args2(_, true, true) :- !.
+
+resolve_args2(_, functor(\+ Functor), not_functor(Functor)) :- !.
+
+resolve_args2(_, functor(Functor), functor(Functor)) :- !.
 
 resolve_args2(Descriptor, Expr, Arg_Query) :-
 
