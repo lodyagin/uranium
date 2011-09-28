@@ -27,6 +27,7 @@
 :- use_module(library(ur_recorded_db)).
 :- use_module(library(ur_objects)).
 :- use_module(library(xpath)).
+:- use_module(logging/logging).
 
 %
 % Parse DOM of html page and create a list of objects
@@ -56,12 +57,18 @@ extract_element(Page, Class, Object) :-
   atom_concat(Class, '_parse', Pred),
   atom_concat('parser/html/', Pred, Module),
   use_module(Module, [Pred/2]),
-  call(Pred, Data, Object),
+  write_log(['Call ', Pred], [logger(html_page_parse)]),
+  call(Pred, Data, Object1),
+
   named_args_unify(Page, [url, timestamp],
                    [Obj_Url, Obj_Timestamp]),
-  named_args_unify(Object, [url, timestamp],
-                   [Obj_Url, Obj_Timestamp]).
-        
+  named_args_unify(Object1, [url, timestamp],
+                   [Obj_Url, Obj_Timestamp]),
+  
+  obj_downcast(Object1, Object).
 
+
+% object - tag mapping
 element_type_tag(table_v, table).
 element_type_tag(form_v, form).
+element_type_tag(link_v, a).

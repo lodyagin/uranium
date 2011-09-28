@@ -40,8 +40,7 @@ table_v_parse(Data, Object) :-
   get_table_header(Data, Header),
   get_table_rows(Data, Rows),
   obj_construct(table_v, [header, rows], [Header, Rows],
-                Object1),
-  obj_downcast(Object1, Object).
+                Object).
 
 get_table_header(DOM, Header) :-
 

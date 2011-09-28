@@ -33,10 +33,9 @@ form_v_parse(DOM, Object) :-
           parse_form_input_field(DOM, Input_Field),
           Input_Field_List),
   obj_construct(form_v, [input_field_list], [Input_Field_List],
-                Object1),
-  obj_downcast(Object1, Object).
-  
+                Object).
 
+                                
 % Return all input fields on bt
   
 parse_form_input_field(DOM, Input_Field_Object) :-
