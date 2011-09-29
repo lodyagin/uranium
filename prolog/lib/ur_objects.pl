@@ -218,10 +218,6 @@ named_args_unify2(Term,
     named_arg(Term, Field_Name, Value),
     named_args_unify2(Term, FN_Tail, V_Tail).
 
-%
-% Классы
-%
-
 obj_field(Object, Field_Name, Value) :-
 
     named_arg(Object, Field_Name, Value).

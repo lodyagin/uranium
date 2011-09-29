@@ -44,7 +44,7 @@ html_page_parse(DB_Key, Page, Elements_To_Extract) :-
 
 extract_elements(DB_Key, Page, Class) :-
 
-  db_record_all(DB_Key, extract_element(Page, Class)).
+  db_put_objects(DB_Key, extract_element(Page, Class), [ignore]).
 
 
 % extract_element(+Page, +Class, -Object)

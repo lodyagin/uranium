@@ -32,6 +32,7 @@
            bind_term_in_db/2,
            db_put_object/2,  % +DB_Key, ?Object
            db_put_object/3,  % +DB_Key, ?Object, +Options
+           db_put_objects/3, % +DB_Key, :Pred, +Options
            filter_on_db/3,
            dump_db/1,  % +DB_Key
            dump_db/2,  % +Options, +DB_Key
@@ -46,7 +47,6 @@
            db_object_class/2,
            db_move_all_data/2,
            db_copy/2,
-           db_record_all/2,
            db_search/3,
            db_size/2,        % +DB_Key, ?Size
            db_merge/2,  % by key
@@ -65,10 +65,10 @@
 :- use_module(library(lists)).
 :- use_module(logging/logging).
 
-:- module_transparent db_record_all/2, db_search/3, db_iterate_replace/3,
-                      db_iterate_replace/4, db_iterate_replace/5,
-                      db_iterate_replace2/4,
-                      db_iterate/5.
+:- module_transparent db_put_objects/3, db_search/3,
+                      db_iterate_replace/3, db_iterate_replace/4,
+                      db_iterate_replace/5,
+                      db_iterate_replace2/4, db_iterate/5.
 
 
 db_recorded(DB_Key, Term) :-
@@ -121,7 +121,8 @@ clear_db(DB_Key) :-
     ;
     true.
 
-% Конкретизирует терм в базе при условии его унификации
+% Unify term with DB and write it to DB
+% Is nondet.
 bind_term_in_db(DB_Key, Term) :-
 
     db_recorded(DB_Key, Term, Ref),
@@ -163,7 +164,21 @@ db_put_object(DB_Key, Object, Options) :-
    ).
 
 %
-% Удаляет объекты по ключу
+% Record all solutions of the Pred.
+% It is like findall/3, but use the last arg of Pred
+% as a template.
+% Use the same Options as db_put_objects.
+% When Options = [] will raise exception on key duplicates.
+%
+
+db_put_objects(DB_Key, Pred, Options) :-
+
+   call(Pred, Object),
+   db_put_object(DB_Key, Object, Options),
+   fail ; true.
+
+%
+% Erase object by a key
 %
 
 db_erase_object(DB_Key, Key, Key_Value) :-
@@ -361,20 +376,6 @@ db_move_all_data(From_DB, To_DB) :-
   fail
   ;
   true.
-
-%
-% Record all solutions of the Pred.
-% It is like findall/3, but use the last arg of Pred
-% as a template.
-%
-
-db_record_all(DB_Key, Pred) :-
-
-   call(Pred, Object),
-   db_recordz(DB_Key, Object),
-   fail
-   ;
-   true.
 
 % Get a number of recrods
 
