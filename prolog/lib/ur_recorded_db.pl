@@ -29,7 +29,6 @@
 
 :- module(ur_recorded_db,
           [clear_db/1,
-           bind_term_in_db/2,
            db_put_object/2,  % +DB_Key, ?Object
            db_put_object/3,  % +DB_Key, ?Object, +Options
            db_put_objects/3, % +DB_Key, :Pred, +Options
@@ -43,7 +42,10 @@
            db_iterate_replace/3,  % +DB_Key, +Pred, +Query
            db_iterate_replace/4,  % +DB_Key, +Pred, +Query, +Count
            db_iterate_replace/5,  % +DB_Key, +Pred, +Query, +Count, +Pred2
-           db_reset/3,
+           
+           db_change/4,   % +DB_Key, +Fields, +Vals, +Query
+           db_reset/3,    % +DB_Key, +Fields, +Query
+           
            db_object_class/2,
            db_move_all_data/2,
            db_copy/2,
@@ -120,14 +122,6 @@ clear_db(DB_Key) :-
     fail
     ;
     true.
-
-% Unify term with DB and write it to DB
-% Is nondet.
-bind_term_in_db(DB_Key, Term) :-
-
-    db_recorded(DB_Key, Term, Ref),
-    db_erase(Ref),
-    db_recordz(DB_Key, Term).
 
 %
 % Записывает объект в базу, не допуская повторения ключей
@@ -318,6 +312,13 @@ db_iterate_replace(DB_Key, Pred, Query) :-
 
 
 % Limit succesfull replaces by Lim
+% (it can speed-up the replacing)
+
+db_iterate_replace(DB_Key, Pred, Query, Lim) :-
+
+  db_iterate_replace(DB_Key, Pred, Query, Lim, true).
+
+% Limit succesfull replaces by Lim
 % Succesfullnes is defined by the last parameter of Pred
 
 db_iterate_replace(DB_Key, Pred, Query, Lim, Pred2) :-
@@ -342,16 +343,12 @@ db_iterate_replace(DB_Key, Pred, Query, Lim, Pred2) :-
    ).
 
 
-db_iterate_replace(DB_Key, Pred, Query, Lim) :-
-
-  db_iterate_replace(DB_Key, Pred, Query, Lim, true).
-
-
 %
 % Unify with all classes in DB
 %
 % db_object_class(+DB_Key, ?Class)
 %
+% FIXME performance
 
 db_object_class(DB_Key, Class) :-
 
@@ -385,7 +382,36 @@ db_size(DB_Key, N) :-
    length(AL, N).
 
 %
+% Change (reset+unify) fields in DB
+% is det.
+%
+
+db_change(DB_Key, Fields, Vals, Query) :-
+
+   is_list(Vals), ground(Vals), % TODO performance
+        
+   % Unification with new vals is able iff the old is reseted
+   db_reset(DB_Key, Fields, Query),
+        
+   % FIXME it can hangup if all elements of Vals are unbound
+   single_expr_list(Fields, +free, List2),
+   and_list_query(List2, Set_Query),
+
+   Replace_Query = Query /\ Set_Query,
+
+   db_iterate_replace(DB_Key,
+                      unify_fields(Fields, Vals),
+                      Replace_Query).
+
+
+unify_fields(Fields, Vals, Object, Object, true) :-
+
+    named_args_unify(Object, Fields, Vals).
+    
+
+%
 % Reset fields in DB
+% Is det.
 %
 
 db_reset(DB_Key, Reset_List, Query) :-
