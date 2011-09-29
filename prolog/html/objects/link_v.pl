@@ -32,9 +32,9 @@
 
 new_class(link_v, http_result_v, [uri, text], [uri]).
 
-new_class(local_link_v, link_v, []).
+new_class(local_link_v, link_v, [], []).
 
-new_class(global_link_v, link_v, []).
+new_class(global_link_v, link_v, [], []).
 
 'link_v?'(Link, class, Class) :-
 
