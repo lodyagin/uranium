@@ -28,7 +28,7 @@
 
 
 :- module(ur_recorded_db,
-          [clear_db/1,
+          [clear_db/1, %FIXNAME
            db_put_object/2,  % +DB_Key, ?Object
            db_put_object/3,  % +DB_Key, ?Object, +Options
            db_put_objects/3, % +DB_Key, :Pred, +Options
@@ -36,12 +36,11 @@
            dump_db/1,  % +DB_Key
            dump_db/2,  % +Options, +DB_Key
            db_to_list/3,
-           db_iterate/3,     % +DB_Key, +Query, ?Pred
-           db_iterate/4,     % +DB_Key, +Query, ?Pred, -DB_Ref
-           db_iterate/5,     % +DB_Key, +Query, ?Pred, -DB_Ref, +Pred2
+           db_iterate/3,  % +DB_Key, +Query, -Object
+           db_iterate/4,  % +DB_Key, +Query, +Filter_Pred, -Object
            db_iterate_replace/3,  % +DB_Key, +Pred, +Query
-           db_iterate_replace/4,  % +DB_Key, +Pred, +Query, +Count
-           db_iterate_replace/5,  % +DB_Key, +Pred, +Query, +Count, +Pred2
+           db_iterate_replace/4,  % +DB_Key, +Pred, +Query, +Filter
+           db_iterate_replace/5,  % +DB_Key, +Pred, +Query, +Filter_Pred, +Count
            
            db_change/4,   % +DB_Key, +Fields, +Vals, +Query
            db_reset/3,    % +DB_Key, +Fields, +Query
@@ -261,17 +260,17 @@ db_to_list(DB_Key, Functor, List) :-
 % On bt return all records selected by Query
 %
 
-db_iterate(DB_Key, Query, Pred) :-
+db_iterate(DB_Key, Query, w(DB_Ref, Pred)) :-
 
-   db_iterate(DB_Key, Query, Pred, _).
+   db_iterate(DB_Key, Query, Pred, DB_Ref).
 
 
-db_iterate(DB_Key, Query, Pred, DB_Ref) :-
+%db_iterate(DB_Key, Query, Pred, DB_Ref) :-
 
-  db_iterate(DB_Key, Query, Pred, DB_Ref, true).
+%  db_iterate(DB_Key, Query, Pred, DB_Ref, true).
 
   
-db_iterate(DB_Key, Query, Pred, DB_Ref, Pred2) :-
+db_iterate(DB_Key, Query, Filter_Pred, w(DB_Ref, Pred)) :-
 
    ground(Query),
 
@@ -282,15 +281,15 @@ db_iterate(DB_Key, Query, Pred, DB_Ref, Pred2) :-
    functor(Pred, Class, Arity),
    db_recorded(DB_Key, Pred, DB_Ref),
    check_record(Arg_Query, Pred),
-   ( Pred2 = true
+   ( Filter_Pred = true
    -> true
-   ; once(call(Pred2, Pred))
+   ; once(call(Filter_Pred, Pred))
    ).
 
 
-db_iterate_replace2(DB_Key, Pred, Query, Pred2) :-
+db_iterate_replace2(DB_Key, Pred, Query, Filter_Pred) :-
 
-   db_iterate(DB_Key, Query, Obj_In, DB_Ref, Pred2),
+   db_iterate(DB_Key, Query, Filter_Pred, w(DB_Ref, Obj_In)),
    once(call(Pred, Obj_In, Obj_Out, _)),
    db_erase(DB_Ref),
    db_put_object(DB_Key, Obj_Out, [overwrite]),
@@ -314,17 +313,17 @@ db_iterate_replace(DB_Key, Pred, Query) :-
 % Limit succesfull replaces by Lim
 % (it can speed-up the replacing)
 
-db_iterate_replace(DB_Key, Pred, Query, Lim) :-
+db_iterate_replace(DB_Key, Pred, Query, Filter_Pred) :-
 
-  db_iterate_replace(DB_Key, Pred, Query, Lim, true).
+  db_iterate_replace(DB_Key, Pred, Query, true, _).
 
 % Limit succesfull replaces by Lim
 % Succesfullnes is defined by the last parameter of Pred
 
-db_iterate_replace(DB_Key, Pred, Query, Lim, Pred2) :-
+db_iterate_replace(DB_Key, Pred, Query, Filter_Pred, Lim) :-
 
    (   var(Lim)
-   ->  db_iterate_replace2(DB_Key, Pred, Query, Pred2)
+   ->  db_iterate_replace2(DB_Key, Pred, Query, Filter_Pred)
    ;   integer(Lim), Lim > 0,
        nb_setval(db_iterate_replace_counter, 0),
        (   db_iterate(DB_Key, Query, Obj_In, DB_Ref),

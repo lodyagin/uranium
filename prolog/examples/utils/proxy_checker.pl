@@ -183,7 +183,7 @@ check_proxy_db(DB_Key, Lim, Aux_Server, Timeout, Query) :-
 
    db_iterate_replace(DB_Key,
                       check_proxy(Aux_Server, Timeout),
-                      Search_Query, Lim).
+                      Search_Query, true, Lim).
 
 check_proxy(Aux_Server, Timeout, Proxy_In, Proxy_Out, Count) :-
 

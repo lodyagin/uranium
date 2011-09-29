@@ -76,7 +76,9 @@ query_locale_info :-
       db_iterate_replace(db_locale_v1,
                          add_language(L),
                          language_english_name(A_LEN)
-                        /\ (language_country(A_LC) \/ language_country(default)),
+                        /\ (language_country(A_LC)
+                           \/ language_country(default)),
+                         true,
                          1
                         ),
       fail
@@ -108,7 +110,6 @@ query_locale_info :-
       db_iterate_replace(db_locale_v1,
                          add_country(L2),
                          language_country(B_C),
-                         _,
                          not_added_country(B_CS)
                         ),
       fail

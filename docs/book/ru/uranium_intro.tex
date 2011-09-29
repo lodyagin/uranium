@@ -8,7 +8,7 @@
 \usepackage{underscore} % no need to escape underscore with this pack
 \usepackage[dvips]{graphicx}
 \usepackage{babel}
-%\usepackage{verbatim}   % multi-line comments
+\usepackage{verbatim}   % multi-line comments
 %\usepackage{sectsty}
 %\usepackage[normalem]{ulem}
 %\usepackage{indentfirst}
@@ -29,7 +29,7 @@
 \def\ur{Uranium}
 \def\na{named\_arg*}
 
-\graphicspath{{./}}
+\graphicspath{{pics/}}
 
 \lstnewenvironment{example}[2]%
    {%
@@ -142,7 +142,7 @@ X-картами.  Зачастую тоже относится и к языка
 \begin{figure}[h!]
 \center{\includegraphics[width=1\linewidth]{eshop}}
 %\caption{}
-\label{eshop_diagram}
+\label{eshop}
 \end{figure}
 
 Часть выше ватерлинии доступна покупателю, ниже - работникам
@@ -1010,7 +1010,7 @@ uk/afternoons', shape=rect], ['Jamie Crick'])
 предиката --- количество его ``решений'' зависит от структуры
 сайта. В данном случае, мы разбираем страницу нашего первого
 сайта (www.classicfm.co.uk) и выделяем все теги <a
-..>...</a>. Сам тег унифицируется с переменной A и, как видем,
+..>...</a>. Сам тег унифицируется с переменной A и, как видим,
 представляет в Прологе собой структуру element/3 (вообще, все
 sgml теги имеют такую структуру). Первый элемент структуры - это
 имя тега, в данном случае `a', второй - это уже встречавшийся нам
@@ -2368,6 +2368,8 @@ named\_args\_unify, который сопоставляет не одно пол
 
 даст просто false.
 
+%obj_set_field
+
 Если мы хотим промоделировать смену фамилии в процессе
 бракосочетания, нам понадобится минимум 3 объекта: мы не можем
 иметь один и тот же с двумя фамилиями в разное время (так как
@@ -3304,23 +3306,40 @@ Surname = 'Buravin'.
 \item \verb|db_erase(+DB_Ref)| удалить объект по физическому
   адресу (\ref{db_erase})
 
-\item \verb|db_iterate(+DB_Key, +Query, ?Term)| аналогично
-  \verb|db_recorded(+DB_Key, ?Term)|, но использовать Query
-  (\ref{db_iterate/3})
-\item \verb|db_iterate(+DB_Key, +Query, ?Term, -DB_Ref, :Pred)|
+\item \verb|db_iterate(+DB_Key, +Query, -Object)| извлечь объект
+  из базы, используя Query (\ref{db_iterate/3})
+\item \verb|db_iterate(+DB_Key, +Query, :Filter_Pred, -Object)|
   дополнительно фильтровать записи с помощью Pred/1
 \item \verb|db_iterate_replace(+DB_Key, :Pred, +Query)| с помощью
   предиката \verb|Pred(+Obj_In, -Obj_Out, -Is_Succ)| провести
   замену всех объектов, удовлетворяющих Query
   (\ref{db_iterate_replace/3})
-\item \verb|db_iterate_replace(+DB_Key, :Pred, +Query, +Lim)|
-  заменить не более Lim объектов
 \item
-  \verb|db_iterate_replace(+DB_Key, :Pred, +Query, +Lim, :Pred2)|
-  дополнительная фильтрация Query с помощью Pred2/1, аналогично
-  db\_iterate/5
+  \verb|db_iterate_replace(+DB_Key, :Pred, +Query, :Filter_Pred)|
+  дополнительная фильтрация Query с помощью Filter_Pred/1,
+  аналогично db\_iterate/4
+\item
+  \verb|db_iterate_replace(+DB_Key, :Pred, :Filter_Pred, +Query, +Lim)|
+  аналогично db_iterate_replace/4, но заменить не более Lim
+  объектов
 \item \verb|db_reset(+DB_Key, +Reset_List, +Query)| сброс полей
   Reset\_List объектов, удовлетворяющих Query в базе DB\_Key (\ref{db_reset})
+\item \verb|db_change(+DB_Key, +Fields, +Values, +Query)|
+  изменение значений полей 
+% (проблема уже связанных переменных)
+%  \begin{example}{}{}
+%  (some way)  db_change(links_l, [http_request_url, timestamp],
+%    [A, A], true). 
+
+%   db_change(links_l, [http_request_url, timestamp], [a, b],
+%   true). - false
+
+%   db_change(links_l, [http_request_url, timestamp], [a, a],
+%   true). - true
+
+%   (может быть более общая проблема - отсутствие флага
+%   обработанных записей?)
+%  \end{example}
 
 \item \verb|db_object_class(+DB_Key, ?Class)| определение всех
   функторов для предикатов, хранящихся в базе
@@ -4149,6 +4168,8 @@ true
 
 db\_iterate является аналогом db\_recorded + унификация
 
+% секция для объектов-оболочек
+
 В простейшем случае он перебирает все элементы (сравните с
 \ref{all_db_print}) 
 
@@ -4208,6 +4229,10 @@ false.
 
 \subsection{db\_iterate/4}
 
+\begin{comment}
+
+% Следует переделать с учётом объектов-оболочек
+
 Аналогично предикатам низкого уровня, мы можем получить
 физические адреса, например, для удаления объектов. Вот пример
 получения ``мужской'' и ``женской'' базы:
@@ -4233,6 +4258,8 @@ citizen_v(man,_G1843,Mayakovsky,_G1845,_G1846,[Soviet Union],_G1848
 
 Получилось.
 
+\end{comment}
+
 Возвращаясь к вопросу, поставленному в разделе
 \ref{class_descendant}. Добавим мужской шампунь (\ref{shampoo_v}):
 
@@ -4241,6 +4268,10 @@ citizen_v(man,_G1843,Mayakovsky,_G1845,_G1846,[Soviet Union],_G1848
                  ['Schwarzkopf', man], Obj),
     db_put_object(people, Obj).
 \end{example}
+
+\begin{comment}
+
+% w/2
 
 Как ни странно, но запрос с использованием вычислимых полей
 работать не будет:
@@ -4274,10 +4305,10 @@ shampoo_v(_G1842,Schwarzkopf,man)
 \end{example}
 
 В случае необходимости фильтрации по другим вычислимым полям
-(например, class), на помощь приходит третья форма предиката -
-db\_iterate/5.
+(например, class), на помощь приходит вторая форма предиката -
+db\_iterate/4.
 
-\subsection{db\_iterate/5}
+\subsection{db\_iterate/4}
 
 Необходимость различать предикаты Пролога по арности приводит к
 тому, что каждая новая форма предиката получает дополнительный
@@ -4285,8 +4316,9 @@ db\_iterate/5.
 фильтрацию
 
 \begin{verbatim}
-db_iterate(+DB_Key, +Query, ?Term, -DB_Ref, :Pred)
+db_iterate(+DB_Key, +Query, +Filter_Pred, -Object)
 \end{verbatim}
+
 
 наследует все поля предыдущей формы (а потому всегда возвращает
 физический адрес объекта). Дополнительно он получает параметр
@@ -4294,6 +4326,10 @@ Pred, который должен иметь арность 1. Для каждо
 удовлетворяющего Query будет вызван Pred. Если Pred вернёт false,
 объект будет пропущен. Передача true в качестве Pred аналогична
 вызову db\_iterate/4.
+
+\end{comment}
+
+....
 
 Вот аналог примера \ref{all_men_print}, фильтрующего шампуни из
 базы people. Для начала созданим вспомогательный предикат
@@ -4312,7 +4348,7 @@ check_man(Object) :- obj_field(Object, class, Class),
 применением db_iterate/5:
 
 \begin{example}{}{}
-?- db_iterate(people, sex(man), Man, _, check_man), 
+?- db_iterate(people, sex(man), check_man, Man), 
    obj_pretty_print(Man), fail; true.
 
 man_v ( 
@@ -4333,12 +4369,12 @@ callup_v. Это потому, что, как мы помним (\ref{downcast})
 вычисление class_descendant/2 потребовало загрузить определение
 этого объекта.
 
-В качестве 5-го параметра можно передавать также предикат,
+В качестве 3-го параметра можно передавать также предикат,
 выполняющий какое-либо действие. Например, для печати всех
 объектов базы можно было бы использовать
 
 \begin{example}{}{}
-?- db_iterate(people, true, _, _, obj_pretty_print), fail; true.
+?- db_iterate(people, true, obj_pretty_print, _), fail; true.
 \end{example}
 
 Однако, это уже похоже на трюки.
@@ -4507,12 +4543,13 @@ man_v(woman,Eva,_G2468,_G2469,_G2470)
 для написания программ. Поэтому, логично ожидать наличия других
 вариантов функции db_iterate_replace.
 
-\subsection{db_iterate_replcae/5}
+\subsection{db_iterate_replcae/4}
 
-Как и db_iterate/5 этот предикат использует дополнительный
-предикат для добавления к поисковому выражению. С его помощью мы
-можем переписать \ref{ugly_downcast_replcaing}. Добавим, только,
-ещё один предикат:
+Как и db_iterate/4, этот предикат использует дополнительный
+предикат-фильтр для добавления к поисковому выражению. С его
+помощью мы можем переписать
+\ref{ugly_downcast_replcaing}. Добавим, только, ещё один
+предикат:
 
 \begin{example}{}{}
 not_downcasted(Obj) :- 
@@ -4522,7 +4559,7 @@ not_downcasted(Obj) :-
 \end{example}
 
 \begin{example}{}{}
-?- db_iterate_replace(people1, downcast, true, _, not_downcasted).
+?- db_iterate_replace(people1, downcast, true, not_downcasted).
 
 ?- dump_db([lf(1)], people1).
 [14]: man_v(man,Adam,_G2468,_G2469,_G2470) 
@@ -4540,6 +4577,14 @@ _G2473,_G2474)
 случае Пролог будет просматривать всю базу. Потому решение с
 флагом в объекте-предке, упомянутое в \ref{db_iterate_replace/3}
 оказывается эффективнее для больших SQL баз.
+
+%\subsection{db_reset/3}
+%\label{db_reset/3}
+
+%\subsection{db_change/4}
+%\label{db_change/4}
+
+
 
 \section{Использование ключей}
 \label{keys}
@@ -4950,34 +4995,5 @@ new_class(citizen_v, man_v, [country, id, birthday]).
 градланина с двумя id (id в citizen_v, как мы договорились в
 \ref{keys_inheritance}, формирует ключ).
 
-.....
-
-\section{Упражнения}
-
-\begin{enumerate}
-\item Объясните данный пример
-
-\begin{example}{}{}
-?- clear_db(people1), db_copy(people, people1).
-
-?- db_iterate_replace(people1, set_fields([sex, weight, height], [A
-, A, 4]), height(+free)).                                         
-
-?- db_iterate_replace(people1, set_fields([sex, height], [unisex, _
-]), weight(+free)).                                               
-
-?- dump_db([lf(1)], people1).
-[22]: shampoo_v(_G2962,Schwarzkopf,man) 
-man_v(unisex,Adam,_G2964,unisex,_G2966) 
-man_v(unisex,Eva,_G2964,unisex,_G2966) 
-citizen_v(unisex,_G2963,Mayakovsky,unisex,_G2966,[Soviet Union],_G2
-968,_G2969)                                                       
- :[logging]
-\end{example}
-
-Правильно ли подобраны поисковые выражения. Что произойдёт при
-использовании внешней SQL базы?
-
-\end{enumerate}
 
 \end{document}
