@@ -178,7 +178,7 @@ db_erase_object(DB_Key, Key, Key_Value) :-
 
    ground(Key),
    ground(Key_Value),
-   named_args_unify(DB_Key, _, Key, Key_Value, _, DB_Ref),
+   named_args_unify(DB_Key, _, Key, Key_Value, w(DB_Ref, _)),
    db_erase(DB_Ref),
    fail
    ;
@@ -315,7 +315,7 @@ db_iterate_replace(DB_Key, Pred, Query) :-
 
 db_iterate_replace(DB_Key, Pred, Query, Filter_Pred) :-
 
-  db_iterate_replace(DB_Key, Pred, Query, true, _).
+  db_iterate_replace(DB_Key, Pred, Query, Filter_Pred, _).
 
 % Limit succesfull replaces by Lim
 % Succesfullnes is defined by the last parameter of Pred
@@ -588,7 +588,7 @@ db_merge(DB1_Key, DB2_Key, Key) :-
     write_log(['Got the key value', Key1_Value],
               [logger(db_merge), lf(1)]),
     named_args_unify(DB2_Key, Class2, Key1, Key1_Value,
-                     Object2, Object2_Ref)
+                     w(Object2_Ref, Object2))
     -> %NB use only the first key-unified object from DB2
 
     write_log(['Found', Object2, 'in the second DB'],

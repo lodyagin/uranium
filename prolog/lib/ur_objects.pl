@@ -28,14 +28,14 @@
 
 :- module(ur_objects, 
           [
+           
            named_arg/3,
            named_arg/4,
            named_arg_unify/5,
-           named_arg_unify/6,
            named_args_unify/3,
            named_args_weak_unify/3,
            named_args_unify/5,
-           named_args_unify/6,
+
            class_create/3,
            class_create/4,
            class_ensure_created/1,
@@ -88,21 +88,30 @@
   
   */
 
+w_o(w(_, Obj), Obj) :- !.
+
+w_o(Obj, Obj).
+  
+w_o(w(Ref, Obj1), Obj1, w(Ref, Obj2), Obj2) :- !.
+
+w_o(Obj1, Obj1, Obj2, Obj2).
+  
 %
 % Доступ к полю Term по имени
 % (через описательный терм '...#').
 %
 % named_arg(+Term, +Field_Name, ?Value)
-% (booked)
+% 
 
-named_arg(Term, Field_Name, Value) :-
+named_arg(Obj, Field_Name, Value) :-
 
-   named_arg(Term, Field_Name, Value, _).
+   named_arg(Obj, Field_Name, Value, _).
 
 % unbooked
 
-named_arg(Term, Field_Name, Value, Type) :-
+named_arg(Obj, Field_Name, Value, Type) :-
 
+    w_o(Obj, Term),
     functor(Term, Functor, Arity),
     atom_concat(Functor, '#', Spec_Functor),
     atom_concat(Spec_Functor, 't', Type_Functor),
@@ -119,8 +128,7 @@ named_arg(Term, Field_Name, Value, Type) :-
         objects:current_predicate(Method_Functor, _)
     ->  % Вызов метода
         call(objects:Method_Functor, Term, Field_Name, Value)
-    ), 
-    !.
+    ), !.
          
     
 
@@ -130,13 +138,10 @@ named_arg(Term, Field_Name, Value, Type) :-
 % которых есть описатель '...#'.
 % booked
 
-named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
+named_arg_unify(DB_Key, Functor, Field_Name, Value,
+  w(Term_Ref, Term)) :-
 
-  named_arg_unify(DB_Key, Functor, Field_Name, Value, Term, _).
-
-
-named_arg_unify(DB_Key, Functor, Field_Name, Value, Term, Term_Ref) :-
-
+    !,
     ground(Field_Name),
 
     db_object_class(DB_Key, Functor), % unify with each class in db
@@ -147,6 +152,12 @@ named_arg_unify(DB_Key, Functor, Field_Name, Value, Term, Term_Ref) :-
     functor(Term, Functor, Arity), 
     arg(Field_Pos, Term, Value),             % связали Value со значением
     db_recorded(DB_Key, Term, Term_Ref).
+
+  
+named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
+
+  named_arg_unify(DB_Key, Functor, Field_Name, Value, w(_, Term)).
+
 
 
 % spec_term(+Class, -Spec_Term)
@@ -165,27 +176,38 @@ spec_term(Class, Spec_Term) :-
 
 named_args_weak_unify(_, [], []) :- !.
 
-named_args_weak_unify(Term,
+named_args_weak_unify(Obj,
                  [Field_Name | FN_Tail],
                  [Value | V_Tail]
                 ) :-
 
-  (   obj_field(Term, Field_Name, V)
+  (   obj_field(Obj, Field_Name, V)
   ->  V = Value
   ;   true
   ),
-  named_args_weak_unify(Term, FN_Tail, V_Tail).
+  named_args_weak_unify(Obj, FN_Tail, V_Tail).
  
  
 named_args_unify(_, [], []) :- !.
 
-named_args_unify(Term,
+named_args_unify(Obj,
                  [Field_Name | FN_Tail],
                  [Value | V_Tail]
                 ) :-
 
-  obj_field(Term, Field_Name, Value),
-  named_args_unify(Term, FN_Tail, V_Tail).
+  obj_field(Obj, Field_Name, Value),
+  named_args_unify(Obj, FN_Tail, V_Tail).
+
+named_args_unify(DB_Key,
+                 Functor,
+                 [Field_Name | FN_Tail],
+                 [Value | V_Tail],
+                 w(Term_Ref, Term)
+                ) :- !,
+
+   named_arg_unify(DB_Key, Functor, Field_Name, Value,
+                   w(Term_Ref, Term)),
+   named_args_unify2(Term, FN_Tail, V_Tail).
 
 named_args_unify(DB_Key,
                  Functor,
@@ -195,18 +217,8 @@ named_args_unify(DB_Key,
                  ) :-
 
   named_args_unify(DB_Key,
-                   Functor, Field_Names, Field_Values, Term, _).
-
-named_args_unify(DB_Key,
-                 Functor,
-                 [Field_Name | FN_Tail],
-                 [Value | V_Tail],
-                 Term,
-                 Term_Ref
-                ) :-
-
-    named_arg_unify(DB_Key, Functor, Field_Name, Value, Term, Term_Ref),
-    named_args_unify2(Term, FN_Tail, V_Tail).
+                   Functor, Field_Names, Field_Values,
+                   w(_, Term)).
 
 named_args_unify2(_, [], []).
 
@@ -229,10 +241,13 @@ obj_field(Object, Field_Name, Value) :-
 obj_reset_fields(Fields_List, Object_In, Object_Out) :-
 
   obj_reset_fields(Fields_List, Object_In, Object_Out, _).
-
   
-obj_reset_fields(Fields_List, Object_In, Object_Out, true) :-
+%  
+% this form is for using in db_iterate_replace
+%  
+obj_reset_fields(Fields_List, Object0, Object, true) :-
 
+    w_o(Object0, Object_In, Object, Object_Out),
     functor(Object_In, Class, _),
     maplist(class_arg_num(Class), Arg_Nums, Fields_List),
     duplicate_term(Object_In, Object_Out),
@@ -245,8 +260,12 @@ obj_reset_fields_weak(Fields_List, Object_In, Object_Out) :-
   obj_reset_fields_weak(Fields_List, Object_In, Object_Out, _).
 
   
-obj_reset_fields_weak(Fields_List, Object_In, Object_Out, true) :-
+%  
+% this form is for using in db_iterate_replace
+%  
+obj_reset_fields_weak(Fields_List, Object0, Object, true) :-
 
+    w_o(Object0, Object_In, Object, Object_Out),
     functor(Object_In, Class, _),
     maplist(class_arg_num_weak(Class), Arg_Nums0, Fields_List),
     delete(Arg_Nums0, 0, Arg_Nums),
@@ -323,8 +342,9 @@ obj_downcast(Parent, Descendant) :-
 % downcast to Class
 %
 
-obj_downcast(Parent, Class, Descendant) :-
+obj_downcast(Parent_In, Class, Descendant_Out) :-
 
+  w_o(Parent_In, Parent, Descendant_Out, Descendant),
   compound(Parent),
   functor(Parent, Parent_Class, _),
   (
@@ -353,8 +373,10 @@ obj_downcast(Parent, Class, Descendant) :-
 % TODO: UT 
 %
 
-downcast_fill_values(Parent_Class, Desc_Class, Parent, Desc) :-
+downcast_fill_values(Parent_Class, Desc_Class,
+                     Parent_In, Desc_Out) :-
 
+  w_o(Parent_In, Parent, Desc_Out, Desc),
   objects:clause(downcast(Parent_Class, Desc_Class, _, _), _) ->
   objects:downcast(Parent_Class, Desc_Class, Parent, Desc), !
   ;
@@ -736,8 +758,9 @@ obj_pretty_print(Object) :-
 
   obj_pretty_print([lf(1)], Object).
 
-obj_pretty_print(Options, Object) :-
+obj_pretty_print(Options, Object0) :-
 
+  w_o(Object0, Object),
   functor(Object, Class, _),
   field_names_list(Class, Fields),
   %open_log([lf(2, before)]),
@@ -789,6 +812,7 @@ field_pretty_print(Options, Object, Field) :-
                              
 obj_merge(A, B, Class, C) :-
 
+   % TODO w_o?
    obj_downcast(A, Class, A1),
    obj_downcast(B, Class, B1),
    A1 = B1,
@@ -825,15 +849,17 @@ get_key(Class, Key) :-
 % get_key(Object, ?Key)
 %
 
-get_key(Object, Key) :-
+get_key(Object0, Key) :-
 
+  w_o(Object0, Object),
   compound(Object), !,
   functor(Object, Class, _),
   get_key(Class, Key).
 
 
-get_key_value(Object, Key_Value) :-
+get_key_value(Object0, Key_Value) :-
 
+  w_o(Object0, Object),
   functor(Object, Class, _),
   get_key(Class, Key),
   named_args_unify(Object, Key, Key_Value), !.
@@ -842,8 +868,10 @@ get_key_value(Object, Key_Value) :-
 % obj_diff(+Obj1, +Obj2, -Diff_List)
 %
 
-obj_diff(Obj1, Obj2, Diff_List) :-
+obj_diff(Obj10, Obj20, Diff_List) :-
 
+  w_o(Obj10, Obj1),
+  w_o(Obj20, Obj2),
   compound(Obj1),
   compound(Obj2),
 
@@ -898,8 +926,9 @@ check_fields(Class, Fields) :-
 % obj_copy(+From, -To)
 %                             
                              
-obj_copy(From, To) :-
+obj_copy(From0, To) :-
 
+   w_o(From0, From),
    compound(From),
    functor(From, Class, _),
    objects:copy(Class, From, To).
@@ -911,8 +940,9 @@ obj_copy(From, To) :-
 % obj_copy(+Field_List, +From, -To)
 %                             
                              
-obj_copy(Field_List_U, From, To) :-
+obj_copy(Field_List_U, From0, To) :-
 
+   w_o(From0, From),
    ground(Field_List_U),
    is_set(Field_List_U),
    sort(Field_List_U, Field_List),
