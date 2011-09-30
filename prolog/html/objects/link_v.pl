@@ -30,7 +30,7 @@
 
 :- use_module(library(uri)).
 
-new_class(link_v, http_result_v, [uri, text], [uri]).
+new_class(link_v, http_result_v, [link_url, text], [link_url]).
 
 new_class(local_link_v, link_v, [], []).
 
@@ -38,20 +38,11 @@ new_class(global_link_v, link_v, [], []).
 
 'link_v?'(Link, class, Class) :-
 
-   obj_field(Link, uri, Uri),
+   obj_field(Link, link_url, Url),
+   uri_components(Url, Uri),
    uri_data(authority, Uri, Domain),
    (  var(Domain)
    -> Class = local_link_v
    ;  Class = global_link_v
    ).
 
-/*
-downcast(link_v, local_link_v, Link, Local_Link) :-
-
-   functor(Link, link_v, _),
-   functor(Local_Link, local_link_v, _),
-
-   obj_field(Link, url, Url),
-   uri_components(Url, Base_Uri),
-   obj_field(Local_Link, base_uri, Base_Uri).
-*/

@@ -39,13 +39,9 @@
 link_v_parse(A, Object) :-
 
    xpath(A, /a(@href), Url),
-   uri_components(Url, Uri),
    xpath(A, /a(text), Text),
 
-   obj_construct(link_v, [uri, text], [Uri, Text], Object).
+   %uri_normalized(Url, Url_Norm),
+   obj_construct(link_v,
+                 [link_url, text], [Url, Text], Object).
 
-load_objects :-
-
-  class_ensure_created(link_v).
-
-:- initialization load_objects.

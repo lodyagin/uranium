@@ -38,7 +38,7 @@ http_page(URL, Pred, Page) :-
   (atom(URL) -> URL2 = URL;  parse_url(URL2, URL)),
   
   obj_construct(page_v,
-                [url, timestamp, dom],
+                [http_request_url, timestamp, dom],
                 [URL2, Timestamp, DOM],
                 Obj),
   obj_downcast(Obj, Page).

@@ -60,9 +60,9 @@ extract_element(Page, Class, Object) :-
   write_log(['Call ', Pred], [logger(html_page_parse)]),
   call(Pred, Data, Object1),
 
-  named_args_unify(Page, [url, timestamp],
+  named_args_unify(Page, [http_request_url, timestamp],
                    [Obj_Url, Obj_Timestamp]),
-  named_args_unify(Object1, [url, timestamp],
+  named_args_unify(Object1, [http_request_url, timestamp],
                    [Obj_Url, Obj_Timestamp]),
   
   obj_downcast(Object1, Object).
