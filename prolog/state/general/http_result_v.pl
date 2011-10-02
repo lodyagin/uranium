@@ -29,6 +29,6 @@
 :- module(http_result_v, []).
 
 new_class(http_result_v, object_v,
-          [http_request_url, timestamp],
-          [http_request_url] % <NB> timestamp is not in a key
+          [http_request_url, timestamp]
+          %[http_request_url] % <NB> timestamp is not in a key
          ).
