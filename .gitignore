@@ -1,6 +1,12 @@
-.plrc
+TAGS
+.plrc*
 *~*
+*.aux
+*.dvi
 *.log
 *.o
+*.out
+*.pdf
 *.so
-/docs/advertiser
+*.toc
+reports/
