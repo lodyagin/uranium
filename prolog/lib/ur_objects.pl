@@ -198,6 +198,13 @@ named_args_unify(Obj,
   obj_field(Obj, Field_Name, Value),
   named_args_unify(Obj, FN_Tail, V_Tail).
 
+named_args_unify(_,
+                 _,
+                 [],
+                 [],
+                 w(_, _)
+                ) :- !, fail.
+
 named_args_unify(DB_Key,
                  Functor,
                  [Field_Name | FN_Tail],
@@ -884,7 +891,8 @@ obj_diff(Obj10, Obj20, Diff_List) :-
   % TODO track list of eval fields for each objects,
   % check for repeats in all field list
   %
-  findall(Field, 'object_v?'(object_v, Field, _), Object_V_Fields),
+%  findall(Field, 'object_v?'(object_v, Field, _), Object_V_Fields),
+  Object_V_Fields = [],
 
   append(Obj1_Fields, Object_V_Fields, Fields1u),
   append(Obj2_Fields, Object_V_Fields, Fields2u),

@@ -3070,7 +3070,7 @@ obj_upcast на самостоятельную проработку. Будет 
 
    obj_diff(Obj1, Obj2, Diff).
 
-Diff = [diff(weight, 62, 72), diff(surname, 'Wieck', 'Schumann'), diff(functor, man_v, citizen_v), diff(country, _G51, ['Germany']), diff(class, man_v, citizen_v)].
+Diff = [diff(weight, 62, 72), diff(surname, 'Wieck', 'Schumann'), diff(country, _G51, ['Germany'])].
 \end{example}
 
 Как видно, он умеет сравнивать также вычислимые поля.
@@ -3084,9 +3084,7 @@ Diff = [diff(weight, 62, 72), diff(surname, 'Wieck', 'Schumann'), diff(functor, 
 ?- ..., obj_diff_print(Diff).
 
 ( 
-  class : man_v -> citizen_v 
   country : _G14 -> [Germany] 
-  functor : man_v -> citizen_v 
   surname : Wieck -> Schumann 
   weight : 62 -> 72 
 ) 
