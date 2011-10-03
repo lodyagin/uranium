@@ -4,13 +4,13 @@
 %  test platform.
 
 %  Copyright (C) 2011  Sergei Lodyagin
-% 
+%
 %  This library is free software; you can redistribute it and/or
 %  modify it under the terms of the GNU Lesser General Public
 %  License as published by the Free Software Foundation; either
 %  version 2.1 of the License, or (at your option) any later
 %  version.
-%  
+%
 %  This library is distributed in the hope that it will be
 %  useful, but WITHOUT ANY WARRANTY; without even the implied
 %  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
@@ -21,7 +21,7 @@
 %  Public License along with this library; if not, write to the
 %  Free Software Foundation, Inc., 51 Franklin Street, Fifth
 %  Floor, Boston, MA 02110-1301 USA
-% 
+%
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 %  --------------------------------------------------------------
@@ -41,10 +41,10 @@
            db_iterate_replace/3,  % +DB_Key, +Pred, +Query
            db_iterate_replace/4,  % +DB_Key, +Pred, +Query, +Filter
            db_iterate_replace/5,  % +DB_Key, +Pred, +Query, +Filter_Pred, +Count
-           
+
            db_change/4,   % +DB_Key, +Fields, +Vals, +Query
            db_reset/3,    % +DB_Key, +Fields, +Query
-           
+
            db_object_class/2,
            db_move_all_data/2,
            db_copy/2,
@@ -65,11 +65,15 @@
 :- use_module(library(ur_objects)).
 :- use_module(library(lists)).
 :- use_module(logging/logging).
+:- use_module(library(ugraphs)).
+:- use_module(library(ur_lists)).
+:- use_module(library(ur_terms)).
 
 :- module_transparent db_put_objects/3, db_search/3,
+                      db_iterate/3, db_iterate/4, 
                       db_iterate_replace/3, db_iterate_replace/4,
                       db_iterate_replace/5,
-                      db_iterate_replace2/4, db_iterate/5.
+                      db_iterate_replace2/4.
 
 
 db_recorded(DB_Key, Term) :-
@@ -199,7 +203,7 @@ filter_on_db(DB_Key, Field_Names, Field_Values) :-
 
   findall(Obj_Ref,
           named_args_unify(DB_Key, _, Field_Names, Field_Values,
-                           _, Obj_Ref),
+                           w(Obj_Ref, _)),
           Found_Obj_Ref_List),
 
   findall(Obj_Ref, db_recorded(DB_Key, _, Obj_Ref), All_Obj_Ref_List),
@@ -260,16 +264,11 @@ db_to_list(DB_Key, Functor, List) :-
 % On bt return all records selected by Query
 %
 
-db_iterate(DB_Key, Query, w(DB_Ref, Pred)) :-
+db_iterate(DB_Key, Query, Object) :-
 
-   db_iterate(DB_Key, Query, Pred, DB_Ref).
+   db_iterate(DB_Key, Query, true, Object).
 
 
-%db_iterate(DB_Key, Query, Pred, DB_Ref) :-
-
-%  db_iterate(DB_Key, Query, Pred, DB_Ref, true).
-
-  
 db_iterate(DB_Key, Query, Filter_Pred, w(DB_Ref, Pred)) :-
 
    ground(Query),
@@ -326,7 +325,7 @@ db_iterate_replace(DB_Key, Pred, Query, Filter_Pred, Lim) :-
    ->  db_iterate_replace2(DB_Key, Pred, Query, Filter_Pred)
    ;   integer(Lim), Lim > 0,
        nb_setval(db_iterate_replace_counter, 0),
-       (   db_iterate(DB_Key, Query, Obj_In, DB_Ref),
+       (   db_iterate(DB_Key, Query, w(DB_Ref, Obj_In)),
            once(call(Pred, Obj_In, Obj_Out, Is_Succ)),
            db_erase(DB_Ref),
            db_put_object(DB_Key, Obj_Out, [overwrite]),
@@ -388,10 +387,10 @@ db_size(DB_Key, N) :-
 db_change(DB_Key, Fields, Vals, Query) :-
 
    is_list(Vals), ground(Vals), % TODO performance
-        
+
    % Unification with new vals is able iff the old is reseted
    db_reset(DB_Key, Fields, Query),
-        
+
    % FIXME it can hangup if all elements of Vals are unbound
    single_expr_list(Fields, +free, List2),
    and_list_query(List2, Set_Query),
@@ -406,7 +405,7 @@ db_change(DB_Key, Fields, Vals, Query) :-
 unify_fields(Fields, Vals, Object, Object, true) :-
 
     named_args_unify(Object, Fields, Vals).
-    
+
 
 %
 % Reset fields in DB
@@ -614,4 +613,7 @@ db_merge(DB1_Key, DB2_Key, Key) :-
    clear_db(DB1_Key),
    clear_db(DB2_Key),
    db_move_all_data(DB_Tmp, DB1_Key).
-  
+
+
+
+

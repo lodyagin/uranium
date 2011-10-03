@@ -1,34 +1,34 @@
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
-% 
+%
 %  Copyright (C) 2011  Sergei Lodyagin
-% 
+%
 %  This library is free software; you can redistribute it and/or
 %  modify it under the terms of the GNU Lesser General Public
 %  License as published by the Free Software Foundation; either
 %  version 2.1 of the License, or (at your option) any later
 %  version.
-%  
+%
 %  This library is distributed in the hope that it will be
 %  useful, but WITHOUT ANY WARRANTY; without even the implied
 %  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 %  PURPOSE.  See the GNU Lesser General Public License for more
 %  details.
-% 
+%
 %  You should have received a copy of the GNU Lesser General
 %  Public License along with this library; if not, write to the
 %  Free Software Foundation, Inc., 51 Franklin Street, Fifth
 %  Floor, Boston, MA 02110-1301 USA
-% 
+%
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 %  --------------------------------------------------------------
 %   Description      : Data abstraction mechanismes.
 %   Created On       : Apr 3 2009
 
-:- module(ur_objects, 
+:- module(ur_objects,
           [
-           
+
            named_arg/3,
            named_arg/4,
            named_arg_unify/5,
@@ -36,13 +36,12 @@
            named_args_weak_unify/3,
            named_args_unify/5,
 
-           class_create/3,
-           class_create/4,
            class_ensure_created/1,
            class_parent/2,
            class_descendant/2,
            class_fields/2,    %+Class, ?Fields
-           class_field_type/3, 
+           class_field_type/3,
+           eval_obj_expr/2,
            obj_construct/4,
            obj_construct/5,
            obj_diff/3,
@@ -60,23 +59,24 @@
            obj_merge/4,
            obj_pretty_print/1,
            obj_pretty_print/2,
-           eval_obj_expr/2,
            get_key/2,     % +Class, ?Key | +Object, ?Key
            get_key_value/2, % +Object, ?Key_Value
            most_narrowed/3, %+Class1, +Class2, -Most_Narrowed_Class
-
-           % low level 
+	   load_class_module/3,
+	   find_class_module/2,
+           class_create/3,
+           class_create/4,
            spec_term/2,     % +Class, -Spec_Term
            class_arg_num/3, % +Class, ?Arg_Num, +Arg_Name
            class_arg_num_weak/3  % +Class, ?Arg_Num, +Arg_Name
-           ]).        
+           ]).
 
+:- use_module(library(ur_recorded_db)).
 :- use_module(library(ur_lists)).
 :- use_module(library(ur_terms)).
-:- use_module(library(ur_recorded_db)).
 :- use_module(logging/logging).
 
-:- dynamic objects:key/2, objects:copy/3, 
+:- dynamic objects:key/2, objects:copy/3,
            objects:typedef_flag/2, objects:pretty_print/4.
 
 %:- multifile db_recorded/3, db_erase/1, db_recordz/2.
@@ -84,24 +84,24 @@
 
 /** <module> Uranium Objects
 
-  
-  
+
+
   */
 
 w_o(w(_, Obj), Obj) :- !.
 
 w_o(Obj, Obj).
-  
+
 w_o(w(Ref, Obj1), Obj1, w(Ref, Obj2), Obj2) :- !.
 
 w_o(Obj1, Obj1, Obj2, Obj2).
-  
+
 %
 % Доступ к полю Term по имени
 % (через описательный терм '...#').
 %
 % named_arg(+Term, +Field_Name, ?Value)
-% 
+%
 
 named_arg(Obj, Field_Name, Value) :-
 
@@ -117,7 +117,7 @@ named_arg(Obj, Field_Name, Value, Type) :-
     atom_concat(Spec_Functor, 't', Type_Functor),
     functor(Spec_Term, Spec_Functor, Arity),
     functor(Type_Term, Type_Functor, Arity),
-    
+
     objects:Spec_Term,
     objects:Type_Term,
 
@@ -129,8 +129,8 @@ named_arg(Obj, Field_Name, Value, Type) :-
     ->  % Вызов метода
         call(objects:Method_Functor, Term, Field_Name, Value)
     ), !.
-         
-    
+
+
 
 %
 % Унификация с расширенной базой данных пролога по полю Field_Name
@@ -149,24 +149,16 @@ named_arg_unify(DB_Key, Functor, Field_Name, Value,
     (arg(Field_Pos, Spec_Term, Field_Name) -> true; false),   % нашли позицию поля по имени (первую!)
 
     functor(Spec_Term, _, Arity),
-    functor(Term, Functor, Arity), 
+    functor(Term, Functor, Arity),
     arg(Field_Pos, Term, Value),             % связали Value со значением
     db_recorded(DB_Key, Term, Term_Ref).
 
-  
+
 named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
 
   named_arg_unify(DB_Key, Functor, Field_Name, Value, w(_, Term)).
 
 
-
-% spec_term(+Class, -Spec_Term)
-
-spec_term(Class, Spec_Term) :-
-
-    atom_concat(Class, '#', Spec_Functor), 
-    objects:current_predicate(Spec_Functor, Spec_Term),
-    objects:Spec_Term.
 
 %
 % Те же операции, но над списками.
@@ -186,8 +178,8 @@ named_args_weak_unify(Obj,
   ;   true
   ),
   named_args_weak_unify(Obj, FN_Tail, V_Tail).
- 
- 
+
+
 named_args_unify(_, [], []) :- !.
 
 named_args_unify(Obj,
@@ -248,10 +240,10 @@ obj_field(Object, Field_Name, Value) :-
 obj_reset_fields(Fields_List, Object_In, Object_Out) :-
 
   obj_reset_fields(Fields_List, Object_In, Object_Out, _).
-  
-%  
+
+%
 % this form is for using in db_iterate_replace
-%  
+%
 obj_reset_fields(Fields_List, Object0, Object, true) :-
 
     w_o(Object0, Object_In, Object, Object_Out),
@@ -266,10 +258,10 @@ obj_reset_fields_weak(Fields_List, Object_In, Object_Out) :-
 
   obj_reset_fields_weak(Fields_List, Object_In, Object_Out, _).
 
-  
-%  
+
+%
 % this form is for using in db_iterate_replace
-%  
+%
 obj_reset_fields_weak(Fields_List, Object0, Object, true) :-
 
     w_o(Object0, Object_In, Object, Object_Out),
@@ -282,32 +274,41 @@ obj_reset_fields_weak(Fields_List, Object0, Object, true) :-
     maplist(setarg_tnv(Object_Out), Arg_Nums, Free_Var_List), !.
 
 
-  
+
 %
 % Сборка экземпляра класса с установкой только заданных полей
 %
-% obj_construct(+Class, +Field_Names, +Field_Values, ?Term)
+% obj_construct(+Class, +Field_Names, +Field_Values, ?Object)
 %
 
-obj_construct(Class, Field_Names, Field_Values, Term) :-
-  obj_construct(Class, Field_Names, Field_Values, Term, false).
+obj_construct(Class, Field_Names, Field_Values, Object) :-
+  obj_construct(Class, Field_Names, Field_Values, Object, false).
 
-% 
+%
 % 'Weak' версия игнорирует поля в Field_Names, не присутствующие
 % в объекте (и соответствующие значения)
 %
 
-obj_construct(Class, Field_Names, Field_Values, Term, Weak) :-
+obj_construct(Class, Field_Names, Field_Values, Object, Weak) :-
 
-    class_ensure_created(Class), 
+  nonvar(Object), Object = w(_, Term), !,
+  obj_construct2(Class, Field_Names, Field_Values, Term, Weak).
 
-    atom_concat(Class, '#', Spec_Class), 
+obj_construct(Class, Field_Names, Field_Values, Object, Weak) :-
+
+  obj_construct2(Class, Field_Names, Field_Values, Object, Weak).
+
+obj_construct2(Class, Field_Names, Field_Values, Object, Weak) :-
+
+    class_ensure_created(Class),
+
+    atom_concat(Class, '#', Spec_Class),
     current_functor(Spec_Class, Arity),    % находим функтор-описатель
     !,
-    functor(Spec_Term, Spec_Class, Arity), 
+    functor(Spec_Term, Spec_Class, Arity),
     objects:Spec_Term,
 
-    functor(Term, Class, Arity), % создали объект с несвязанными полями
+    functor(Object, Class, Arity), % создали объект с несвязанными полями
 
     % вычисляем номера полей
     (Weak = weak ->
@@ -318,9 +319,9 @@ obj_construct(Class, Field_Names, Field_Values, Term, Weak) :-
 
     % связываем поля с вычисленными номерами
     (Weak = weak ->
-     weak_maplist(weak_arg_bac(Term), Field_Poses, Field_Values)
+     weak_maplist(weak_arg_bac(Object), Field_Poses, Field_Values)
      ;
-     maplist(arg_bac(Term), Field_Poses, Field_Values)
+     maplist(arg_bac(Object), Field_Poses, Field_Values)
      ),
     !.
 
@@ -359,7 +360,7 @@ obj_downcast(Parent_In, Class, Descendant_Out) :-
 
   ;
 
-    class_ensure_created(Class), 
+    class_ensure_created(Class),
 
     field_names_list(Class, Field_Names),
     Parent =.. [_|Parent_Field_Values],
@@ -377,7 +378,7 @@ obj_downcast(Parent_In, Class, Descendant_Out) :-
 %
 % Unify descendants' fields by object module downcast/4 rules
 %
-% TODO: UT 
+% TODO: UT
 %
 
 downcast_fill_values(Parent_Class, Desc_Class,
@@ -397,7 +398,7 @@ downcast_fill_values(Parent_Class, Desc_Class,
 %  downcast_fill_values(Child_Class, Desc_Class, Child, Desc)
 %  ;
 %  true. % no objects:downcast defined
- 
+
 %
 % Вычисление выражений в операторной форме
 %
@@ -412,206 +413,6 @@ eval_obj_expr(Object / Field, Value) :-
 eval_obj_expr(Value, Value).
 
 
-%
-% find_class_module(+Class, -Module_Path)
-%
-% If several modules (up to 5th level in dirs) match
-% Class, then backtrace each.
-%
-% Class must end with '_v'.
-
-find_class_module(Class, Module_Path) :-
-
-  atom_concat(_, '_v', Class),
-  atom_concat(Class, '.pl', Module_Name),
-  expand_file_name('*_v.pl', L1),
-  expand_file_name('*/*_v.pl', L2),
-  expand_file_name('*/*/*_v.pl', L3),
-  expand_file_name('*/*/*/*_v.pl', L4),
-  expand_file_name('*/*/*/*/*_v.pl', L5),
-  flatten([L1, L2, L3, L4, L5], List),
-  member(Module_Path, List),
-  atom_concat(Path_Head, Module_Name, Module_Path),
-  (Path_Head = '' ; atom_concat(_, '/', Path_Head)).
-
-%
-% load_class_module(+Class, +Meta, +Module_Path)
-%
-% Load the class module,
-% create classes, load meta predicates (_v?),
-%
-                             
-load_class_module(Class, Meta, Module_Path) :-
-
-  (flag(objects_module_created, 0, true) ->
-   % ur_objects must be imported in the objects din module
-   objects:use_module(library(ur_objects)) ; true),
-
-  use_module(Module_Path), %% NB can't redefine
-
-  % import *_v? predicates first (they are used by others)
-  % NB use assert, not import to allow inherit _v? preds
-
-  (Class:current_predicate(Head, Term),
-   atom_concat(_, '_v?', Head),
-   Class:clause(Term, Body),
-   objects:assert((Term :- Body)),
-   fail
-   ;
-   true),
-
-  % import copy/3 predicates
-  dynamic_import(Class, objects, copy),
- 
-  % import downcast/4 predicates
-  dynamic_import(Class, objects, downcast),
-
-  % process typedefs
-  (  Class:current_predicate(typedef/2),
-     Class:typedef(TD_Type, TD_List),
-
-     % control for not repeating type definitions
-     (  objects:typedef_flag(TD_Type, Some_Class)
-     -> write_log(['Type', TD_Type, 
-                   'is defined already in', Some_Class],
-                  [lf(1)]),
-        !, fail
-     ;  objects:assert(typedef_flag(TD_Type, Class))
-     ),
-
-     % pretty_print
-     (  memberchk(pretty_print - TD_PP_Head, TD_List)
-     -> TD_PP_Pred =.. [TD_PP_Head, TD_Stream, TD_Value, TD_Opt],
-        objects:assert((pretty_print(TD_Type, TD_Stream, TD_Value, TD_Opt)
-                        :- Class:TD_PP_Pred))
-     ;  true
-     ),
-
-     % postgres types
-     (  memberchk(postgres - type(PG_Type, PG_Convert_Pred),
-                  TD_List)
-
-     -> db_pg:assert(pl_pg_type(TD_Type, PG_Type,
-                                      Class:PG_Convert_Pred)
-                          )
-     ; true
-     ),
-
-     fail
-  ;
-     true
-  ),
-     
-
-  % process new_class/3,4
-       
-  (
-     Class:current_predicate(new_class, New_Class_Head),
-     functor(New_Class_Head, _, New_Class_Arity),
-     (  New_Class_Arity =:= 3
-     -> Class:new_class(Class_X, Parent_X, Add_Fields_X)
-     ;  Class:new_class(Class_X, Parent_X, Add_Fields_X, Key_X)
-     ),
-
-     % import class with its descendants
-
-     atom_concat(Class_X, '#', Meta_X),
-     \+ objects:current_predicate(Meta_X, _),
-
-     (   nonvar(Key_X) 
-     ->  class_create(Class_X, Parent_X, Add_Fields_X, Key_X)
-     ;   class_create(Class_X, Parent_X, Add_Fields_X)
-     ),
-     fail
-  ;
-     (   objects:current_predicate(Meta, _)
-     ->  true
-     ;   write_log(['The module', Module_Path, 
-                   'does not contain a definition for a class',
-                   Class, '(no new_class/3 predicate was found)'])
-     )
-  ).
-
-                            
-%
-% import all predicates with head Functor as dynamic assert
-%
-dynamic_import(Module_From, Module_To, Functor) :-
-
-  Module_From:current_predicate(Functor, Term),
-  Module_From:clause(Term, Body),
-  Module_To:assert((Term :- Body)),
-  fail                  
-  ;
-  true. 
-                           
-%
-% class_create(+Class, +Parent, +Add_Fields)
-%
-% Assert the new Class definition into the objects module
-%                             
-
-class_create(Class, object_base_v, Fields) :-
-
-  !,
-  atom(Class),
-  maplist(field_name, Fields, Field_Names),
-  (is_set(Field_Names) -> true;
-   write_log(['Field duplicates found when creating object', 
-             Class, 
-             Field_Names]),
-   fail
-  ),
-  assert_meta(Class, object_base_v, Fields).
-
-
-class_create(Class, Parent, Add_Fields) :-
-
-  atom(Class),
-  class_ensure_created(Parent),
-  atom_concat(Parent, '#', Parent_Meta),
-  objects:current_predicate(Parent_Meta, Parent_Meta_Pred), !,
-  objects:Parent_Meta_Pred,
-  Parent_Meta_Pred =.. [Parent_Meta | Parent_Field_Names],
-  is_set(Parent_Field_Names),
-
-  atom_concat(Parent, '#t', Parent_Type),
-  objects:current_predicate(Parent_Type, Parent_Type_Pred), !,
-  objects:Parent_Type_Pred,
-  Parent_Type_Pred =.. [Parent_Type | Parent_Field_Types],
-
-  corteging(:, Parent_Field_Names, Parent_Field_Types, Parent_Fields_List),
-                             
-  append(Parent_Fields_List, Add_Fields, Class_Fields_List),
-  maplist(field_name, Class_Fields_List, Class_Fields_Names),
-  (is_set(Class_Fields_Names) -> true;
-   write_log(['Field duplicates found when creating object', Class, 
-               Class_Fields_Names]),
-   fail
-  ),
-  assert_meta(Class, Parent, Class_Fields_List),
-  get_key(Parent, Parent_Key),
-  assert_key(Class, Parent_Key),
-  assert_evals(Class, Parent),
-  assert_copy(Class, Parent).
-  
-                             
-%
-% class_create(+Class, +Parent, +Add_Fields, +Key)
-%
-% Assert the new Class definition into the objects module,
-% set a (compound) key to Key
-%                             
-
-class_create(Class, Parent, Fields, New_Key) :-
-
-  class_create(Class, Parent, Fields),
-  is_list(New_Key),
-  get_key(Parent, Parent_Key),
-  append(Parent_Key, New_Key, Key),
-  assert_key(Class, Key).
-
-
 field_name(Name : _, Name) :- !.
 
 field_name(Name, Name).
@@ -622,100 +423,19 @@ field_type( _ : Type, Type) :- !.
 field_type(_ , _).
 
 
-assert_key(Class, Key) :-
-  retractall(objects:key(Class, _)),
-  Key = [] -> true
-  ;
-  is_list(Key),
-  list_to_set(Key, Keys),
-  assert(objects:key(Class, Keys)).
-                             
-
-assert_meta(Class, Parent, Fields) :-
-
-  atom_concat(Class, '#', Class_Meta),
-  atom_concat(Class_Meta, 't', Class_Types),
-
-  % check already defined
-  ( (  objects:current_predicate(Class_Meta, _) 
-    ;  objects:current_predicate(Class_Types, _) 
-    ;  (   objects:current_predicate(parent/2) 
-       ->  (  objects:parent(Class, _) 
-           ;  objects:parent(_, Class)
-           )
-       ;  false
-       )
-    ) 
-  -> write_log(['Class', Class, 'is already defined.']), fail
-  ;  true
-  ),
-
-  maplist(field_name, Fields, Field_Names),
-  maplist(field_type, Fields, Field_Types),
-
-  Class_Meta_Pred =.. [Class_Meta | Field_Names],
-  Class_Type_Pred =.. [Class_Types | Field_Types],
-  Parent_Pred =.. [parent, Class, Parent],
-  objects:assert(Class_Meta_Pred),
-  objects:assert(Class_Type_Pred),
-  objects:assert(Parent_Pred).
-
-
-%
-% evals stays for *_v? predicates here
-%
-% If child declararion doesn't have parent's evals
-% copy them from parent
-%
-
-assert_evals(Class, Parent) :-
-
-  atom_concat(Parent, '?', Parent_Dc),
-  atom_concat(Class, '?', Class_Dc),
-  
-  (objects:current_predicate(Parent_Dc, Parent_T),
-   objects:clause(Parent_T, _),
-   Parent_T =.. [Parent_Dc, _, Field, _],
-   \+ (objects:current_predicate(Class_Dc, Class_T),
-       objects:clause(Class_T, _),
-       Class_T =.. [Class_Dc, _, Field, _]
-       ),
-
-   Class_T2 =.. [Class_Dc, A, Field, C],
-   Parent_T2 =.. [Parent_Dc, A, Field, C],  
-   assert(objects:(Class_T2 :- Parent_T2)),
-   fail
-   ; 
-   true
-   ).
-
-% 
-% Inherit copy from parent if not defined for Class
-%
-
-assert_copy(Class, Parent) :-
-
-  (   objects:clause(copy(Class, _, _), _)
-  ->  true
-  ;   assert(objects:
-             (copy(Class, From, To) :- copy(Parent, From, To))
-      )
-  ).
-
-
 %
 % class_parent(?Class, ?Parent)
 %
-                             
+
 class_parent(Class, Parent) :-
 
   objects:current_predicate(parent, _) ->
   call(objects:parent, Class, Parent).
-                             
+
 %
 % class_descendant(?Class, ?Descendant)
 %
-                             
+
 class_descendant(Class, Descendant) :-
 
   class_ensure_created(Descendant),
@@ -724,8 +444,8 @@ class_descendant(Class, Descendant) :-
   class_parent(Descendant, X),
   class_descendant(Class, X).
 
-% Get list of field names                             
-                             
+% Get list of field names
+
 class_fields(Class, Fields) :-
 
   atom_concat(Class, '#', Descriptor),
@@ -733,7 +453,7 @@ class_fields(Class, Fields) :-
   functor(Descr_Pred, Descriptor, Arity),
   objects:Descr_Pred,
   Descr_Pred =.. [Descriptor|Fields], !.
-                             
+
 %
 % class_ensure_created(+Class)
 %
@@ -752,9 +472,9 @@ class_ensure_created(Class) :-
                                  % defined
 
    ;
-                             
+
    (find_class_module(Class, Module_Path) -> true; %NB implies '!'
-    write_log(['A definition module for the class', Class, 
+    write_log(['A definition module for the class', Class,
                'is not found']), fail
    ),
    load_class_module(Class, Meta, Module_Path)
@@ -775,7 +495,7 @@ obj_pretty_print(Options, Object0) :-
   change_indent(Options, O2, 2),
   maplist(field_pretty_print(O2, Object), Fields),
   log_piece([')'], Options).
-  %close_log([lf(2, after)]).                           
+  %close_log([lf(2, after)]).
 
 obj_diff_print(Diff_List) :-
 
@@ -795,18 +515,18 @@ one_diff_print(Options, diff(Field, Before, After)) :-
 
    log_piece([Field, ':', Before, '->', After], Options).
 
-                             
+
 field_pretty_print(Options, Object, Field) :-
 
   named_arg(Object, Field, Value, Type),
-  (  var(Value) 
+  (  var(Value)
   -> true
   ;  var(Type)
   -> Pretty_Value = Value
   ;  objects:current_predicate(pretty_print/4),
      objects:pretty_print(Type, atom(Pretty_Value), Value, Options)
   -> true
-  ;  Pretty_Value = Value 
+  ;  Pretty_Value = Value
   ),
 
   (  nonvar(Pretty_Value)
@@ -816,7 +536,7 @@ field_pretty_print(Options, Object, Field) :-
 
 
 % C = A unify B
-                             
+
 obj_merge(A, B, Class, C) :-
 
    % TODO w_o?
@@ -829,7 +549,7 @@ obj_merge(A, B, Class, C) :-
 %
 % If Class1 and Class2 has descending relation choose
 % the most narrowed one.
-% 
+%
 
 most_narrowed(Class1, Class2, Most_Narrowed_Class) :-
 
@@ -887,7 +607,7 @@ obj_diff(Obj10, Obj20, Diff_List) :-
 
   class_fields(Functor1, Obj1_Fields),
   class_fields(Functor2, Obj2_Fields),
-  
+
   % TODO track list of eval fields for each objects,
   % check for repeats in all field list
   %
@@ -902,7 +622,7 @@ obj_diff(Obj10, Obj20, Diff_List) :-
 
   sort(Fields1u, Fields1),
   sort(Fields2u, Fields2),
-                             
+
   merge_set(Fields1, Fields2, Fields_For_Diff),
 
   build_diff_list(Obj1, Obj2, Fields_For_Diff, [], Diff_List).
@@ -910,7 +630,7 @@ obj_diff(Obj10, Obj20, Diff_List) :-
 
 build_diff_list(_, _, [], Diff, Diff) :- !.
 
-build_diff_list(Obj1, Obj2, [Field|Tail], Diff_In, Diff_Out) :- 
+build_diff_list(Obj1, Obj2, [Field|Tail], Diff_In, Diff_Out) :-
 
   (obj_field(Obj1, Field, V1) -> true ; V1 = _),
   (obj_field(Obj2, Field, V2) -> true ; V2 = _),
@@ -918,12 +638,12 @@ build_diff_list(Obj1, Obj2, [Field|Tail], Diff_In, Diff_Out) :-
    ; selectchk(diff(Field, V1, V2), Diff2, Diff_In)
    ),
   build_diff_list(Obj1, Obj2, Tail, Diff2, Diff_Out).
-  
+
 
 check_fields(Class, Fields) :-
 
   is_set(Fields) -> true
-  ; write_log(['Invalid fields list for', Class, 
+  ; write_log(['Invalid fields list for', Class,
                ', there are repeated field names', Fields],
                [lf(2, before), lf(2)]).
 
@@ -932,8 +652,8 @@ check_fields(Class, Fields) :-
 % Copy objects by class rules
 %
 % obj_copy(+From, -To)
-%                             
-                             
+%
+
 obj_copy(From0, To) :-
 
    w_o(From0, From),
@@ -946,8 +666,8 @@ obj_copy(From0, To) :-
 % not specified in Field_List
 %
 % obj_copy(+Field_List, +From, -To)
-%                             
-                             
+%
+
 obj_copy(Field_List_U, From0, To) :-
 
    w_o(From0, From),
@@ -961,8 +681,334 @@ obj_copy(Field_List_U, From0, To) :-
    sort(Obj_Fields_U, Obj_Fields),
    ord_subtract(Obj_Fields, Field_List, Reset_List),
    obj_reset_fields(Reset_List, From, Raw_Copy),
-                             
+
    obj_copy(Raw_Copy, To).
+
+class_field_type(Class, Field, Type) :-
+
+   class_arg_num(Class, Arg_Num, Field),
+   atom_concat(Class, '#t', Type_Functor),
+   objects:current_predicate(Type_Functor, Type_Term),
+   objects:Type_Term,
+   arg(Arg_Num, Type_Term, Type), !.
+
+%
+% find_class_module(+Class, -Module_Path)
+%
+% If several modules (up to 5th level in dirs) match
+% Class, then backtrace each.
+%
+% Class must end with '_v'.
+
+find_class_module(Class, Module_Path) :-
+
+  atom_concat(_, '_v', Class),
+  atom_concat(Class, '.pl', Module_Name),
+  expand_file_name('*_v.pl', L1),
+  expand_file_name('*/*_v.pl', L2),
+  expand_file_name('*/*/*_v.pl', L3),
+  expand_file_name('*/*/*/*_v.pl', L4),
+  expand_file_name('*/*/*/*/*_v.pl', L5),
+  flatten([L1, L2, L3, L4, L5], List),
+  member(Module_Path, List),
+  atom_concat(Path_Head, Module_Name, Module_Path),
+  (Path_Head = '' ; atom_concat(_, '/', Path_Head)).
+
+%
+% load_class_module(+Class, +Meta, +Module_Path)
+%
+% Load the class module,
+% create classes, load meta predicates (_v?),
+%
+
+load_class_module(Class, Meta, Module_Path) :-
+
+  (flag(objects_module_created, 0, true) ->
+   % ur_objects must be imported in the objects din module
+   objects:use_module(library(ur_objects)) ; true),
+
+  use_module(Module_Path), %% NB can't redefine
+
+  % import *_v? predicates first (they are used by others)
+  % NB use assert, not import to allow inherit _v? preds
+
+  (Class:current_predicate(Head, Term),
+   atom_concat(_, '_v?', Head),
+   Class:clause(Term, Body),
+   objects:assert((Term :- Body)),
+   fail
+   ;
+   true),
+
+  % import copy/3 predicates
+  dynamic_import(Class, objects, copy),
+
+  % import downcast/4 predicates
+  dynamic_import(Class, objects, downcast),
+
+  % process typedefs
+  (  Class:current_predicate(typedef/2),
+     Class:typedef(TD_Type, TD_List),
+
+     % control for not repeating type definitions
+     (  objects:typedef_flag(TD_Type, Some_Class)
+     -> write_log(['Type', TD_Type,
+                   'is defined already in', Some_Class],
+                  [lf(1)]),
+        !, fail
+     ;  objects:assert(typedef_flag(TD_Type, Class))
+     ),
+
+     % pretty_print
+     (  memberchk(pretty_print - TD_PP_Head, TD_List)
+     -> TD_PP_Pred =.. [TD_PP_Head, TD_Stream, TD_Value, TD_Opt],
+        objects:assert((pretty_print(TD_Type, TD_Stream, TD_Value, TD_Opt)
+                        :- Class:TD_PP_Pred))
+     ;  true
+     ),
+
+     % postgres types
+     (  memberchk(postgres - type(PG_Type, PG_Convert_Pred),
+                  TD_List)
+
+     -> db_pg:assert(pl_pg_type(TD_Type, PG_Type,
+                                      Class:PG_Convert_Pred)
+                          )
+     ; true
+     ),
+
+     fail
+  ;
+     true
+  ),
+
+
+  % process new_class/3,4
+
+  all_new_classes(Class, New_Classes),
+  (
+     member(new_class(Class_X, Parent_X, Add_Fields_X, Key_X), New_Classes),
+
+     % import class with its descendants
+
+     atom_concat(Class_X, '#', Meta_X),
+     \+ objects:current_predicate(Meta_X, _),
+
+     (   nonvar(Key_X)
+     ->  class_create(Class_X, Parent_X, Add_Fields_X, Key_X)
+     ;   class_create(Class_X, Parent_X, Add_Fields_X)
+     ),
+     fail
+  ;
+     (   objects:current_predicate(Meta, _)
+     ->  true
+     ;   write_log(['The module', Module_Path,
+                   'does not contain a definition for a class',
+                   Class, '(no new_class/3 predicate was found)'])
+     )
+  ).
+
+
+all_new_classes(Main_Class, New_Classes) :-
+
+     %  Find parend-desc relation as a set of graph edges
+     findall(Parent_X - Class_X,
+	     (	 Main_Class:current_predicate(new_class, New_Class_Head),
+		 functor(New_Class_Head, _, New_Class_Arity),
+		 (  New_Class_Arity =:= 3
+		 -> Main_Class:new_class(Class_X, Parent_X, Add_Fields_X)
+		 ;  Main_Class:new_class(Class_X, Parent_X, Add_Fields_X, Key_X)
+		 )
+	     ),
+	     Edges
+	    ),
+     vertices_edges_to_ugraph([], Edges, Graph),
+     (	 top_sort(Graph, Classes)
+     ->	 true
+     ;	 Classes = [],
+         write_log(['There are cycle in class definitions: ', Graph])
+     ),
+     findall(new_class(Class_X, Parent_X, Add_Fields_X, Key_X),
+             (member(Class_X, Classes),
+	      (  Main_Class:clause(new_class(Class_X, Parent_X,
+                                             Add_Fields_X),
+                                   _),
+                 Key_X = _
+              ;  Main_Class:clause(new_class(Class_X, Parent_X,
+                                             Add_Fields_X, Key_X),
+                                   _)
+              )
+             ),
+             New_Classes
+            ).
+
+%
+% import all predicates with head Functor as dynamic assert
+%
+dynamic_import(Module_From, Module_To, Functor) :-
+
+  Module_From:current_predicate(Functor, Term),
+  Module_From:clause(Term, Body),
+  Module_To:assert((Term :- Body)),
+  fail
+  ;
+  true.
+
+%
+% class_create(+Class, +Parent, +Add_Fields)
+%
+% Assert the new Class definition into the objects module
+%
+
+class_create(Class, object_base_v, Fields) :-
+
+  !,
+  atom(Class),
+  maplist(field_name, Fields, Field_Names),
+  (is_set(Field_Names) -> true;
+   write_log(['Field duplicates found when creating object',
+             Class,
+             Field_Names]),
+   fail
+  ),
+  assert_meta(Class, object_base_v, Fields).
+
+
+class_create(Class, Parent, Add_Fields) :-
+
+  atom(Class),
+  class_ensure_created(Parent),
+  atom_concat(Parent, '#', Parent_Meta),
+  objects:current_predicate(Parent_Meta, Parent_Meta_Pred), !,
+  objects:Parent_Meta_Pred,
+  Parent_Meta_Pred =.. [Parent_Meta | Parent_Field_Names],
+  is_set(Parent_Field_Names),
+
+  atom_concat(Parent, '#t', Parent_Type),
+  objects:current_predicate(Parent_Type, Parent_Type_Pred), !,
+  objects:Parent_Type_Pred,
+  Parent_Type_Pred =.. [Parent_Type | Parent_Field_Types],
+
+  corteging(:, Parent_Field_Names, Parent_Field_Types, Parent_Fields_List),
+
+  append(Parent_Fields_List, Add_Fields, Class_Fields_List),
+  maplist(field_name, Class_Fields_List, Class_Fields_Names),
+  (is_set(Class_Fields_Names) -> true;
+   write_log(['Field duplicates found when creating object', Class,
+               Class_Fields_Names]),
+   fail
+  ),
+  assert_meta(Class, Parent, Class_Fields_List),
+  get_key(Parent, Parent_Key),
+  assert_key(Class, Parent_Key),
+  assert_evals(Class, Parent),
+  assert_copy(Class, Parent).
+
+
+%
+% class_create(+Class, +Parent, +Add_Fields, +Key)
+%
+% Assert the new Class definition into the objects module,
+% set a (compound) key to Key
+%
+
+class_create(Class, Parent, Fields, New_Key) :-
+
+  class_create(Class, Parent, Fields),
+  is_list(New_Key),
+  get_key(Parent, Parent_Key),
+  append(Parent_Key, New_Key, Key),
+  assert_key(Class, Key).
+
+
+assert_key(Class, Key) :-
+  retractall(objects:key(Class, _)),
+  Key = [] -> true
+  ;
+  is_list(Key),
+  list_to_set(Key, Keys),
+  assert(objects:key(Class, Keys)).
+
+
+assert_meta(Class, Parent, Fields) :-
+
+  atom_concat(Class, '#', Class_Meta),
+  atom_concat(Class_Meta, 't', Class_Types),
+
+  % check already defined
+  ( (  objects:current_predicate(Class_Meta, _)
+    ;  objects:current_predicate(Class_Types, _)
+    ;  (   objects:current_predicate(parent/2)
+       ->  (  objects:parent(Class, _)
+           ;  objects:parent(_, Class)
+           )
+       ;  false
+       )
+    )
+  -> write_log(['Class', Class, 'is already defined.']), fail
+  ;  true
+  ),
+
+  maplist(field_name, Fields, Field_Names),
+  maplist(field_type, Fields, Field_Types),
+
+  Class_Meta_Pred =.. [Class_Meta | Field_Names],
+  Class_Type_Pred =.. [Class_Types | Field_Types],
+  Parent_Pred =.. [parent, Class, Parent],
+  objects:assert(Class_Meta_Pred),
+  objects:assert(Class_Type_Pred),
+  objects:assert(Parent_Pred).
+
+
+%
+% evals stays for *_v? predicates here
+%
+% If child declararion doesn't have parent's evals
+% copy them from parent
+%
+
+assert_evals(Class, Parent) :-
+
+  atom_concat(Parent, '?', Parent_Dc),
+  atom_concat(Class, '?', Class_Dc),
+
+  (objects:current_predicate(Parent_Dc, Parent_T),
+   objects:clause(Parent_T, _),
+   Parent_T =.. [Parent_Dc, _, Field, _],
+   \+ (objects:current_predicate(Class_Dc, Class_T),
+       objects:clause(Class_T, _),
+       Class_T =.. [Class_Dc, _, Field, _]
+       ),
+
+   Class_T2 =.. [Class_Dc, A, Field, C],
+   Parent_T2 =.. [Parent_Dc, A, Field, C],
+   assert(objects:(Class_T2 :- Parent_T2)),
+   fail
+   ;
+   true
+   ).
+
+%
+% Inherit copy from parent if not defined for Class
+%
+
+assert_copy(Class, Parent) :-
+
+  (   objects:clause(copy(Class, _, _), _)
+  ->  true
+  ;   assert(objects:
+             (copy(Class, From, To) :- copy(Parent, From, To))
+      )
+  ).
+
+
+% spec_term(+Class, -Spec_Term)
+
+spec_term(Class, Spec_Term) :-
+
+    atom_concat(Class, '#', Spec_Functor),
+    objects:current_predicate(Spec_Functor, Spec_Term),
+    objects:Spec_Term.
 
 %
 % Low-level access
@@ -986,12 +1032,5 @@ class_arg_num_weak(Class, Arg_Num, Arg_Name) :-
    -> true
    ;  Arg_Num = 0
    ), !.
-                             
-class_field_type(Class, Field, Type) :-
 
-   class_arg_num(Class, Arg_Num, Field),
-   atom_concat(Class, '#t', Type_Functor),
-   objects:current_predicate(Type_Functor, Type_Term),
-   objects:Type_Term,
-   arg(Arg_Num, Type_Term, Type), !.
-   
+

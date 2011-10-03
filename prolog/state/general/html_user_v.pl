@@ -5,7 +5,7 @@
 %% modify it under the terms of the GNU Lesser General Public
 %% License as published by the Free Software Foundation; either
 %% version 2.1 of the License, or (at your option) any later version.
-%% 
+%%
 %% This library is distributed in the hope that it will be useful,
 %% but WITHOUT ANY WARRANTY; without even the implied warranty of
 %% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -23,6 +23,7 @@
 :- module(html_user_v, [new_html_user/1]).
 
 :- use_module(library(ur_objects)).
+:- use_module(library(ur_recorded_db)).
 :- use_module(html/cookies_man).
 
 
@@ -57,5 +58,20 @@ typedef(cookies_db, [pretty_print - cookies_db_pretty_print]).
 cookies_db_pretty_print(_, Value, Options) :-
 
   % FIXME do not use Stream
-  
+
   dump_db(Options, Value).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

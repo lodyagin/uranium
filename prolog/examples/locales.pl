@@ -5,7 +5,7 @@
 %% modify it under the terms of the GNU Lesser General Public
 %% License as published by the Free Software Foundation; either
 %% version 2.1 of the License, or (at your option) any later version.
-%% 
+%%
 %% This library is distributed in the hope that it will be useful,
 %% but WITHOUT ANY WARRANTY; without even the implied warranty of
 %% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -26,6 +26,7 @@
 :- use_module(action/find).
 :- use_module(library(ur_objects)).
 :- use_module(library(ur_recorded_db)).
+:- use_module(logging/logging).
 
 query_locale_info :-
 
@@ -37,8 +38,8 @@ query_locale_info :-
    clear_db(db_locale_v3),
    clear_db(db_language_v),
    clear_db(db_country_v),
-   
-   new_html_user(U1), 
+
+   new_html_user(U1),
    supported_lang_list(Langs),
    (
     member(Lang, Langs),
@@ -61,7 +62,7 @@ query_locale_info :-
    ;
       true
    ),
-   
+
    new_html_user(U2),
    find(msdn, U2, language, [], db_language_v),
    dump_db(db_language_v),
@@ -136,7 +137,7 @@ not_added_country(Country_Strings, Locale) :-
   ).
 
 show_locale_info :-
-  
+
   db_iterate(db_locale_v1, true, Locale),
   obj_field(Locale, language_strings, Lang_Strings),
   obj_field(Locale, country_strings, Country_Strings),
@@ -150,7 +151,7 @@ show_locale_info :-
   fail
   ;
   true.
-  
+
 
 add_language(Lang, Locale_In, Locale_Out, true) :-
 
@@ -186,12 +187,12 @@ add_country(Country, Locale_In, Locale_Out, true) :-
   obj_field(Locale_Out, country_strings, New_String),
   write_log(['map', Country_Name, 'on', CN], [lf(1)]).
 
-   
-%supported_lang_list(['English']) :- !.
 
-supported_lang_list(['Arabic', 'German', 'English', 'Spanish', 'French', 
-		     'Italian', 'Kazakh', 'Portuguese', 'Russian', 
-		     'Ukrainian', 
+supported_lang_list(['German']) :- !.
+
+supported_lang_list(['Arabic', 'German', 'English', 'Spanish', 'French',
+		     'Italian', 'Kazakh', 'Portuguese', 'Russian',
+		     'Ukrainian',
 		     'Chinese']).
 
 

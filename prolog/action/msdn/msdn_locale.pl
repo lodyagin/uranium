@@ -31,6 +31,7 @@
 :- use_module(parser/html/html_page_parse).
 :- use_module(parser/html/html_page_find).
 :- use_module(parser/html/table_v_parse).
+:- use_module(logging/logging).
 
 :- use_module(action/templates/find_all_table_rows).
 
