@@ -15,10 +15,10 @@
 
 :- dynamic top_level/1, site/1.
 
-%site('classicfm.co.uk').
+site('classicfm.co.uk').
 %site('gismeteo.ua').
 %site('sourceforge.net').
-site('kogorta.dp.ua').
+%site('kogorta.dp.ua').
 
 top_level('.com').
 top_level('.net').
@@ -36,7 +36,7 @@ top_level(Domain, Top_Domain) :-
   ;  atom_length(Second, Second_Len), Second_Len =< 3
   -> Top = [First, Second]
   ;  Top = [First]
-  ),j
+  ),
   reverse(Top, Top_R),
   concat_atom([''|Top_R], '.', Top_Domain).
 
@@ -51,15 +51,21 @@ add_new_site(Site) :-
 
 go :-
 
-   ( site(X), add_new_site(X), fail ; true ), 
+   ( site(X),
+     \+ recorded(visited_sites, site(X)),
+     add_new_site(X), fail
+   ; true
+   ), 
   
    recorded(sites, site(Site)),
+   \+ recorded(visited_sites, site(Site)),
    format("\n~a -> ", Site),
    page_links(Site, Links),                         
-   maplist(domain_site, Links, Sites_Rep),                                
+   maplist(domain_site, Links, Sites_Rep),
    sort(Sites_Rep, Sites),
-   format("~w", Sites),
+   format("~w", [Sites]),
    maplist(add_new_site, Sites),
+   recordz(visited_sites, site(Site)),
    fail.
 
 % domain_site(+Domain, ?Site) is det
@@ -84,7 +90,9 @@ domain_site(Domain, Site) :-
    atom_concat(Subdomain, Top, Domain), !,
    concat_atom(Subdomain_R, '.', Subdomain),
    reverse(Subdomain_R, [Site_Part|_]),
-   atom_concat(Site_Part, Top, Site).
+   atom_concat(Site_Part, Top, Site), !
+
+   ; Site = Domain.
 
                                 
 % page_link(+Page, ?Link_To_Site) is nondet
@@ -103,6 +111,12 @@ page_link(Page, Link_To_Site) :-
 % page_links(+Page, -Site_List) is det
 page_links(Page, Site_List) :-
 
-  findall(Link, page_link(Page, Link), Link_List),
+   catch(
+         findall(Link, page_link(Page, Link), Link_List),
+         Exception,
+         (format("\n~w while call to [~a]", [Exception, Page]),
+          Link_List = []
+         )
+        ),
   sort(Link_List, Site_List).
 
