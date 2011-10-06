@@ -44,14 +44,15 @@
            eval_obj_expr/2,
            obj_construct/4,
            obj_construct/5,
+           obj_copy/2,       % +From, -To
+           obj_copy/3,       % +Field_List, +From, -To
            obj_diff/3,
            obj_diff_print/1,
            obj_diff_print/2,
            obj_downcast/2,   % +Parent, -Descendant
            obj_downcast/3,   % +Parent, +Class_To, -Descendant
-           obj_copy/2,       % +From, -To
-           obj_copy/3,       % +Field_List, +From, -To
            obj_field/3,
+           obj_rebase/3,     % ?Rebase_Rule, @Object0, -Object
            obj_reset_fields/3, % +[Field|...], +Obj_In, -Obj_Out
            obj_reset_fields/4, % +[Field|...], +Obj_In, -Obj_Out, Is_Succ
            obj_reset_fields_weak/3, % +[Field|...], +Obj_In, -Obj_Out
@@ -68,7 +69,12 @@
            class_create/4,
            spec_term/2,     % +Class, -Spec_Term
            class_arg_num/3, % +Class, ?Arg_Num, +Arg_Name
-           class_arg_num_weak/3  % +Class, ?Arg_Num, +Arg_Name
+           class_arg_num_weak/3,  % +Class, ?Arg_Num, +Arg_Name
+
+           u_class/1,
+           u_object/1,
+
+           reload_all_classes/0
            ]).
 
 :- use_module(library(ur_recorded_db)).
@@ -88,14 +94,6 @@
 
   */
 
-w_o(w(_, Obj), Obj) :- !.
-
-w_o(Obj, Obj).
-
-w_o(w(Ref, Obj1), Obj1, w(Ref, Obj2), Obj2) :- !.
-
-w_o(Obj1, Obj1, Obj2, Obj2).
-
 %
 % Доступ к полю Term по имени
 % (через описательный терм '...#').
@@ -107,11 +105,9 @@ named_arg(Obj, Field_Name, Value) :-
 
    named_arg(Obj, Field_Name, Value, _).
 
-% unbooked
 
-named_arg(Obj, Field_Name, Value, Type) :-
+named_arg(Term, Field_Name, Value, Type) :-
 
-    w_o(Obj, Term),
     functor(Term, Functor, Arity),
     atom_concat(Functor, '#', Spec_Functor),
     atom_concat(Spec_Functor, 't', Type_Functor),
@@ -136,28 +132,26 @@ named_arg(Obj, Field_Name, Value, Type) :-
 % Унификация с расширенной базой данных пролога по полю Field_Name
 % и значению Value для тех фактов, для
 % которых есть описатель '...#'.
-% booked
-
-named_arg_unify(DB_Key, Functor, Field_Name, Value,
-  w(Term_Ref, Term)) :-
-
-    !,
-    ground(Field_Name),
-
-    db_object_class(DB_Key, Functor), % unify with each class in db
-    spec_term(Functor, Spec_Term),
-    (arg(Field_Pos, Spec_Term, Field_Name) -> true; false),   % нашли позицию поля по имени (первую!)
-
-    functor(Spec_Term, _, Arity),
-    functor(Term, Functor, Arity),
-    arg(Field_Pos, Term, Value),             % связали Value со значением
-    db_recorded(DB_Key, Term, Term_Ref).
-
 
 named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
 
-  named_arg_unify(DB_Key, Functor, Field_Name, Value, w(_, Term)).
+    ground(Field_Name),
 
+    obj_field(Term, db_ref, Term_Ref),
+
+    db_object_class(DB_Key, Functor), % unify with each class in db
+    spec_term(Functor, Spec_Term),
+
+    % find the position of the first object field Field_Name
+    (arg(Field_Pos, Spec_Term, Field_Name) -> true; false),   
+
+    functor(Spec_Term, _, Arity),
+    functor(Term, Functor, Arity),
+
+    % Bound the field with the Value
+    arg(Field_Pos, Term, Value),
+  
+    db_recorded(DB_Key, Term, Term_Ref).
 
 
 %
@@ -246,17 +240,16 @@ obj_reset_fields(Fields_List, Object_In, Object_Out) :-
 %
 obj_reset_fields(Fields_List, Object0, Object, true) :-
 
-    w_o(Object0, Object_In, Object, Object_Out),
-    functor(Object_In, Class, _),
+    functor(Object0, Class, _),
     maplist(class_arg_num(Class), Arg_Nums, Fields_List),
-    duplicate_term(Object_In, Object_Out),
+    duplicate_term(Object0, Object),
     length(Fields_List, N),
     length(Free_Var_List, N),
-    maplist(setarg_tnv(Object_Out), Arg_Nums, Free_Var_List), !.
+    maplist(setarg_tnv(Object), Arg_Nums, Free_Var_List), !.
 
-obj_reset_fields_weak(Fields_List, Object_In, Object_Out) :-
+obj_reset_fields_weak(Fields_List, Object0, Object) :-
 
-  obj_reset_fields_weak(Fields_List, Object_In, Object_Out, _).
+  obj_reset_fields_weak(Fields_List, Object0, Object, _).
 
 
 %
@@ -264,14 +257,13 @@ obj_reset_fields_weak(Fields_List, Object_In, Object_Out) :-
 %
 obj_reset_fields_weak(Fields_List, Object0, Object, true) :-
 
-    w_o(Object0, Object_In, Object, Object_Out),
-    functor(Object_In, Class, _),
+    functor(Object0, Class, _),
     maplist(class_arg_num_weak(Class), Arg_Nums0, Fields_List),
     delete(Arg_Nums0, 0, Arg_Nums),
-    duplicate_term(Object_In, Object_Out),
+    duplicate_term(Object0, Object),
     length(Arg_Nums, N),
     length(Free_Var_List, N),
-    maplist(setarg_tnv(Object_Out), Arg_Nums, Free_Var_List), !.
+    maplist(setarg_tnv(Object), Arg_Nums, Free_Var_List), !.
 
 
 
@@ -303,27 +295,32 @@ obj_construct2(Class, Field_Names, Field_Values, Object, Weak) :-
     class_ensure_created(Class),
 
     atom_concat(Class, '#', Spec_Class),
-    current_functor(Spec_Class, Arity),    % находим функтор-описатель
-    !,
-    functor(Spec_Term, Spec_Class, Arity),
-    objects:Spec_Term,
+    (  % get the descriptor functor
+       current_functor(Spec_Class, Arity)
+    ->
+       functor(Spec_Term, Spec_Class, Arity),
+       objects:Spec_Term,
 
-    functor(Object, Class, Arity), % создали объект с несвязанными полями
+       % the object with unbounded fields is created
+       functor(Object, Class, Arity), 
 
-    % вычисляем номера полей
-    (Weak = weak ->
-     weak_maplist(arg_bac(Spec_Term), Field_Poses, Field_Names)
-     ;
-     maplist(arg_bac(Spec_Term), Field_Poses, Field_Names)
-     ),
+       % find the fields nums
+       (  Weak = weak
+       -> weak_maplist(arg_bac(Spec_Term),Field_Poses,Field_Names)
+       ;   maplist(arg_bac(Spec_Term), Field_Poses, Field_Names)
+       ),
 
-    % связываем поля с вычисленными номерами
-    (Weak = weak ->
-     weak_maplist(weak_arg_bac(Object), Field_Poses, Field_Values)
-     ;
-     maplist(arg_bac(Object), Field_Poses, Field_Values)
-     ),
-    !.
+       % Bound fields with nums
+       (  Weak = weak
+       -> weak_maplist(weak_arg_bac(Object),
+                       Field_Poses, Field_Values)
+       ;  maplist(arg_bac(Object), Field_Poses, Field_Values)
+       ),
+       !
+    ;
+       throw(error(domain_error(uranium_nonempty_class, Class),
+                   _))
+    ).
 
 % todo it duplicates class_fields
 field_names_list(Class, Field_Names) :-
@@ -350,9 +347,8 @@ obj_downcast(Parent, Descendant) :-
 % downcast to Class
 %
 
-obj_downcast(Parent_In, Class, Descendant_Out) :-
+obj_downcast(Parent, Class, Descendant) :-
 
-  w_o(Parent_In, Parent, Descendant_Out, Descendant),
   compound(Parent),
   functor(Parent, Parent_Class, _),
   (
@@ -381,13 +377,11 @@ obj_downcast(Parent_In, Class, Descendant_Out) :-
 % TODO: UT
 %
 
-downcast_fill_values(Parent_Class, Desc_Class,
-                     Parent_In, Desc_Out) :-
+downcast_fill_values(Parent_Class, Desc_Class, Parent, Desc) :-
 
-  w_o(Parent_In, Parent, Desc_Out, Desc),
   objects:clause(downcast(Parent_Class, Desc_Class, _, _), _) ->
   objects:downcast(Parent_Class, Desc_Class, Parent, Desc), !
-  ;
+   ;
   true, !.
 
 %TODO downcast to no direct descendant is not implemented
@@ -399,6 +393,24 @@ downcast_fill_values(Parent_Class, Desc_Class,
 %  ;
 %  true. % no objects:downcast defined
 
+obj_rebase(Rebase_Rule, Object0, Object) :-
+
+   (  Rebase_Rule = '->'(Old_Base, New_Base)
+   -> true
+   ;  throw(error(type_error((->)/2, Rebase_Rule),
+                  context(obj_rebase/3, _))) 
+   ),
+   (  var(Object0)
+   -> throw(error(instantiation_error,
+                  context(obj_rebase/3, _)))
+   ;  u_object(Object0)
+   -> true
+   ;  throw(error(type_error(uranium_object, Object0),
+                  context(obj_rebase/3, _)))
+   ).
+      
+
+  
 %
 % Вычисление выражений в операторной форме
 %
@@ -423,26 +435,67 @@ field_type( _ : Type, Type) :- !.
 field_type(_ , _).
 
 
+check_class_arg(Class, Err_Context) :-
+
+   nonvar(Class),
+   (  \+ atom(Class)
+   -> throw(error(type_error(atom, Class), Err_Context))
+   ;  u_class(Class)
+   -> true
+   ;  throw(error(domain_error(uranium_class, Class),Err_Context))
+   ).
+
 %
 % class_parent(?Class, ?Parent)
 %
 
 class_parent(Class, Parent) :-
 
+  (  var(Class)
+  -> true
+  ;  check_class_arg(Class,
+                     context(class_parent/2, 'the first arg'))
+  ),
+  (  var(Parent)
+  -> true
+  ;  check_class_arg(Parent,
+                     context(class_parent/2, 'the second arg'))
+  ),
+  class_parent_(Class, Parent).
+
+  
+class_parent_(Class, Parent) :-
+
   objects:current_predicate(parent, _) ->
-  call(objects:parent, Class, Parent).
+  objects:parent(Class, Parent).
 
 %
 % class_descendant(?Class, ?Descendant)
-%
+% at least one arg should be instantiated
 
 class_descendant(Class, Descendant) :-
 
-  class_ensure_created(Descendant),
-  class_parent(Descendant, Class)
-  ;
-  class_parent(Descendant, X),
-  class_descendant(Class, X).
+  (  var(Class), var(Descendant)
+  -> throw(error(instantiation_error,
+                 context(class_descendant/2,
+                 'at least one argument should be instantiated')))
+  ;  true ),
+  (  nonvar(Class)
+  -> class_ensure_created(Class)
+  ;  true ),
+  (  nonvar(Descendant)
+  -> class_ensure_created(Descendant)
+  ;  true ),
+  class_descendant_(Class, Descendant).
+
+class_descendant_(Class, Descendant) :-
+
+  class_parent(Descendant, Class).
+
+class_descendant_(Class, Descendant) :-
+
+  class_parent(Descendant0, Class),
+  class_descendant(Descendant0, Descendant).
 
 % Get list of field names
 
@@ -460,22 +513,27 @@ class_fields(Class, Fields) :-
 
 class_ensure_created(Class) :-
 
+  (  var(Class)
+  -> throw(error(instantiation_error,
+                 context(class_ensure_created/1, _)))
+  ;  check_class_arg(Class, context(class_ensure_created/1, _))
+  ),
+  
   atom_concat(Class, '#', Meta),
   (
    objects:current_predicate(Meta, _) -> true
 
    ;
 
-   atom(Class),
-
-   Class = object_base_v -> true % object_base_v is implicitly
-                                 % defined
+   Class == object_base_v -> true % object_base_v is implicitly
+                                  % defined
 
    ;
 
-   (find_class_module(Class, Module_Path) -> true; %NB implies '!'
-    write_log(['A definition module for the class', Class,
-               'is not found']), fail
+   (  find_class_module(Class, Module_Path)
+   -> true
+   ;  throw(error(existence_error(uranium_class, Class),
+                  context(class_ensure_created/1, _)))
    ),
    load_class_module(Class, Meta, Module_Path)
   ).
@@ -485,9 +543,8 @@ obj_pretty_print(Object) :-
 
   obj_pretty_print([lf(1)], Object).
 
-obj_pretty_print(Options, Object0) :-
+obj_pretty_print(Options, Object) :-
 
-  w_o(Object0, Object),
   functor(Object, Class, _),
   field_names_list(Class, Fields),
   %open_log([lf(2, before)]),
@@ -539,7 +596,7 @@ field_pretty_print(Options, Object, Field) :-
 
 obj_merge(A, B, Class, C) :-
 
-   % TODO w_o?
+   % TODO db addr?
    obj_downcast(A, Class, A1),
    obj_downcast(B, Class, B1),
    A1 = B1,
@@ -576,17 +633,15 @@ get_key(Class, Key) :-
 % get_key(Object, ?Key)
 %
 
-get_key(Object0, Key) :-
+get_key(Object, Key) :-
 
-  w_o(Object0, Object),
   compound(Object), !,
   functor(Object, Class, _),
   get_key(Class, Key).
 
 
-get_key_value(Object0, Key_Value) :-
+get_key_value(Object, Key_Value) :-
 
-  w_o(Object0, Object),
   functor(Object, Class, _),
   get_key(Class, Key),
   named_args_unify(Object, Key, Key_Value), !.
@@ -595,10 +650,8 @@ get_key_value(Object0, Key_Value) :-
 % obj_diff(+Obj1, +Obj2, -Diff_List)
 %
 
-obj_diff(Obj10, Obj20, Diff_List) :-
+obj_diff(Obj1, Obj2, Diff_List) :-
 
-  w_o(Obj10, Obj1),
-  w_o(Obj20, Obj2),
   compound(Obj1),
   compound(Obj2),
 
@@ -654,9 +707,8 @@ check_fields(Class, Fields) :-
 % obj_copy(+From, -To)
 %
 
-obj_copy(From0, To) :-
+obj_copy(From, To) :-
 
-   w_o(From0, From),
    compound(From),
    functor(From, Class, _),
    objects:copy(Class, From, To).
@@ -668,9 +720,8 @@ obj_copy(From0, To) :-
 % obj_copy(+Field_List, +From, -To)
 %
 
-obj_copy(Field_List_U, From0, To) :-
+obj_copy(Field_List_U, From, To) :-
 
-   w_o(From0, From),
    ground(Field_List_U),
    is_set(Field_List_U),
    sort(Field_List_U, Field_List),
@@ -1034,3 +1085,27 @@ class_arg_num_weak(Class, Arg_Num, Arg_Name) :-
    ), !.
 
 
+%% u_class(@Class)
+%  True if Class is a valid name for an uranium class
+                             
+u_class(Class) :-
+
+   atom(Class),
+   atom_concat(_, '_v', Class).
+
+
+%% u_object(@Term)
+%  True if Term is bound to an uranium object.
+                             
+u_object(Term) :-
+
+   compound(Term),
+   functor(Term, Functor, Arity),
+   atom_concat(_, '_v', Functor).
+
+
+reload_all_classes :-
+
+   true.
+
+:- initialization reload_all_classes.
