@@ -22,9 +22,6 @@
 %
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
-%  --------------------------------------------------------------
-%   Description      : Data abstraction mechanismes.
-%   Created On       : Apr 3 2009
 
 :- module(ur_objects,
           [
@@ -36,7 +33,6 @@
            named_args_weak_unify/3,
            named_args_unify/5,
 
-           class_ensure_created/1,
            class_parent/2,
            class_descendant/2,
            class_fields/2,    %+Class, ?Fields
@@ -63,8 +59,6 @@
            get_key/2,     % +Class, ?Key | +Object, ?Key
            get_key_value/2, % +Object, ?Key_Value
            most_narrowed/3, %+Class1, +Class2, -Most_Narrowed_Class
-	   load_class_module/3,
-	   find_class_module/2,
            class_create/3,
            class_create/4,
            spec_term/2,     % +Class, -Spec_Term
@@ -83,7 +77,8 @@
 :- use_module(logging/logging).
 
 :- dynamic objects:key/2, objects:copy/3,
-           objects:typedef_flag/2, objects:pretty_print/4.
+           objects:typedef_flag/2, objects:pretty_print/4,
+           objects:parent/3, objects:module/2.
 
 %:- multifile db_recorded/3, db_erase/1, db_recordz/2.
 
@@ -292,7 +287,7 @@ obj_construct(Class, Field_Names, Field_Values, Object, Weak) :-
 
 obj_construct2(Class, Field_Names, Field_Values, Object, Weak) :-
 
-    class_ensure_created(Class),
+    %class_ensure_created(Class),
 
     atom_concat(Class, '#', Spec_Class),
     (  % get the descriptor functor
@@ -356,7 +351,7 @@ obj_downcast(Parent, Class, Descendant) :-
 
   ;
 
-    class_ensure_created(Class),
+    %class_ensure_created(Class),
 
     field_names_list(Class, Field_Names),
     Parent =.. [_|Parent_Field_Values],
@@ -461,14 +456,9 @@ class_parent(Class, Parent) :-
   ;  check_class_arg(Parent,
                      context(class_parent/2, 'the second arg'))
   ),
-  class_parent_(Class, Parent).
+  objects:parent(Class, Parent, _).
 
   
-class_parent_(Class, Parent) :-
-
-  objects:current_predicate(parent, _) ->
-  objects:parent(Class, Parent).
-
 %
 % class_descendant(?Class, ?Descendant)
 % at least one arg should be instantiated
@@ -481,10 +471,10 @@ class_descendant(Class, Descendant) :-
                  'at least one argument should be instantiated')))
   ;  true ),
   (  nonvar(Class)
-  -> class_ensure_created(Class)
+  -> true %class_ensure_created(Class)
   ;  true ),
   (  nonvar(Descendant)
-  -> class_ensure_created(Descendant)
+  -> true % class_ensure_created(Descendant)
   ;  true ),
   class_descendant_(Class, Descendant).
 
@@ -507,38 +497,7 @@ class_fields(Class, Fields) :-
   objects:Descr_Pred,
   Descr_Pred =.. [Descriptor|Fields], !.
 
-%
-% class_ensure_created(+Class)
-%
-
-class_ensure_created(Class) :-
-
-  (  var(Class)
-  -> throw(error(instantiation_error,
-                 context(class_ensure_created/1, _)))
-  ;  check_class_arg(Class, context(class_ensure_created/1, _))
-  ),
   
-  atom_concat(Class, '#', Meta),
-  (
-   objects:current_predicate(Meta, _) -> true
-
-   ;
-
-   Class == object_base_v -> true % object_base_v is implicitly
-                                  % defined
-
-   ;
-
-   (  find_class_module(Class, Module_Path)
-   -> true
-   ;  throw(error(existence_error(uranium_class, Class),
-                  context(class_ensure_created/1, _)))
-   ),
-   load_class_module(Class, Meta, Module_Path)
-  ).
-
-
 obj_pretty_print(Object) :-
 
   obj_pretty_print([lf(1)], Object).
@@ -624,8 +583,9 @@ most_narrowed(Class1, Class2, Most_Narrowed_Class) :-
 
 get_key(Class, Key) :-
 
+  % TODO arg type checking
   atom(Class), !,
-  class_ensure_created(Class),
+  %class_ensure_created(Class),
   (objects:key(Class, Key) -> true ; Key = []).
 
 
@@ -744,77 +704,76 @@ class_field_type(Class, Field, Type) :-
    arg(Arg_Num, Type_Term, Type), !.
 
 %
-% find_class_module(+Class, -Module_Path)
+% find_class_module(-Module_Path)
 %
-% If several modules (up to 5th level in dirs) match
-% Class, then backtrace each.
+% Return all class modules pathes on BT
+% (up to 5th level)
 %
-% Class must end with '_v'.
+  
+find_class_module(Module_Path) :-
 
-find_class_module(Class, Module_Path) :-
-
-  atom_concat(_, '_v', Class),
-  atom_concat(Class, '.pl', Module_Name),
   expand_file_name('*_v.pl', L1),
   expand_file_name('*/*_v.pl', L2),
   expand_file_name('*/*/*_v.pl', L3),
   expand_file_name('*/*/*/*_v.pl', L4),
   expand_file_name('*/*/*/*/*_v.pl', L5),
   flatten([L1, L2, L3, L4, L5], List),
-  member(Module_Path, List),
-  atom_concat(Path_Head, Module_Name, Module_Path),
-  (Path_Head = '' ; atom_concat(_, '/', Path_Head)).
+  member(Module_Path, List).
 
 %
-% load_class_module(+Class, +Meta, +Module_Path)
-%
-% Load the class module,
-% create classes, load meta predicates (_v?),
+% process_class_module(+Main_Class)
 %
 
-load_class_module(Class, Meta, Module_Path) :-
+process_class_def(Class_Def) :-
 
-  (flag(objects_module_created, 0, true) ->
-   % ur_objects must be imported in the objects din module
-   objects:use_module(library(ur_objects)) ; true),
+  Class_Def = new_class(Class, Parent, Add_Fields, Key),
+  objects:parent(Class, Parent, Module), !,
 
-  use_module(Module_Path), %% NB can't redefine
+  % FIXME no reloading
+  % assert *_v? predicates first (they are used by others)
+  (atom_concat(Class, '?', Head),
+   call(Module:current_predicate(Head, Term)),
+   call(Module:clause(Term, Body)),
+   objects:assertz((Term :- Body)),
+   fail ; true ),
 
-  % import *_v? predicates first (they are used by others)
-  % NB use assert, not import to allow inherit _v? preds
+  % process class module-scoped objects
+  (  Class == Module
+  -> % import copy/3 predicates
+     dynamic_import(Module, objects, copy),
+     % import downcast/4 predicates
+     dynamic_import(Module, objects, downcast),
+     % process typedefs
+     process_typedefs(Module)
+  ;  true ),
 
-  (Class:current_predicate(Head, Term),
-   atom_concat(_, '_v?', Head),
-   Class:clause(Term, Body),
-   objects:assert((Term :- Body)),
-   fail
-   ;
-   true),
+  % process Class_Def
+  (   nonvar(Key)
+  ->  class_create(Class, Parent, Add_Fields, Key)
+  ;   class_create(Class, Parent, Add_Fields)
+  ).
 
-  % import copy/3 predicates
-  dynamic_import(Class, objects, copy),
 
-  % import downcast/4 predicates
-  dynamic_import(Class, objects, downcast),
+process_typedefs(Module) :-
 
-  % process typedefs
-  (  Class:current_predicate(typedef/2),
-     Class:typedef(TD_Type, TD_List),
+  (  Module:current_predicate(typedef/2),
+     Module:typedef(TD_Type, TD_List),
 
      % control for not repeating type definitions
      (  objects:typedef_flag(TD_Type, Some_Class)
-     -> write_log(['Type', TD_Type,
+     -> %FIXME throw(error(
+        write_log(['Type', TD_Type,
                    'is defined already in', Some_Class],
                   [lf(1)]),
         !, fail
-     ;  objects:assert(typedef_flag(TD_Type, Class))
+     ;  objects:assertz(typedef_flag(TD_Type, Module))
      ),
 
      % pretty_print
      (  memberchk(pretty_print - TD_PP_Head, TD_List)
      -> TD_PP_Pred =.. [TD_PP_Head, TD_Stream, TD_Value, TD_Opt],
-        objects:assert((pretty_print(TD_Type, TD_Stream, TD_Value, TD_Opt)
-                        :- Class:TD_PP_Pred))
+        objects:assertz((pretty_print(TD_Type, TD_Stream, TD_Value, TD_Opt)
+                        :- Module:TD_PP_Pred))
      ;  true
      ),
 
@@ -822,8 +781,8 @@ load_class_module(Class, Meta, Module_Path) :-
      (  memberchk(postgres - type(PG_Type, PG_Convert_Pred),
                   TD_List)
 
-     -> db_pg:assert(pl_pg_type(TD_Type, PG_Type,
-                                      Class:PG_Convert_Pred)
+     -> db_pg:assertz(pl_pg_type(TD_Type, PG_Type,
+                                      Module:PG_Convert_Pred)
                           )
      ; true
      ),
@@ -831,56 +790,39 @@ load_class_module(Class, Meta, Module_Path) :-
      fail
   ;
      true
-  ),
-
-
-  % process new_class/3,4
-
-  all_new_classes(Class, New_Classes),
-  (
-     member(new_class(Class_X, Parent_X, Add_Fields_X, Key_X), New_Classes),
-
-     % import class with its descendants
-
-     atom_concat(Class_X, '#', Meta_X),
-     \+ objects:current_predicate(Meta_X, _),
-
-     (   nonvar(Key_X)
-     ->  class_create(Class_X, Parent_X, Add_Fields_X, Key_X)
-     ;   class_create(Class_X, Parent_X, Add_Fields_X)
-     ),
-     fail
-  ;
-     (   objects:current_predicate(Meta, _)
-     ->  true
-     ;   write_log(['The module', Module_Path,
-                   'does not contain a definition for a class',
-                   Class, '(no new_class/3 predicate was found)'])
-     )
   ).
+                             
+                             
+all_classes(All_Classes) :-
 
+     % associate each class with a module it is defined
+     % add relation to parent classes
+     (  current_module(Main_Class),
+        u_class(Main_Class),
+        module_property(Main_Class, file(Module_File)),
+        assertz(objects:module(Main_Class,Module_File)),
+        module_class_def(Main_Class, Class, Parent),
+        assertz(objects:parent(Class, Parent, Main_Class)),
+        fail ; true ),
+                             
+     % TODO check no Main_Class repeats
+     % TODO check no class name repeats
+                             
+     % represet parent relations as a graph edges
+     findall(Parent - Class,
+             objects:parent(Class, Parent, _),
+             Edges),
 
-all_new_classes(Main_Class, New_Classes) :-
-
-     %  Find parend-desc relation as a set of graph edges
-     findall(Parent_X - Class_X,
-	     (	 Main_Class:current_predicate(new_class, New_Class_Head),
-		 functor(New_Class_Head, _, New_Class_Arity),
-		 (  New_Class_Arity =:= 3
-		 -> Main_Class:new_class(Class_X, Parent_X, Add_Fields_X)
-		 ;  Main_Class:new_class(Class_X, Parent_X, Add_Fields_X, Key_X)
-		 )
-	     ),
-	     Edges
-	    ),
      vertices_edges_to_ugraph([], Edges, Graph),
      (	 top_sort(Graph, Classes)
      ->	 true
-     ;	 Classes = [],
-         write_log(['There are cycle in class definitions: ', Graph])
+     ;	 %FIXME throw(error(
+         Classes = [],
+         write_log(['There is a cycle in class definitions: ', Graph])
      ),
      findall(new_class(Class_X, Parent_X, Add_Fields_X, Key_X),
              (member(Class_X, Classes),
+              objects:parent(Class_X, _, Main_Class),
 	      (  Main_Class:clause(new_class(Class_X, Parent_X,
                                              Add_Fields_X),
                                    _),
@@ -890,7 +832,7 @@ all_new_classes(Main_Class, New_Classes) :-
                                    _)
               )
              ),
-             New_Classes
+             All_Classes
             ).
 
 %
@@ -927,8 +869,9 @@ class_create(Class, object_base_v, Fields) :-
 
 class_create(Class, Parent, Add_Fields) :-
 
+  % TODO arg type checking
   atom(Class),
-  class_ensure_created(Parent),
+  %class_ensure_created(Parent),
   atom_concat(Parent, '#', Parent_Meta),
   objects:current_predicate(Parent_Meta, Parent_Meta_Pred), !,
   objects:Parent_Meta_Pred,
@@ -978,7 +921,7 @@ assert_key(Class, Key) :-
   ;
   is_list(Key),
   list_to_set(Key, Keys),
-  assert(objects:key(Class, Keys)).
+  assertz(objects:key(Class, Keys)).
 
 
 assert_meta(Class, Parent, Fields) :-
@@ -1006,9 +949,11 @@ assert_meta(Class, Parent, Fields) :-
   Class_Meta_Pred =.. [Class_Meta | Field_Names],
   Class_Type_Pred =.. [Class_Types | Field_Types],
   Parent_Pred =.. [parent, Class, Parent],
-  objects:assert(Class_Meta_Pred),
-  objects:assert(Class_Type_Pred),
-  objects:assert(Parent_Pred).
+
+  % FIXME no reloading
+  objects:assertz(Class_Meta_Pred),
+  objects:assertz(Class_Type_Pred),
+  objects:assertz(Parent_Pred).
 
 
 %
@@ -1033,7 +978,7 @@ assert_evals(Class, Parent) :-
 
    Class_T2 =.. [Class_Dc, A, Field, C],
    Parent_T2 =.. [Parent_Dc, A, Field, C],
-   assert(objects:(Class_T2 :- Parent_T2)),
+   assertz(objects:(Class_T2 :- Parent_T2)),
    fail
    ;
    true
@@ -1047,7 +992,7 @@ assert_copy(Class, Parent) :-
 
   (   objects:clause(copy(Class, _, _), _)
   ->  true
-  ;   assert(objects:
+  ;   assertz(objects:
              (copy(Class, From, To) :- copy(Parent, From, To))
       )
   ).
@@ -1100,12 +1045,45 @@ u_class(Class) :-
 u_object(Term) :-
 
    compound(Term),
-   functor(Term, Functor, Arity),
+   functor(Term, Functor, _), %NB arity can be 0 (object_v)
    atom_concat(_, '_v', Functor).
 
 
+% module_class_def(+Main_Class, -Class) :-
+% find all class definitions                             
+module_class_def(Main_Class, Class, Parent) :-
+
+   Main_Class:current_predicate(new_class, New_Class_Head),
+   functor(New_Class_Head, _, New_Class_Arity),
+   (  New_Class_Arity =:= 3
+   -> Main_Class:new_class(Class, Parent, _)
+   ;  Main_Class:new_class(Class, Parent, _, _)
+   ).
+                             
 reload_all_classes :-
 
-   true.
+   % clear the db
+   abolish(objects:parent/3),
+   abolish(objects:module/2),
+   abolist(objects:typedef_flag/2),
+   abolish(objects:':-'/2),
+   abolish(db_pg:pl_pg_type/3),
+   abolish(objects:key/2),
 
-:- initialization reload_all_classes.
+   % Load all class modules
+   (  find_class_module(Module_Path),
+      consult(Module_Path),
+      fail ; true
+   ),
+
+   % Get classes in the creation order
+   % (also asserts objects:parent/3 and objects:module/2
+   %  as a side effect)
+   all_classes(Class_Defs),
+
+   (  member(Class_Def, Class_Defs),
+      process_class_def(Class_Def),
+      fail ; true ).
+
+                             
+%:- initialization reload_all_classes.
