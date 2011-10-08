@@ -206,4 +206,5 @@ find_class_module(Module_Path) :-
   flatten([L1, L2, L3, L4, L5], List),
   member(Module_Path, List).
 
+:- initialization reload_all_classes.
                              

@@ -443,14 +443,21 @@ obj_pretty_print(Object) :-
 
 obj_pretty_print(Options, Object) :-
 
-  functor(Object, Class, _),
-  field_names_list(Class, Fields),
-  %open_log([lf(2, before)]),
-  log_piece([Class, '('], Options),
-  change_indent(Options, O2, 2),
-  maplist(field_pretty_print(O2, Object), Fields),
-  log_piece([')'], Options).
-  %close_log([lf(2, after)]).
+   (  var(Object)
+   -> throw(error(instantiation_error,
+                  context(obj_pretty_print/2, _)))
+   ;  check_object_arg(Object,
+                       context(obj_pretty_print/2, _),
+                       Class_Id)
+   ),
+   field_names_list(Class_Id, Fields),
+   class_id(Class_Id, Class),
+   %open_log([lf(2, before)]),
+   log_piece([Class, '('], Options),
+   change_indent(Options, O2, 2),
+   maplist(field_pretty_print(O2, Object), Fields),
+   log_piece([')'], Options).
+   %close_log([lf(2, after)]).
 
 obj_diff_print(Diff_List) :-
 

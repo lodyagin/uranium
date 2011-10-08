@@ -51,7 +51,7 @@ pg_recorded(pg(Connect), Object, pg(Connect, Table, Oid)) :-
        functor(Term, Table, _)
     ;  dpg_table(Connect, Table), % for each table in db
        postgres:pgTABLE(Connect, Table, Column_List),
-       class_ensure_created(Table),
+       %class_ensure_created(Table),
        length(Column_List, Arity),
        Arity1 is Arity + 1,
        functor(Row, Table, Arity1)

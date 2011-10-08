@@ -1,6 +1,8 @@
 :- module(check_arg,
           [check_inst/2,
            check_class_arg/2,
+           check_fields_arg/2,
+           check_values_arg/3,
            check_object_arg/3
            ]).
 
@@ -22,6 +24,44 @@ check_class_arg(Class, Err_Context) :-
    -> true
    ;  throw(error(domain_error(uranium_class, Class),Err_Context))
    ).
+
+
+check_fields_arg(Field_Names, Ctx) :-
+
+   check_field_names(Field_Names, Field_Names, Ctx).
+
+check_field_names([], _, _) :- !.
+
+check_field_names([Field_Name|T], Full, Ctx) :-
+
+   check_field_name(Field_Name, Ctx),
+   check_field_names(T, Full, Ctx), !.
+
+check_field_names(_, Full, Ctx) :-
+
+   throw(error(type_error(list, Full), Ctx)).
+
+check_field_name(Field_Name, Ctx) :-
+
+   (  var(Field_Name)
+   -> throw(error(instantiation_error, Ctx))
+   ;  \+ atom(Field_Name)
+   -> throw(error(type_error(atom, Field_Name), Ctx))
+   ;  true
+   ).
+
+
+check_values_arg(Field_List, Value_List, Ctx) :-
+
+   nonvar(Value_List), 
+   ( \+ is_list(Value_List)
+   -> throw(error(type_error(list, Value_List), Ctx))
+   ;  length(Field_List, LL), length(Value_List, LL)
+   -> true
+   ;  throw(error(domain_error(matched_list_length,
+                  (Field_List, Value_List)), Ctx))
+   ).
+
 
 check_object_arg(Object, Err_Context, Class_Id) :-
 

@@ -70,6 +70,12 @@ assert_new_class(Class, Parent_Id, Fields, Ctx) :-
   -> true % class id can be already created by object_module
   ;  gen_class_id(Class, Class_Id) ),
 
+  % arity/2 :- true is only asserted by this module
+  (  objects:clause(arity(Class_Id, _), _) 
+  -> throw(class_exists(Class))
+  ;  true
+  ),
+
   (  fields_names_types(Fields, Field_Names, _)
   -> true
   ;  throw(error(type_error(object_fields_and_types,Fields), Ctx))
@@ -80,31 +86,34 @@ assert_new_class(Class, Parent_Id, Fields, Ctx) :-
   ),
                              
   (  \+ class_id(Class_Id, _)
-  -> objects:assertz(class(Class_Id, true, Class))
+  -> objects:assertz(class_id(Class_Id, true, Class))
   ;  true ),  
 
   % assert parent
   objects:assertz(parent(Class_Id, Parent_Id)),
   
-  assert_class_fields(Class_Id, Fields),
+  assert_class_fields(Class_Id, Fields, _, Next_Arg),
+  Arity is Next_Arg - 1,
 
   % check no repeats in the class field names
-  (  bagof(Field_Name,
-       T1^T2^T3^T4^T5^ (objects:clause(
-          field(Class_Id, Field_Name, T1, T2, T3, T4),
-          T5), functor(T5, arg, _)),
-       All_Field_Names),
-     \+ is_set(All_Field_Names)
+  bagof(Field_Name,
+        T1^T2^T3^T4^T5^(objects:clause(
+          field(Class_Id, Field_Name, T1, T2, T3, T4), T5),
+          functor(T5, arg, _)),
+        All_Field_Names),
+  (  \+ is_set(All_Field_Names)
   -> % delete incorrect definitions
      % FIXME remove class cleanup to catch
      objects:retractall(field(Class_Id, _, _, _, _, _)),
      throw(error(duplicate_field(All_Field_Names), Ctx))
   ;  true
-  ), !.
+  ), !,
 
-assert_class_fields(Class_Id, Top_Fields) :-
-   assert_class_fields(Class_Id, Top_Fields, _, _).
-                             
+  % if all ok make final asserts
+  objects:assertz(fields(Class_Id, All_Field_Names)),
+  objects:assertz(arity(Class_Id, Arity)).
+
+
 assert_class_fields(Class_Id, Top_Fields, Arg0, Arg) :-
 
    assert_inherited_fields(Class_Id, Class_Id, Arg0, Arg1),
