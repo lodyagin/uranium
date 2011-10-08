@@ -28,16 +28,16 @@
 
            named_arg/3,
            named_arg/4,
-           named_arg_unify/5,
+           %named_arg_unify/5,
            named_args_unify/3,
            named_args_weak_unify/3,
-           named_args_unify/5,
+           %named_args_unify/5,
 
            %class_fields/2,    %+Class, -Fields
            %class_field_type/3,
            eval_obj_expr/2,
            obj_construct/4,
-           obj_construct/5,
+           obj_construct_weak/4,
            obj_copy/2,       % +From, -To
            obj_copy/3,       % +Field_List, +From, -To
            obj_is_descendant/2,
@@ -97,18 +97,26 @@
 
 obj_field(Obj, Field_Name, Value) :-
 
-  (  (var(Obj) ; var(Field_Name))
-  -> throw(error(instantiation_error,
-                 context(obj_field/3, _)))
-  ;  \+ atom(Field_Name)
-  -> throw(error(type_error(atom, Field_Name),
-                 context(obj_field/3, _)))
-  ;  check_object_arg(Obj, context(obj_field/3, _), Class_Id)
-  ),
-  (  objects:field(Class_Id, Field_Name, Obj, Value, _, _)
-  -> true
-  ;  throw(no_object_field(Obj, Field_Name))
-  ).
+   (  (var(Obj) ; var(Field_Name))
+   -> throw(error(instantiation_error,
+                  context(obj_field/3, _)))
+   ;  \+ atom(Field_Name)
+   -> throw(error(type_error(atom, Field_Name),
+                  context(obj_field/3, _)))
+   ;  check_object_arg(Obj, context(obj_field/3, _), Class_Id)
+   ),
+   obj_field_int(Class_Id, Field_Name, false, Obj, Value, _).
+
+% NB evaluated fields can be also processed as `Weak' 
+
+obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type) :-
+
+   (  objects:field(Class_Id, Field_Name, Obj, Value, Type, _)
+   -> true
+   ;  Weak == weak
+   -> true
+   ;  throw(no_object_field(Obj, Field_Name))
+   ).
 
 
 named_arg(Obj, Field, Value) :-
@@ -120,33 +128,20 @@ named_arg(Obj, Field, Value) :-
 
 named_arg(Term, Field_Name, Value, Type) :-
 
-    
-  
-    functor(Term, Functor, Arity),
-    atom_concat(Functor, '#', Spec_Functor),
-    atom_concat(Spec_Functor, 't', Type_Functor),
-    functor(Spec_Term, Spec_Functor, Arity),
-    functor(Type_Term, Type_Functor, Arity),
-
-    objects:Spec_Term,
-    objects:Type_Term,
-
-    (   arg(Field_Pos, Spec_Term, Field_Name)
-    ->  arg(Field_Pos, Term, Value),
-        arg(Field_Pos, Type_Term, Type)
-    ;   atom_concat(Functor, '?', Method_Functor),
-        objects:current_predicate(Method_Functor, _)
-    ->  % Вызов метода
-        call(objects:Method_Functor, Term, Field_Name, Value)
-    ), !.
-
-
+   (  (var(Term) ; var(Field_Name))
+   -> throw(error(instantiation_error,
+                  context(named_arg/4, _)))
+   ;  \+ atom(Field_Name)
+   -> throw(error(type_error(atom, Field_Name),
+                  context(named_arg/4, _)))
+   ;  check_object_arg(Term, context(named_arg/4, _), Class_Id)
+   ),
+   obj_field_int(Class_Id, Field_Name, strict, Term, Value, Type).
 
 %
 % Унификация с расширенной базой данных пролога по полю Field_Name
-% и значению Value для тех фактов, для
-% которых есть описатель '...#'.
-
+% и значению Value для тех фактов, которые созданы как классы
+/*
 named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
 
     ground(Field_Name),
@@ -166,45 +161,44 @@ named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
     arg(Field_Pos, Term, Value),
   
     db_recorded(DB_Key, Term, Term_Ref).
+*/
 
+% named_args_unify(+Term, +Field_List, ?Value_List)
 
-%
-% Те же операции, но над списками.
-%
+named_args_unify(Term, Field_List, Value_List) :-
 
+   named_args_unify2(Term, Field_List, Value_List,
+                     strict, context(named_args_unify/3, _)).
+   
 % weak means do not fail on unexisting fields
 
-named_args_weak_unify(_, [], []) :- !.
+named_args_weak_unify(Term, Field_List, Value_List) :-
 
-named_args_weak_unify(Obj,
-                 [Field_Name | FN_Tail],
-                 [Value | V_Tail]
-                ) :-
+   named_args_unify2(Term, Field_List, Value_List,
+                     weak, context(named_args_weak_unify/3, _)).
+   
+named_args_unify2(Term, Field_List, Value_List, Weak, Ctx) :-
 
-  (   obj_field(Obj, Field_Name, V)
-  ->  V = Value
-  ;   true
-  ),
-  named_args_weak_unify(Obj, FN_Tail, V_Tail).
+   (  (var(Term) ; var(Field_List))
+   -> throw(error(instantiation_error, Ctx))
+   ;  true ),
+   check_fields_arg(Field_List, Ctx),
+
+   (  var(Value_List) -> true
+   ;  check_values_arg(Field_List, Value_List, Ctx)
+   ),
+   check_object_arg(Term, Ctx, Class_Id),
+   obj_unify_int(Class_Id, Field_List, Weak, Term, Value_List).
 
 
-named_args_unify(_, [], []) :- !.
+obj_unify_int(_, [], _, _, []) :- !.
 
-named_args_unify(Obj,
-                 [Field_Name | FN_Tail],
-                 [Value | V_Tail]
-                ) :-
+obj_unify_int(Class_Id, [Field|FT], Weak, Term, [Value|VT]) :-
 
-  obj_field(Obj, Field_Name, Value),
-  named_args_unify(Obj, FN_Tail, V_Tail).
+   obj_field_int(Class_Id, Field, Weak, Term, Value, _),
+   obj_unify_int(Class_Id, FT, Weak, Term, VT).
 
-named_args_unify(_,
-                 _,
-                 [],
-                 [],
-                 w(_, _)
-                ) :- !, fail.
-
+/*
 named_args_unify(DB_Key,
                  Functor,
                  [Field_Name | FN_Tail],
@@ -226,17 +220,7 @@ named_args_unify(DB_Key,
   named_args_unify(DB_Key,
                    Functor, Field_Names, Field_Values,
                    w(_, Term)).
-
-named_args_unify2(_, [], []).
-
-named_args_unify2(Term,
-                  [Field_Name | FN_Tail],
-                  [Value | V_Tail]
-                 ) :-
-
-    named_arg(Term, Field_Name, Value),
-    named_args_unify2(Term, FN_Tail, V_Tail).
-
+*/
 
 %
 % Set the field as unbound
@@ -281,57 +265,52 @@ obj_reset_fields_weak(Fields_List, Object0, Object, true) :-
 %
 % Сборка экземпляра класса с установкой только заданных полей
 %
-% obj_construct(+Class, +Field_Names, +Field_Values, ?Object)
+% obj_construct(+Class, +Field_Names, ?Field_Values, -Object)
 %
 
 obj_construct(Class, Field_Names, Field_Values, Object) :-
-  obj_construct(Class, Field_Names, Field_Values, Object, false).
+
+   obj_construct2(Class, Field_Names, Field_Values, false, Object).
 
 %
 % 'Weak' версия игнорирует поля в Field_Names, не присутствующие
 % в объекте (и соответствующие значения)
 %
 
-obj_construct(Class, Field_Names, Field_Values, Object, Weak) :-
+obj_construct_weak(Class, Field_Names, Field_Values, Object) :-
 
-  nonvar(Object), Object = w(_, Term), !,
-  obj_construct2(Class, Field_Names, Field_Values, Term, Weak).
+   obj_construct2(Class, Field_Names, Field_Values, weak, Object).
 
-obj_construct(Class, Field_Names, Field_Values, Object, Weak) :-
 
-  obj_construct2(Class, Field_Names, Field_Values, Object, Weak).
+obj_construct2(Class, Field_Names, Field_Values, Weak, Object) :-
 
-obj_construct2(Class, Field_Names, Field_Values, Object, Weak) :-
+   (  Weak \== weak
+   -> Ctx = context(obj_construct/4, _)
+   ;  Ctx = context(obj_construct_weak/4, _) ),
 
-    %class_ensure_created(Class),
-
-    atom_concat(Class, '#', Spec_Class),
-    (  % get the descriptor functor
-       current_functor(Spec_Class, Arity)
-    ->
-       functor(Spec_Term, Spec_Class, Arity),
-       objects:Spec_Term,
-
-       % the object with unbounded fields is created
-       functor(Object, Class, Arity), 
-
-       % find the fields nums
-       (  Weak = weak
-       -> weak_maplist(arg_bac(Spec_Term),Field_Poses,Field_Names)
-       ;   maplist(arg_bac(Spec_Term), Field_Poses, Field_Names)
-       ),
-
-       % Bound fields with nums
-       (  Weak = weak
-       -> weak_maplist(weak_arg_bac(Object),
-                       Field_Poses, Field_Values)
-       ;  maplist(arg_bac(Object), Field_Poses, Field_Values)
-       ),
-       !
-    ;
-       throw(error(domain_error(uranium_nonempty_class, Class),
-                   _))
-    ).
+   (  (var(Class); var(Field_Names))
+   -> throw(error(instantiation_error, Ctx))
+   ;  true ),
+   
+   check_class_arg(Class, Ctx),
+   check_fields_arg(Field_Names, Ctx),
+   
+   (  var(Field_Values)
+   -> true
+   ;  check_values_arg(Field_Names, Field_Values, Ctx)
+   ),
+   (  class_primary_id(Class, Class_Id) -> true
+   ;  throw(error(existence_error(uranium_class, Class), Ctx))
+   ),
+   
+   (  objects:arity(Class_Id, Arity) -> true
+   ;  throw(class_system_bad_state(
+            'no objects:arity/2 for class id ~d' - Class_Id),
+            Ctx) ),
+   functor(Object, Class, Arity),
+   obj_class_id(Object, Class_Id),
+   obj_unify_int(Class_Id, Field_Names, Weak, Object,
+                 Field_Values).
 
 %
 % obj_downcast(+Parent, ?Descendant).
