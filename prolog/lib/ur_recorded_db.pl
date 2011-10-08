@@ -29,6 +29,7 @@
 
 :- module(ur_recorded_db,
           [clear_db/1, %FIXNAME
+           db_bind_obj/3, % +DB_Key, +Object0, -Object
            db_put_object/2,  % +DB_Key, ?Object
            db_put_object/3,  % +DB_Key, ?Object, +Options
            db_put_objects/3, % +DB_Key, :Pred, +Options
@@ -59,7 +60,8 @@
            db_recorded/2,
            db_recorded/3,
            db_erase/1,
-           db_recordz/2
+           db_recordz/2,
+           db_recordz/3
            ]).
 
 :- use_module(library(ur_objects)).
@@ -108,6 +110,16 @@ db_recordz(DB_Key, Term) :-
 
     call_db_pred(DB_Key, recordz, [Term]).
 
+db_recordz(DB_Key, Term, Ref) :-
+
+    atom(DB_Key), !,
+    recordz(DB_Key, Term, Ref).
+
+% FIXME
+%db_recordz(DB_Key, Term, Ref) :-
+
+%    call_db_pred(DB_Key, recordz, [Term, Ref]).
+
 call_db_pred(DB_Key, Pred, Args) :-
 
     functor(DB_Key, DB, _),
@@ -126,6 +138,28 @@ clear_db(DB_Key) :-
     ;
     true.
 
+db_bind_obj(DB_Key, w(Ref0, Object0), w(Ref, Object)) :- !,
+
+   % It is det if Ref0 is bound
+   (nonvar(Ref0) -> Is_Det = true ; Is_Det = false),
+
+   duplicate_term(Object0, Object),
+
+   (  db_recorded(DB_Key, Object, Ref0)
+
+      % in the case Ref0 is ground get exactly the same record
+   -> (Is_Det == true -> ! ; true),
+      db_erase(Ref0),
+      db_put_object(DB_Key, w(Ref, Object))
+   ).
+
+% It always returns w/2
+
+bind_term_in_db(DB_Key, Term, Object) :-
+
+   bind_term_in_db(DB_Key, w(_, Term), Object).
+
+   
 %
 % Записывает объект в базу, не допуская повторения ключей
 % Если ключ содержит свободные поля, они вносят дополнительные
@@ -140,25 +174,41 @@ db_put_object(DB_Key, Object) :-
 % значению ключа (но только, если все значения ключа связаны)
 %          ignore - не добавлять объект, если есть
 
+db_put_object(DB_Key, w(Ref, Object), Options) :-
+
+   var(Ref), !,
+   functor(Object, Class, _),
+   get_key(Class, Key),
+   get_key_value(Object, Key_Value),
+   (
+      named_args_unify(DB_Key, Class, Key, Key_Value, Old_Object)
+   -> (  % the object with this key already exists
+         memberchk(overwrite, Options), ground(Key_Value)
+      -> db_erase_object(DB_Key, Key, Key_Value),
+         db_recordz(DB_Key, Object, Ref)
+      ;
+         memberchk(ignore, Options)
+      -> true
+      ; throw(key_duplicate(Old_Object, Object))
+      )
+   ;  % no key or the new key value
+      db_recordz(DB_Key, Object, Ref)
+   ).
+
+db_put_object(_, w(Ref, _), _) :-
+
+   % the nonvar(Ref) case
+   throw(error(uninstantiation_error(Ref),
+               context(db_put_object/3,
+                       'The object is already bound to DB'
+                      )
+              )
+        ).
+   
 db_put_object(DB_Key, Object, Options) :-
 
-  functor(Object, Class, _),
-  get_key(Class, Key),
-  get_key_value(Object, Key_Value),
-  (
-   named_args_unify(DB_Key, Class, Key, Key_Value, Old_Object) ->
-   (memberchk(overwrite, Options), ground(Key_Value) ->
-    db_erase_object(DB_Key, Key, Key_Value),
-    db_recordz(DB_Key, Object)
-    ;
-    memberchk(ignore, Options) ->
-    true
-    ;
-    throw(key_duplicate(Old_Object, Object))
-   )
-   ;
-   db_recordz(DB_Key, Object)
-   ).
+   % Just ignore a db reference
+   db_put_object(DB_Key, w(_, Object), Options).
 
 %
 % Record all solutions of the Pred.
