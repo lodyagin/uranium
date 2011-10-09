@@ -24,66 +24,105 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(ixpath, [ixpath/3,
+                   ixpath/4,
+                   
                    op(400, fx, //),
                    op(400, fx, /),
                    op(200, fy, @)
                    ]).
 
+:- use_module(library(lists)).
 :- use_module(library(ur_objects)).
+
 
 % ixpath(+Spec, +Dom, -Result)
 
 ixpath(Spec, Dom, Result) :-
 
    Ctx = context(ixpath/3, _),
-   (  (var(Spec); var(Dom))
+   ixpath2(Spec, Dom, [], Result, Ctx).
+
+
+% ixpath(+Spec, +Dom, +Options, -Result)
+
+ixpath(Spec, Dom, Options, Result) :-
+
+   Ctx = context(ixpath/4, _),
+   ixpath2(Spec, Dom, Options, Result, Ctx).
+
+
+ixpath2(Spec, Dom, Options, Result, Ctx) :-
+
+   (  (var(Spec); var(Dom); var(Options))
    -> throw(error(instantiation_error, Ctx))
-   ;  true),
+   ;  (Options = [] | Options = [_|_])
+   -> true
+   ;  throw(error(type_error(list, Options), Ctx))
+   ),
    (  Dom = [Real_Dom]
-   -> xpath(Spec, Real_Dom, Result)
+   -> xpath(Spec, Real_Dom, Options, Result)
    ;  functor(Dom, element, 3)
    -> (  ground(Dom)
-      -> xpath(Spec, Dom, Result)
+      -> xpath(Spec, Dom, Options, Result)
       ;  throw(error(instantiation_error, Ctx))
       )
    ;  u_object(Dom)
    -> obj_field(Dom, dom, Dom2),
-      ixpath(Spec, Dom2, Result)
-   ;  throw(error(type_error(dom, Dom), context(ixpath/3, _)))
+      ixpath(Spec, Dom2, Options, Result)
+   ;  throw(error(type_error(dom, Dom), Ctx))
    ).
 
-xpath(Head/Tag, Dom, Result) :-
 
-   xpath(Head, Dom, Result1),
-   xpath(/Tag, Result1, Result).
+xpath(Spec, Dom, Options, Result) :-
 
-xpath(/Tag, Dom, Result) :-
+   xpath(Spec, Dom, Options, [], Path_R, Result),
+   (  memberchk(tag_path_rev(Tag_Path_R), Options)
+   -> dom_tag_path(Path_R, Tag_Path_R)
+   ;  memberchk(tag_path(Tag_Path), Options)
+   -> reverse(Path_R, Path),
+      dom_tag_path(Path, Tag_Path)
+   ;  true
+   ).
+
+
+% DOM elements path -> tags path
+dom_tag_path([], []) :- !.
+dom_tag_path([element(Tag, _, _)|DT], [Tag|TT]) :-
+   dom_tag_path(DT, TT).
+
+
+% xpath essentials
+
+xpath(Head/Tag, Dom, Options, Path0, Path, Result) :-
+
+   xpath(Head, Dom, Options, Path0, Path1, Result1),
+   xpath(/Tag, Result1, Options, Path1, Path, Result).
+
+xpath(/Tag, Dom, Options, Path0, Path, Result) :-
 
    Dom = element(_, _, Sub_Elements),
    member(Sub_Element, Sub_Elements),
-   xpath(Tag, Sub_Element, Result).
+   xpath(Tag, Sub_Element, Options, Path0, Path, Result).
    
-xpath(Tag, Dom, Result) :-
+xpath(Tag, Dom, _, Path0, [Dom|Path0], Result) :-
 
    atom(Tag),
-   (  Tag == '*'
-   -> functor(Dom, element, 3) % skip html text elements
-   ;  Dom = element(Tag, _, _)
-   ),
+   Dom = element(Real_Tag, _, _), % also skip html text elements
+   (Tag == '*' -> true; Real_Tag = Tag),
    Result = Dom.
 
-xpath(Expr, Dom, Result) :-
+xpath(Expr, Dom, Options, Path0, Path, Result) :-
 
    compound(Expr),
    Expr =.. [Tag|Cond_List],
-   xpath(Tag, Dom, Result),
+   xpath(Tag, Dom, Options, Path0, Path, Result),
    check_cond_list(Cond_List, Result).
 
 
+% check conditions
+
 check_cond_list([], _) :- !.
-
 check_cond_list([Cond|TC], Result) :-
-
    check_cond(Cond, Result),
    check_cond_list(TC, Result).
 
