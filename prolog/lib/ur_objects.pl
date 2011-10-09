@@ -88,7 +88,7 @@
 :- use_module(library(ordsets)).
 %:- use_module(library(ur_recorded_db)).
 :- use_module(library(ur_lists)).
-
+:- use_module(logging/logging).
 
 %:- multifile db_recorded/3, db_erase/1, db_recordz/2.
 

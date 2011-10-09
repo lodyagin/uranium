@@ -74,10 +74,10 @@
 class_fields(Class_Id, Native, Fields) :-
 
    (  setof(Field_Name:Field_Type,
-        Obj^Value^ (objects:clause(
+        Obj^Value^Body^ (objects:clause(
            field(Class_Id, Field_Name, Obj, Value, Field_Type,
                  Native),
-           _ )),
+           Body )),
         Fields
       )
    -> true

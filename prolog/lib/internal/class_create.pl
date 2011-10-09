@@ -214,6 +214,7 @@ assert_copy(Class_Id, Parent_Id) :-
    ->  objects:assertz(
          (copy(Class_Id, Class, From, To) :- Body)
       )
+   ;  true
    ).
 
 
@@ -267,9 +268,9 @@ check_field_names_db(Class_Id, All_Field_Names_Set, Ctx) :-
 
   % check no repeats in the class field names
   (  bagof(Field_Name,
-          T1^T2^T3^T4^T5^(objects:clause(
+          T1^T2^T3^T4^T5^T6^(objects:clause(
             field(Class_Id, Field_Name, T1, T2, T3, T4), T5),
-            functor(T5, arg, _)),
+            functor(T5, arg, T6)),
           All_Field_Names)
   -> true
   ;  All_Field_Names = []
@@ -288,9 +289,9 @@ check_field_names_db(Class_Id, All_Field_Names_Set, Ctx) :-
 class_noneval_new_fields_db(Class_Id, New_Field_Set) :-
 
    (  bagof(Field_Name,
-           T1^T2^T3^T4^(objects:clause(
+           T1^T2^T3^T4^T5^(objects:clause(
              field(Class_Id, Field_Name, T1, T2, T3, true), T4),
-             functor(T4, arg, _)),
+             functor(T4, arg, T5)),
            Field_Names)
    -> list_to_ord_set(Field_Names, New_Field_Set)
    ;  New_Field_Set = []
