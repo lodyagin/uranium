@@ -337,19 +337,35 @@ obj_construct_int(Class_Id, Field_Names, Field_Values, Weak,
 obj_downcast(Parent, Descendant) :-
 
    Ctx = context(obj_downcast/2, _),
-   (  var(Parent)
-   -> throw(error(instantiation_error, Ctx))
-   ;  true ),
-   check_object_arg(Parent, Ctx, Parent_Class_Id),
+   check_inst(Parent, Ctx),
+   check_object_arg(Parent, Ctx, _),
+   obj_auto_downcast_int(Parent, Descendant, Ctx).
 
-   (  obj_field(Parent, class, Class)
-   ->
-      class_primary_id(Class, To_Class_Id),
-      obj_downcast_int(Parent_Class_Id, To_Class_Id, Parent,
-                       Descendant)
-   ;  Parent = Descendant
+
+obj_auto_downcast_int(Parent, Descendant, Ctx) :-
+
+   functor(Parent, Parent_Class, _),
+   class_primary_id(Parent_Class, Parent_Class_Id),
+   (  obj_field(Parent, class, Class),
+      % check the result of the user-defined predicate
+      nonvar(Class),
+      u_class(Class),
+      class_primary_id(Class, To_Class_Id)
+   -> 
+      (  Parent_Class_Id =\= To_Class_Id
+      -> obj_downcast_int(Parent_Class_Id, To_Class_Id, Parent,
+                          Descendant1, Ctx),
+         % recursion till no cast
+         obj_auto_downcast_int(Descendant1, Descendant, Ctx)
+      ;
+         % the same class downcast
+         Parent = Descendant
+      )
+   ;
+      print_message(warning, bad_eval_result(Parent, class)),
+      Parent = Descendant
    ).
-
+   
 
 % obj_downcast(+From, +To_Class, -To)
 %
@@ -372,23 +388,33 @@ obj_downcast(From, To_Class, To) :-
       To = From
    ;
       class_primary_id(To_Class, To_Class_Id),
-      obj_downcast_int(From_Class_Id, To_Class_Id, From, To)
+      obj_downcast_int(From_Class_Id, To_Class_Id, From, To, Ctx)
    ).
 
 
-obj_downcast_int(From_Class_Id, To_Class_Id, From, To) :-
+obj_downcast_int(From_Class_Id, To_Class_Id, From, To, Ctx) :-
 
+   From_Class_Id \== To_Class_Id,
+
+   %  Check the downcast condition
+   (  same_or_descendant(From_Class_Id, true, To_Class_Id)
+   -> true
+   ;  class_id(From_Class_Id, From_Class),
+      class_id(To_Class_Id, To_Class),
+      throw(not_downcast(From_Class, To_Class))
+   ),
+   
    class_all_fields(From_Class_Id, Field_Names),
    obj_unify_int(From_Class_Id, Field_Names, strict, From,
                  Field_Values),
    obj_construct_int(To_Class_Id, Field_Names, Field_Values,
-                     strict, To, _),
+                     strict, To, Ctx),
 
    downcast_fill_values(From_Class_Id, To_Class_Id, From, To).
 
 
 %
-% Unify descendants' fields by object module downcast/4 rules
+% Unify descendant's fields by object module downcast/4 rules
 %
 %TODO downcast to no direct descendant is not implemented
 
@@ -398,8 +424,12 @@ downcast_fill_values(Parent_Class_Id, Desc_Class_Id, Parent,
    class_id(Parent_Class_Id, Parent_Class),
    class_id(Desc_Class_Id, Desc_Class),
    (  objects:clause(downcast(Parent_Class, Desc_Class, _, _), _)
-   -> objects:downcast(Parent_Class, Desc_Class, Parent, Desc), !
-   ;  true
+   -> (  objects:downcast(Parent_Class, Desc_Class, Parent, Desc)
+      -> true
+      ;  throw(bad_downcast_impl(Parent, Parent_Class, Desc_Class,
+                                 Desc))
+      )
+   ;  true % user downcast rule is not defined - it is ok
    ).
 
 

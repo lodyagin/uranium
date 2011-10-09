@@ -271,3 +271,18 @@ prolog:message(undef_operation(Op_Name, Class_Id)) -->
    ['The operation `~a'' is not defined for class id ~d'
    - [Op_Name, Class_Id]].
 
+prolog:message(bad_eval_result(Object, Field)) -->
+
+   ['User-defined field `~a'' evaluation failed for ~w'
+   - [Field, Object]].
+
+prolog:message(bad_downcast_impl(Object, From, To, Result)) -->
+
+   ['User-defined downcast implementation is bad:', nl],
+   ['~a -> ~a transforms ~w to ~w' - [From, To, Object, Result]].
+
+prolog:message(not_downcast(From_Class, To_Class)) -->
+
+   ['~a -> ~a is not downcast' - [From_Class, To_Class]].
+
+

@@ -102,19 +102,21 @@ process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
   % assert *_v? predicates first (they are used by others)
   (atom_concat(Class, '?', Head),
    call(Module:current_predicate(Head, Term)),
-   call(Module:clause(Term, Body)),
+   call(Module:clause(Term, _)),
    Term =.. [Head, E_Obj, E_Field, E_Value],
    objects:assertz(
-      (field(Class_Id, E_Field, E_Obj, E_Value, _, true) :- Body)
+      (field(Class_Id, E_Field, E_Obj, E_Value, _, true) :-
+          Module:Term) % call with proper context module
       ),
    fail ; true ),
 
   % assert copy/4
   (call(Module:current_predicate(copy, Term)),
    Term = copy(Class, Copy_From, Copy_To),
-   call(Module:clause(Term, Body)),
+   call(Module:clause(Term, _)),
    objects:assertz(
-      (copy(Class_Id, Class, Copy_From, Copy_To) :- Body)
+      (copy(Class_Id, Class, Copy_From, Copy_To) :-
+          Module:Term)
       ),
    fail ; true ),
   
@@ -178,8 +180,8 @@ process_typedefs(Module) :-
 dynamic_import(Module_From, Module_To, Functor) :-
 
   Module_From:current_predicate(Functor, Term),
-  Module_From:clause(Term, Body),
-  Module_To:assert((Term :- Body)),
+  Module_From:clause(Term, _),
+  Module_To:assert((Term :- Module_From:Term)),
   fail
   ;
   true.
