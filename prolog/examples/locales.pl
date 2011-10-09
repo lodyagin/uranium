@@ -30,8 +30,6 @@
 
 query_locale_info :-
 
-   class_ensure_created(locale_v),
-
    clear_db(db_locale_v0),
    clear_db(db_locale_v1),
    clear_db(db_locale_v2),

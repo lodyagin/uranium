@@ -58,8 +58,6 @@ recheck_good_proxies(DB_Key, Lim, Aux_Server, Min_Timeout, Max_Good_Resp) :-
 
    % 0. Make the DB connection
 
-   class_ensure_created(http_proxy_v),
-
    db_size(DB_Key, DB_Size_Before),
    write_log(['full db size before:', DB_Size_Before],
              [logger(check_proxy), lf(1, before), lf(1)]),

@@ -11,6 +11,7 @@ go :-
    read_line_to_codes(current_input, Codes),
    atom_chars(Durty_Line, Codes),
    normalize_space(atom(Line), Durty_Line),
+   Line \== '',
    (  Line \== end -> exec(Line), fail ;  true ),
    !.
 

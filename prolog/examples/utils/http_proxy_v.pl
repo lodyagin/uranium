@@ -133,7 +133,7 @@ octet(Number) -->
    }.
      
 
-timestamp_pretty_print(Stream, Value, Options) :-
+timestamp_pretty_print(Stream, Value, _) :-
 
    format_time(Stream, '%d %b %T', Value).
 

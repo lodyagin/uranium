@@ -150,8 +150,3 @@ cookie_object(Visited_Domain, Visited_Path,
    include(ground, List2, List), !.
 
 
-load_objects :-
-
-  class_ensure_created(cookie_v).
-
-:- initialization load_objects.
