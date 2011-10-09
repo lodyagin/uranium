@@ -31,7 +31,32 @@
 :- use_module(library(ur_atoms)).
 :- use_module(library(ur_objects)).
 :- use_module(library(xpath)).
+:- use_module(library(ixpath)).
 :- use_module(library(js)).
+
+new_class(html_piece_v, http_result_v, [dom]).
+
+new_class(page_v, html_piece_v, [title]).
+
+new_class(redirect_page_v, page_v, [url_to]).
+
+'html_piece_v?'(Term, class, Value) :-
+
+   obj_field(Term, dom, DOM),
+   ground(DOM), !,
+   (  ixpath(html, DOM, _)
+   -> Value = page_v
+   ;  Value = html_piece_v
+   ).
+
+%downcast(html_piece_v, page_v, Piece, Page) :-
+
+%   obj_field(Piece, dom, DOM),
+%   ground(DOM), !,
+   
+  
+   
+   
 
 'page_v?'(Term, class, Value) :-
 
@@ -50,15 +75,8 @@
 
   ; Value = page_v
   ).
-   
-new_class(page_v, http_result_v, [dom]).
-
-new_class(redirect_page_v, page_v, [url_to]).
 
 downcast(page_v, redirect_page_v, Page, Redirect_Page) :-
-
-  functor(Page, page_v, _),
-  functor(Redirect_Page, redirect_page_v, _),
 
   obj_field(Page, dom, DOM),
   ground(DOM), !,
