@@ -1,3 +1,28 @@
+%  This file is a part of Uranium, a general-purpose functional
+%  test platform.
+%
+%  Copyright (C) 2011  Sergei Lodyagin
+%
+%  This library is free software; you can redistribute it and/or
+%  modify it under the terms of the GNU Lesser General Public
+%  License as published by the Free Software Foundation; either
+%  version 2.1 of the License, or (at your option) any later
+%  version.
+%
+%  This library is distributed in the hope that it will be
+%  useful, but WITHOUT ANY WARRANTY; without even the implied
+%  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+%  PURPOSE.  See the GNU Lesser General Public License for more
+%  details.
+%
+%  You should have received a copy of the GNU Lesser General
+%  Public License along with this library; if not, write to the
+%  Free Software Foundation, Inc., 51 Franklin Street, Fifth
+%  Floor, Boston, MA 02110-1301 USA
+%
+%  e-mail: lodyagin@gmail.com
+%  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
+
 :- module(object_module,
           [reload_all_classes/0
            ]).
@@ -84,11 +109,18 @@ process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
       ),
    fail ; true ),
 
+  % assert copy/4
+  (call(Module:current_predicate(copy, Term)),
+   Term = copy(Class, Copy_From, Copy_To),
+   call(Module:clause(Term, Body)),
+   objects:assertz(
+      (copy(Class_Id, Class, Copy_From, Copy_To) :- Body)
+      ),
+   fail ; true ),
+  
   % process class module-scoped objects
   (  Class == Module
-  -> % import copy/3 predicates
-     dynamic_import(Module, objects, copy),
-     % import downcast/4 predicates
+  -> % import downcast/4 predicates
      dynamic_import(Module, objects, downcast),
      % process typedefs
      process_typedefs(Module)
@@ -155,10 +187,12 @@ dynamic_import(Module_From, Module_To, Functor) :-
 reload_all_classes :-
 
    % clear the db
+   abolish(objects:arity/2),
    abolish(objects:class_id/3),
-   abolish(objects:copy/3),   
+   abolish(objects:copy/4),   
    abolish(objects:downcast/4),   
    abolish(objects:field/6),
+   abolish(objects:fields/3),
    abolish(objects:key/2),
    abolish(objects:module/2),
    abolish(objects:module_class_def/3),

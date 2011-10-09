@@ -34,7 +34,9 @@
 %
 
 :- module(ur_lists,
-	  [corteging/4,  %+Functor, ?List1, ?List2, ?List3
+	  [common_head/3, % +List1, +List2, -Head
+           common_head_rev/3, % +List1, +List2, -Head
+           corteging/4,  %+Functor, ?List1, ?List2, ?List3
            list_head/4,
            mapkeys/3,
            num_diff_list/2,
@@ -58,6 +60,21 @@
 :- use_module(logging/logging).
 
 :- module_transparent switch_by_value/4, weak_maplist/3.
+
+% common_head(+List1, +List2, -Head)
+
+common_head(List1, List2, Head) :-
+   common_head(List1, List2, [], Head1),
+   reverse(Head1, Head).
+
+common_head_rev(List1, List2, Head) :-
+   common_head(List1, List2, [], Head).
+
+common_head([], _, L, L) :- !. 
+common_head(_, [], L, L) :- !. 
+common_head([A|AT], [A|BT], L0, L) :- !,
+   common_head(AT, BT, [A|L0], L).
+common_head(_, _, L, L).
 
 corteging(_, [], [], []) :- !.
 

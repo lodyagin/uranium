@@ -3,7 +3,8 @@
            check_class_arg/2,
            check_fields_arg/2,
            check_values_arg/3,
-           check_object_arg/3
+           check_object_arg/3,
+           check_rebase_rule/2
            ]).
 
 :- use_module(objects_i).
@@ -77,3 +78,16 @@ check_object_arg(Object, Err_Context, Class_Id) :-
    ).
 
 
+check_rebase_rule(Rebase_Rule, Ctx) :-
+
+   (  var(Rebase_Rule)
+   -> throw(error(instantiation_error, Ctx))
+   ;  Rebase_Rule = '->'(Old_Base, New_Base)
+   -> true
+   ;  throw(error(type_error((->)/2, Rebase_Rule), Ctx))
+   ),
+   (  (var(Old_Base); var(New_Base))
+   -> throw(error(instantiation_error, Ctx))
+   ;  true ),
+   check_class_arg(Old_Base, Ctx),
+   check_class_arg(New_Base, Ctx).

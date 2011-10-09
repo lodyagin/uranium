@@ -25,6 +25,9 @@
 
 :- module(ur_objects,
           [
+           class_fields/2,    %+Class, -Fields (ordset)
+           %class_field_type/3,
+           eval_obj_expr/2,
 
            named_arg/3,
            named_arg/4,
@@ -33,9 +36,6 @@
            named_args_weak_unify/3,
            %named_args_unify/5,
 
-           %class_fields/2,    %+Class, -Fields
-           %class_field_type/3,
-           eval_obj_expr/2,
            obj_construct/4,
            obj_construct_weak/4,
            obj_copy/2,       % +From, -To
@@ -47,7 +47,9 @@
            obj_downcast/2,   % +Parent, -Descendant
            obj_downcast/3,   % +Parent, +Class_To, -Descendant
            obj_field/3,
-%           obj_rebase/3,     % ?Rebase_Rule, @Object0, -Object
+           obj_get_key/2,     % +Object, ?Key
+           %get_key_value/2, % +Object, ?Key_Value
+           obj_rebase/3,     % ?Rebase_Rule, @Object0, -Object
 %           obj_reset_fields/3, % +[Field|...], +Obj_In, -Obj_Out
 %           obj_reset_fields/4, % +[Field|...], +Obj_In, -Obj_Out, Is_Succ
 %           obj_reset_fields_weak/3, % +[Field|...], +Obj_In, -Obj_Out
@@ -55,8 +57,7 @@
            obj_merge/4,
            obj_pretty_print/1,
            obj_pretty_print/2,
-           obj_get_key/2,     % +Object, ?Key
-           %get_key_value/2, % +Object, ?Key_Value
+           obj_unify/3,
            most_narrowed/3, %+Class1, +Class2, -Most_Narrowed_Class
 %           class_arg_num/3, % +Class, ?Arg_Num, +Arg_Name
 %           class_arg_num_weak/3,  % +Class, ?Arg_Num, +Arg_Name
@@ -75,14 +76,18 @@
 :- reexport(library(internal/object_module),
             [ reload_all_classes/0]).
 
+:- reexport(library(internal/class_create),
+            [class_create/3,
+             class_create/4]).
+
+
 :- use_module(library(internal/objects_i)).
 :- use_module(library(internal/check_arg)).
+:- use_module(library(internal/class_create)).
 :- use_module(library(lists)).
-:- use_module(library(ugraphs)).
-:- use_module(library(ur_recorded_db)).
+:- use_module(library(ordsets)).
+%:- use_module(library(ur_recorded_db)).
 :- use_module(library(ur_lists)).
-:- use_module(library(ur_terms)).
-:- use_module(logging/logging).
 
 
 %:- multifile db_recorded/3, db_erase/1, db_recordz/2.
@@ -162,6 +167,10 @@ named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
   
     db_recorded(DB_Key, Term, Term_Ref).
 */
+
+obj_unify(Term, Field_List, Value_List) :-
+
+   named_args_unify(Term, Field_List, Value_List).
 
 % named_args_unify(+Term, +Field_List, ?Value_List)
 
@@ -302,13 +311,21 @@ obj_construct2(Class, Field_Names, Field_Values, Weak, Object) :-
    (  class_primary_id(Class, Class_Id) -> true
    ;  throw(error(existence_error(uranium_class, Class), Ctx))
    ),
-   
+
+   obj_construct_int(Class_Id, Field_Names, Field_Values, Weak,
+                     Object, Ctx).
+
+
+obj_construct_int(Class_Id, Field_Names, Field_Values, Weak,
+                  Object, Ctx) :-
+
+   class_id(Class_Id, Class),
    (  objects:arity(Class_Id, Arity) -> true
    ;  throw(class_system_bad_state(
             'no objects:arity/2 for class id ~d' - Class_Id),
             Ctx) ),
    functor(Object, Class, Arity),
-   obj_class_id(Object, Class_Id),
+   arg(1, Object, Class_Id),
    obj_unify_int(Class_Id, Field_Names, Weak, Object,
                  Field_Values).
 
@@ -375,23 +392,50 @@ downcast_fill_values(Parent_Class, Desc_Class, Parent, Desc) :-
 %  ;
 %  true. % no objects:downcast defined
 
-/*obj_rebase(Rebase_Rule, Object0, Object) :-
+% obj_rebase(+Rebase_Rule, +Object0, -Object)
+  
+obj_rebase(Rebase_Rule, Object0, Object) :-
 
+   Ctx = context(obj_rebase/3, _),
+   check_rebase_rule(Rebase_Rule, Ctx),
    (  Rebase_Rule = '->'(Old_Base, New_Base)
    -> true
-   ;  throw(error(type_error((->)/2, Rebase_Rule),
-                  context(obj_rebase/3, _))) 
+   ;  throw(error(type_error((->)/2, Rebase_Rule), Ctx))
    ),
    (  var(Object0)
-   -> throw(error(instantiation_error,
-                  context(obj_rebase/3, _)))
-   ;  u_object(Object0)
-   -> true
-   ;  throw(error(type_error(uranium_object, Object0),
-                  context(obj_rebase/3, _)))
-   ).*/
-      
+   -> throw(error(instantiation_error, Ctx))
+   ;  check_object_arg(Object0, Ctx, Orig_Id)
+   ),
 
+   Rebase_Rule = '->'(Old_Base, New_Base),
+   class_primary_id(Old_Base, Old_Base_Id),
+   class_primary_id(New_Base, New_Base_Id),
+      
+   % find the common base class
+   common_parent(Old_Base_Id, New_Base_Id, Cmn_Base_Id),
+
+   % find the new parent line
+   list_inheritance(New_Base_Id, New_Parents1),
+   list_inheritance(Old_Base_Id, Orig_Id, [_|New_Parents2]),
+   append(New_Parents1, New_Parents2, New_Parents_R),
+   reverse(New_Parents_R, New_Parents),
+   
+   class_rebase(New_Parents, Rebased_Id, Rebase),
+   (  Rebase == rebase -> true
+   ;  throw(implementation_error(
+            ['class_rebase called for no actual rebasing case']))
+   ),
+
+   % find the fields to through out
+   class_all_fields(Old_Base_Id, Old_Base_List),
+   class_all_fields(Cmn_Base_Id, Cmn_Base_List),
+   ord_subtract(Old_Base_List, Cmn_Base_List, Through_Out),
+   % find the fields we will transfer to the new object
+   class_all_fields(Orig_Id, Orig_List),
+   ord_subtract(Orig_List, Through_Out, Transfer_Fields),
+   obj_unify(Object0, Transfer_Fields, Transfer_Values),
+   obj_construct_int(Rebased_Id, Transfer_Fields, Transfer_Values,
+                     strict, Object, Ctx).
   
 %
 % Вычисление выражений в операторной форме
@@ -427,15 +471,19 @@ class_descendant_(Class, Descendant) :-
   class_parent(Descendant0, Class),
   class_descendant(Descendant0, Descendant).
 
-% Get list of field names
+% class_fields(+Class, -Field_Names)
+%
+% Get list of field names as ordset
 
-% FIXME Class_Id
-%class_fields(Class, Field_Names) :-
+class_fields(Class, Field_Names) :-
 
-  % TODO check args
-%  class_id(Class_Id, Class),
-%  class_fields_i(Class_Id, _, Fields),
-%  fields_names_types(Fields, Field_Names, _, _).
+   Ctx = context(class_fields/2, _),
+   (  var(Class)
+   -> throw(error(instantiation_error, Ctx))
+   ;  check_class_arg(Class, Ctx)
+   ),
+   class_primary_id(Class, Class_Id),
+   class_all_fields(Class_Id, Field_Names).
 
 obj_pretty_print(Object) :-
 
@@ -450,7 +498,7 @@ obj_pretty_print(Options, Object) :-
                        context(obj_pretty_print/2, _),
                        Class_Id)
    ),
-   field_names_list(Class_Id, Fields),
+   class_all_fields(Class_Id, Fields),
    class_id(Class_Id, Class),
    %open_log([lf(2, before)]),
    log_piece([Class, '('], Options),
@@ -543,37 +591,23 @@ obj_get_key(Object, Key) :-
 
 %
 % obj_diff(+Obj1, +Obj2, -Diff_List)
-%
+% (skip eval fields)
 
 obj_diff(Obj1, Obj2, Diff_List) :-
 
-  compound(Obj1),
-  compound(Obj2),
+   Ctx = context(obj_diff/3, _),
+   (  (var(Obj1); var(Obj2))
+   -> throw(error(instantiation_error, Ctx))
+   ;  check_object_arg(Obj1, Ctx, Class1_Id),
+      check_object_arg(Obj2, Ctx, Class2_Id)
+   ),
 
-  functor(Obj1, Functor1, _),
-  functor(Obj2, Functor2, _),
+   class_all_fields(Class1_Id, Fields1),
+   class_all_fields(Class2_Id, Fields2),
 
-  class_fields(Functor1, Obj1_Fields),
-  class_fields(Functor2, Obj2_Fields),
-
-  % TODO track list of eval fields for each objects,
-  % check for repeats in all field list
-  %
-%  findall(Field, 'object_v?'(object_v, Field, _), Object_V_Fields),
-  Object_V_Fields = [],
-
-  append(Obj1_Fields, Object_V_Fields, Fields1u),
-  append(Obj2_Fields, Object_V_Fields, Fields2u),
-
-  check_fields(Functor1, Fields1u),
-  check_fields(Functor2, Fields2u),
-
-  sort(Fields1u, Fields1),
-  sort(Fields2u, Fields2),
-
-  merge_set(Fields1, Fields2, Fields_For_Diff),
-
-  build_diff_list(Obj1, Obj2, Fields_For_Diff, [], Diff_List).
+   ord_union(Fields1, Fields2, Fields_For_Diff),
+   
+   build_diff_list(Obj1, Obj2, Fields_For_Diff, [], Diff_List).
 
 
 build_diff_list(_, _, [], Diff, Diff) :- !.
@@ -588,25 +622,20 @@ build_diff_list(Obj1, Obj2, [Field|Tail], Diff_In, Diff_Out) :-
   build_diff_list(Obj1, Obj2, Tail, Diff2, Diff_Out).
 
 
-check_fields(Class, Fields) :-
-
-  is_set(Fields) -> true
-  ; write_log(['Invalid fields list for', Class,
-               ', there are repeated field names', Fields],
-               [lf(2, before), lf(2)]).
-
-
 %
 % Copy objects by class rules
 %
 % obj_copy(+From, -To)
 %
-% FIXME
 obj_copy(From, To) :-
 
-   compound(From),
-   functor(From, Class, _),
-   objects:copy(Class, From, To).
+   Ctx = context(obj_copy/2, _),
+   (  var(From)
+   -> throw(error(instantiation_error, Ctx))
+   ;  true ),
+   check_object_arg(From, Ctx, Class_Id),
+
+   obj_copy_int(Class_Id, From, To).
 
 %
 % Copy objects by class rules, reset all fields
@@ -615,20 +644,32 @@ obj_copy(From, To) :-
 % obj_copy(+Field_List, +From, -To)
 %
 
-obj_copy(Field_List_U, From, To) :-
+obj_copy(Field_List, From, To) :-
 
-   ground(Field_List_U),
-   is_set(Field_List_U),
-   sort(Field_List_U, Field_List),
-   compound(From),
-   functor(From, Functor, _),
+   Ctx = context(obj_copy/3, _),
+   (  (var(Field_List); var(From))
+   -> throw(error(instantiation_error, Ctx))
+   ;  true ),
+   check_fields_arg(Field_List, Ctx),
+   check_object_arg(From, Ctx, Class_Id),
 
-   class_fields(Functor, Obj_Fields_U),
-   sort(Obj_Fields_U, Obj_Fields),
-   ord_subtract(Obj_Fields, Field_List, Reset_List),
+   list_to_ord_set(Field_List, Copy_Fields),
+   class_all_fields(Class_Id, Obj_Fields),
+   ord_subtract(Obj_Fields, Copy_Fields, Reset_List),
    obj_reset_fields(Reset_List, From, Raw_Copy),
 
-   obj_copy(Raw_Copy, To).
+   obj_copy_int(Class_Id, Raw_Copy, To).
+
+
+obj_copy_int(Class_Id, From, To) :-
+
+   class_id(Class_Id, Class),
+   (  objects:copy(Class_Id, Class, From, To)
+   -> true
+   ;  print_message(warning, undef_operation(copy, Class_Id))
+   ).
+    
+   
 
 %class_field_type(Class, Field, Type) :-
 %
