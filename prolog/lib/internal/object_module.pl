@@ -203,7 +203,7 @@ reload_all_classes :-
 
    % Assert definitions for object_base_v
    objects:assertz(class_id(0, true, object_base_v)),
-   objects:assertz(parent(0, _)),
+   objects:assertz(parent(0, -1)),
    objects:assertz(typedef_flag(hidden, object_base_v)),
    objects:assertz(key(0, [])),
    

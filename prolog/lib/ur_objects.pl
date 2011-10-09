@@ -25,6 +25,7 @@
 
 :- module(ur_objects,
           [
+           class_descendant/2,
            class_fields/2,    %+Class, -Fields (ordset)
            %class_field_type/3,
            eval_obj_expr/2,
@@ -330,67 +331,77 @@ obj_construct_int(Class_Id, Field_Names, Field_Values, Weak,
                  Field_Values).
 
 %
-% obj_downcast(+Parent, ?Descendant).
+% obj_downcast(+Parent, -Descendant).
 %
 
 obj_downcast(Parent, Descendant) :-
 
-  compound(Parent),
-  obj_field(Parent, class, Class) ->
-  obj_downcast(Parent, Class, Descendant)
-  ;
-  Parent = Descendant.
+   Ctx = context(obj_downcast/2, _),
+   (  var(Parent)
+   -> throw(error(instantiation_error, Ctx))
+   ;  true ),
+   check_object_arg(Parent, Ctx, Parent_Class_Id),
+
+   (  obj_field(Parent, class, Class)
+   ->
+      class_primary_id(Class, To_Class_Id),
+      obj_downcast_int(Parent_Class_Id, To_Class_Id, Parent,
+                       Descendant)
+   ;  Parent = Descendant
+   ).
 
 
+% obj_downcast(+From, +To_Class, -To)
 %
 % downcast to Class
 %
 
-obj_downcast(Parent, Class, Descendant) :-
+obj_downcast(From, To_Class, To) :-
+   
+   % TODO check To_Class below From_Class
+   Ctx = context(obj_downcast/3, _),
+   (  (var(From); var(To_Class))
+   -> throw(error(instantiation_error, Ctx))
+   ;  true ),
+   check_class_arg(To_Class, Ctx),
+   check_object_arg(From, Ctx, From_Class_Id),
+   functor(From, From_Class, _),
+   
+   (  From_Class == To_Class
+   ->
+      To = From
+   ;
+      class_primary_id(To_Class, To_Class_Id),
+      obj_downcast_int(From_Class_Id, To_Class_Id, From, To)
+   ).
 
-  compound(Parent),
-  functor(Parent, Parent_Class, _),
-  (
-    Parent_Class = Class -> Parent = Descendant
 
-  ;
+obj_downcast_int(From_Class_Id, To_Class_Id, From, To) :-
 
-    %class_ensure_created(Class),
+   class_all_fields(From_Class_Id, Field_Names),
+   obj_unify_int(From_Class_Id, Field_Names, strict, From,
+                 Field_Values),
+   obj_construct_int(To_Class_Id, Field_Names, Field_Values,
+                     strict, To, _),
 
-    field_names_list(Class, Field_Names),
-    Parent =.. [_|Parent_Field_Values],
-    length(Field_Names, N_Flds_Desc),
-    length(Parent_Field_Values, N_Flds_Parent),
-    Diff is N_Flds_Desc - N_Flds_Parent,
-    length(Add_Values, Diff),
-    append(Parent_Field_Values, Add_Values, Field_Values),
-    obj_construct(Class, Field_Names, Field_Values, Descendant), !,
-
-    downcast_fill_values(Parent_Class, Class, Parent, Descendant)
-  ).
+   downcast_fill_values(From_Class_Id, To_Class_Id, From, To).
 
 
 %
 % Unify descendants' fields by object module downcast/4 rules
 %
-% TODO: UT
-%
-
-downcast_fill_values(Parent_Class, Desc_Class, Parent, Desc) :-
-
-  objects:clause(downcast(Parent_Class, Desc_Class, _, _), _) ->
-  objects:downcast(Parent_Class, Desc_Class, Parent, Desc), !
-   ;
-  true, !.
-
 %TODO downcast to no direct descendant is not implemented
-%
-%downcast_fill_values(Parent_Class, Desc_Class, Parent, Desc) :-
-%
-%  objects:downcast(Parent_Class, Child_Class, Parent, Child) ->
-%  downcast_fill_values(Child_Class, Desc_Class, Child, Desc)
-%  ;
-%  true. % no objects:downcast defined
+
+downcast_fill_values(Parent_Class_Id, Desc_Class_Id, Parent,
+                     Desc) :-
+
+   class_id(Parent_Class_Id, Parent_Class),
+   class_id(Desc_Class_Id, Desc_Class),
+   (  objects:clause(downcast(Parent_Class, Desc_Class, _, _), _)
+   -> objects:downcast(Parent_Class, Desc_Class, Parent, Desc), !
+   ;  true
+   ).
+
 
 % obj_rebase(+Rebase_Rule, +Object0, -Object)
   
@@ -449,6 +460,28 @@ eval_obj_expr(Object / Field, Value) :-
     obj_field(Object, Field, Value), !.
 
 eval_obj_expr(Value, Value).
+
+% class_descendant(+Class, ?Descendant)
+%
+% Does not count rebased classes
+
+class_descendant(Class, Descendant) :-
+
+   Ctx = context(class_descendant/2, _),
+   check_inst(Class, Ctx),
+   check_class_arg(Class, Ctx),
+   class_primary_id(Class, Class_Id),
+   (  nonvar(Descendant)
+   ->
+      check_class_arg(Descendant, Ctx),
+      Class \== Descendant,
+      class_primary_id(Descendant, Descendant_Id),
+      same_or_descendant(Class_Id, true, Descendant_Id)
+   ;
+      same_or_descendant(Class_Id, true, Descendant_Id),
+      Class_Id =\= Descendant_Id,
+      class_id(Descendant_Id, Descendant)
+   ).
 
 % obj_is_descendant(+Descendant, ?Class)
 

@@ -35,9 +35,11 @@
            gen_class_id/2,
            gen_new_class_id/1,
            get_key/2,
+           is_rebased_class/1,
            list_inheritance/2,
            list_inheritance/3,
            obj_class_id/2,
+           same_or_descendant/3,
            u_class/1,
            u_object/1
            ]).
@@ -192,9 +194,33 @@ get_key(Class_Id, Key) :-
   (objects:key(Class_Id, Key) -> true ; Key = []).
 
 
+is_rebased_class(Class_Id) :-
+
+   nonvar(Class_Id),
+   objects:class_id(Class_Id, false, _).
+
+
 obj_class_id(Object, Class_Id) :-
 
    arg(1, Object, Class_Id).
+
+
+% same_or_descendant(+Parent_Id, +No_Rebased, ?Desc_Id)
+
+same_or_descendant(Id, No_Rebased, Id) :-
+
+   (  No_Rebased == true
+   -> \+ is_rebased_class(Id)
+   ;  true ).
+
+same_or_descendant(Parent_Id, No_Rebased, Desc_Id) :-
+
+   Parent_Id \== Desc_Id,
+   (  No_Rebased == true
+   -> \+ is_rebased_class(Parent_Id)
+   ;  true ),
+   objects:parent(Id, Parent_Id),
+   same_or_descendant(Id, No_Rebased, Desc_Id).
 
 
 %% u_class(@Class)
