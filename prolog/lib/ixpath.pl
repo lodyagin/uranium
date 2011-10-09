@@ -29,16 +29,27 @@
                    op(200, fy, @)
                    ]).
 
+:- use_module(library(ur_objects)).
+
 % ixpath(+Spec, +Dom, -Result)
 
 ixpath(Spec, Dom, Result) :-
 
-   (  (var(Spec); \+ground(Dom))
-   -> throw(error(instantiation_error, context(ixpath/3, _)))
+   Ctx = context(ixpath/3, _),
+   (  (var(Spec); var(Dom))
+   -> throw(error(instantiation_error, Ctx))
    ;  true),
    (  Dom = [Real_Dom]
    -> xpath(Spec, Real_Dom, Result)
-   ;  xpath(Spec, Dom, Result)
+   ;  functor(Dom, element, 3)
+   -> (  ground(Dom)
+      -> xpath(Spec, Dom, Result)
+      ;  throw(error(instantiation_error, Ctx))
+      )
+   ;  u_object(Dom)
+   -> obj_field(Dom, dom, Dom2),
+      ixpath(Spec, Dom2, Result)
+   ;  throw(error(type_error(dom, Dom), context(ixpath/3, _)))
    ).
 
 xpath(Head/Tag, Dom, Result) :-
@@ -79,4 +90,5 @@ check_cond_list([Cond|TC], Result) :-
 
 check_cond(@Attr=Value, element(_, Attributes, _)) :-
 
+   atom(Attr),
    memberchk(Attr=Value, Attributes).
