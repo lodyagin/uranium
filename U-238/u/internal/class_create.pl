@@ -218,7 +218,7 @@ assert_copy(Class_Id, Parent_Id) :-
    ).
 
 
-class_rebase([], 0, false) :- !.
+class_rebase([], -1, false) :- !.
 
 class_rebase([Class_Orig_Id|Parents], Class_New_Id, Rebase) :-
    
