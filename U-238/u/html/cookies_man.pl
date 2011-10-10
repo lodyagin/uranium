@@ -29,10 +29,10 @@
             cookies_headers/2
           ]).
 
-:- use_module(library(ur_objects)).
-:- use_module(library(ur_recorded_db)).
-:- use_module(html/cookie_v).
-:- use_module(logging/logging).
+:- use_module(u(v)).
+:- use_module(u(ur_recorded_db)).
+:- use_module(u(html/v/cookie_v)).
+:- use_module(u(logging)).
 
 %
 % Generate a new cookie db key

@@ -64,12 +64,12 @@
            db_recordz/3
            ]).
 
-:- use_module(library(ur_objects)).
+:- use_module(u(v)).
 :- use_module(library(lists)).
-:- use_module(logging/logging).
+:- use_module(u(logging)).
 :- use_module(library(ugraphs)).
-:- use_module(library(ur_lists)).
-:- use_module(library(ur_terms)).
+:- use_module(u(ur_lists)).
+:- use_module(u(ur_terms)).
 
 :- module_transparent db_put_objects/3, db_search/3,
                       db_iterate/3, db_iterate/4, 

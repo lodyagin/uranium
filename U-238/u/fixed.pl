@@ -38,8 +38,8 @@
          fixed_from_term/2
     ]).
 
-:- use_module(logging/logging).
-:- use_module(library(ur_lists)).
+:- use_module(u(logging)).
+:- use_module(u(ur_lists)).
 
 divP(A, B, P) :-
     A mod P =:= 0,

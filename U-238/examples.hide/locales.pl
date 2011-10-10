@@ -23,10 +23,10 @@
 :- module(locales, [query_locale_info/0]).
 
 :- use_module(state/general/html_user_v).
-:- use_module(action/find).
-:- use_module(library(ur_objects)).
-:- use_module(library(ur_recorded_db)).
-:- use_module(logging/logging).
+:- use_module(u(action/find)).
+:- use_module(u(v)).
+:- use_module(u(ur_recorded_db)).
+:- use_module(u(logging)).
 
 query_locale_info :-
 

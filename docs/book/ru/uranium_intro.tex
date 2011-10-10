@@ -2229,6 +2229,9 @@ Man1 = man_v(_G33, 'Tom', _G35, _G36, _G37).
 Man1 = man_v(_G3601, 'Tom', _G3603, 3.9, 54).
 \end{example}
 
+%u_class
+%u_object
+
 \section{Доступ к полям объекта}
 
 Однако этот метод, как уже говорилось, не проходит для объектов
@@ -3052,6 +3055,19 @@ G106).
 obj_upcast на самостоятельную проработку. Будет ли она относится
 к не развязывающему семейству, как и obj_downcast?
 
+\subsection{Невозможность приведения к object_v}
+Если попытаться создать объект object_v, то операция выполнена не
+будет: 
+
+\begin{example}{}{}
+?- obj_construct(object_v, [], [], O).
+
+ERROR: Domain error: `uranium_nonempty_class' expected, found `obje
+ct_v'                                                             
+\end{example}
+
+...
+
 \section{Сравнение объектов}
 \label{obj_diff}
 
@@ -3297,8 +3313,8 @@ Surname = 'Buravin'.
 \item \verb|db_recorded(+DB_Key, ?Term)| унифицировать Term с
   базой (\ref{db_recorded/2})
 %db_recorded(+DB_Key, ?Term, -DB_Ref)
-\item \verb|bind_term_in_db(+DB_Key, ?Term)| унифицировать термы в
-  базе с Term (\ref{bind_term_in_db})
+\item \verb|db_bind_obj(+DB_Key, +Obj0, -Obj)| унифицировать
+  термы в базе с Term (\ref{db_bind_obj})
 
 %db_erase_object(+DB_Key, +Key, +Key_Value)
 \item \verb|db_erase(+DB_Ref)| удалить объект по физическому
@@ -3461,13 +3477,12 @@ X = citizen_v(man, _G9, 'Mayakovsky', _G11, _G12, ['Soviet Union'], _G14, _G15).
 \section{Семейство унификаторов named\_arg*}
 \label{named_arg_db}
 
-named\_arg* --- это семейство унификаторов по именованным
+\na{} --- это семейство унификаторов по именованным
 полям. Соответственно, те, что начинаются с named\_arg\_
 унифицируют одно поле, а те, что с named\_args\_ --- списком
 (как в фильме, огласите весь список)
 
-named\_arg\_unify(+DB\_Key, ?Functor, +Field\_Name, ?Value,
-?Term)
+named_arg_unify(+DB_Key, ?Functor, +Field_Name, ?Value, ?Term)
 
 эта форма унифицирует объект по одному полю и функтору. Если
 функтор не определён, то проявляется полиморфизм
@@ -3553,6 +3568,10 @@ Adam Mayakovsky
 В дальнейшем мы покажем, как решаются эти проблемы с помощью
 предикатов модуля ur\_recorded\_db. Сейчас дадим ещё несколько
 базовых (низкоуровневых) предикатов.
+
+\subsection{Паровозики из \na}
+
+...
 
 \section{Удаление объектов из базы по физическим адресам
   (db\_erase)}
@@ -3811,14 +3830,14 @@ X = shampoo_v.
 \end{example}
 
 \section{Двусторонняя унификация с базой}
-\label{bind_term_in_db}
+\label{db_bind_obj}
 
 В разделе \ref{named_arg_db} было сказано, что унификация с
 помощью предикатов \na{}, несмотря на то, что выполняется между
-объектами базы и выражения связывает переменные только в объектах
-выражения. А что, если мы хотим заставить работать унификацию ``в
-сторону базы''? \Te, например, усвоить всем мужчинам с фамилией
-Маяковский имя Владимир:
+объектами базы и выражения, связывает переменные только в
+объектах выражения. А что, если мы хотим заставить работать
+унификацию ``в сторону базы''? \Te, например, усвоить всем
+мужчинам с фамилией Маяковский имя Владимир:
 
 (в этом разделе мы будем работать с базой people, созданной в
 примере \ref{people_db}).
@@ -3828,10 +3847,10 @@ X = shampoo_v.
 ?- clear_db(people1), db_copy(people, people1).
 true.
 
-?- named_args_unify(people1, _, 
-      [sex, surname], [man, 'Mayakovsky'] , Man), 
-   obj_field(Man, name, 'Vladimir'), 
-   bind_term_in_db(people1, Man).
+named_args_unify(people1, _, 
+      [sex, surname], [man, 'Mayakovsky'] , Man1), 
+   obj_field(Man1, name, 'Vladimir'), 
+   db_bind_obj(people1, Man1, Man).
 
 ?- dump_db([lf(1)], people1).
 
@@ -3871,7 +3890,7 @@ true.
    obj_field(Man, name, 'Vladimir'), 
    obj_reset_fields([surname], Man, Man1), 
    obj_pretty_print(Man1), 
-   bind_term_in_db(people1, Man 1), 
+   db_bind_obj(people1, Man 1), 
    obj_pretty_print(Man1).
 
 citizen_v ( 
@@ -3918,7 +3937,7 @@ true.
       [sex, surname], [man, 'Mayakovsky'] , Man), 
    obj_field(Man, name, 'Vladimir'), 
    obj_reset_fields([surname], Man, Man1), 
-   bind_term_in_db(people1, Man1), 
+   db_bind_obj(people1, Man1), 
    dump_db([lf(1)], people1).
 
 [40]: man_v(man,Adam,_G4946,_G4947,_G4948) 
@@ -4003,7 +4022,7 @@ true.
    obj_field(Man, name, 'Vladimir'), 
    obj_reset_fields([surname], Man, Man1), 
    obj_pretty_print(Man1), 
-   once(bind_term_in_db(people1, Man1)), 
+   once(db_bind_obj(people1, Man1)), 
    dump_db([lf(1)], people1).
 
 citizen_v ( 
@@ -4050,7 +4069,7 @@ true.
    obj_field(Man, name, 'Vladimir'), 
    obj_reset_fields([surname], Man, Man1), 
    obj_pretty_print(Man1), 
-   once(bind_term_in_db(people1, Man1)), 
+   once(db_bind_obj(people1, Man1)), 
    dump_db([lf(1)], people1).
 
 citizen_v ( 
@@ -4100,7 +4119,7 @@ citizen_v(man,Vladimir,Pickwick,_G2582,_G2583,[Soviet Union],_G2585
 ключами (будут рассмотрены в разделе \ref{keys}).
 
 Также следует иметь в виду, что проблема зацикливания, показанная
-в разделе \ref{bind_term_in_db}, как правило, не актуальна при
+в разделе \ref{db_bind_obj}, как правило, не актуальна при
 правильном построении выражения запроса и использовании
 предикатов данного раздела.
 
@@ -4380,14 +4399,14 @@ callup_v. Это потому, что, как мы помним (\ref{downcast})
 \subsection{db_iterate_replace/3}
 \label{db_iterate_replace/3}
 
-Как было сказано в \ref{bind_term_in_db}, предикаты, работающие с
+Как было сказано в \ref{db_bind_obj}, предикаты, работающие с
 поисковыми выражениями (они были отнесены к предикатам высокого
 уровня) позволяют писать более простые запросы, которые меняют
 объекты в базе, в частности, заполняют несвязанные поля, чем
 предикаты низкого уровня, к которым относятся db_recorded, \na,
-db_erase и bind_term_in_db.
+db_erase и db_bind_obj.
 
-Сейчас мы это продемонстрируем. В разделе \ref{bind_term_in_db}
+Сейчас мы это продемонстрируем. В разделе \ref{db_bind_obj}
 был рассмотрен пример (\ref{vladimir_to_all_mayakovsky}), в
 котором все Маяковские получали имя Владимир. Вот как его можно
 переписать с использованием db_iterate_replace/3. Для начала, как
@@ -4473,7 +4492,7 @@ man_v(_G385,Eva,_G387,_G388,_G389)
 
 Во всех трёх примерах запрос поиска содержит компонент, который
 исключает повторное попадание изменённой записи на вход базы. Как
-было показано в \ref{bind_term_in_db} это обязательно.
+было показано в \ref{db_bind_obj} это обязательно.
 
 Можно построить запрос меняющий также классы объектов. Для этого
 подойдёт такой рабочий предикат:

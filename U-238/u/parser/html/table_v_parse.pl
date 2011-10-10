@@ -32,12 +32,12 @@
            normalize_row_name/2
            ]).
 
-:- use_module(library(ur_atoms)).
-:- use_module(library(ur_terms)).
-:- use_module(library(ur_lists)).
-:- use_module(library(ur_objects)).
-:- use_module(library(ur_recorded_db)).
-:- use_module(logging/logging).
+:- use_module(u(ur_atoms)).
+:- use_module(u(ur_terms)).
+:- use_module(u(ur_lists)).
+:- use_module(u(v)).
+:- use_module(u(ur_recorded_db)).
+:- use_module(u(logging)).
 :- use_module(library(xpath)).
 :- use_module(library(lists)).
 

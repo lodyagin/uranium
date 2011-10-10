@@ -40,9 +40,9 @@
 %           step_map/3
           ]).
 
-:- use_module(logging/logging).
+:- use_module(u(logging)).
 :- use_module(state/state).
-:- use_module(library(ur_objects)).
+:- use_module(u(v)).
 :- use_module(tc_support/tc_log).
 
 % Выполнение тест-кейса

@@ -3,10 +3,20 @@
            dom_walker/2,
            get_level/3,
            print_el/2,
-           print_level/2
+           print_level/2,
+           print_tree/1
           ]).
 
-:- use_module(library(ixpath)).
+:- use_module(u(ixpath)).
+
+print_tree(DOM) :-
+
+   ixpath((*)//(*), DOM, [tag_attr_path([class, id], Path)], _),
+   print_path(Path), nl,
+   fail ; true.
+
+print_path([]) :- !.
+print_path([El
 
 get_level(Level, DOM, Tag_Path) :-
 

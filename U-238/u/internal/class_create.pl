@@ -29,8 +29,8 @@
            class_rebase/3
           ]).
 
-:- use_module(library(internal/objects_i)).
-:- use_module(library(internal/check_arg)).
+:- use_module(u(internal/objects_i)).
+:- use_module(u(internal/check_arg)).
 
 check_class_create(Class, Parent, Fields, Ctx) :-
 

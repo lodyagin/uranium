@@ -24,10 +24,10 @@
           [html_page_parse/3
           ]).
 
-:- use_module(library(ur_recorded_db)).
-:- use_module(library(ur_objects)).
+:- use_module(u(ur_recorded_db)).
+:- use_module(u(v)).
 :- use_module(library(xpath)).
-:- use_module(logging/logging).
+:- use_module(u(logging)).
 
 %
 % Parse DOM of html page and create a list of objects

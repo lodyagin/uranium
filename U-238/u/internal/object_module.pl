@@ -27,8 +27,8 @@
           [reload_all_classes/0
            ]).
 
-:- use_module(library(internal/objects_i)).
-:- use_module(library(internal/class_create)).
+:- use_module(u(internal/objects_i)).
+:- use_module(u(internal/class_create)).
   
 % module_class_def(+Main_Class, -Class) :-
 % find all class definitions                             
@@ -240,7 +240,8 @@ find_class_module(Module_Path) :-
   expand_file_name('*/*/*/*_v.pl', L4),
   expand_file_name('*/*/*/*/*_v.pl', L5),
   flatten([L1, L2, L3, L4, L5], List),
-  member(Module_Path, List).
+  member(Module_Path, List),
+  \+ sub_atom(Module_Path, _, _, _, '.hide/').
 
 :- initialization reload_all_classes.
                              

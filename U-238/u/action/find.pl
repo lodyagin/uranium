@@ -22,12 +22,12 @@
 
 :- module(find, [find/5]).
 
-:- use_module(library(ur_words)).
-:- use_module(library(ur_lists)).
-:- use_module(library(ur_recorded_db)).
-:- use_module(library(ur_objects)).
+:- use_module(u(ur_words)).
+:- use_module(u(ur_lists)).
+:- use_module(u(ur_recorded_db)).
+:- use_module(u(v)).
 :- use_module(tc_support/load_action_module).
-:- use_module(logging/logging).
+:- use_module(u(logging)).
 
 find(SAT, Actor, Object_Type, Prop_List, DB_Key) :-
 

@@ -28,26 +28,15 @@
 
 :- module(page_v, ['page_v?'/3]).
 
-:- use_module(library(ur_atoms)).
-:- use_module(library(ur_objects)).
+:- use_module(u(ur_atoms)).
+:- use_module(u(v)).
 :- use_module(library(xpath)).
-:- use_module(library(ixpath)).
-:- use_module(library(js)).
-
-new_class(html_piece_v, http_result_v, [dom]).
+:- use_module(u(ixpath)).
+:- use_module(u(js)).
 
 new_class(page_v, html_piece_v, [title]).
 
 new_class(redirect_page_v, page_v, [url_to]).
-
-'html_piece_v?'(Term, class, Value) :-
-
-   obj_field(Term, dom, DOM),
-   ground(DOM), !,
-   (  ixpath(html, DOM, _)
-   -> Value = page_v
-   ;  Value = html_piece_v
-   ).
 
 %downcast(html_piece_v, page_v, Piece, Page) :-
 

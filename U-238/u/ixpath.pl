@@ -32,7 +32,7 @@
                    ]).
 
 :- use_module(library(lists)).
-:- use_module(library(ur_objects)).
+:- use_module(u(v)).
 
 
 % ixpath(+Spec, +Dom, -Result)

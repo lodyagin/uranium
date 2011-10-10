@@ -26,7 +26,7 @@
 
 :- module(http_page, [http_page/3]).
 
-:- use_module(library(ur_objects)).
+:- use_module(u(v)).
 :- use_module(library(url)).
 
 % Get an http response as a html_piece_v descendant
@@ -40,10 +40,12 @@ http_page(URL, Pred, Page) :-
   get_time(Timestamp),
 
   (atom(URL) -> URL2 = URL;  parse_url(URL2, URL)),
+
+  (  DOM = [DOM2] -> true ; DOM = DOM2 ),
   
   obj_construct(html_piece_v,
                 [http_request_url, timestamp, dom],
-                [URL2, Timestamp, DOM],
+                [URL2, Timestamp, DOM2],
                 Obj),
   obj_downcast(Obj, Page).
   

@@ -27,9 +27,9 @@
                       %+User, +URL_Expr, ?Page, [+]Proxy
                       ]).
 
-:- use_module(html/http_ops).
-:- use_module(library(ur_objects)).
-:- use_module(html/http_page). 
+:- use_module(u(html/http_ops)).
+:- use_module(u(v)).
+:- use_module(u(html/http_page)). 
 
 % TODO add actor (cookies etc.)
 

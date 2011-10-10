@@ -22,8 +22,8 @@
 
 :- module(update_state, [update_state/4]).
 
-:- use_module(library(ur_objects)).
-:- use_module(library(ur_recorded_db)).
+:- use_module(u(v)).
+:- use_module(u(ur_recorded_db)).
 
 %
 % update_state(+Old_State, -New_State)

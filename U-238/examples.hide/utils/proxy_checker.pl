@@ -28,21 +28,21 @@
 :- use_module(library(readutil)).
 :- use_module(library(http/thread_httpd)).
 :- use_module(library(http/http_client)).
-:- use_module(logging/logging).
+:- use_module(u(logging)).
 :- use_module(parser/general/dcg_entities).
 :- use_module(library(http/dcg_basics)).
-:- use_module(html/browsers/browsers).
-:- use_module(library(ur_objects)).
-:- use_module(library(ur_recorded_db)).
-:- use_module(html/http_ops).
-:- use_module(html/http_page).
+:- use_module(u(html/browsers/browsers)).
+:- use_module(u(v)).
+:- use_module(u(ur_recorded_db)).
+:- use_module(u(html/http_ops)).
+:- use_module(u(html/http_page)).
 :- use_module(library(time)).
-:- use_module(logging/logging).
+:- use_module(u(logging)).
 
 :- use_module(library(http/http_sgml_plugin),
               [type_major_props/3]). 
 
-:- use_module(db/postgres/postgres).
+:- use_module(u(db/postgres/postgres)).
 
 :- use_module('Examples/utils/http_proxy_v',
 	      [time_interval_pl_pg/2]).

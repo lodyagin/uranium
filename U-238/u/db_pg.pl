@@ -29,10 +29,10 @@
            pg_object_class/2
            ]).
 
-:- use_module(db/postgres/postgres).
-:- use_module(library(ur_lists)).
-:- use_module(library(ur_objects)).
-:- use_module(logging/logging).
+:- use_module(u(db/postgres/postgres)).
+:- use_module(u(ur_lists)).
+:- use_module(u(v)).
+:- use_module(u(logging)).
 
 :- dynamic pl_pg_type/3,  % Prolog_Type, Postgres_Type, Conv_Pred
            postgres_db/1,  % Connection

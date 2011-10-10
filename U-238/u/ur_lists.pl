@@ -57,7 +57,7 @@
            write_delimited/3     % +Write_Pred, +Delimiter, +List
 ]).
 
-:- use_module(logging/logging).
+:- use_module(u(logging)).
 
 :- module_transparent switch_by_value/4, weak_maplist/3.
 

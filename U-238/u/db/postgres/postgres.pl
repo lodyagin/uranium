@@ -55,7 +55,7 @@
 			pg_select_indexed/2,
 			pg_store/2]).
 
-:- use_module(logging/logging).
+:- use_module(u(logging)).
 
 %:-module_transparent pg_init/0.
 

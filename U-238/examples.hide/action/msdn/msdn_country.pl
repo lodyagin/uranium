@@ -22,17 +22,17 @@
 
 :- module(msdn_country, []).
 
-:- use_module(library(ur_objects)).
-:- use_module(library(ur_recorded_db)).
-:- use_module(library(ur_lists)).
-:- use_module(html/http_page).
-:- use_module(html/http_ops).
+:- use_module(u(v)).
+:- use_module(u(ur_recorded_db)).
+:- use_module(u(ur_lists)).
+:- use_module(u(html/http_page)).
+:- use_module(u(html/http_ops)).
 :- use_module(parser/html/html_page_parse).
 :- use_module(parser/html/html_page_find).
 :- use_module(parser/html/table_v_parse).
 :- use_module(parser/msdn/parse_msdn_list).
 
-:- use_module(action/templates/find_all_table_rows).
+:- use_module(u(action/templates/find_all_table_rows)).
 
 find_all_countries(DB_Key, User) :-
 

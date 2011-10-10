@@ -29,8 +29,8 @@
 :- use_module(library(http/http_client)).
 :- use_module(library(http/http_open)).
 :- use_module(library(uri)).
-:- use_module(html/cookies_man).
-:- use_module(logging/logging).
+:- use_module(u(html/cookies_man)).
+:- use_module(u(logging)).
 
 % for use DOM parsing
 :- use_module(library(http/http_sgml_plugin)). 

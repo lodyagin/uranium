@@ -51,7 +51,7 @@
           
 ]).
 
-:- use_module(library(ur_lists)).
+:- use_module(u(ur_lists)).
 
 :- module_transparent write_log/1, write_log/2, logged/1, logged/2.
 

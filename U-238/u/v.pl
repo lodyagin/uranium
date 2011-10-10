@@ -23,7 +23,7 @@
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
-:- module(ur_objects,
+:- module(v,
           [
            class_descendant/2,
            class_fields/2,    %+Class, -Fields (ordset)
@@ -68,28 +68,28 @@
            ]).
 
 
-:- reexport(library(internal/objects_i),
+:- reexport(u(internal/objects_i),
             [
              u_class/1,
              u_object/1
             ]).
 
-:- reexport(library(internal/object_module),
+:- reexport(u(internal/object_module),
             [ reload_all_classes/0]).
 
-:- reexport(library(internal/class_create),
+:- reexport(u(internal/class_create),
             [class_create/3,
              class_create/4]).
 
 
-:- use_module(library(internal/objects_i)).
-:- use_module(library(internal/check_arg)).
-:- use_module(library(internal/class_create)).
+:- use_module(u(internal/objects_i)).
+:- use_module(u(internal/check_arg)).
+:- use_module(u(internal/class_create)).
 :- use_module(library(lists)).
 :- use_module(library(ordsets)).
-%:- use_module(library(ur_recorded_db)).
-:- use_module(library(ur_lists)).
-:- use_module(logging/logging).
+%:- use_module(u(ur_recorded_db)).
+:- use_module(u(ur_lists)).
+:- use_module(u(logging)).
 
 %:- multifile db_recorded/3, db_erase/1, db_recordz/2.
 

@@ -45,7 +45,7 @@
            ]).
 
 :- use_module(library(lists)).
-:- use_module(library(ur_lists)).
+:- use_module(u(ur_lists)).
 
 :- multifile prolog:message/3.
 

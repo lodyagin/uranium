@@ -2,8 +2,8 @@
 
 :- use_module(library(readutil)).
 
-:- use_module(action/click_url).
-:- use_module(library(ur_objects)).
+:- use_module(u(action/click_url)).
+:- use_module(u(v)).
 
 go :-
 

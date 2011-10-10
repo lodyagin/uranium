@@ -3,8 +3,8 @@
            format_word_list/2
            ]).
 
-:- use_module(library(ur_math)).
-:- use_module(library(ur_lists)).
+:- use_module(u(ur_math)).
+:- use_module(u(ur_lists)).
 
 n_words(96238).
 dict_file_name('dict/zali_translit.txt').

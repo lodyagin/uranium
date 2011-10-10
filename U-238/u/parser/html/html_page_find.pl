@@ -26,8 +26,8 @@
 
 :- module(html_page_find, [html_page_find/4]).
 
-:- use_module(library(ur_objects)).
-:- use_module(library(ur_recorded_db)).
+:- use_module(u(v)).
+:- use_module(u(ur_recorded_db)).
 
 %
 % html_page_find(+DB_Key, +Class, +Search_Criteria, ?Obj_List) :-

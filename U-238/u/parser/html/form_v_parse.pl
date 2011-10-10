@@ -30,8 +30,8 @@
           [form_v_parse/2   % +Data, -Object
           ]).
 
-:- use_module(library(ur_lists)).
-:- use_module(library(ur_objects)).
+:- use_module(u(ur_lists)).
+:- use_module(u(v)).
 
 form_v_parse(DOM, Object) :-
 

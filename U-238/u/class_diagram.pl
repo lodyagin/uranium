@@ -1,7 +1,7 @@
 :- module(class_diagram, [class_diagram/0]).
 
-:- use_module(library(ur_objects)).
-:- use_module(library(internal/objects_i)).
+:- use_module(u(v)).
+:- use_module(u(internal/objects_i)).
 :- use_module(library(ugraphs)).
 
 class_diagram :-
