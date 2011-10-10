@@ -27,9 +27,7 @@
 
 :- use_module(u(v)).
 
-new_class(html_tag_input_v, html_tag_v, []).
-
-new_class(html_input_attrs_v, html_attrs_v,
+new_class(html_tag_input_v, html_tag_v,
           [
            '.name',
            '.type',
@@ -43,5 +41,6 @@ new_class(html_input_attrs_v, html_attrs_v,
            '.readonly',
            '.accesskey',
            '.tabindex'
-          ]).
+           ]).
+
 
