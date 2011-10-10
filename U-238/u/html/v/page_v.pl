@@ -34,7 +34,7 @@
 :- use_module(u(ixpath)).
 :- use_module(u(js)).
 
-new_class(page_v, html_piece_v, [title]).
+new_class(page_v, html_tag_html_v, [title]).
 
 new_class(redirect_page_v, page_v, [url_to]).
 
