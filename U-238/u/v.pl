@@ -683,9 +683,16 @@ field_pretty_print(Options, Object, Field) :-
   ;  Pretty_Value = Value
   ),
 
-  (  nonvar(Pretty_Value)
-  -> log_piece([Field, ':', Pretty_Value], Options)
-  ;  true
+  (  var(Pretty_Value)
+  -> true
+  ;  u_object(Pretty_Value)
+  -> log_piece([Field, ':'], Options),
+     change_indent(Options, O2, 2),
+     log_piece([], Options),
+     %exclude_lf(Options, O2),
+     obj_pretty_print(O2, Pretty_Value)
+     %log_piece([], Options)
+  ;  log_piece([Field, ':', Pretty_Value], Options)
   ).
 
 
