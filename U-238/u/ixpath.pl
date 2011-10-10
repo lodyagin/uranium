@@ -98,6 +98,11 @@ proc_option(Path_R, tag_path(Tag_Path), R, R) :- !,
    reverse(Path_R, Path),
    dom_tag_path(Path, Tag_Path).
 
+proc_option(Path_R, xpath(XPath), R, R) :- !,
+   reverse(Path_R, Path),
+   dom_tag_path(Path, Tag_Path),
+   concat_atom(Tag_Path, '/', XPath).
+
 proc_option(Path_R, tag_attr_path(Attr_List, Tag_Attr_Path),
             R, R) :- !,
    reverse(Path_R, Path),
