@@ -41,13 +41,13 @@ find_all_locales(DB_Key, User) :-
 
     ground(Cookies_DB),
 
-    http_page('http://msdn.microsoft.com/en-us/goglobal/bb896001.aspx',
-              http_ops:http_get_html([], Cookies_DB),
+    http_page(http_ops:http_get_html([], Cookies_DB),
+              'http://msdn.microsoft.com/en-us/goglobal/bb896001.aspx',
               _
              ),
 
-    http_page('http://www.microsoft.com/resources/msdn/goglobal/default.mspx',
-              http_ops:http_get_html([], Cookies_DB),
+    http_page(http_ops:http_get_html([], Cookies_DB),
+              'http://www.microsoft.com/resources/msdn/goglobal/default.mspx',
               Page
              ),
 
@@ -103,8 +103,8 @@ fill_full_data_locale(DB_Key, DB_Key2, User, Locale) :-
     concat_atom(['http://www.microsoft.com/resources/msdn/goglobal/default.mspx?submitted=', LCID, '&OS=', OS_Name], Url),
 
     obj_field(User, cookie_db_key, Cookies_DB),
-    http_page(Url,
-              http_ops:http_get_html([], Cookies_DB),
+    http_page(http_ops:http_get_html([], Cookies_DB),
+              Url,
               Page
              ),
 

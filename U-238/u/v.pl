@@ -53,6 +53,7 @@
            obj_get_key/2,     % +Object, ?Key
            %get_key_value/2, % +Object, ?Key_Value
            obj_rebase/3,     % ?Rebase_Rule, @Object0, -Object
+           obj_reinterpret/2, % +From, -To
 %           obj_reset_fields/3, % +[Field|...], +Obj_In, -Obj_Out
 %           obj_reset_fields/4, % +[Field|...], +Obj_In, -Obj_Out, Is_Succ
 %           obj_reset_fields_weak/3, % +[Field|...], +Obj_In, -Obj_Out
@@ -507,7 +508,25 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
    obj_unify(Object0, Transfer_Fields, Transfer_Values),
    obj_construct_int(Rebased_Id, Transfer_Fields, Transfer_Values,
                      strict, Object, Ctx).
-  
+
+
+% obj_reinterpret(+From, -To) is nondet
+
+obj_reinterpret(From, To) :-
+
+   Ctx = context(obj_reiterpret/2, _),
+   check_inst(From, Ctx),
+   check_object_arg(From, Ctx, From_Class_Id),
+
+   functor(From, From_Class, _),
+   (  objects:clause(reinterpret(From_Class, To_Class, _, _), _),
+      class_primary_id(To_Class, To_Class_Id),
+      obj_downcast_int(From_Class_Id, To_Class_Id, From, To, Ctx),
+      objects:reinterpret(From_Class, To_Class, From, To)
+   ;
+      To = From
+   ).
+
 %
 % Вычисление выражений в операторной форме
 %

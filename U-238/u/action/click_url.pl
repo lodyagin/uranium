@@ -23,31 +23,41 @@
 :- module(click_url, [click_url/2,
                       click_url/3,
                       click_url/4,
+                      click_with_all_redirects/2,
+                      %+URL_Expr, -Page nondet
+                      click_with_all_redirects/3,
+                      %+User, +URL_Expr, -Page nondet
                       click_with_all_redirects/4
-                      %+User, +URL_Expr, ?Page, [+]Proxy
+                      %+User, +URL_Expr, @Proxy, -Page nondet
                       ]).
 
 :- use_module(u(html/http_ops)).
 :- use_module(u(v)).
 :- use_module(u(html/http_page)). 
 
-% TODO add actor (cookies etc.)
+% click_url(+URL_Expr, -Page)
 
-click_url(URL_Expr, Page) :- click_url(URL_Expr, Page, _).
+click_url(URL_Expr, Page) :-
 
-
-click_url(URL_Expr, Page, Proxy) :-
-
-  click_url_with_cookies(URL_Expr, Page, Proxy, _).
+   click_url(URL_Expr, _, Page).
 
 
-click_url(User, URL_Expr, Page, Proxy) :-
+% click_url(+URL_Expr, @Proxy, -Page)
+
+click_url(URL_Expr, Proxy, Page) :-
+
+  click_url_with_cookies(URL_Expr, Proxy, _, Page).
+
+
+% click_url(+User, +URL_Expr, @Proxy, -Page)
+
+click_url(User, URL_Expr, Proxy, Page) :-
 
   obj_field(User, cookie_db_key, Cookies_DB),
-  click_url_with_cookies(URL_Expr, Page, Proxy, Cookies_DB).
+  click_url_with_cookies(URL_Expr, Proxy, Cookies_DB, Page).
 
 
-click_url_with_cookies(URL_Expr, Page, Proxy, Cookies_DB) :-
+click_url_with_cookies(URL_Expr, Proxy, Cookies_DB, Page) :-
 
   Options1 = [],
   eval_obj_expr(URL_Expr, URL),
@@ -57,22 +67,52 @@ click_url_with_cookies(URL_Expr, Page, Proxy, Cookies_DB) :-
      selectchk(proxy(Proxy_IP, Proxy_Port), Options, Options1)
   ;  Options = Options1
   ),
-  http_page(URL, http_ops:http_get_html(Options, Cookies_DB), Page).
+  http_page(http_ops:http_get_html(Options, Cookies_DB), URL,
+            Page).
 
 
-% Perform all redirects
+% click_with_all_redirects(+User, +URL_Expr, @Proxy, -Page)
+% is nondet
+%
+% Perform all redirects. Try all Page interpretations
 
-click_with_all_redirects(User, URL_Expr, Page, Proxy) :-
+click_with_all_redirects(User, URL_Expr, Proxy, Page) :-
 
-  click_url(User, URL_Expr, Page1, Proxy),
-  perform_redirects(User, Page1, Proxy, Page).
+  click_url(User, URL_Expr, Proxy, Page1),
+  obj_reinterpret(Page1, Page2),
+  perform_redirects(User, Page2, Proxy, Page).
+
+click_with_all_redirects(User, URL_Expr, Page) :-
+
+   click_with_all_redirects(User, URL_Expr, _, Page).
+
+click_with_all_redirects(URL_Expr, Page) :-
+
+  click_url(URL_Expr, Page1),
+  obj_reinterpret(Page1, Page2),
+  perform_redirects(Page2, Page).
+
 
 perform_redirects(_, Page, _, Page) :-
 
-  \+ functor(Page, redirect_page_v, _), !.
+   functor(Page, Class, _),
+   \+ (  Class == redirect_page_v
+      ;  class_descendant(Class, redirect_page_v)
+      ), !.
 
 perform_redirects(User, Page1, Proxy, Page2) :-
 
-  click_with_all_redirects(User, Page1 / url_to, Page2, Proxy).
+  click_with_all_redirects(User, Page1 / url_to, Proxy, Page2).
 
+
+perform_redirects(Page, Page) :-
+
+   functor(Page, Class, _),
+   \+ (  Class == redirect_page_v
+      ;  class_descendant(redirect_page_v, Class)
+      ), !.
+
+perform_redirects(Page1, Page2) :-
+
+  click_with_all_redirects(Page1 / url_to, Page2).
 

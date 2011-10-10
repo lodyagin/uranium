@@ -31,10 +31,10 @@
 
 % Get an http response as a html_piece_v descendant
 %
-% http_page(+URL, ?Page)
+% http_page(:Pred, +URL, -Page)
 %
 
-http_page(URL, Pred, Page) :-
+http_page(Pred, URL, Page) :-
 
   call(Pred, URL, DOM),
   get_time(Timestamp),

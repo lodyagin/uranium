@@ -300,8 +300,8 @@ download_ip_list(DB_Key) :-
         source_page(Url),
         get_time(Time_Stamp),
         catch(
-              http_page(Url,
-                        http_ops:http_get_html(Headers, _),
+              http_page(http_ops:http_get_html(Headers, _),
+                        Url,
                         Page),
               _,
               fail),

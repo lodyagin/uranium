@@ -119,6 +119,16 @@ process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
           Module:Term)
       ),
    fail ; true ),
+
+  % assert reinterpret/4
+  (call(Module:current_predicate(reinterpret, Term)),
+   Term = reinterpret(Class_From, Class_To, Obj_From, Obj_To),
+   call(Module:clause(Term, _)),
+   objects:assertz(
+      (reinterpret(Class_From, Class_To, Obj_From, Obj_To) :-
+          Module:Term)
+      ),
+   fail ; true ),
   
   % process class module-scoped objects
   (  Class == Module
@@ -200,6 +210,7 @@ reload_all_classes :-
    abolish(objects:module_class_def/3),
    abolish(objects:parent/2),
    abolish(objects:pretty_print/4),
+   abolish(objects:reinterpret/4),
    abolish(objects:typedef_flag/2),
    abolish(db_pg:pl_pg_type/3),
 
@@ -258,7 +269,9 @@ find_class_module(Module_Path) :-
   ),
   flatten(List1, List),
   member(Module_Path, List),
-  \+ sub_atom(Module_Path, _, _, _, '.hide/').
+  \+ ( sub_atom(Module_Path, _, _, _, 'hide/')
+     ; sub_atom(Module_Path, _, _, _, 'HIDE/')
+     ).
 
 :- initialization reload_all_classes.
                              

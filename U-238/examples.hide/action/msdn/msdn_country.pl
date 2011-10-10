@@ -40,8 +40,8 @@ find_all_countries(DB_Key, User) :-
 
     ground(Cookies_DB),
 
-    http_page('http://msdn.microsoft.com/en-us/library/cdax410z.aspx',
-              http_ops:http_get_html([], Cookies_DB),
+    http_page(http_ops:http_get_html([], Cookies_DB),
+              'http://msdn.microsoft.com/en-us/library/cdax410z.aspx',
               Page
              ),
 

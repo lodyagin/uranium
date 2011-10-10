@@ -258,12 +258,12 @@ prolog:message(class_exists(Class)) -->
 
 prolog:message(invalid_object(Object, Details)) -->
 
-   ['Invalid object passed: ~w ' - [Object]],
+   ['Invalid object passed: ~p ' - [Object]],
    [ '(', Details, ')' ].
 
 prolog:message(no_object_field(Object, Field_Name)) -->
 
-   ['There is no such field `~a'' in the object ~w'
+   ['There is no such field `~a'' in the object ~p'
     - [Field_Name, Object]].
                              
 prolog:message(undef_operation(Op_Name, Class_Id)) -->
@@ -273,13 +273,13 @@ prolog:message(undef_operation(Op_Name, Class_Id)) -->
 
 prolog:message(bad_eval_result(Object, Field)) -->
 
-   ['User-defined field `~a'' evaluation failed for ~w'
+   ['User-defined field `~a'' evaluation failed for ~p'
    - [Field, Object]].
 
 prolog:message(bad_downcast_impl(Object, From, To, Result)) -->
 
    ['User-defined downcast implementation is bad:', nl],
-   ['~a -> ~a transforms ~w to ~w' - [From, To, Object, Result]].
+   ['~a -> ~a transforms ~p to ~p' - [From, To, Object, Result]].
 
 prolog:message(not_downcast(From_Class, To_Class)) -->
 
