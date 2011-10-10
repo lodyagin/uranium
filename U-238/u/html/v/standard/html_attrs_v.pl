@@ -27,7 +27,7 @@
 
 :- module(html_attrs_v,
           [
-           construct_html_attrs/2,
+           construct_html_attrs/3,
            unify_html_attrs/4
            ]).
 
@@ -48,8 +48,8 @@ unify_html_attrs(Obj, [Id = Val|T], Rest0, Rest) :-
    ;  Rest1 = [Id = Val|Rest0] ),
    unify_html_attrs(Obj, T, Rest1, Rest).
 
-construct_html_attrs(Attr_List, Obj) :-
+construct_html_attrs(Class, Attr_List, Obj) :-
 
-   obj_construct(html_attrs_v, [], [], Obj),
+   obj_construct(Class, [], [], Obj),
    unify_html_attrs(Obj, Attr_List, [], Rest),
    obj_field(Obj, '.@bulk', Rest).

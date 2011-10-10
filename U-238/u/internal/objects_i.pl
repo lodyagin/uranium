@@ -67,7 +67,7 @@
            objects:pretty_print/4,
            objects:typedef_flag/2.
 
-% class_fields(+Class_Id, ?Native, ?Fields)
+% class_fields(+Class_Id, ?Native, ?Eval, ?Fields)
 % Get list of fields/types 
 % Native = true means no field from parent
 % (Native = false - only parent fields)

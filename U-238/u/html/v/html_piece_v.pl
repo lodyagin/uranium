@@ -20,5 +20,5 @@ downcast(html_piece_v, html_tag_v, From, To) :-
    ground(DOM),
    DOM = element(Tag, Attrs, _),
    obj_field(To, html_tag, Tag),
-   construct_html_attrs(Attrs, Attrs_Obj),
+   construct_html_attrs(html_attrs_v, Attrs, Attrs_Obj),
    obj_field(To, html_tag_attrs, Attrs_Obj).

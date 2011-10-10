@@ -53,6 +53,8 @@ ixpath(Spec, Dom, Options, Result) :-
 
 ixpath2(Spec, Dom, Options, Result, Ctx) :-
 
+% TODO check no repeats in options
+   
    (  (var(Spec); var(Dom); var(Options))
    -> throw(error(instantiation_error, Ctx))
    ;  (Options = [] | Options = [_|_])
@@ -75,19 +77,36 @@ ixpath2(Spec, Dom, Options, Result, Ctx) :-
 
 xpath(Spec, Dom, Options, Result) :-
 
-   xpath(Spec, Dom, Options, [], Path_R, Result),
-   (  memberchk(tag_path_rev(Tag_Path_R), Options)
-   -> dom_tag_path(Path_R, Tag_Path_R)
-   ;  memberchk(tag_path(Tag_Path), Options)
-   -> reverse(Path_R, Path),
-      dom_tag_path(Path, Tag_Path)
-   ;  memberchk(tag_attr_path(Attr_List, Tag_Attr_Path), Options)
-   -> reverse(Path_R, Path),
-      dom_tag_attr_path(Path, Attr_List, Tag_Attr_Path)
-   ;  true
-   ).
+   xpath(Spec, Dom, Options, [], Path_R, Result1),
+   proc_options(Path_R, Options, Result1, Result).
 
+   
+proc_options(_, [], Result, Result) :- !.
 
+proc_options(Path_R, [Option|OT], Result0, Result) :- 
+   proc_option(Path_R, Option, Result0, Result1),
+   proc_options(Path_R, OT, Result1, Result).
+
+proc_option(_, v, Result0, Result) :- !,
+   obj_construct(html_piece_v, [dom], [Result0], Result1),
+   obj_downcast(Result1, Result).
+
+proc_option(Path_R, tag_path_rev(Tag_Path_R), R, R) :- !,
+   dom_tag_path(Path_R, Tag_Path_R).
+
+proc_option(Path_R, tag_path(Tag_Path), R, R) :- !,
+   reverse(Path_R, Path),
+   dom_tag_path(Path, Tag_Path).
+
+proc_option(Path_R, tag_attr_path(Attr_List, Tag_Attr_Path),
+            R, R) :- !,
+   reverse(Path_R, Path),
+   dom_tag_attr_path(Path, Attr_List, Tag_Attr_Path).
+
+proc_option(_, _, R, R) :- true.
+%TODO   print_message(warning, 
+
+   
 % DOM elements path -> tags path
 dom_tag_path([], []) :- !.
 dom_tag_path([element(Tag, _, _)|DT], [Tag|TT]) :-
@@ -103,7 +122,7 @@ dom_tag_attr_path([element(Tag, Attrs, _)|DT],
    Tag_With_Attrs =.. [Tag|Attr_Vals],
    dom_tag_attr_path(DT, Attrs_Query, TT).
 
-% TODO O(N*M)
+% TODO O(N*M) -> use uranium objects
 extract_attrs([], _, []) :- !.
 extract_attrs([Attr|AQT], Attrs, [Val|AVT]) :-
    (  memberchk(Attr=Val, Attrs)
