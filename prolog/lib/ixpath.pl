@@ -106,7 +106,9 @@ dom_tag_attr_path([element(Tag, Attrs, _)|DT],
 % TODO O(N*M)
 extract_attrs([], _, []) :- !.
 extract_attrs([Attr|AQT], Attrs, [Val|AVT]) :-
-   ignore(memberchk(Attr=Val, Attrs)),
+   (  memberchk(Attr=Val, Attrs)
+   -> true
+   ;  Val = '' ),
    extract_attrs(AQT, Attrs, AVT).
 
 % xpath essentials
