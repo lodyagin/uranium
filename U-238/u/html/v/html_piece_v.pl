@@ -3,7 +3,7 @@
 :- use_module(u(html/v/standard/html_attrs_v)).
 
                      
-new_class(html_piece_v, http_result_v, [dom]).
+new_class(html_piece_v, http_result_v, [dom, xpath]).
 
 'html_piece_v?'(Obj, class, Class) :-
 

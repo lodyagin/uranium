@@ -91,6 +91,12 @@ proc_option(_, v, Result0, Result) :- !,
    obj_construct(html_piece_v, [dom], [Result0], Result1),
    obj_downcast(Result1, Result).
 
+proc_option(Path_R, vx, Result0, Result) :- !,
+   proc_option(Path_R, xpath(XPath), _, _),
+   obj_construct(html_piece_v, [dom, xpath], [Result0, XPath],
+                 Result1),
+   obj_downcast(Result1, Result).
+
 proc_option(Path_R, tag_path_rev(Tag_Path_R), R, R) :- !,
    dom_tag_path(Path_R, Tag_Path_R).
 

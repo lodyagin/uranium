@@ -673,7 +673,7 @@ one_diff_print(Options, diff(Field, Before, After)) :-
 field_pretty_print(Options, Object, Field) :-
 
   named_arg(Object, Field, Value, Type),
-  (  var(Value)
+  (  ( var(Value) ; memberchk(hide_field(Field), Options))
   -> true
   ;  var(Type)
   -> Pretty_Value = Value
