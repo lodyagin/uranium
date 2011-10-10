@@ -81,6 +81,9 @@ xpath(Spec, Dom, Options, Result) :-
    ;  memberchk(tag_path(Tag_Path), Options)
    -> reverse(Path_R, Path),
       dom_tag_path(Path, Tag_Path)
+   ;  memberchk(tag_attr_path(Attr_List, Tag_Attr_Path), Options)
+   -> reverse(Path_R, Path),
+      dom_tag_attr_path(Path, Attr_List, Tag_Attr_Path)
    ;  true
    ).
 
@@ -90,6 +93,21 @@ dom_tag_path([], []) :- !.
 dom_tag_path([element(Tag, _, _)|DT], [Tag|TT]) :-
    dom_tag_path(DT, TT).
 
+% DOM elements path -> tags with selected attrs path
+dom_tag_attr_path([], _, []) :- !.
+dom_tag_attr_path([element(Tag, Attrs, _)|DT],
+                  Attrs_Query,
+                  [Tag_With_Attrs|TT]) :-
+   
+   extract_attrs(Attrs_Query, Attrs, Attr_Vals),
+   Tag_With_Attrs =.. [Tag|Attr_Vals],
+   dom_tag_attr_path(DT, Attrs_Query, TT).
+
+% TODO O(N*M)
+extract_attrs([], _, []) :- !.
+extract_attrs([Attr|AQT], Attrs, [Val|AVT]) :-
+   ignore(memberchk(Attr=Val, Attrs)),
+   extract_attrs(AQT, Attrs, AVT).
 
 % xpath essentials
 
