@@ -26,6 +26,7 @@
 :- module(v,
           [
            class_descendant/2,
+           class_exists/1,
            class_fields/2,    %+Class, -Fields (ordset)
            %class_field_type/3,
            eval_obj_expr/2,
@@ -48,6 +49,7 @@
            obj_downcast/2,   % +Parent, -Descendant
            obj_downcast/3,   % +Parent, +Class_To, -Descendant
            obj_field/3,
+           obj_field_wf/3,
            obj_get_key/2,     % +Object, ?Key
            %get_key_value/2, % +Object, ?Key_Value
            obj_rebase/3,     % ?Rebase_Rule, @Object0, -Object
@@ -99,6 +101,13 @@
 
   */
 
+class_exists(Class) :-
+
+   Ctx = context(class_exists/1, _),
+   check_inst(Class, Ctx),
+   check_class_arg(Class, Ctx),
+   class_primary_id(Class, _).
+
 % obj_field(+Obj, +Field_Name, ?Value)
 
 obj_field(Obj, Field_Name, Value) :-
@@ -113,6 +122,25 @@ obj_field(Obj, Field_Name, Value) :-
    ),
    obj_field_int(Class_Id, Field_Name, false, Obj, Value, _).
 
+
+% obj_field_wf(+Obj, +Field_Name, ?Value)
+
+% Weak version of obj_field/3 which fails the attribute
+% on unexisting field instead of throwing the exception
+
+obj_field_wf(Obj, Field_Name, Value) :-
+
+   (  (var(Obj) ; var(Field_Name))
+   -> throw(error(instantiation_error,
+                  context(obj_field/3, _)))
+   ;  \+ atom(Field_Name)
+   -> throw(error(type_error(atom, Field_Name),
+                  context(obj_field/3, _)))
+   ;  check_object_arg(Obj, context(obj_field/3, _), Class_Id)
+   ),
+   obj_field_int(Class_Id, Field_Name, fail, Obj, Value, _).
+
+
 % NB evaluated fields can be also processed as `Weak' 
 
 obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type) :-
@@ -121,6 +149,8 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type) :-
    -> true
    ;  Weak == weak
    -> true
+   ;  Weak == fail
+   -> fail
    ;  throw(no_object_field(Obj, Field_Name))
    ).
 
