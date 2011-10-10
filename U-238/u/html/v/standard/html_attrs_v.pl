@@ -53,3 +53,10 @@ construct_html_attrs(Class, Attr_List, Obj) :-
    obj_construct(Class, [], [], Obj),
    unify_html_attrs(Obj, Attr_List, [], Rest),
    obj_field(Obj, '.@bulk', Rest).
+
+downcast(html_attrs_v, html_input_attrs_v, From, To) :-
+
+   obj_field(From, '.@bulk', Old_Bulk),
+   construct_html_attrs(html_input_attrs_v, Old_Bulk, To).
+   % other attributes are copied by Uranium
+   

@@ -45,15 +45,3 @@ new_class(html_input_attrs_v, html_attrs_v,
            '.tabindex'
           ]).
 
-downcast(html_tag_v, html_tag_input_v, From, To) :-
-
-   obj_field(From, html_tag_attrs, Old_Attrs),
-   obj_downcast(Old_Attrs, html_input_attrs_v, New_Attrs),
-   obj_field(To, html_input_attrs_v, New_Attrs).
-
-downcast(html_attrs_v, html_input_attrs_v, From, To) :-
-
-   obj_field(From, '.@bulk', Old_Bulk),
-   construct_html_attrs(html_input_attrs_v, Old_Bulk, To).
-   % other attributes are copied by Uranium
-   
