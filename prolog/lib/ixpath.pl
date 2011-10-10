@@ -98,11 +98,22 @@ xpath(Head/Tag, Dom, Options, Path0, Path, Result) :-
    xpath(Head, Dom, Options, Path0, Path1, Result1),
    xpath(/Tag, Result1, Options, Path1, Path, Result).
 
+xpath(Head//Tag, Dom, Options, Path0, Path, Result) :-
+
+   xpath(Head, Dom, Options, Path0, Path1, Result1),
+   xpath(//Tag, Result1, Options, Path1, Path, Result).
+
 xpath(/Tag, Dom, Options, Path0, Path, Result) :-
 
    Dom = element(_, _, Sub_Elements),
    member(Sub_Element, Sub_Elements),
    xpath(Tag, Sub_Element, Options, Path0, Path, Result).
+   
+xpath(//Tag, Dom, Options, Path0, Path, Result) :-
+
+   (  xpath(/Tag, Dom, Options, Path0, Path, Result)
+   ;  xpath(/(*)//Tag, Dom, Options, Path0, Path, Result)
+   ).
    
 xpath(Tag, Dom, _, Path0, [Dom|Path0], Result) :-
 
