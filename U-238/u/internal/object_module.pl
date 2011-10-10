@@ -223,8 +223,20 @@ reload_all_classes :-
       process_class_def(Class_Def),
       fail ; true ).
 
+ 
+class_module_file(Start, Path) :-
 
+   Start \== '',
+   (  atom_concat(Path_Prefix, '/', Start) -> true
+   ;  Path_Prefix = Start ),
+   
+   between(0, 5, Level),
+   (  bagof('*', Cnt^between(1, Level, Cnt), Asterisks)
+   -> concat_atom([Path_Prefix|Asterisks], '/', Dir)
+   ;  Dir = Path_Prefix ),
 
+   concat_atom([Dir, '*_v.pl'], '/', Path).
+                             
 %
 % find_class_module(-Module_Path)
 %
@@ -234,12 +246,17 @@ reload_all_classes :-
   
 find_class_module(Module_Path) :-
 
-  expand_file_name('*_v.pl', L1),
-  expand_file_name('*/*_v.pl', L2),
-  expand_file_name('*/*/*_v.pl', L3),
-  expand_file_name('*/*/*/*_v.pl', L4),
-  expand_file_name('*/*/*/*/*_v.pl', L5),
-  flatten([L1, L2, L3, L4, L5], List),
+  findall(Files,
+          (
+             (  file_search_path(u, Dir)
+             ;   working_directory(Dir, Dir)
+             ),
+             class_module_file(Dir, Mask),
+             expand_file_name(Mask, Files)
+          ),
+          List1
+  ),
+  flatten(List1, List),
   member(Module_Path, List),
   \+ sub_atom(Module_Path, _, _, _, '.hide/').
 
