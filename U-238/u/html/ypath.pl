@@ -9,14 +9,14 @@
 
 :- use_module(u(ixpath)).
 
-print_tree(DOM) :-
+%print_tree(DOM) :-
 
-   ixpath((*)//(*), DOM, [tag_attr_path([class, id], Path)], _),
-   print_path(Path), nl,
-   fail ; true.
+%   ixpath((*)//(*), DOM, [tag_attr_path([class, id], Path)], _),
+%   print_path(Path), nl,
+%   fail ; true.
 
-print_path([]) :- !.
-print_path([El
+%print_path([]) :- !.
+%print_path([El
 
 get_level(Level, DOM, Tag_Path) :-
 

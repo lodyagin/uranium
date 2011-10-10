@@ -146,7 +146,8 @@ obj_field_wf(Obj, Field_Name, Value) :-
 
 obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type) :-
 
-   (  objects:field(Class_Id, Field_Name, Obj, Value, Type, _)
+   (  objects:field(Class_Id, Field_Name, Obj, Value, Type, _,
+                    _)
    -> true
    ;  Weak == weak
    -> true
@@ -384,8 +385,8 @@ obj_auto_downcast_int(Parent, Descendant, Ctx) :-
       class_primary_id(Class, To_Class_Id)
    -> 
       (  Parent_Class_Id =\= To_Class_Id
-      -> obj_downcast_int(Parent_Class_Id, To_Class_Id, Parent,
-                          Descendant1, Ctx),
+      -> obj_downcast_int(Parent_Class_Id, To_Class_Id, downcast,
+                          Parent, Descendant1, Ctx),
          % recursion till no cast
          obj_auto_downcast_int(Descendant1, Descendant, Ctx)
       ;
@@ -419,11 +420,13 @@ obj_downcast(From, To_Class, To) :-
       To = From
    ;
       class_primary_id(To_Class, To_Class_Id),
-      obj_downcast_int(From_Class_Id, To_Class_Id, From, To, Ctx)
+      obj_downcast_int(From_Class_Id, To_Class_Id, downcast,
+                       From, To, Ctx)
    ).
 
 
-obj_downcast_int(From_Class_Id, To_Class_Id, From, To, Ctx) :-
+obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To,
+                 Ctx) :-
 
    From_Class_Id \== To_Class_Id,
 
@@ -435,13 +438,33 @@ obj_downcast_int(From_Class_Id, To_Class_Id, From, To, Ctx) :-
       throw(not_downcast(From_Class, To_Class))
    ),
    
-   class_all_fields(From_Class_Id, Field_Names),
-   obj_unify_int(From_Class_Id, Field_Names, strict, From,
-                 Field_Values),
-   obj_construct_int(To_Class_Id, Field_Names, Field_Values,
-                     strict, To, Ctx),
+   % Construct To object with all fields unbounded
+   % (it will allow fields rewriting in user-defined downcast
+   % or reinterpret).
+   obj_construct_int(To_Class_Id, [], [], strict, To, Ctx),
 
-   downcast_fill_values(From_Class_Id, To_Class_Id, From, To).
+   (  Mode == downcast
+   -> downcast_fill_values(From_Class_Id, To_Class_Id, From, To)
+   ;  reinterpret_fill_values(From_Class_Id, To_Class_Id, From,
+                              To)
+   ),
+
+   % Unify fields which are still unbounded
+   unbounded_fields(To, Unbound_U),
+   list_to_ord_set(Unbound_U, Unbound_Fields),
+   obj_unify_int(From_Class_Id, Unbound_Fields, strict, From,
+                 Field_Values),
+   
+   (  obj_unify_int(To_Class_Id, Unbound_Fields, strict, To,
+                    Field_Values)
+   -> true
+   ;
+      % some fields are inter-bounded
+      % it can be only the bug of user downcast
+
+      throw(bad_downcast_impl(Mode, From, From_Class, To_Class,
+                              To))
+   ).
 
 
 %
@@ -457,11 +480,20 @@ downcast_fill_values(Parent_Class_Id, Desc_Class_Id, Parent,
    (  objects:clause(downcast(Parent_Class, Desc_Class, _, _), _)
    -> (  objects:downcast(Parent_Class, Desc_Class, Parent, Desc)
       -> true
-      ;  throw(bad_downcast_impl(Parent, Parent_Class, Desc_Class,
-                                 Desc))
+      ;  throw(bad_downcast_impl(downcast,Parent, Parent_Class,
+                                 Desc_Class, Desc))
       )
    ;  true % user downcast rule is not defined - it is ok
    ).
+
+% unlike downcast_fill_values it is nondet
+
+reinterpret_fill_values(Parent_Class_Id, Desc_Class_Id, Parent,
+                     Desc) :-
+
+   class_id(Parent_Class_Id, Parent_Class),
+   class_id(Desc_Class_Id, Desc_Class),
+   objects:reinterpret(Parent_Class, Desc_Class, Parent, Desc).
 
 
 % obj_rebase(+Rebase_Rule, +Object0, -Object)
@@ -521,8 +553,8 @@ obj_reinterpret(From, To) :-
    functor(From, From_Class, _),
    (  objects:clause(reinterpret(From_Class, To_Class, _, _), _),
       class_primary_id(To_Class, To_Class_Id),
-      obj_downcast_int(From_Class_Id, To_Class_Id, From, To, Ctx),
-      objects:reinterpret(From_Class, To_Class, From, To)
+      obj_downcast_int(From_Class_Id, To_Class_Id, reinterpret,
+                       From, To, Ctx)
    ;
       To = From
    ).

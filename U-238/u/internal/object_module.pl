@@ -105,7 +105,7 @@ process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
    call(Module:clause(Term, _)),
    Term =.. [Head, E_Obj, E_Field, E_Value],
    objects:assertz(
-      (field(Class_Id, E_Field, E_Obj, E_Value, _, true) :-
+      (field(Class_Id, E_Field, E_Obj, E_Value, _, true, true) :-
           Module:Term) % call with proper context module
       ),
    fail ; true ),
@@ -203,7 +203,7 @@ reload_all_classes :-
    abolish(objects:class_id/3),
    abolish(objects:copy/4),   
    abolish(objects:downcast/4),   
-   abolish(objects:field/6),
+   abolish(objects:field/7),
    abolish(objects:fields/3),
    abolish(objects:key/2),
    abolish(objects:module/2),

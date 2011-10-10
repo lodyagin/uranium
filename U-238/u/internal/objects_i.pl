@@ -25,7 +25,7 @@
 
 :- module(objects_i,
           [
-           class_fields/3,
+           class_fields/4,
            class_id/2,
            class_all_fields/2,
            class_new_fields/2,
@@ -41,7 +41,8 @@
            obj_class_id/2,
            same_or_descendant/3,
            u_class/1,
-           u_object/1
+           u_object/1,
+           unbounded_fields/2 %+Obj, -Field_Names
            ]).
 
 :- use_module(library(lists)).
@@ -54,8 +55,8 @@
            objects:copy/4,     % Class_Id, Class_Name, From, To
            objects:downcast/4,
            
-           objects:field/6,    % Class_Id, Field_Name, Obj, Value,
-                               % Field_Type, Is_Native(Is_New)
+           objects:field/7,    % Class_Id, Field_Name, Obj, Value,
+                               % Field_Type, Is_Native, Is_Eval
            
            objects:fields/3,   % Class_Id, All_Fields, New_Fields
                                % (ordset)
@@ -70,15 +71,13 @@
 % Get list of fields/types 
 % Native = true means no field from parent
 % (Native = false - only parent fields)
-%
-% It includes eval fields
 
-class_fields(Class_Id, Native, Fields) :-
+class_fields(Class_Id, Native, Eval, Fields) :-
 
    (  setof(Field_Name:Field_Type,
         Obj^Value^Body^ (objects:clause(
            field(Class_Id, Field_Name, Obj, Value, Field_Type,
-                 Native),
+                 Native, Eval),
            Body )),
         Fields
       )
@@ -241,6 +240,23 @@ u_object(Term) :-
    functor(Term, Functor, _), %NB arity can be 0 (object_v)
    atom_concat(_, '_v', Functor).
 
+% unbounded_fields(+Obj, -Field_Names)
+%
+% Return all names of unbound (var) noneval fields in Obj
+% Attention: Field_Names is not ordered, just a simple list
+
+unbounded_fields(Obj, Field_Names) :-
+
+   obj_class_id(Obj, Class_Id),
+   findall(Field,
+           (objects:field(Class_Id, Field, Obj, Value, _, _,
+                          false),
+            var(Value)
+           ),
+           Field_Names
+          ).
+
+% Error messages for the Uranium object system
 
 prolog:message(class_system_bad_state(Details)) -->
                              
@@ -276,10 +292,13 @@ prolog:message(bad_eval_result(Object, Field)) -->
    ['User-defined field `~a'' evaluation failed for ~p'
    - [Field, Object]].
 
-prolog:message(bad_downcast_impl(Object, From, To, Result)) -->
+prolog:message(bad_downcast_impl(Mode, Object, Class_From,
+                                 Class_To, Result)) -->
 
-   ['User-defined downcast implementation is bad:', nl],
-   ['~a -> ~a transforms ~p to ~p' - [From, To, Object, Result]].
+   ['User-defined ~a implementation is bad:' - [Mode]],
+   [ nl ],
+   ['~a -> ~a transforms ~p to ~p'
+   - [Class_From, Class_To, Object, Result]].
 
 prolog:message(not_downcast(From_Class, To_Class)) -->
 

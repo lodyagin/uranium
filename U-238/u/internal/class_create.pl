@@ -147,7 +147,7 @@ assert_inherited_fields(Class_Id, Ref_Class_Id, Arg0, Arg) :-
    objects:parent(Ref_Class_Id, Parent_Id), !,
    assert_inherited_fields(Class_Id, Parent_Id, Arg0, Arg1),
 
-   class_fields(Parent_Id, true, New_Fields),
+   class_fields(Parent_Id, true, _, New_Fields),
    assert_class_fields2(Class_Id, Parent_Id, New_Fields,
                         Arg1, Arg).
    
@@ -162,19 +162,20 @@ assert_class_fields2(Class_Id, Native_Id,
    -> % re-assert inherited field with new class id
       objects:clause(
          field(Native_Id, Field_Name, Obj, Value, Field_Type,
-            true), %true marks fields introduced by Native_Id
+            true, %true marks fields introduced by Native_Id
+            Is_Eval), 
          Body),
-      (  functor(Body, arg, 3)
-      -> % it is not eval field
+      (  Is_Eval \== true
+      -> 
          objects:assertz(
            (field(Class_Id, Field_Name, Obj, Value, Field_Type,
-                  false) :- arg(Arg0, Obj, Value))
+                  false, false) :- arg(Arg0, Obj, Value))
          ),
          Arg1 is Arg0 + 1
       ;  % eval fields not depends on Arg
          objects:assertz(
            (field(Class_Id, Field_Name, Obj, Value, Field_Type,
-                  false) :- Body)
+                  false, true) :- Body)
          ),
          Arg1 = Arg0
       )
@@ -182,7 +183,7 @@ assert_class_fields2(Class_Id, Native_Id,
       % NB new evaluated fields are not in this list
       objects:assertz(
         (field(Class_Id, Field_Name, Obj, Value, Field_Type,
-            true) :- arg(Arg0, Obj, Value))
+            true, false) :- arg(Arg0, Obj, Value))
       ),
       Arg1 is Arg0 + 1
    ),
@@ -268,9 +269,9 @@ check_field_names_db(Class_Id, All_Field_Names_Set, Ctx) :-
 
   % check no repeats in the class field names
   (  bagof(Field_Name,
-          T1^T2^T3^T4^T5^T6^(objects:clause(
-            field(Class_Id, Field_Name, T1, T2, T3, T4), T5),
-            functor(T5, arg, T6)),
+          T1^T2^T3^T4^T5^(objects:clause(
+            field(Class_Id, Field_Name, T1, T2, T3, T4, false),
+            T5)),
           All_Field_Names)
   -> true
   ;  All_Field_Names = []
@@ -278,7 +279,7 @@ check_field_names_db(Class_Id, All_Field_Names_Set, Ctx) :-
   (  \+ is_set(All_Field_Names)
   -> % delete incorrect definitions
      % FIXME remove class cleanup to catch
-     objects:retractall(field(Class_Id, _, _, _, _, _)),
+     objects:retractall(field(Class_Id, _, _, _, _, _, _)),
      throw(error(duplicate_field(All_Field_Names), Ctx))
   ;
      list_to_ord_set(All_Field_Names, All_Field_Names_Set)
@@ -289,9 +290,9 @@ check_field_names_db(Class_Id, All_Field_Names_Set, Ctx) :-
 class_noneval_new_fields_db(Class_Id, New_Field_Set) :-
 
    (  bagof(Field_Name,
-           T1^T2^T3^T4^T5^(objects:clause(
-             field(Class_Id, Field_Name, T1, T2, T3, true), T4),
-             functor(T4, arg, T5)),
+           T1^T2^T3^T4^(objects:clause(
+             field(Class_Id, Field_Name, T1, T2, T3, true, false),
+                   T4)),
            Field_Names)
    -> list_to_ord_set(Field_Names, New_Field_Set)
    ;  New_Field_Set = []
