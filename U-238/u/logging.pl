@@ -141,13 +141,13 @@ check_logger(Options) :-
 
 check_log_options(Options_In, Options_Out) :-
 
-    check_option_list(Options_In,
+    /*check_option_list(Options_In,
                       [module(yes), module(no),
                        lf(_), lf(_,before), lf(_,after),
                        logger(_),
                        quoted(if_needed), quoted(no),
                        indent(_)
-                      ]),
+                      ]),*/
     
     % Обработка lf/1, lf/2
 
