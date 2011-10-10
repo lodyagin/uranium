@@ -452,7 +452,7 @@ obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To,
    % Unify fields which are still unbounded
    unbounded_fields(To, Unbound_U),
    list_to_ord_set(Unbound_U, Unbound_Fields),
-   obj_unify_int(From_Class_Id, Unbound_Fields, strict, From,
+   obj_unify_int(From_Class_Id, Unbound_Fields, weak, From,
                  Field_Values),
    
    (  obj_unify_int(To_Class_Id, Unbound_Fields, strict, To,
