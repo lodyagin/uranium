@@ -23,24 +23,106 @@
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
+%  All types of html input tags
+
 :- module(html_tag_input_v, []).
 
 :- use_module(u(v)).
+:- use_module(html_tag_v).
 
 new_class(html_tag_input_v, html_tag_v,
           [
-           '.name',
-           '.type',
-           '.value',
-           '.checked',
-           '.maxlength',
-           '.src',
-           '.alt',
-           '.accept',
            '.disabled',
-           '.readonly',
-           '.accesskey',
-           '.tabindex'
+           '.name',
+           '.onblur',
+           '.onfocus',
+           '.onselect',
+           '.size',
+           '.type',
+           '.value'
            ]).
 
+new_class(html_tag_input_button_v, html_tag_input_v, []).
+
+new_class(html_tag_input_checkbox_v, html_tag_input_v,
+          ['.checked']).
+
+new_class(html_tag_input_file_v, html_tag_input_v,
+          ['.accept']).
+
+new_class(html_tag_input_hidden_v, html_tag_input_v, []).
+
+new_class(html_tag_input_image_v, html_tag_input_v,
+          ['.align',
+           '.alt',
+           '.src'
+           ]).
+
+new_class(html_tag_input_password_v, html_tag_input_v,
+          ['.maxlength',
+           '.readonly'
+           ]).
+
+new_class(html_tag_input_radio_v, html_tag_input_v,
+          ['.checked']).
+
+new_class(html_tag_input_reset_v, html_tag_input_v, []).
+
+new_class(html_tag_input_submit_v, html_tag_input_v, []).
+
+new_class(html_tag_input_text_v, html_tag_input_v,
+          ['.maxlength',
+           '.readonly'
+           ]).
+
+'html_tag_input_v?'(Obj, class, Class) :-
+
+   obj_field(Obj, '.type', Type),
+   (  atom(Type)
+   -> concat_atom(['html_tag_input_', Type, '_v'], '', Class),
+      class_exists(Class)
+   ;  functor(Obj, Class, _)
+   ).
+
+downcast(html_tag_input_v, html_tag_input_button_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+
+
+downcast(html_tag_input_v, html_tag_input_checkbox_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+
+
+downcast(html_tag_input_v, html_tag_input_file_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+
+
+downcast(html_tag_input_v, html_tag_input_hidden_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+
+
+downcast(html_tag_input_v, html_tag_input_image_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+
+
+downcast(html_tag_input_v, html_tag_input_password_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+
+
+downcast(html_tag_input_v, html_tag_input_radio_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+
+
+downcast(html_tag_input_v, html_tag_input_reset_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+
+
+downcast(html_tag_input_v, html_tag_input_submit_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+
+
+downcast(html_tag_input_v, html_tag_input_text_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+
+
+   
 
