@@ -323,8 +323,6 @@ obj_construct2(Class, Field_Names, Field_Values, Weak, Object) :-
 
    obj_construct_int(Class_Id, Field_Names, Weak, Field_Values,
                      Object).
-
-
 %
 % obj_downcast(+Parent, -Descendant).
 %

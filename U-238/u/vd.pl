@@ -69,8 +69,6 @@
 %                      db_iterate_replace/5,
 %                      db_iterate_replace2/4.
 
-
-
 db_clear(DB_Key) :-
 
    Ctx = context(db_clear/1, _),
@@ -567,6 +565,7 @@ db_merge(DB1_Key, DB2_Key, Key) :-
    db_move_all_data(DB_Tmp, DB1_Key).
 
 */
+
 
 
 

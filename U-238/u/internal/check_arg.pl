@@ -6,6 +6,7 @@
            check_existing_class_arg/3,
            check_fields_arg/2,
            check_inst/2,
+           check_fields_arg/2,
            check_list_fast_arg/2,
            check_values_arg/3,
            check_object_arg/3,
@@ -33,6 +34,7 @@ check_class_arg(Class, Err_Context) :-
    ;  throw(error(domain_error(uranium_class, Class),Err_Context))
    ).
 
+<<<<<<< HEAD
 check_existing_class_arg(Class, Ctx) :-
 
    check_existing_class_arg(Class, Ctx, _).

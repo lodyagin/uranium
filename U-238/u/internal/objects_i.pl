@@ -222,7 +222,6 @@ obj_class_id(Object, Class_Id) :-
    arg(1, Object, Class_Id).
 
 
-
 parent(Id, Parent_Id) :-
 
    objects:parent(Id, Parent_Id),
@@ -254,14 +253,12 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type) :-
    ).
 
 
-
 obj_unify_int(_, [], _, _, []) :- !.
 
 obj_unify_int(Class_Id, [Field|FT], Weak, Term, [Value|VT]) :-
 
    obj_field_int(Class_Id, Field, Weak, Term, Value, _),
    obj_unify_int(Class_Id, FT, Weak, Term, VT).
-
 
 % same_or_descendant(+Parent_Id, +No_Rebased, ?Desc_Id)
 
