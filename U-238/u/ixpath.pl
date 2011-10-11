@@ -151,7 +151,8 @@ xpath(Head/Tag, Dom, Options, Path0, Path, Result) :-
 xpath(Head//Tag, Dom, Options, Path0, Path, Result) :-
 
    xpath(Head, Dom, Options, Path0, Path1, Result1),
-   xpath(//Tag, Result1, Options, Path1, Path, Result).
+   xpath(/(*), Result1, Options, Path1, _, Result2),
+   xpath(//Tag, Result2, Options, Path1, Path, Result).
 
 xpath(/Tag, Dom, Options, Path0, Path, Result) :-
 
@@ -161,8 +162,8 @@ xpath(/Tag, Dom, Options, Path0, Path, Result) :-
    
 xpath(//Tag, Dom, Options, Path0, Path, Result) :-
 
-   (  xpath(/Tag, Dom, Options, Path0, Path, Result)
-   ;  xpath(/(*)//Tag, Dom, Options, Path0, Path, Result)
+   (  xpath(Tag, Dom, Options, Path0, Path, Result)
+   ;  xpath((*)//Tag, Dom, Options, Path0, Path, Result)
    ).
    
 xpath(Tag, Dom, _, Path0, [Dom|Path0], Result) :-
