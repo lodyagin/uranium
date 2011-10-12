@@ -98,7 +98,6 @@ term_list_to_ixpath([T1|Tail], Head/T1) :-
    term_list_to_ixpath(Tail, Head).
 
 
-
 % preprocess_expr(+Expr, +Orig, -Preprocessed_Expr)
 %
 % build
@@ -158,15 +157,15 @@ w3c_relative_xpath(Step, First_Axis, P) :-
    -> w3c_step(First_Axis::Step, P)
    ;  w3c_step(Step, P) ).
 
-% [4] Step ::=   	AxisSpecifier NodeTest Predicate*	
-%			| AbbreviatedStep	
-% [5] AxisSpecifier   ::=   	AxisName '::'	
+% [4] Step ::=		AxisSpecifier NodeTest Predicate*
+%			| AbbreviatedStep
+% [5] AxisSpecifier   ::=	AxisName '::'
 %			| AbbreviatedAxisSpecifier
 %
-% [13] AbbreviatedAxisSpecifier	   ::=   	'@'?
+% [13] AbbreviatedAxisSpecifier	   ::=		'@'?
 %
-% [12]   	AbbreviatedStep	   ::=   	'.'	
-%			| '..'	
+% [12]		AbbreviatedStep	   ::=		'.'
+%			| '..'
 
 
 w3c_step(Axis_Name::Term, Axis_Name::P) :- !,
