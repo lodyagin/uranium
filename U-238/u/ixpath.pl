@@ -25,7 +25,6 @@
 
 :- module(ixpath, [ixpath/3,
                    ixpath/4,
-
                    op(950, fx, //),
                    op(950, fx, /),
                    op(200, fy, @),
@@ -70,7 +69,6 @@ ixpath2(Spec, Options, Dom, Result, Ctx) :-
 
    check_inst(Dom, Ctx),
    functor(Dom, element, 3), !,
-
    (  (var(Spec); var(Options))
    -> throw(error(instantiation_error, Ctx))
    ;  (Options = [] | Options = [_|_])
@@ -160,15 +158,15 @@ w3c_relative_xpath(Step, First_Axis, P) :-
    -> w3c_step(First_Axis::Step, P)
    ;  w3c_step(Step, P) ).
 
-% [4] Step ::=		AxisSpecifier NodeTest Predicate*
-%			| AbbreviatedStep
-% [5] AxisSpecifier   ::=	AxisName '::'
+% [4] Step ::=   	AxisSpecifier NodeTest Predicate*	
+%			| AbbreviatedStep	
+% [5] AxisSpecifier   ::=   	AxisName '::'	
 %			| AbbreviatedAxisSpecifier
 %
-% [13] AbbreviatedAxisSpecifier	   ::=		'@'?
+% [13] AbbreviatedAxisSpecifier	   ::=   	'@'?
 %
-% [12]		AbbreviatedStep	   ::=		'.'
-%			| '..'
+% [12]   	AbbreviatedStep	   ::=   	'.'	
+%			| '..'	
 
 
 w3c_step(Axis_Name::Term, Axis_Name::P) :- !,
@@ -455,7 +453,6 @@ child_member_test(Node_Test, M, I, Cnt, [Child|T], Matched_Node) :-
    ;
       child_member_test(Node_Test, M, I, Cnt, T, Matched_Node)
    ).
-
 
 
 % check conditions
