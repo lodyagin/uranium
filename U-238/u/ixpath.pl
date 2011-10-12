@@ -25,7 +25,7 @@
 
 :- module(ixpath, [ixpath/3,
                    ixpath/4,
-                   
+
                    op(950, fx, //),
                    op(950, fx, /),
                    op(200, fy, @),
@@ -70,7 +70,7 @@ ixpath2(Spec, Options, Dom, Result, Ctx) :-
 
    check_inst(Dom, Ctx),
    functor(Dom, element, 3), !,
-   
+
    (  (var(Spec); var(Options))
    -> throw(error(instantiation_error, Ctx))
    ;  (Options = [] | Options = [_|_])
@@ -85,6 +85,22 @@ ixpath2(_, _, Dom, _, Ctx) :-
    throw(error(type_error(dom, Dom), Ctx)).
 
 
+ixpath_to_xpath(I, X) :-
+
+   term_to_atom(I, IA),
+   atom_chars(IA, IAL),
+   selectchk('(', IAL, '[', IAL1),
+   selectchk(')', IAL1, ']', IAL2),
+   atom_chars(X, IAL2).
+
+term_list_to_ixpath([Term], Term) :- !.
+
+term_list_to_ixpath([T1|Tail], Head/T1) :-
+
+   term_list_to_ixpath(Tail, Head).
+
+   
+
 % preprocess_expr(+Expr, +Orig, -Preprocessed_Expr)
 %
 % build
@@ -95,7 +111,7 @@ ixpath2(_, _, Dom, _, Ctx) :-
 
 % w3c xpath spec:
 %
-% [1] LocationPath ::=   	RelativeLocationPath	
+% [1] LocationPath ::=		RelativeLocationPath
 %			| AbsoluteLocationPath
 
 w3c_xpath(Path, P) :-
@@ -104,12 +120,12 @@ w3c_xpath(Path, P) :-
    ;  w3c_relative_xpath(Path, _, P) ).
 
 
-% [2] AbsoluteLocationPath ::= '/' RelativeLocationPath?	
+% [2] AbsoluteLocationPath ::= '/' RelativeLocationPath?
 %                              | AbbreviatedAbsoluteLocationPath
 %
 % [10] AbbreviatedAbsoluteLocationPath::='//' RelativeLocationPath
 
-w3c_absolute_xpath((/), root) :- 
+w3c_absolute_xpath((/), root) :-
 
    throw(ixpath_not_implemented(root_node, _)).
 
@@ -121,12 +137,12 @@ w3c_absolute_xpath(//Rel_Path, root(P)) :- !,
 
    w3c_relative_xpath(Rel_Path, descendant, P).
 
-% [3] 	RelativeLocationPath	   ::=   	Step	
-%			| RelativeLocationPath '/' Step	
+% [3]	RelativeLocationPath	   ::=		Step
+%			| RelativeLocationPath '/' Step
 %			| AbbreviatedRelativeLocationPath
 %
 % [11]  AbbreviatedRelativeLocationPath	   ::=
-%                          RelativeLocationPath '//' Step	
+%                          RelativeLocationPath '//' Step
 
 w3c_relative_xpath(Rel_Path/Step, First_Axis, P1/P2) :- !,
 
@@ -144,15 +160,15 @@ w3c_relative_xpath(Step, First_Axis, P) :-
    -> w3c_step(First_Axis::Step, P)
    ;  w3c_step(Step, P) ).
 
-% [4] Step ::=   	AxisSpecifier NodeTest Predicate*	
-%			| AbbreviatedStep	
-% [5] AxisSpecifier   ::=   	AxisName '::'	
+% [4] Step ::=		AxisSpecifier NodeTest Predicate*
+%			| AbbreviatedStep
+% [5] AxisSpecifier   ::=	AxisName '::'
 %			| AbbreviatedAxisSpecifier
 %
-% [13] AbbreviatedAxisSpecifier	   ::=   	'@'?
+% [13] AbbreviatedAxisSpecifier	   ::=		'@'?
 %
-% [12]   	AbbreviatedStep	   ::=   	'.'	
-%			| '..'	
+% [12]		AbbreviatedStep	   ::=		'.'
+%			| '..'
 
 
 w3c_step(Axis_Name::Term, Axis_Name::P) :- !,
@@ -166,7 +182,7 @@ w3c_step(@Atom, attribute::Atom) :- !,
 
    atom(Atom).
 
-w3c_step('.', self::(*)) :- !.
+w3c_step('.', self::tag('*', _, _)) :- !.
 
 % reverse axis is not implemented
 w3c_step('..', _) :-
@@ -175,18 +191,18 @@ w3c_step('..', _) :-
 
 w3c_step(Term, P) :- w3c_step(child::Term, P).
 
-% [6]   	AxisName	   ::=   	'ancestor'	
-%			| 'ancestor-or-self'	
-%			| 'attribute'	
-%			| 'child'	
-%			| 'descendant'	
-%			| 'descendant-or-self'	
-%			| 'following'	
-%			| 'following-sibling'	
-%			| 'namespace'	
-%			| 'parent'	
-%			| 'preceding'	
-%			| 'preceding-sibling'	
+% [6]		AxisName	   ::=		'ancestor'
+%			| 'ancestor-or-self'
+%			| 'attribute'
+%			| 'child'
+%			| 'descendant'
+%			| 'descendant-or-self'
+%			| 'following'
+%			| 'following-sibling'
+%			| 'namespace'
+%			| 'parent'
+%			| 'preceding'
+%			| 'preceding-sibling'
 %			| 'self'
 % TODO
 
@@ -201,7 +217,7 @@ w3c_axis_name(self).
 %
 % Node_Name | Node_Name(Test {, Test})
 
-preprocess_expr(Node_Name, Node_Name) :- 
+preprocess_expr(Node_Name, tag(Node_Name, _, _)) :-
 
    atom(Node_Name), !.
 
@@ -220,7 +236,8 @@ preprocess_cond([@Attr=Value|T], Attrs0, Attrs, Num0,Num) :-
    atom(Attr),
    preprocess_cond(T, [Attr=Value|Attrs0], Attrs, Num0, Num).
 
-preprocess_cond([attribute::Attr=Value|T], Attrs0, Attrs, Num0,Num) :-
+preprocess_cond([attribute::Attr=Value|T], Attrs0, Attrs,
+                Num0, Num) :-
 
    !,
    atom(Attr),
@@ -238,10 +255,10 @@ xpath(Spec, Dom, Options, Result) :-
    xpath(Spec, Dom, [], Path_R, Result1),
    proc_options(Path_R, Options, Result1, Result).
 
-   
+
 proc_options(_, [], Result, Result) :- !.
 
-proc_options(Path_R, [Option|OT], Result0, Result) :- 
+proc_options(Path_R, [Option|OT], Result0, Result) :-
    proc_option(Path_R, Option, Result0, Result1),
    proc_options(Path_R, OT, Result1, Result).
 
@@ -266,20 +283,20 @@ proc_option(Path_R, tag_path_cnt(Tag_Path), R, R) :- !,
    reverse(Path_R, Path),
    dom_tag_path_cnt(Path, Tag_Path).
 
-proc_option(Path_R, xpath(XPath), R, R) :- !,
-   reverse(Path_R, Path),
-   dom_tag_path(Path, Tag_Path),
-   concat_atom(Tag_Path, '/', XPath).
-
+proc_option(Path, xpath(XPath), R, R) :- !,
+   dom_tag_path_cnt(Path, Term_List),
+   term_list_to_ixpath(Term_List, IXPath),
+   ixpath_to_xpath(/IXPath, XPath).
+   
 proc_option(Path_R, tag_attr_path(Attr_List, Tag_Attr_Path),
             R, R) :- !,
    reverse(Path_R, Path),
    dom_tag_attr_path(Path, Attr_List, Tag_Attr_Path).
 
 proc_option(_, _, R, R) :- true.
-%TODO   print_message(warning, 
+%TODO   print_message(warning,
 
-   
+
 % DOM elements path -> tags path
 dom_tag_path([], []) :- !.
 dom_tag_path([node(element(Tag, _, _), _)|DT], [Tag|TT]) :-
@@ -298,7 +315,7 @@ dom_tag_attr_path([], _, []) :- !.
 dom_tag_attr_path([node(element(Tag, Attrs, _), _)|DT],
                   Attrs_Query,
                   [Tag_With_Attrs|TT]) :-
-   
+
    extract_attrs(Attrs_Query, Attrs, Attr_Vals),
    Tag_With_Attrs =.. [Tag|Attr_Vals],
    dom_tag_attr_path(DT, Attrs_Query, TT).
@@ -328,29 +345,26 @@ xpath(Step, Dom, Path0, Path, Result) :-
    step(Step, Dom, Path0, Path, Result).
 
 
-step(child::tag(Tag, M, _), Dom,
-     Path0, [node(Result, Child_Cnt)|Path1], Result) :- !,
+step(child::Node_Test, Dom,
+     Path, [node(Result, Child_Cnt)|Path], Result) :- !,
 
    Dom = element(_, _, Sub_Elements),
-   nb_setval('ixpath:child_cnt', 0),
-   step_member(Tag, M, Sub_Elements, Path0, Path1, Result),
+
+   findall(R,
+           ( member(Sub_Element, Sub_Elements),
+             Sub_Element = element(_, _, _), % skip text nodes
+             step(self::Node_Test, Sub_Element, Path, _, R)
+           ),
+           Matched_Childs),
+
+   Node_Test = tag(Tag, M, _),
+   nth1(M, Matched_Childs, Result), % it is det iff M is bound
    (  Tag == '*' -> true
-   ;  nb_getval('ixpath:child_cnt', Child_Cnt) ).
+   ;  Child_Cnt = M ).
 
-step(child::Node_Test, Dom,
-     Path0, [node(Result, Child_Cnt)|Path1], Result) :- !,
+step(descendant::Node_Test, Dom, Path0, Path, Result) :- !,
 
-   Dom = element(Tag, _, Sub_Elements),
-   
-   nb_setval('ixpath:child_cnt', 0),
-   step_member(Node_Test, _, Sub_Elements, Path0, Path1, Result),
-   (  Tag == '*' -> true
-   ;  nb_getval('ixpath:child_cnt', Child_Cnt) ).
-
-step(descendant::Node_Test, Dom, Path0, Path,Result) :-
-
-   !,
-   step(child::(*), Dom, Path0, Path1, Result1),
+   step(child::tag('*', _, _), Dom, Path0, Path1, Result1),
    step('descendant-or-self'::Node_Test, Result1, Path1, Path,
         Result).
 
@@ -382,48 +396,23 @@ step(attribute::Attr, Dom, Path, Path, Result) :- !,
 step(self::tag('*', _, Attrs), Dom, Path, Path, Dom) :- !,
 
    check_attrs(Attrs, Dom).
-   
+
 step(self::tag(Tag, _, Attrs), Dom, Path, Path, Dom) :- !,
 
    Dom = element(Tag, _, _),
    check_attrs(Attrs, Dom).
-   
-step(self::(*), Dom, Path, Path, Dom) :- !.
 
-step(self::Tag, Dom, Path, Path, Dom) :- !,
+step(self::tag('*', _, _), Dom, Path, Path, Dom) :- !.
+
+step(self::tag(Tag, _, _), Dom, Path, Path, Dom) :- !,
 
    Dom = element(Tag, _, _).
-
-
-% Tag counting
-
-step_member(Tag, M, [Sub_Element|_], Path0, Path, Result) :-
-
-   Sub_Element = element(_, _, _),
-
-   step(self::Tag, Sub_Element, Path0, Path, Result),
-   
-   % forward a child cnt after a good match
-   nb_getval('ixpath:child_cnt', N),
-   N1 is N + 1,
-   nb_setval('ixpath:child_cnt', N1),
-   
-   M = N1.
-
-step_member(Tag, M, [_|Sub_Elements], Path0, Path, Result) :-
-   
-   (  var(M) -> true
-   ;
-      nb_getval('ixpath:child_cnt', N),
-      N < M
-   ), 
-   step_member(Tag, M, Sub_Elements, Path0, Path, Result).
 
 
 % check conditions
 
 check_attrs([], _) :- !.
-check_attrs([@Attr=Value|TC], Result) :-
+check_attrs([Attr=Value|TC], Result) :-
    Result = element(_, Attributes, _),
    memberchk(Attr=Value, Attributes),
    check_attrs(TC, Result).
