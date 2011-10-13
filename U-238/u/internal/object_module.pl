@@ -29,9 +29,9 @@
 
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/class_create)).
-  
+
 % module_class_def(+Main_Class, -Class) :-
-% find all class definitions                             
+% find all class definitions
 module_new_class_def(Main_Class, Class, Parent) :-
 
    Main_Class:current_predicate(new_class, New_Class_Head),
@@ -58,21 +58,19 @@ all_classes(All_Classes) :-
         objects:assertz(module_class_def(
                         Class, Parent, Main_Class)),
         fail ; true ),
-                             
+
      % TODO check no Main_Class repeats
      % TODO check no class name repeats
-                             
+
      % represet parent relations as a graph edges
      findall(Parent - Class,
              objects:module_class_def(Class, Parent, _),
              Edges),
-                             
+
      vertices_edges_to_ugraph([], Edges, Graph),
      (	 top_sort(Graph, Classes)
      ->	 true
-     ;	 %FIXME throw(error(
-         Classes = [],
-         write_log(['There is a cycle in class definitions: ', Graph])
+     ;	 throw(class_inheritance_cycle(Graph))
      ),
      findall(new_class(Class_X, Parent_X, Add_Fields_X, Key_X),
              (member(Class_X, Classes),
@@ -98,7 +96,7 @@ process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
   % Generate new Class_Id
   gen_class_id(Class, Class_Id),
   objects:assertz(class_id(Class_Id, true, Class)),
-  
+
   % assert *_v? predicates first (they are used by others)
   (atom_concat(Class, '?', Head),
    call(Module:current_predicate(Head, Term)),
@@ -129,7 +127,7 @@ process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
           Module:Term)
       ),
    fail ; true ),
-  
+
   % process class module-scoped objects
   (  Class == Module
   -> % import downcast/4 predicates
@@ -152,10 +150,8 @@ process_typedefs(Module) :-
 
      % control for not repeating type definitions
      (  objects:typedef_flag(TD_Type, Some_Class)
-     -> %FIXME throw(error(
-        write_log(['Type', TD_Type,
-                   'is defined already in', Some_Class],
-                  [lf(1)]),
+     -> print_message(warning,
+		      type_redefined(TD_Type, Some_Class)),
         !, fail
      ;  objects:assertz(typedef_flag(TD_Type, Module))
      ),
@@ -182,8 +178,8 @@ process_typedefs(Module) :-
   ;
      true
   ).
-                             
-                             
+
+
 %
 % import all predicates with head Functor as dynamic assert
 %
@@ -201,8 +197,8 @@ reload_all_classes :-
    % clear the db
    abolish(objects:arity/2),
    abolish(objects:class_id/3),
-   abolish(objects:copy/4),   
-   abolish(objects:downcast/4),   
+   abolish(objects:copy/4),
+   abolish(objects:downcast/4),
    abolish(objects:field/7),
    abolish(objects:fields/3),
    abolish(objects:key/2),
@@ -219,7 +215,7 @@ reload_all_classes :-
    objects:assertz(parent(0, -1)),
    objects:assertz(typedef_flag(hidden, object_base_v)),
    objects:assertz(key(0, [])),
-   
+
    % Load all class modules
    (  find_class_module(Module_Path),
       consult(Module_Path),
@@ -234,27 +230,27 @@ reload_all_classes :-
       process_class_def(Class_Def),
       fail ; true ).
 
- 
+
 class_module_file(Start, Path) :-
 
    Start \== '',
    (  atom_concat(Path_Prefix, '/', Start) -> true
    ;  Path_Prefix = Start ),
-   
+
    between(0, 5, Level),
    (  bagof('*', Cnt^between(1, Level, Cnt), Asterisks)
    -> concat_atom([Path_Prefix|Asterisks], '/', Dir)
    ;  Dir = Path_Prefix ),
 
    concat_atom([Dir, '*_v.pl'], '/', Path).
-                             
+
 %
 % find_class_module(-Module_Path)
 %
 % Return all class modules pathes on BT
 % (up to 5th level)
 %
-  
+
 find_class_module(Module_Path) :-
 
   findall(Files,
@@ -274,4 +270,4 @@ find_class_module(Module_Path) :-
      ).
 
 :- initialization reload_all_classes.
-                             
+

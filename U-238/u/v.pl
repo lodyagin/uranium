@@ -142,7 +142,7 @@ obj_field_wf(Obj, Field_Name, Value) :-
    obj_field_int(Class_Id, Field_Name, fail, Obj, Value, _).
 
 
-% NB evaluated fields can be also processed as `Weak' 
+% NB evaluated fields can be also processed as `Weak'
 
 obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type) :-
 
@@ -160,8 +160,8 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type) :-
 named_arg(Obj, Field, Value) :-
 
   obj_field(Obj, Field, Value).
-  
-  
+
+
 % named_arg(+Term, +Field_Name, ?Value, -Type)
 
 named_arg(Term, Field_Name, Value, Type) :-
@@ -190,14 +190,14 @@ named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
     spec_term(Functor, Spec_Term),
 
     % find the position of the first object field Field_Name
-    (arg(Field_Pos, Spec_Term, Field_Name) -> true; false),   
+    (arg(Field_Pos, Spec_Term, Field_Name) -> true; false),
 
     functor(Spec_Term, _, Arity),
     functor(Term, Functor, Arity),
 
     % Bound the field with the Value
     arg(Field_Pos, Term, Value),
-  
+
     db_recorded(DB_Key, Term, Term_Ref).
 */
 
@@ -211,14 +211,14 @@ named_args_unify(Term, Field_List, Value_List) :-
 
    named_args_unify2(Term, Field_List, Value_List,
                      strict, context(named_args_unify/3, _)).
-   
+
 % weak means do not fail on unexisting fields
 
 named_args_weak_unify(Term, Field_List, Value_List) :-
 
    named_args_unify2(Term, Field_List, Value_List,
                      weak, context(named_args_weak_unify/3, _)).
-   
+
 named_args_unify2(Term, Field_List, Value_List, Weak, Ctx) :-
 
    (  (var(Term) ; var(Field_List))
@@ -333,10 +333,10 @@ obj_construct2(Class, Field_Names, Field_Values, Weak, Object) :-
    (  (var(Class); var(Field_Names))
    -> throw(error(instantiation_error, Ctx))
    ;  true ),
-   
+
    check_class_arg(Class, Ctx),
    check_fields_arg(Field_Names, Ctx),
-   
+
    (  var(Field_Values)
    -> true
    ;  check_values_arg(Field_Names, Field_Values, Ctx)
@@ -383,7 +383,7 @@ obj_auto_downcast_int(Parent, Descendant, Ctx) :-
       nonvar(Class),
       u_class(Class),
       class_primary_id(Class, To_Class_Id)
-   -> 
+   ->
       (  Parent_Class_Id =\= To_Class_Id
       -> obj_downcast_int(Parent_Class_Id, To_Class_Id, downcast,
                           Parent, Descendant1, Ctx),
@@ -397,7 +397,7 @@ obj_auto_downcast_int(Parent, Descendant, Ctx) :-
       print_message(warning, bad_eval_result(Parent, class)),
       Parent = Descendant
    ).
-   
+
 
 % obj_downcast(+From, +To_Class, -To)
 %
@@ -405,7 +405,7 @@ obj_auto_downcast_int(Parent, Descendant, Ctx) :-
 %
 
 obj_downcast(From, To_Class, To) :-
-   
+
    % TODO check To_Class below From_Class
    Ctx = context(obj_downcast/3, _),
    (  (var(From); var(To_Class))
@@ -414,7 +414,7 @@ obj_downcast(From, To_Class, To) :-
    check_class_arg(To_Class, Ctx),
    check_object_arg(From, Ctx, From_Class_Id),
    functor(From, From_Class, _),
-   
+
    (  From_Class == To_Class
    ->
       To = From
@@ -437,7 +437,7 @@ obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To,
       class_id(To_Class_Id, To_Class),
       throw(not_downcast(From_Class, To_Class))
    ),
-   
+
    % Construct To object with all fields unbounded
    % (it will allow fields rewriting in user-defined downcast
    % or reinterpret).
@@ -454,7 +454,7 @@ obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To,
    list_to_ord_set(Unbound_U, Unbound_Fields),
    obj_unify_int(From_Class_Id, Unbound_Fields, weak, From,
                  Field_Values),
-   
+
    (  obj_unify_int(To_Class_Id, Unbound_Fields, strict, To,
                     Field_Values)
    -> true
@@ -497,7 +497,7 @@ reinterpret_fill_values(Parent_Class_Id, Desc_Class_Id, Parent,
 
 
 % obj_rebase(+Rebase_Rule, +Object0, -Object)
-  
+
 obj_rebase(Rebase_Rule, Object0, Object) :-
 
    Ctx = context(obj_rebase/3, _),
@@ -514,7 +514,7 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
    Rebase_Rule = '->'(Old_Base, New_Base),
    class_primary_id(Old_Base, Old_Base_Id),
    class_primary_id(New_Base, New_Base_Id),
-      
+
    % find the common base class
    common_parent(Old_Base_Id, New_Base_Id, Cmn_Base_Id),
 
@@ -523,7 +523,7 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
    list_inheritance(Old_Base_Id, Orig_Id, [_|New_Parents2]),
    append(New_Parents1, New_Parents2, New_Parents_R),
    reverse(New_Parents_R, New_Parents),
-   
+
    class_rebase(New_Parents, Rebased_Id, Rebase),
    (  Rebase == rebase -> true
    ;  throw(implementation_error(
@@ -594,26 +594,19 @@ class_descendant(Class, Descendant) :-
       class_id(Descendant_Id, Descendant)
    ).
 
+
 % obj_is_descendant(+Descendant, ?Class)
 
 obj_is_descendant(Descendant, Class) :-
 
-  check_inst(Descendant, context(obj_is_descendant/2, _)),
-  check_object_arg(Descendant, context(obj_is_descendant/2, _),
-                   _),
-  (  nonvar(Class) -> check_class_arg(Class) ;  true ),
+  Ctx = context(obj_is_descendant/2, _),
+  check_inst(Descendant, Ctx),
+  check_object_arg(Descendant, Ctx, Desc_Class_Id),
 
-  class_prim_id(Class, _),
-  class_descendant_i(Class, Descendant).
+  class_primary_id(Class, Class_Id),
+  Desc_Class_Id =\= Class_Id,
+  same_or_descendant(Class_Id, _, Desc_Class_Id).
 
-class_descendant_(Class, Descendant) :-
-
-  class_parent(Descendant, Class).
-
-class_descendant_(Class, Descendant) :-
-
-  class_parent(Descendant0, Class),
-  class_descendant(Descendant0, Descendant).
 
 % class_fields(+Class, -Field_Names)
 %
@@ -757,7 +750,7 @@ obj_diff(Obj1, Obj2, Diff_List) :-
    class_all_fields(Class2_Id, Fields2),
 
    ord_union(Fields1, Fields2, Fields_For_Diff),
-   
+
    build_diff_list(Obj1, Obj2, Fields_For_Diff, [], Diff_List).
 
 
@@ -819,8 +812,8 @@ obj_copy_int(Class_Id, From, To) :-
    -> true
    ;  print_message(warning, undef_operation(copy, Class_Id))
    ).
-    
-   
+
+
 
 %class_field_type(Class, Field, Type) :-
 %

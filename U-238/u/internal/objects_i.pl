@@ -54,10 +54,10 @@
            objects:class_id/3, % Class_Id, Id_Primary, Class
            objects:copy/4,     % Class_Id, Class_Name, From, To
            objects:downcast/4,
-           
+
            objects:field/7,    % Class_Id, Field_Name, Obj, Value,
                                % Field_Type, Is_Native, Is_Eval
-           
+
            objects:fields/3,   % Class_Id, All_Fields, New_Fields
                                % (ordset)
            objects:key/2,      % Class_Id, Key (ordset)
@@ -68,7 +68,7 @@
            objects:typedef_flag/2.
 
 % class_fields(+Class_Id, ?Native, ?Eval, ?Fields)
-% Get list of fields/types 
+% Get list of fields/types
 % Native = true means no field from parent
 % (Native = false - only parent fields)
 
@@ -84,7 +84,7 @@ class_fields(Class_Id, Native, Eval, Fields) :-
    -> true
    ;  Fields = []
    ).
-  
+
 class_id(Class_Id, Class) :-
 
    nonvar(Class_Id), !,
@@ -112,7 +112,7 @@ common_parent(Class1_Id, Class2_Id, Cmn_Parent_Id) :-
 
 %
 % list_inheritance(+Class_Id, -List)
-%   
+%
 % represent inheritance as [class_id|...]
 % e.g. list_inheritance(1, [0, 1]).
 
@@ -120,7 +120,7 @@ list_inheritance(Class_Id, List) :-
 
    list_inheritance(0, Class_Id, [], List).
 
-   
+
 list_inheritance(From_Id, To_Id, List) :-
 
    list_inheritance(From_Id, To_Id, [], List).
@@ -129,7 +129,7 @@ list_inheritance(From_Id, To_Id, List) :-
 list_inheritance(Id, Id, List, [Id|List]) :- !.
 
 list_inheritance(From_Id, To_Id, List0, List) :-
-   
+
    objects:parent(To_Id, Parent_Id),
    list_inheritance(From_Id, Parent_Id, [To_Id|List0], List).
 
@@ -157,8 +157,8 @@ fields_names_types([Name:Type|FT], [Name|NT], [Type|TT]) :-
    (  \+ atom(Type) -> throw(error(type_error(atom, Type), _))
    ; true ),
    fields_names_types(FT, NT, TT).
-  
-fields_names_types([Name|FT], [Name|NT], [_|TT]) :- 
+
+fields_names_types([Name|FT], [Name|NT], [_|TT]) :-
 
    (  var(Name) -> throw(error(instantiation_error, _))
    ; true ),
@@ -182,7 +182,7 @@ gen_new_class_id(Class_Id) :-
    findall(Id, class_id(Id, _), Ids),
    max_list(Ids, Class_Id1),
    Class_Id is Class_Id1 + 1.
-                             
+
 
 %
 % get_key(+Class_Id, -Key)
@@ -224,7 +224,7 @@ same_or_descendant(Parent_Id, No_Rebased, Desc_Id) :-
 
 %% u_class(@Class)
 %  True if Class is a valid name for an uranium class
-                             
+
 u_class(Class) :-
 
    atom(Class),
@@ -233,7 +233,7 @@ u_class(Class) :-
 
 %% u_object(@Term)
 %  True if Term is bound to an uranium object.
-                             
+
 u_object(Term) :-
 
    compound(Term),
@@ -259,7 +259,7 @@ unbounded_fields(Obj, Field_Names) :-
 % Error messages for the Uranium object system
 
 prolog:message(class_system_bad_state(Details)) -->
-                             
+
    ['The Uranium class system may be corrupted: '],
    [ nl ],
    [Details].
@@ -269,8 +269,19 @@ prolog:message(implementation_error(Details)) -->
    ['Internal Uranium error: ', nl, Details].
 
 prolog:message(class_exists(Class)) -->
-                             
+
    ['The class ~a is defined already' - [Class]].
+
+prolog:message(class_inheritance_cycle(Graph)) -->
+
+   ['There is a cycle in class inheritance: ~w'
+    - Graph].
+
+prolog:message(type_redefined(Type, Orig_Class)) -->
+
+   ['Type ~a is already defined in class ~a'
+    - [Type, Orig_Class]],
+   [nl, 'The new definition was ignored.'].
 
 prolog:message(invalid_object(Object, Details)) -->
 
@@ -281,7 +292,7 @@ prolog:message(no_object_field(Object, Field_Name)) -->
 
    ['There is no such field `~a'' in the object ~p'
     - [Field_Name, Object]].
-                             
+
 prolog:message(undef_operation(Op_Name, Class_Id)) -->
 
    ['The operation `~a'' is not defined for class id ~d'
