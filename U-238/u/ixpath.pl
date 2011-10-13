@@ -99,7 +99,7 @@ term_list_to_ixpath([T1|Tail], Head/T1) :-
 
    term_list_to_ixpath(Tail, Head).
 
-   
+
 
 % preprocess_expr(+Expr, +Orig, -Preprocessed_Expr)
 %
@@ -252,67 +252,79 @@ preprocess_cond([Num|T], Attrs0, Attrs, Num0, Num) :-
 
 xpath(Spec, Dom, Options, Result) :-
 
-   xpath(Spec, Dom, [], Path_R, Result1),
-   proc_options(Path_R, Options, Result1, Result).
+   findall(pair(Path, Result),
+	   (   xpath(Spec, Dom, [], Path_R, Result1),
+	       reverse(Path_R, Path) ),
+	   Results_Dup_U),
+
+   % remove dups and unify element counters
+   msort(Results_Dup_U, Results_Dup),
+   unify_list_pairs(Results_Dup, Results_R),
+   reverse(Results_R, Results),
+
+   % bt
+   member(pair(Path, Result1), Results),
+   proc_options(Path, Options, Result1, Result).
+
+unify_list_pairs([], []) :- !.
+unify_list_pairs([One], [One]) :- !.
+unify_list_pairs([El, El|T1], [El|T2]) :- !,
+   unify_list_pairs(T1, T2).
+unify_list_pairs([El|T1], [El|T2]) :-
+   unify_list_pairs(T1, T2).
 
 
 proc_options(_, [], Result, Result) :- !.
 
-proc_options(Path_R, [Option|OT], Result0, Result) :-
-   proc_option(Path_R, Option, Result0, Result1),
-   proc_options(Path_R, OT, Result1, Result).
+proc_options(Path, [Option|OT], Result0, Result) :-
+   proc_option(Path, Option, Result0, Result1),
+   proc_options(Path, OT, Result1, Result).
 
 proc_option(_, v, Result0, Result) :- !,
    obj_construct(html_piece_v, [dom], [Result0], Result1),
    obj_downcast(Result1, Result).
 
-proc_option(Path_R, vx, Result0, Result) :- !,
-   proc_option(Path_R, xpath(XPath), _, _),
+proc_option(Path, vx, Result0, Result) :- !,
+   proc_option(Path, xpath(XPath), _, _),
    obj_construct(html_piece_v, [dom, xpath], [Result0, XPath],
                  Result1),
    obj_downcast(Result1, Result).
 
-proc_option(Path_R, tag_path_rev(Tag_Path_R), R, R) :- !,
-   dom_tag_path(Path_R, Tag_Path_R).
-
-proc_option(Path_R, tag_path(Tag_Path), R, R) :- !,
-   reverse(Path_R, Path),
+proc_option(Path, tag_path(Tag_Path), R, R) :- !,
    dom_tag_path(Path, Tag_Path).
 
-proc_option(Path_R, tag_path_cnt(Tag_Path), R, R) :- !,
-   reverse(Path_R, Path),
+proc_option(Path, tag_path_cnt(Tag_Path), R, R) :- !,
    dom_tag_path_cnt(Path, Tag_Path).
 
 proc_option(Path, xpath(XPath), R, R) :- !,
-   dom_tag_path_cnt(Path, Term_List),
+   reverse(Path, Path_R),
+   dom_tag_path_cnt(Path_R, Term_List),
    term_list_to_ixpath(Term_List, IXPath),
    ixpath_to_xpath(/IXPath, XPath).
-   
-proc_option(Path_R, tag_attr_path(Attr_List, Tag_Attr_Path),
+
+proc_option(Path, tag_attr_path(Attr_List, Tag_Attr_Path),
             R, R) :- !,
-   reverse(Path_R, Path),
    dom_tag_attr_path(Path, Attr_List, Tag_Attr_Path).
 
 proc_option(_, _, R, R) :- true.
-%TODO   print_message(warning,
 
 
 % DOM elements path -> tags path
 dom_tag_path([], []) :- !.
-dom_tag_path([node(element(Tag, _, _), _)|DT], [Tag|TT]) :-
+dom_tag_path([node(_, element(Tag, _, _), _)|DT], [Tag|TT]) :-
    dom_tag_path(DT, TT).
 
 dom_tag_path_cnt([], []) :- !.
-dom_tag_path_cnt([node(element(Tag, _, _), Cnt)|DT], [Term|TT]) :-
+dom_tag_path_cnt([node(_, element(Tag, _, _), Cnt)|DT], [Term|TT]) :-
    nonvar(Cnt), !,
    Term =.. [Tag, Cnt],
    dom_tag_path_cnt(DT, TT).
-dom_tag_path_cnt([node(element(Tag, _, _), _)|DT], [Tag|TT]) :-
+dom_tag_path_cnt([node(_, element(Tag, _, _), _)|DT], [Tag|TT]) :-
    dom_tag_path_cnt(DT, TT).
 
 % DOM elements path -> tags with selected attrs path
 dom_tag_attr_path([], _, []) :- !.
-dom_tag_attr_path([node(element(Tag, Attrs, _), _)|DT],
+dom_tag_attr_path([node(_, element(Tag, Attrs, _), _)|DT],
                   Attrs_Query,
                   [Tag_With_Attrs|TT]) :-
 
@@ -345,22 +357,18 @@ xpath(Step, Dom, Path0, Path, Result) :-
    step(Step, Dom, Path0, Path, Result).
 
 
-step(child::Node_Test, Dom,
-     Path, [node(Result, Child_Cnt)|Path], Result) :- !,
+step(child::Node_Test, Dom, Path, [Child_Node|Path], R) :- !,
 
    Dom = element(_, _, Sub_Elements),
-
-   findall(R,
-           ( member(Sub_Element, Sub_Elements),
-             Sub_Element = element(_, _, _), % skip text nodes
-             step(self::Node_Test, Sub_Element, Path, _, R)
-           ),
-           Matched_Childs),
-
    Node_Test = tag(Tag, M, _),
-   nth1(M, Matched_Childs, Result), % it is det iff M is bound
-   (  Tag == '*' -> true
-   ;  Child_Cnt = M ).
+
+   child_member_test(Node_Test, M, 1, 1, Sub_Elements,
+		     node(Idx, R, Cnt)),
+
+   (  Tag == '*' ->
+      Child_Node = node(Idx, R, _) % Cnt is meaningfull only for
+                               % named tags
+   ;  Child_Node = node(Idx, R, Cnt) ).
 
 step(descendant::Node_Test, Dom, Path0, Path, Result) :- !,
 
@@ -409,6 +417,27 @@ step(self::tag(Tag, _, _), Dom, Path, Path, Dom) :- !,
    Dom = element(Tag, _, _).
 
 
+child_member_test(Node_Test, M, I, Cnt, [Child|T], Matched_Node) :-
+   ( var(M) -> true ; Cnt < M ),
+
+   (  Child = element(_, _, _)
+   -> (  I1 is I + 1,
+         (  step(self::Node_Test, Child, _, _, Result)
+         ->
+            (  Matched_Node = node(I, Result, Cnt)
+            ;  Cnt1 is Cnt + 1,
+               child_member_test(Node_Test, M, I1, Cnt1, T, Matched_Node)
+            )
+         ;
+            child_member_test(Node_Test, M, I1, Cnt, T, Matched_Node)
+         )
+      )
+   ;
+      child_member_test(Node_Test, M, I, Cnt, T, Matched_Node)
+   ).
+
+
+
 % check conditions
 
 check_attrs([], _) :- !.
@@ -418,7 +447,7 @@ check_attrs([Attr=Value|TC], Result) :-
    check_attrs(TC, Result).
 
 
-prolog:message(ixpath_not_implemented(What, Expr)) :-
+prolog:message(ixpath_not_implemented(What, Expr)) -->
 
    ['ixpath: ~a is not implemented (the expression is ~w)'
    - [What, Expr]].
