@@ -149,7 +149,7 @@ w3c_relative_xpath(Rel_Path/Step, First_Axis, P1/P2) :- !,
    w3c_relative_xpath(Rel_Path, First_Axis, P1),
    w3c_step(Step, P2).
 
-w3c_relative_xpath(Rel_Path//Step, First_Axis, P1//P2) :- !,
+w3c_relative_xpath(Rel_Path//Step, First_Axis, P1/P2) :- !,
 
    w3c_relative_xpath(Rel_Path, First_Axis, P1),
    w3c_step(descendant::Step, P2).
