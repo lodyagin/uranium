@@ -206,10 +206,13 @@ w3c_step(Term, P) :- w3c_step(child::Term, P).
 %			| 'self'
 % TODO
 
+w3c_axis_name(ancestor).
+w3c_axis_name(ancestor-or-self).
 w3c_axis_name(attribute).
 w3c_axis_name(child).
 w3c_axis_name(descendant).
 w3c_axis_name('descendant-or-self').
+w3c_axis_name(parent).
 w3c_axis_name(self).
 
 
@@ -252,10 +255,10 @@ preprocess_cond([Num|T], Attrs0, Attrs, Num0, Num) :-
 
 xpath(Spec, Dom, Options, Result) :-
 
-   findall(pair(Path, Result),
-	   (   xpath(Spec, Dom, [], Path_R, Result1),
-	       reverse(Path_R, Path) ),
-	   Results_Dup_U),
+   bagof(pair(Path, Path_R, Result1),
+	 ( xpath(Spec, Dom, [], Path_R, Result1),
+	   reverse(Path_R, Path) ),
+	 Results_Dup_U),
 
    % remove dups and unify element counters
    msort(Results_Dup_U, Results_Dup),
@@ -263,8 +266,8 @@ xpath(Spec, Dom, Options, Result) :-
    reverse(Results_R, Results),
 
    % bt
-   member(pair(Path, Result1), Results),
-   proc_options(Path, Options, Result1, Result).
+   member(pair(Path, Path_R, Result1), Results),
+   proc_options(Path, Path_R, Options, Result1, Result).
 
 unify_list_pairs([], []) :- !.
 unify_list_pairs([One], [One]) :- !.
@@ -274,39 +277,40 @@ unify_list_pairs([El|T1], [El|T2]) :-
    unify_list_pairs(T1, T2).
 
 
-proc_options(_, [], Result, Result) :- !.
+proc_options(_, _, [], Result, Result) :- !.
 
-proc_options(Path, [Option|OT], Result0, Result) :-
-   proc_option(Path, Option, Result0, Result1),
-   proc_options(Path, OT, Result1, Result).
+proc_options(Path, Path_R, [Option|OT], Result0, Result) :-
+   proc_option(Option, Path, Path_R, Result0, Result1),
+   proc_options(Path, Path_R, OT, Result1, Result).
 
-proc_option(_, v, Result0, Result) :- !,
+proc_option(v, _, _, Result0, Result) :- !,
    obj_construct(html_piece_v, [dom], [Result0], Result1),
    obj_downcast(Result1, Result).
 
-proc_option(Path, vx, Result0, Result) :- !,
-   proc_option(Path, xpath(XPath), _, _),
-   obj_construct(html_piece_v, [dom, xpath], [Result0, XPath],
+proc_option(vx, Path, Path_R, Result0, Result) :- !,
+   proc_option(xpath(XPath), Path, Path_R, _, _),
+   obj_construct(html_piece_v,
+                 [dom, node_path, node_rpath, xpath],
+                 [Result0, Path, Path_R, XPath],
                  Result1),
    obj_downcast(Result1, Result).
 
-proc_option(Path, tag_path(Tag_Path), R, R) :- !,
+proc_option(tag_path(Tag_Path), Path, _, R, R) :- !,
    dom_tag_path(Path, Tag_Path).
 
-proc_option(Path, tag_path_cnt(Tag_Path), R, R) :- !,
+proc_option(tag_path_cnt(Tag_Path), Path, _, R, R) :- !,
    dom_tag_path_cnt(Path, Tag_Path).
 
-proc_option(Path, xpath(XPath), R, R) :- !,
-   reverse(Path, Path_R),
+proc_option(xpath(XPath), _, Path_R, R, R) :- !,
    dom_tag_path_cnt(Path_R, Term_List),
    term_list_to_ixpath(Term_List, IXPath),
    ixpath_to_xpath(/IXPath, XPath).
 
-proc_option(Path, tag_attr_path(Attr_List, Tag_Attr_Path),
+proc_option(tag_attr_path(Attr_List, Tag_Attr_Path), Path, _,
             R, R) :- !,
    dom_tag_attr_path(Path, Attr_List, Tag_Attr_Path).
 
-proc_option(_, _, R, R) :- true.
+proc_option(_, _, _, R, R) :- true.
 
 
 % DOM elements path -> tags path
@@ -356,6 +360,31 @@ xpath(Step, Dom, Path0, Path, Result) :-
 
    step(Step, Dom, Path0, Path, Result).
 
+step(ancestor::Node_Test, Dom, Path0, Path, Result) :- !,
+
+   step(parent::tag('*', _, _), Dom, Path0, Path1, Result1),
+   step('ancestor-or-self'::Node_Test, Result1, Path1, Path,
+	Result).
+
+step('ancestor-or-self'::tag(_, M, _), _, _, _, _) :-
+
+   nonvar(M),
+   throw(ixpath_not_implemented(axis_counter(ancestor), _)).
+
+step('ancestor-or-self'::Node_Test, Dom, Path0, Path, Result) :- !,
+
+   (   step(self::Node_Test, Dom, Path0, Path, Result)
+   ;   step(ancestor::Node_Test, Dom, Path0, Path, Result)
+   ).
+
+step(attribute::(*), Dom, Path, Path, Attrs) :- !,
+
+   Dom = element(_, Attrs, _).
+
+step(attribute::Attr, Dom, Path, Path, Result) :- !,
+
+   Dom = element(_, Attrs, _),
+   memberchk(Attr=Result, Attrs).
 
 step(child::Node_Test, Dom, Path, [Child_Node|Path], R) :- !,
 
@@ -379,27 +408,18 @@ step(descendant::Node_Test, Dom, Path0, Path, Result) :- !,
 step('descendant-or-self'::tag(_, M, _), _, _, _, _) :-
 
    nonvar(M),
-   throw(ixpath_not_implemented(descendant_axis_counter, _)).
+   throw(ixpath_not_implemented(axis_counter(descendant), _)).
 
-step('descendant-or-self'::Node_Test, Dom,Path0,Path, Result) :-
+step('descendant-or-self'::Node_Test, Dom,Path0,Path, Result) :- !,
 
-   !,
-   (
-      %writeln((child::Node_Test, Path0)),
-      step(self::Node_Test, Dom, Path0, Path, Result)
-   ;
-      %writeln((descendant::Node_Test, Path0)),
-      step(descendant::Node_Test, Dom, Path0, Path, Result)
+   (  step(self::Node_Test, Dom, Path0, Path, Result)
+   ;  step(descendant::Node_Test, Dom, Path0, Path, Result)
    ).
 
-step(attribute::(*), Dom, Path, Path, Attrs) :- !,
+step(parent::Node_Test, _, [_, Parent|PT], [Parent|PT], R) :- !,
 
-   Dom = element(_, Attrs, _).
-
-step(attribute::Attr, Dom, Path, Path, Result) :- !,
-
-   Dom = element(_, Attrs, _),
-   memberchk(Attr=Result, Attrs).
+   Parent = node(_, Node, _),
+   step(self::Node_Test, Node, _, _, R).
 
 step(self::tag('*', _, Attrs), Dom, Path, Path, Dom) :- !,
 
