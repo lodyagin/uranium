@@ -39,6 +39,7 @@
            list_inheritance/2,
            list_inheritance/3,
            obj_class_id/2,
+           parent/2,
            same_or_descendant/3,
            u_class/1,
            u_object/1,
@@ -203,6 +204,11 @@ obj_class_id(Object, Class_Id) :-
 
    arg(1, Object, Class_Id).
 
+
+parent(Id, Parent_Id) :-
+
+   objects:parent(Id, Parent_Id),
+   Id =\= 0.
 
 % same_or_descendant(+Parent_Id, +No_Rebased, ?Desc_Id)
 

@@ -29,6 +29,7 @@
            class_exists/1,
            class_fields/2,    %+Class, -Fields (ordset)
            %class_field_type/3,
+           class_parent/2,
            eval_obj_expr/2,
 
            named_arg/3,
@@ -593,6 +594,45 @@ class_descendant(Class, Descendant) :-
       Class_Id =\= Descendant_Id,
       class_id(Descendant_Id, Descendant)
    ).
+
+
+% class_parent(?Class, ?Parent)
+%
+% Ignore rebased classes.
+
+class_parent(Class, Parent) :-
+
+   nonvar(Class), nonvar(Parent), !,
+   Ctx = context(class_parent/2, _),
+   check_class_arg(Class, Ctx),
+   class_primary_id(Class, Class_Id),
+   check_class_arg(Parent, Ctx),
+   class_primary_id(Parent, Parent_Id),
+   parent(Class_Id, Parent_Id).
+
+class_parent(Class, Parent) :-
+
+   nonvar(Class), !,
+   Ctx = context(class_parent/2, _),
+   check_class_arg(Class, Ctx),
+   class_primary_id(Class, Class_Id),
+   parent(Class_Id, Parent_Id),
+   class_id(Parent_Id, Parent).
+
+class_parent(Class, Parent) :-
+
+   nonvar(Parent), !,
+   Ctx = context(class_parent/2, _),
+   check_class_arg(Parent, Ctx),
+   class_primary_id(Parent, Parent_Id),
+   parent(Class_Id, Parent_Id),
+   class_id(Class_Id, Class).
+
+class_parent(Class, Parent) :-
+
+   parent(Class_Id, Parent_Id),
+   class_id(Class_Id, Class),
+   class_id(Parent_Id, Parent).
 
 
 % obj_is_descendant(+Descendant, ?Class)
