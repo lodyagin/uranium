@@ -23,7 +23,10 @@
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
-:- module(class_diagram, [class_diagram/0]).
+:- module(class_diagram,
+          [class_diagram/0,
+           class_fields/0
+          ]).
 
 :- use_module(u(v)).
 :- use_module(u(internal/objects_i)).
@@ -44,7 +47,7 @@ class_diagram :-
       nl,
       fail ; true
    ).
-   
+
 class_graph(Class_Graph) :-
 
    findall(Parent - Class,
@@ -57,4 +60,28 @@ class_graph(Class_Graph) :-
            Edges
           ),
    vertices_edges_to_ugraph([], Edges, Class_Graph).
-   
+
+
+class_fields :-
+
+   class_graph(Graph),
+   top_sort(Graph, Order),
+   (  member(Class, Order),
+      class_fields(Class),
+      fail ; true ).
+
+class_fields(Class) :-
+      
+   format('~a:\t', Class),
+   class_fields2(Class),
+   nl, nl.
+
+class_fields2(object_base_v) :- !.
+
+class_fields2(Class) :-
+
+   class_parent(Class, Parent),
+   class_fields2(Parent),
+   class_fields_new(Class, Fields),
+   maplist(format('~a|'), Fields),
+   write('|').
