@@ -336,7 +336,7 @@ obj_construct2(Class, Field_Names, Field_Values, Weak, Object) :-
    -> throw(error(instantiation_error, Ctx))
    ;  true ),
 
-   check_existing_class_arg(Class, Ctx),
+   check_existing_class_arg(Class, Ctx, Class_Id),
    check_fields_arg(Field_Names, Ctx),
 
    (  var(Field_Values)

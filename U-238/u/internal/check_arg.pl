@@ -2,6 +2,7 @@
           [check_inst/2,
            check_class_arg/2,
            check_existing_class_arg/2,
+           check_existing_class_arg/3,
            check_fields_arg/2,
            check_values_arg/3,
            check_object_arg/3,
@@ -29,8 +30,12 @@ check_class_arg(Class, Err_Context) :-
 
 check_existing_class_arg(Class, Ctx) :-
 
+   check_existing_class_arg(Class, Ctx, _).
+
+check_existing_class_arg(Class, Ctx, Class_Id) :-
+
    check_class_arg(Class, Ctx),
-   (  class_id(_, Class) -> true
+   (  class_primary_id(Class, Class_Id) -> true
    ;  throw(error(existence_error(uranium_class, Class), Ctx))
    ).
 
