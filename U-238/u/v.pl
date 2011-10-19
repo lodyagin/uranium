@@ -27,6 +27,7 @@
           [
            class_descendant/2,
            class_exists/1,
+           class_fields_new/2,
            class_fields/2,    %+Class, -Fields (ordset)
            %class_field_type/3,
            class_parent/2,
@@ -335,15 +336,12 @@ obj_construct2(Class, Field_Names, Field_Values, Weak, Object) :-
    -> throw(error(instantiation_error, Ctx))
    ;  true ),
 
-   check_class_arg(Class, Ctx),
+   check_existing_class_arg(Class, Ctx),
    check_fields_arg(Field_Names, Ctx),
 
    (  var(Field_Values)
    -> true
    ;  check_values_arg(Field_Names, Field_Values, Ctx)
-   ),
-   (  class_primary_id(Class, Class_Id) -> true
-   ;  throw(error(existence_error(uranium_class, Class), Ctx))
    ),
 
    obj_construct_int(Class_Id, Field_Names, Field_Values, Weak,
@@ -412,7 +410,7 @@ obj_downcast(From, To_Class, To) :-
    (  (var(From); var(To_Class))
    -> throw(error(instantiation_error, Ctx))
    ;  true ),
-   check_class_arg(To_Class, Ctx),
+   check_existing_class_arg(To_Class, Ctx),
    check_object_arg(From, Ctx, From_Class_Id),
    functor(From, From_Class, _),
 
@@ -581,11 +579,11 @@ class_descendant(Class, Descendant) :-
 
    Ctx = context(class_descendant/2, _),
    check_inst(Class, Ctx),
-   check_class_arg(Class, Ctx),
+   check_existing_class_arg(Class, Ctx),
    class_primary_id(Class, Class_Id),
    (  nonvar(Descendant)
    ->
-      check_class_arg(Descendant, Ctx),
+      check_existing_class_arg(Descendant, Ctx),
       Class \== Descendant,
       class_primary_id(Descendant, Descendant_Id),
       same_or_descendant(Class_Id, true, Descendant_Id)
@@ -604,9 +602,9 @@ class_parent(Class, Parent) :-
 
    nonvar(Class), nonvar(Parent), !,
    Ctx = context(class_parent/2, _),
-   check_class_arg(Class, Ctx),
+   check_existing_class_arg(Class, Ctx),
    class_primary_id(Class, Class_Id),
-   check_class_arg(Parent, Ctx),
+   check_existing_class_arg(Parent, Ctx),
    class_primary_id(Parent, Parent_Id),
    parent(Class_Id, Parent_Id).
 
@@ -614,7 +612,7 @@ class_parent(Class, Parent) :-
 
    nonvar(Class), !,
    Ctx = context(class_parent/2, _),
-   check_class_arg(Class, Ctx),
+   check_existing_class_arg(Class, Ctx),
    class_primary_id(Class, Class_Id),
    parent(Class_Id, Parent_Id),
    class_id(Parent_Id, Parent).
@@ -623,7 +621,7 @@ class_parent(Class, Parent) :-
 
    nonvar(Parent), !,
    Ctx = context(class_parent/2, _),
-   check_class_arg(Parent, Ctx),
+   check_existing_class_arg(Parent, Ctx),
    class_primary_id(Parent, Parent_Id),
    parent(Class_Id, Parent_Id),
    class_id(Class_Id, Class).
@@ -648,6 +646,21 @@ obj_is_descendant(Descendant, Class) :-
   same_or_descendant(Class_Id, _, Desc_Class_Id).
 
 
+% class_new_fields(+Class, -Field_Names)
+%
+% Get list of fields introduced in Class
+
+class_fields_new(Class, Field_Names) :-
+
+   Ctx = context(class_fields_new/2, _),
+   (  var(Class)
+   -> throw(error(instantiation_error, Ctx))
+   ;  check_existing_class_arg(Class, Ctx)
+   ),
+   class_primary_id(Class, Class_Id),
+   class_new_fields(Class_Id, Field_Names).
+
+
 % class_fields(+Class, -Field_Names)
 %
 % Get list of field names as ordset
@@ -657,7 +670,7 @@ class_fields(Class, Field_Names) :-
    Ctx = context(class_fields/2, _),
    (  var(Class)
    -> throw(error(instantiation_error, Ctx))
-   ;  check_class_arg(Class, Ctx)
+   ;  check_existing_class_arg(Class, Ctx)
    ),
    class_primary_id(Class, Class_Id),
    class_all_fields(Class_Id, Field_Names).

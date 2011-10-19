@@ -1,6 +1,7 @@
 :- module(check_arg,
           [check_inst/2,
            check_class_arg/2,
+           check_existing_class_arg/2,
            check_fields_arg/2,
            check_values_arg/3,
            check_object_arg/3,
@@ -26,6 +27,12 @@ check_class_arg(Class, Err_Context) :-
    ;  throw(error(domain_error(uranium_class, Class),Err_Context))
    ).
 
+check_existing_class_arg(Class, Ctx) :-
+
+   check_class_arg(Class, Ctx),
+   (  class_id(_, Class) -> true
+   ;  throw(error(existence_error(uranium_class, Class), Ctx))
+   ).
 
 check_fields_arg(Field_Names, Ctx) :-
 
