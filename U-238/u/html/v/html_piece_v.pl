@@ -3,7 +3,9 @@
 :- use_module(u(html/v/standard/html_tag_v)).
 
                      
-new_class(html_piece_v, http_result_v, [dom, xpath]).
+new_class(html_piece_v, http_result_v,
+          [dom, node_path, node_rpath, xpath]
+         ).
 
 'html_piece_v?'(Obj, class, Class) :-
 
