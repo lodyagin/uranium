@@ -215,7 +215,7 @@ reload_all_classes :-
    objects:assertz(parent(0, -1)),
    objects:assertz(typedef_flag(hidden, object_base_v)),
    objects:assertz(key(0, 0, [])),
-   
+
    % Load all class modules
    (  find_class_module(Module_Path),
       consult(Module_Path),
