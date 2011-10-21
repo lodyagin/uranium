@@ -72,7 +72,7 @@ db_erase(recorded(DB_Key, Ref)) :-
     !,
     (
 
-db_erase(DB_Ref) :-
+%db_erase(DB_Ref) :-
 
     call_db_pred(DB_Ref, erase, []).
 */

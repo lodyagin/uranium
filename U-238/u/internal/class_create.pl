@@ -59,11 +59,10 @@ class_create(Class, Parent, Fields) :-
    check_class_create(Class, Parent, Fields, Ctx),
    class_primary_id(Parent, Parent_Id),
    assert_new_class(Class, Parent_Id, Fields, Ctx),
-   get_key(Parent_Id, Parent_Key),
    class_primary_id(Class, Class_Id),
    assert_parent_key(Class_Id, Parent_Id),
    assert_copy(Class_Id, Parent_Id).
-  
+
 %
 % class_create(+Class, +Parent, +Add_Fields, +Key)
 %
@@ -79,7 +78,7 @@ class_create(Class, Parent, Fields, New_Key) :-
    -> throw(error(instantiation_error, Ctx))
    ;  \+ is_list(New_Key)
    -> throw(error(type_error(list, New_Key), Ctx))
-   ;  \+ is_set(New_Key)  
+   ;  \+ is_set(New_Key)
    -> throw(error(domain_error(no_duplicates, New_Key), Ctx))
    ;  % check the New_Key contents
       fields_names_types(New_Key, New_Key_Simpl, _),
@@ -106,7 +105,7 @@ assert_new_class(Class, Parent_Id, Fields, Ctx) :-
   ;  gen_class_id(Class, Class_Id) ),
 
   % arity/2 :- true is only asserted by this module
-  (  objects:clause(arity(Class_Id, _), _) 
+  (  objects:clause(arity(Class_Id, _), _)
   -> throw(class_exists(Class))
   ;  true
   ),
@@ -119,10 +118,10 @@ assert_new_class(Class, Parent_Id, Fields, Ctx) :-
   ;  Ctx = context(_, 'duplicates were found'),
      throw(error(domain_error(object_fields, Field_Names), Ctx))
   ),
-                             
+
   (  \+ class_id(Class_Id, _)
   -> objects:assertz(class_id(Class_Id, true, Class))
-  ;  true ),  
+  ;  true ),
 
   assert_new_class_id(Class_Id, Parent_Id, Fields, Ctx).
 
@@ -155,9 +154,9 @@ assert_inherited_fields(Class_Id, Ref_Class_Id, Arg0, Arg) :-
    class_fields(Parent_Id, true, _, New_Fields),
    assert_class_fields2(Class_Id, Parent_Id, New_Fields,
                         Arg1, Arg).
-   
 
-assert_class_fields2(_, _, [], Arg, Arg) :- !. 
+
+assert_class_fields2(_, _, [], Arg, Arg) :- !.
 
 
 assert_class_fields2(Class_Id, Native_Id,
@@ -168,10 +167,10 @@ assert_class_fields2(Class_Id, Native_Id,
       objects:clause(
          field(Native_Id, Field_Name, Obj, Value, Field_Type,
             true, %true marks fields introduced by Native_Id
-            Is_Eval), 
+            Is_Eval),
          Body),
       (  Is_Eval \== true
-      -> 
+      ->
          objects:assertz(
            (field(Class_Id, Field_Name, Obj, Value, Field_Type,
                   false, false) :- arg(Arg0, Obj, Value))
@@ -201,7 +200,7 @@ assert_class_fields2(Class_Id, Native_Id,
    assert_class_fields2(Class_Id, Native_Id,
                         [Field_Name:_|FT], Arg0, Arg).
 
-                             
+
 assert_new_key(_, []) :- !.
 
 assert_new_key(Class_Id, Keys) :-
@@ -233,7 +232,7 @@ assert_copy(Class_Id, Parent_Id) :-
 class_rebase([], -1, false) :- !.
 
 class_rebase([Class_Orig_Id|Parents], Class_New_Id, Rebase) :-
-   
+
    class_rebase(Parents, Parent_Id, Rebase1),
 
    % check whether do rebase
