@@ -95,8 +95,6 @@
 :- use_module(u(ur_lists)).
 :- use_module(u(logging)).
 
-%:- multifile db_recorded/3, db_erase/1, db_recordz/2.
-
 /** <module> Uranium Objects
 
 

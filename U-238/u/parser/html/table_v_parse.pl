@@ -172,7 +172,7 @@ table_v_cast(DB_Key, Table, Class_To, Col_Specs, Obj_Fields,
      append(Fields, Common_Field_Values, Field_Values),
      obj_construct(Class_To, Field_Names, Field_Values, Obj1),
      obj_downcast(Obj1, Obj),
-     db_recordz(DB_Key, Obj)
+     db_put_object(DB_Key, Obj, _)
     ;
      write_log(['Fail to parse', Row, 'as', Class_To],
                [logger(html_parse), lf(1)])
