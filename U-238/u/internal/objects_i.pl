@@ -231,19 +231,6 @@ obj_class_id(Object, Class_Id) :-
 
    arg(1, Object, Class_Id).
 
-% NB evaluated fields can be also processed as `Weak' 
-
-obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type) :-
-
-   (  objects:field(Class_Id, Field_Name, Obj, Value, Type, _,
-                    _)
-   -> true
-   ;  Weak == weak
-   -> true
-   ;  Weak == fail
-   -> fail
-   ;  throw(no_object_field(Obj, Field_Name))
-   ).
 
 parent(Id, Parent_Id) :-
 

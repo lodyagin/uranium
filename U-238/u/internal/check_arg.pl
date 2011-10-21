@@ -34,7 +34,6 @@ check_class_arg(Class, Err_Context) :-
    ;  throw(error(domain_error(uranium_class, Class),Err_Context))
    ).
 
-<<<<<<< HEAD
 check_existing_class_arg(Class, Ctx) :-
 
    check_existing_class_arg(Class, Ctx, _).

@@ -553,7 +553,6 @@ class_descendant(Class, Descendant) :-
    ).
 
 
-<<<<<<< HEAD
 % class_parent(?Class, ?Parent)
 %
 % Ignore rebased classes.
