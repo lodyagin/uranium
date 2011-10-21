@@ -24,7 +24,7 @@
           [html_page_parse/3
           ]).
 
-:- use_module(u(ur_recorded_db)).
+:- use_module(u(vd)).
 :- use_module(u(v)).
 :- use_module(library(xpath)).
 :- use_module(u(logging)).

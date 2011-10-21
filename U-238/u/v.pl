@@ -53,7 +53,6 @@
            obj_field/3,
            obj_field_wf/3,
            obj_get_key/2,     % +Object, ?Key
-           %get_key_value/2, % +Object, ?Key_Value
            obj_rebase/3,     % ?Rebase_Rule, @Object0, -Object
            obj_reinterpret/2, % +From, -To
 %           obj_reset_fields/3, % +[Field|...], +Obj_In, -Obj_Out
@@ -92,7 +91,7 @@
 :- use_module(u(internal/class_create)).
 :- use_module(library(lists)).
 :- use_module(library(ordsets)).
-%:- use_module(u(ur_recorded_db)).
+%:- use_module(u(vd)).
 :- use_module(u(ur_lists)).
 :- use_module(u(logging)).
 
@@ -235,13 +234,6 @@ named_args_unify2(Term, Field_List, Value_List, Weak, Ctx) :-
    obj_unify_int(Class_Id, Field_List, Weak, Term, Value_List).
 
 
-obj_unify_int(_, [], _, _, []) :- !.
-
-obj_unify_int(Class_Id, [Field|FT], Weak, Term, [Value|VT]) :-
-
-   obj_field_int(Class_Id, Field, Weak, Term, Value, _),
-   obj_unify_int(Class_Id, FT, Weak, Term, VT).
-
 /*
 named_args_unify(DB_Key,
                  Functor,
@@ -344,22 +336,9 @@ obj_construct2(Class, Field_Names, Field_Values, Weak, Object) :-
    ;  check_values_arg(Field_Names, Field_Values, Ctx)
    ),
 
-   obj_construct_int(Class_Id, Field_Names, Field_Values, Weak,
-                     Object, Ctx).
+   obj_construct_int(Class_Id, Field_Names, Weak, Field_Values,
+                     Object).
 
-
-obj_construct_int(Class_Id, Field_Names, Field_Values, Weak,
-                  Object, Ctx) :-
-
-   class_id(Class_Id, Class),
-   (  objects:arity(Class_Id, Arity) -> true
-   ;  throw(class_system_bad_state(
-            'no objects:arity/2 for class id ~d' - Class_Id),
-            Ctx) ),
-   functor(Object, Class, Arity),
-   arg(1, Object, Class_Id),
-   obj_unify_int(Class_Id, Field_Names, Weak, Object,
-                 Field_Values).
 
 %
 % obj_downcast(+Parent, -Descendant).
@@ -440,7 +419,7 @@ obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To,
    % Construct To object with all fields unbounded
    % (it will allow fields rewriting in user-defined downcast
    % or reinterpret).
-   obj_construct_int(To_Class_Id, [], [], strict, To, Ctx),
+   obj_construct_int(To_Class_Id, [], strict, [], To),
 
    (  Mode == downcast
    -> downcast_fill_values(From_Class_Id, To_Class_Id, From, To)
@@ -537,8 +516,8 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
    class_all_fields(Orig_Id, Orig_List),
    ord_subtract(Orig_List, Through_Out, Transfer_Fields),
    obj_unify(Object0, Transfer_Fields, Transfer_Values),
-   obj_construct_int(Rebased_Id, Transfer_Fields, Transfer_Values,
-                     strict, Object, Ctx).
+   obj_construct_int(Rebased_Id, Transfer_Fields, strict,
+                     Transfer_Values, Object).
 
 
 % obj_reinterpret(+From, -To) is nondet
@@ -779,12 +758,6 @@ obj_get_key(Object, Key) :-
   obj_class_id(Object, Class_Id),
   get_key(Class_Id, Key).
 
-
-%get_key_value(Object, Key_Value) :-
-
-%  functor(Object, Class, _),
-%  get_key(Class, Key),
-%  named_args_unify(Object, Key, Key_Value), !.
 
 %
 % obj_diff(+Obj1, +Obj2, -Diff_List)

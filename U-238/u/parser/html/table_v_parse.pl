@@ -36,7 +36,7 @@
 :- use_module(u(ur_terms)).
 :- use_module(u(ur_lists)).
 :- use_module(u(v)).
-:- use_module(u(ur_recorded_db)).
+:- use_module(u(vd)).
 :- use_module(u(logging)).
 :- use_module(library(xpath)).
 :- use_module(library(lists)).

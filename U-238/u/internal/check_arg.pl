@@ -1,9 +1,11 @@
 :- module(check_arg,
           [check_inst/2,
            check_class_arg/2,
+           check_db_key/2,
            check_existing_class_arg/2,
            check_existing_class_arg/3,
            check_fields_arg/2,
+           check_list_fast_arg/2,
            check_values_arg/3,
            check_object_arg/3,
            check_rebase_rule/2
@@ -39,6 +41,13 @@ check_existing_class_arg(Class, Ctx, Class_Id) :-
    ;  throw(error(existence_error(uranium_class, Class), Ctx))
    ).
 
+check_db_key(DB_Key, Ctx) :-
+
+   (  db_key_id_valud(DB_Key)
+   -> true
+   ;  throw(error(domain_error(uranium_db_key, DB_Key), Ctx))
+   ).
+
 check_fields_arg(Field_Names, Ctx) :-
 
    check_field_names(Field_Names, Field_Names, Ctx).
@@ -63,6 +72,12 @@ check_field_name(Field_Name, Ctx) :-
    ;  true
    ).
 
+check_list_fast_arg(List, Ctx) :-
+
+   (  (List = []; List = [_|_])
+   -> true
+   ;  throw(error(type_error(list, List), Ctx))
+   ).
 
 check_values_arg(Field_List, Value_List, Ctx) :-
 

@@ -23,7 +23,7 @@
 :- module(msdn_language, []).
 
 :- use_module(u(v)).
-:- use_module(u(ur_recorded_db)).
+:- use_module(u(vd)).
 :- use_module(u(ur_lists)).
 :- use_module(u(html/http_page)).
 :- use_module(u(html/http_ops)).

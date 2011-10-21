@@ -30,7 +30,7 @@
           ]).
 
 :- use_module(u(v)).
-:- use_module(u(ur_recorded_db)).
+:- use_module(u(vd)).
 :- use_module(u(html/v/cookie_v)).
 :- use_module(u(logging)).
 

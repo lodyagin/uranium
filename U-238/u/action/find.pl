@@ -24,7 +24,7 @@
 
 :- use_module(u(ur_words)).
 :- use_module(u(ur_lists)).
-:- use_module(u(ur_recorded_db)).
+:- use_module(u(vd)).
 :- use_module(u(v)).
 :- use_module(tc_support/load_action_module).
 :- use_module(u(logging)).
@@ -35,7 +35,7 @@ find(SAT, Actor, Object_Type, Prop_List, DB_Key) :-
   change_plural(Object_Type, Plural),
   %atom_concat('find.', Plural, DB_Key),
   decode_prop_list(Prop_List, Field_Names, Field_Values),
-  %clear_db(DB_Key),
+  %db_clear(DB_Key),
   atom_concat('find_all_', Plural, Find_All_Pred),
   (Object_Type = 'user' -> Module_Name = user_man;
    Module_Name = Object_Type
@@ -53,7 +53,7 @@ find(SAT, Actor, Object_Type, Prop_List, DB_Key) :-
    current_predicate(Full_Module_Name:Fill_Data_Pred/Fill_Data_Pred_Arity) ->
 
    atom_concat(DB_Key, '.fill', DB_Key2),
-   clear_db(DB_Key2),           % prepare place for iteration 2
+   db_clear(DB_Key2),           % prepare place for iteration 2
    !,
    ( % get full data for all objects from DB1 into DB2
     db_recorded(DB_Key, Object1),
@@ -91,6 +91,6 @@ find(SAT, Actor, Object_Type, Prop_List, Found_Objects) :-
 
   change_plural(Object_Type, Plural),
   atom_concat('find.', Plural, DB_Key),
-  clear_db(DB_Key),
+  db_clear(DB_Key),
   find(SAT, Actor, Object_Type, Prop_List, DB_Key), !,
   db_to_list(DB_Key, _, Found_Objects).

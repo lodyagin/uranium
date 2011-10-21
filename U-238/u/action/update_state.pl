@@ -23,7 +23,7 @@
 :- module(update_state, [update_state/4]).
 
 :- use_module(u(v)).
-:- use_module(u(ur_recorded_db)).
+:- use_module(u(vd)).
 
 %
 % update_state(+Old_State, -New_State)
@@ -35,8 +35,8 @@ update_state(SAT, Actor, Old_State, New_State) :-
   memberchk(SAT = Update_Pred, Update_Pred_List),
   DB1_Key = 'update_state.1',
   DB2_Key = 'update_state.2',
-  clear_db(DB1_Key),
-  clear_db(DB2_Key),
+  db_clear(DB1_Key),
+  db_clear(DB2_Key),
   get_key(Old_State, Key),
   named_args_unify(Old_State, Key, Key_Value), !,
   ground(Key_Value),

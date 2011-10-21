@@ -25,17 +25,17 @@
 :- use_module(state/general/html_user_v).
 :- use_module(u(action/find)).
 :- use_module(u(v)).
-:- use_module(u(ur_recorded_db)).
+:- use_module(u(vd)).
 :- use_module(u(logging)).
 
 query_locale_info :-
 
-   clear_db(db_locale_v0),
-   clear_db(db_locale_v1),
-   clear_db(db_locale_v2),
-   clear_db(db_locale_v3),
-   clear_db(db_language_v),
-   clear_db(db_country_v),
+   db_clear(db_locale_v0),
+   db_clear(db_locale_v1),
+   db_clear(db_locale_v2),
+   db_clear(db_locale_v3),
+   db_clear(db_language_v),
+   db_clear(db_country_v),
 
    new_html_user(U1),
    supported_lang_list(Langs),

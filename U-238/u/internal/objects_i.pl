@@ -25,6 +25,7 @@
 
 :- module(objects_i,
           [
+           class_arity/2,
            class_fields/4,
            class_id/2,
            class_all_fields/2,
@@ -39,6 +40,8 @@
            list_inheritance/2,
            list_inheritance/3,
            obj_class_id/2,
+           obj_construct_int/5,
+           obj_unify_int/5,
            parent/2,
            same_or_descendant/3,
            u_class/1,
@@ -68,10 +71,22 @@
            objects:pretty_print/4,
            objects:typedef_flag/2.
 
+% class_arity(+Class_Id, -Arity)
+
+class_arity(Class_Id, Arity) :-
+
+   integer(Class_Id),
+   (  objects:arity(Class_Id, Arity) -> true
+   ;  throw(class_system_bad_state(
+            'no objects:arity/2 for class id ~d' - Class_Id))
+   ).
+
 % class_fields(+Class_Id, ?Native, ?Eval, ?Fields)
 % Get list of fields/types
 % Native = true means no field from parent
 % (Native = false - only parent fields)
+%
+% It returns ordset (coz it uses setof)
 
 class_fields(Class_Id, Native, Eval, Fields) :-
 
@@ -205,10 +220,30 @@ obj_class_id(Object, Class_Id) :-
    arg(1, Object, Class_Id).
 
 
+
 parent(Id, Parent_Id) :-
 
    objects:parent(Id, Parent_Id),
    Id =\= 0.
+
+obj_construct_int(Class_Id, Field_Names, Weak, Field_Values,
+                  Object) :-
+
+   class_id(Class_Id, Class),
+   class_arity(Class_Id, Arity),
+   functor(Object, Class, Arity),
+   arg(1, Object, Class_Id),
+   obj_unify_int(Class_Id, Field_Names, Weak, Object,
+                 Field_Values).
+
+
+obj_unify_int(_, [], _, _, []) :- !.
+
+obj_unify_int(Class_Id, [Field|FT], Weak, Term, [Value|VT]) :-
+
+   obj_field_int(Class_Id, Field, Weak, Term, Value, _),
+   obj_unify_int(Class_Id, FT, Weak, Term, VT).
+
 
 % same_or_descendant(+Parent_Id, +No_Rebased, ?Desc_Id)
 

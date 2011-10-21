@@ -100,6 +100,21 @@ next_db_id(DB_Key, Id) :-
    recordz(DB_Key, '#next_db_id'(Next_Id)).
 
       
+% db_erase_by_key(+DB_Key, +Key, +Key_Value)
+%
+% Erase all objects matching key
+% Key_Value must be ground
+%
+
+db_erase_by_key(DB_Key, Key, Key_Value) :-
+
+   ground(Key_Value),
+   ( db_unify_int(DB_Key, Key, strict, Key_Value,
+                  Existing_Object),
+     db_obj_field(Existing_Object, db_ref, Ref),
+     db_erase(Ref),
+     fail ; true ).
+
 %    call_db_pred(DB_Key, recordz, [Term, Ref]).
 
 call_db_pred(DB_Key, Pred, Args) :-

@@ -23,7 +23,7 @@
 :- module(msdn_locale, []).
 
 :- use_module(u(v)).
-:- use_module(u(ur_recorded_db)).
+:- use_module(u(vd)).
 :- use_module(u(ur_lists)).
 :- use_module(u(ur_atoms)).
 :- use_module(u(html/http_page)).
@@ -109,13 +109,13 @@ fill_full_data_locale(DB_Key, DB_Key2, User, Locale) :-
              ),
 
     atom_concat(DB_Key2, '.page', DB_Key3),
-    clear_db(DB_Key3),
+    db_clear(DB_Key3),
     html_page_parse(DB_Key3, Page, [table_v]),
     write_log('after html_page_parse:', [logger(dump_db), lf(1)]),
     dump_db(DB_Key3),
     
     atom_concat(DB_Key2, '.table', DB_Key4),
-    clear_db(DB_Key4),
+    db_clear(DB_Key4),
     tolower(LCID, LCID_L),
     concat_atom([LCID_L, '_codepage_info'], Table_Name),
     html_page_find(DB_Key3, DB_Key4, table_v, [Table_Name]),

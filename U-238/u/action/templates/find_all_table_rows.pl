@@ -24,7 +24,7 @@
 
 :- module(find_all_table_rows, [find_all_table_rows/5]).
 
-:- use_module(u(ur_recorded_db)).
+:- use_module(u(vd)).
 :- use_module(parser/html/html_page_parse).
 :- use_module(parser/html/html_page_find).
 :- use_module(parser/html/table_v_parse).
@@ -34,7 +34,7 @@ find_all_table_rows(DB_Key, Page, Table_Search_Columns, Class,
 
     % extract all tables from the page
     atom_concat(DB_Key, '.all_tables', DB2_Key),
-    clear_db(DB2_Key),
+    db_clear(DB2_Key),
     html_page_parse(DB2_Key,
                     Page,
                     [table_v]),
@@ -43,7 +43,7 @@ find_all_table_rows(DB_Key, Page, Table_Search_Columns, Class,
 
     % find tables
     atom_concat(DB_Key, '.match_tables', DB3_Key),
-    clear_db(DB3_Key),
+    db_clear(DB3_Key),
     html_page_find(DB2_Key, DB3_Key, table_v,
                    % treat a table as a matched table
                    % if it contains these columns

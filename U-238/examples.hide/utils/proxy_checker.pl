@@ -33,7 +33,7 @@
 :- use_module(library(http/dcg_basics)).
 :- use_module(u(html/browsers/browsers)).
 :- use_module(u(v)).
-:- use_module(u(ur_recorded_db)).
+:- use_module(u(vd)).
 :- use_module(u(html/http_ops)).
 :- use_module(u(html/http_page)).
 :- use_module(library(time)).
