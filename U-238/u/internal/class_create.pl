@@ -61,7 +61,7 @@ class_create(Class, Parent, Fields) :-
    assert_new_class(Class, Parent_Id, Fields, Ctx),
    get_key(Parent_Id, Parent_Key),
    class_primary_id(Class, Class_Id),
-   assert_key(Class_Id, Parent_Key),
+   assert_parent_key(Class_Id, Parent_Id),
    assert_copy(Class_Id, Parent_Id).
   
 %
@@ -89,8 +89,13 @@ class_create(Class, Parent, Fields, New_Key) :-
    assert_new_class(Class, Parent_Id, Fields, Ctx),
    get_key(Parent_Id, Parent_Key_Set),
    ord_union(Parent_Key_Set, New_Key_Set, Key_Set),
-   class_primary_id(Class, Class_Id),
-   assert_key(Class_Id, Key_Set),
+   length(Parent_Key_Set, Parent_Key_Length),
+   length(Key_Set, Key_Length),
+   (  Key_Length > Parent_Key_Length
+   -> class_primary_id(Class, Class_Id),
+      assert_new_key(Class_Id, Key_Set)
+   ;  assert_parent_key(Class_Id, Parent_Id)
+   ),
    assert_copy(Class_Id, Parent_Id).
 
 
@@ -197,11 +202,17 @@ assert_class_fields2(Class_Id, Native_Id,
                         [Field_Name:_|FT], Arg0, Arg).
 
                              
-assert_key(_, []) :- !.
+assert_new_key(_, []) :- !.
 
-assert_key(Class_Id, Keys) :-
+assert_new_key(Class_Id, Keys) :-
 
-  assertz(objects:key(Class_Id, Keys)).
+  assertz(objects:key(Class_Id, Class_Id, Keys)).
+
+assert_parent_key(Class_Id, Parent_Id) :-
+
+  (  objects:key(Parent_Id, _, Key)
+  -> assertz(objects:key(Class_Id, Parent_Id, Key))
+  ;  true ).
 
 
 %

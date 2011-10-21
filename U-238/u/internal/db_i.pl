@@ -118,6 +118,7 @@ db_recordz(DB_Key, Object) :-
 % Erase all objects matching key
 % Key_Value must be ground
 %
+
 /*
 db_erase_by_key(DB_Key, Key, Key_Value) :-
 

@@ -36,6 +36,7 @@
            gen_class_id/2,
            gen_new_class_id/1,
            get_key/2,
+           get_keymaster/2,
            is_rebased_class/1,
            list_inheritance/2,
            list_inheritance/3,
@@ -66,7 +67,7 @@
 
            objects:fields/3,   % Class_Id, All_Fields, New_Fields
                                % (ordset)
-           objects:key/2,      % Class_Id, Key (ordset)
+           objects:key/3,      % Class_Id, Keymaster_Id, Key (ordset)
            objects:module/2,
            objects:module_class_def/3, % Class, Parent, Module
            objects:parent/2, % Class_Id, Parent_Class_Id
@@ -208,7 +209,16 @@ gen_new_class_id(Class_Id) :-
 
 get_key(Class_Id, Key) :-
 
-  (objects:key(Class_Id, Key) -> true ; Key = []).
+  (objects:key(Class_Id, _, Key) -> true ; Key = []).
+
+
+%
+% get_keymaster(+Class_Id, -Keymaster_Id)
+%
+
+get_keymaster(Class_Id, Keymaster_Id) :-
+
+  objects:key(Class_Id, Keymaster_Id, _).
 
 
 is_rebased_class(Class_Id) :-
@@ -221,6 +231,19 @@ obj_class_id(Object, Class_Id) :-
 
    arg(1, Object, Class_Id).
 
+% NB evaluated fields can be also processed as `Weak' 
+
+obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type) :-
+
+   (  objects:field(Class_Id, Field_Name, Obj, Value, Type, _,
+                    _)
+   -> true
+   ;  Weak == weak
+   -> true
+   ;  Weak == fail
+   -> fail
+   ;  throw(no_object_field(Obj, Field_Name))
+   ).
 
 parent(Id, Parent_Id) :-
 

@@ -201,7 +201,7 @@ reload_all_classes :-
    abolish(objects:downcast/4),
    abolish(objects:field/7),
    abolish(objects:fields/3),
-   abolish(objects:key/2),
+   abolish(objects:key/3),
    abolish(objects:module/2),
    abolish(objects:module_class_def/3),
    abolish(objects:parent/2),
@@ -214,8 +214,8 @@ reload_all_classes :-
    objects:assertz(class_id(0, true, object_base_v)),
    objects:assertz(parent(0, -1)),
    objects:assertz(typedef_flag(hidden, object_base_v)),
-   objects:assertz(key(0, [])),
-
+   objects:assertz(key(0, 0, [])),
+   
    % Load all class modules
    (  find_class_module(Module_Path),
       consult(Module_Path),
