@@ -33,7 +33,7 @@
 :- use_module(u(internal/objects_i)).
 :- use_module(library(ugraphs)).
 
-:- dynamic field/3. %Name, Class, Prefix_Class
+:- dynamic fields/3. %Name, Class, Prefix_Class
 
 class_diagram :-
 
@@ -74,7 +74,7 @@ class_fields :-
       fail ; true ).
 
 class_fields(Class) :-
-      
+
    format('~a:\t', Class),
    class_fields2(Class),
    nl, nl.
@@ -103,22 +103,22 @@ print_fields([Name/Prefix|T]) :-
    var(Prefix), !,
    writeln(Name),
    print_fields(T).
-   
+
 print_fields([Name/Prefix|T]) :-
    format('  ~a:~a\n', [Prefix, Name]),
    print_fields(T).
-   
+
 build_fields_db :-
 
    retractall(fields(_, _, _)),
    assert(fields('#', '#', '#')),
-   
+
    class_graph(Graph),
    top_sort(Graph, Order),
    (  member(Class, Order),
       add_fields_to_db(Class),
       fail ; true ).
-   
+
 add_fields_to_db(Class) :-
 
    class_fields_new(Class, Fields),

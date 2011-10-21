@@ -24,6 +24,7 @@
           [tolower/2,
            trim_string/4,
            remove_quotes/2,
+           replace_char/4,
            replace_chars/4
 ]).
 
@@ -46,6 +47,17 @@ remove_quotes(Q, NQ) :-
   (Quote = '\''; Quote = '"'),
   atom_concat(Quote, X, Q), !,
   atom_concat(NQ, Quote, X).
+
+% replace_char(+Atom0, +Pos, +New, -Atom)
+%
+% Replace char to New at Pos in Atom0
+
+replace_char(Atom0, Pos, New, Atom) :-
+
+   Pos1 is Pos + 1,
+   sub_atom(Atom0, 0, Pos, _, Prefix),
+   sub_atom(Atom0, Pos1, _, 0, Suffix),
+   concat_atom([Prefix, New, Suffix], '', Atom).
 
 %
 % replace_chars(+Atom1, ?Atom2, +Char1, +Char2)

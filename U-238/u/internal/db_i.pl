@@ -28,14 +28,15 @@
 
 :- module(db_i,
           [
-           db_erase/1,
+           db_clear_int/1,
+           %db_erase/1,
            db_key_is_valid/1,
            db_recorded/2,
-           db_recorded/3,
            db_recordz/2,
            db_unify_int/6,
            erase_conflicts/3,
-           key_conflict/4
+           key_conflict/4,
+           prolog:message/3
            ]).
 
 :- use_module(library(ordsets)).
@@ -45,28 +46,36 @@
 :- multifile prolog:message/3.
 :- multifile db_recorded/3, db_erase/1, db_recordz/2.
 
-db_recorded(DB_Key, Term) :-
+db_clear_int(DB_Key) :-
 
-    db_recorded(DB_Key, Term, _).
+   atom(DB_Key), !,
+   (  recorded(DB_Key, _, Ref),
+      erase(Ref),
+      fail ; true
+   ).
 
-db_recorded(DB_Key, Term, recorded(Ref)) :-
+db_recorded(DB_Key, Object) :-
 
     atom(DB_Key), !,
-    recorded(DB_Key, Term, Ref).
+    recorded(DB_Key, Object, Ref),
+    u_object(Object),
+    arg(1, Object, Class_Id),
+    obj_field_int(Class_Id, db_ref, strict, Object,
+                  recorded(Ref), _).
 
-db_recorded(DB_Key, Term, DB_Ref) :-
+%db_recorded(DB_Key, Term, DB_Ref) :-
 
-    call_db_pred(DB_Key, recorded, [Term, DB_Ref]).
-
-db_erase(recorded(Ref)) :-
+%    call_db_pred(DB_Key, recorded, [Term, DB_Ref]).
+/*
+db_erase(recorded(DB_Key, Ref)) :-
 
     !,
-    erase(Ref).
+    (
 
 db_erase(DB_Ref) :-
 
     call_db_pred(DB_Ref, erase, []).
-
+*/
 
 % db_recordz(+DB_Key, +Object)
 %
@@ -75,10 +84,14 @@ db_erase(DB_Ref) :-
 db_recordz(DB_Key, Object) :-
 
     atom(DB_Key), !,
-    next_db_id(DB_Key, Id),
-    obj_field(Object, db_ref, Id),
+    (  obj_field(Object, db_ref, Ref)
+    -> var(Ref)
+    ;  Ctx = context(db_recordz/2, _),
+       throw(error(domain_error(db_object_v_desc, Object), Ctx))
+    ),
 %    record_control_pred(DB_Key, Object),
-    recordz(DB_Key, Object).
+    recordz(DB_Key, Object, R),
+    Ref = recorded(R).
 
 % FIXME
 %db_recordz(DB_Key, Term, Ref) :-
@@ -88,9 +101,9 @@ db_recordz(DB_Key, Object) :-
 
 %   true. %TODO record '#keymaster'/1
    %functor(Object, Functor, _),
-   
 
-next_db_id(DB_Key, Id) :-
+
+/*next_db_id(DB_Key, Id) :-
 
    (  recorded(DB_Key, '#next_db_id'(Id), Ref),
       erase(Ref)
@@ -98,14 +111,14 @@ next_db_id(DB_Key, Id) :-
    ;  Id = 1 ),
    Next_Id is Id + 1,
    recordz(DB_Key, '#next_db_id'(Next_Id)).
+*/
 
-      
 % db_erase_by_key(+DB_Key, +Key, +Key_Value)
 %
 % Erase all objects matching key
 % Key_Value must be ground
 %
-
+/*
 db_erase_by_key(DB_Key, Key, Key_Value) :-
 
    ground(Key_Value),
@@ -114,7 +127,7 @@ db_erase_by_key(DB_Key, Key, Key_Value) :-
      db_obj_field(Existing_Object, db_ref, Ref),
      db_erase(Ref),
      fail ; true ).
-
+*/
 %    call_db_pred(DB_Key, recordz, [Term, Ref]).
 
 call_db_pred(DB_Key, Pred, Args) :-
@@ -129,7 +142,8 @@ db_key_is_valid(DB_Key) :-
 
    ground(DB_Key),
    (  atom(DB_Key)
-   ;  functor(DB_Key, pg, _)
+   ;  compound(DB_Key),
+      functor(DB_Key, pg, _)
    ), !.
 
 % db_unify_int(+DB_Key, +Fields, +Weak, ?Values, -Object)
@@ -138,7 +152,7 @@ db_key_is_valid(DB_Key) :-
 
 db_unify_int(DB_Key, Class_Id, Fields, Weak, Values, Object) :-
 
-   (  Weak == weak  
+   (  Weak == weak
    -> true
    ;  % need to check presence of all Fields
       class_fields(Class_Id, _, _, Class_Fields),
@@ -173,13 +187,13 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
    db_recorded(DB_Key, '#keymaster'(Key_Class_Id)),
    same_or_descendant(Key_Class_Id, false, Class_Id),
    % false means test all rebased classes as well
-   
+
    get_key(Key_Class_Id, Key),
    obj_unify_int(Class_Id, Key, strict, Object, Key_Value),
    ground(Key_Value),           % unbounded key is not a key
    same_or_descendant(Key_Class_Id, false, DB_Class_Id),
    db_unify_int(DB_Key, DB_Class_Id, Key, strict, Key_Value,
-                Object, Conflicting).
+                Conflicting).
 
 
 prolog:message(db_key_exists(DB_Key, DB_Object, New_Object)) -->

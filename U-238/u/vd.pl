@@ -32,40 +32,42 @@
 %           db_bind_obj/3, % +DB_Key, +Object0, -Object
 %           db_change/4,   % +DB_Key, +Fields, +Vals, +Query
            db_clear/1,
-           db_copy/2,
-           db_iterate/3,  % +DB_Key, +Query, -Object
-           db_iterate/4,  % +DB_Key, +Query, +Filter_Pred, -Object
-           db_iterate_replace/3,  % +DB_Key, +Pred, +Query
-           db_iterate_replace/4,  % +DB_Key, +Pred, +Query, +Filter
-           db_iterate_replace/5,  % +DB_Key, +Pred, +Query, +Filter_Pred, +Count
-           db_merge/2,  % by key
-           db_merge/3,  % by custom values
+           %db_copy/2,
+           %db_iterate/3,  % +DB_Key, +Query, -Object
+           %db_iterate/4,  % +DB_Key, +Query, +Filter_Pred, -Object
+           %db_iterate_replace/3,  % +DB_Key, +Pred, +Query
+           %db_iterate_replace/4,  % +DB_Key, +Pred, +Query, +Filter
+           %db_iterate_replace/5,  % +DB_Key, +Pred, +Query, +Filter_Pred, +Count
+           %db_merge/2,  % by key
+           %db_merge/3,  % by custom values
            db_move_all_data/2,
-           db_object_class/2,
+           %db_object_class/2,
            db_put_object/3,  % +DB_Key, +Object0, -Object
            db_put_object/4,  % +DB_Key,+Options,+Object0,-Object
            db_put_objects/3, % +DB_Key, :Pred, +Options
-           db_reset/3,    % +DB_Key, +Fields, +Query
-           db_search/3,
+           %db_reset/3,    % +DB_Key, +Fields, +Query
+           %db_search/3,
            db_size/2,        % +DB_Key, ?Size
-           db_to_list/3,
+           %db_to_list/3,
            dump_db/1,  % +DB_Key
-           dump_db/2,  % +Options, +DB_Key
-           filter_on_db/3,
+           dump_db/2   % +Options, +DB_Key
+%           filter_on_db/3
            ]).
 
+:- use_module(u(internal/check_arg)).
 :- use_module(u(internal/db_i)).
+:- use_module(u(internal/objects_i)).
 :- use_module(u(v)).
 :- use_module(library(lists)).
 :- use_module(u(logging)).
 :- use_module(u(ur_lists)).
 :- use_module(u(ur_terms)).
 
-:- module_transparent db_put_objects/3, db_search/3,
-                      db_iterate/3, db_iterate/4, 
-                      db_iterate_replace/3, db_iterate_replace/4,
-                      db_iterate_replace/5,
-                      db_iterate_replace2/4.
+:- module_transparent db_put_objects/3, db_search/3.
+%                      db_iterate/3, db_iterate/4,
+%                      db_iterate_replace/3, db_iterate_replace/4,
+%                      db_iterate_replace/5,
+%                      db_iterate_replace2/4.
 
 
 
@@ -73,10 +75,8 @@ db_clear(DB_Key) :-
 
    Ctx = context(db_clear/1, _),
    check_db_key(DB_Key, Ctx),
-   (  db_recorded(DB_Key, _, Ref),
-      db_erase(Ref),
-      fail ; true ).
-
+   db_clear_int(DB_Key).
+   
 /*
 db_bind_obj(DB_Key, w(Ref0, Object0), w(Ref, Object)) :- !,
 
@@ -110,7 +110,7 @@ db_put_object(DB_Key, Object0, Object) :-
    check_db_key(DB_Key, Ctx),
    check_object_arg(Object0, Ctx, Class_Id),
 
-   db_put_object_int(DB_Key, Class_Id, throw, Object0, Object, Ctx).
+   db_put_object_int(DB_Key, Class_Id, throw, Object0, Object).
 
 
 % db_put_object(+DB_Key, +Option, +Object0, -Object)
@@ -129,7 +129,7 @@ db_put_object(DB_Key, Option, Object0, Object) :-
    -> throw(error(instantiation_error, Ctx))
    ;  true ),
    (  \+ atom(Option)
-   -> throw(error(type_error(atom, Options), Ctx))
+   -> throw(error(type_error(atom, Option), Ctx))
    ;  (  Option = overwrite
       ;  Option = ignore
       ;  Option = fail
@@ -140,9 +140,9 @@ db_put_object(DB_Key, Option, Object0, Object) :-
 
    check_db_key(DB_Key, Ctx),
    check_object_arg(Object0, Ctx, Class_Id),
- 
+
    db_put_object_int(DB_Key, Class_Id, Option,
-                     Object0, Object, Ctx).
+                     Object0, Object).
 
 
 handle_key_dup(throw, DB_Key, _, DB_Object, New_Object) :-
@@ -151,59 +151,43 @@ handle_key_dup(fail, _, _, _, _) :- !, fail.
 handle_key_dup(ignore, _, _, _, _) :- !.
 handle_key_dup(overwrite, DB_Key, Class_Id, _, New_Object) :-
    erase_conflicts(DB_Key, Class_Id, New_Object), !.
-   
 
-db_put_object_int(DB_Key, Class_Id, Option, Object0, Object,Ctx) :-
+
+db_put_object_int(DB_Key, Class_Id, Option, Object0, Object) :-
+
+   % TODO replacing object when db_ref is already bound
 
    % Rebase if needed
-   (  obj_is_descendant(Object0, db_object_v)
-   -> Object1 = Object0 % already has a db_object_v ancestor
-   ;  obj_rebase((object_v -> db_object_v), Object0, Object1) ),
+   (  class_id(DB_Object_V_Id, db_object_v),
+      same_or_descendant(DB_Object_V_Id, _, Class_Id)
+   -> Object = Object0 % already has a db_object_v ancestor
+   ;  obj_rebase((object_v -> db_object_v), Object0, Object) ),
 
+   % Check key if any
    get_key(Class_Id, Key),
    (  Key \== []
    ->
       (  % Check the existence of an object with the same key
-         key_conflict(DB_Key, Class_Id, Object1, Conflicting)
+         key_conflict(DB_Key, Class_Id, Object, Conflicting)
       ->
          % Make an action which is depended on Option
          handle_key_dup(Option, DB_Key, Class_Id,
-                        Conflicting, Object1)
+                        Conflicting, Object),
+         (  Option == overwrite
+         -> Continue = true
+         ;  Continue = fail)
       ;
-         true
+         Continue = true
       )
    ;
-      true %? some objects in db may include values as a key
+      Continue = true
    ),
-   (
-      named_args_unify(DB_Key, Class, Key, Key_Value, Old_Object)
-   -> (  % the object with this key already exists
-         memberchk(overwrite, Options), ground(Key_Value)
-      -> db_erase_object(DB_Key, Key, Key_Value),
-         db_recordz(DB_Key, Object, Ref)
-      ;
-         memberchk(ignore, Options)
-      -> true
-      ; throw(key_duplicate(Old_Object, Object))
-      )
-   ;  % no key or the new key value
-      db_recordz(DB_Key, Object, Ref)
+
+   % Put in db
+   (  \+ Continue -> true
+   ;
+      db_recordz(DB_Key, Object)
    ).
-
-db_put_object(_, w(Ref, _), _) :-
-
-   % the nonvar(Ref) case
-   throw(error(uninstantiation_error(Ref),
-               context(db_put_object/3,
-                       'The object is already bound to DB'
-                      )
-              )
-        ).
-   
-db_put_object(DB_Key, Object, Options) :-
-
-   % Just ignore a db reference
-   db_put_object(DB_Key, w(_, Object), Options).
 
 %
 % Record all solutions of the Pred.
@@ -225,7 +209,7 @@ db_put_objects(DB_Key, Pred, Options) :-
 %
 % filter_on_db(+DB_Key, ?Field_Names, ?Field_Values) :-
 %
-
+/*
 filter_on_db(_, [], []) :- !.
 
 filter_on_db(DB_Key, Field_Names, Field_Values) :-
@@ -241,9 +225,9 @@ filter_on_db(DB_Key, Field_Names, Field_Values) :-
 
   subtract(All_Obj_Ref_List, Found_Obj_Ref_List, To_Delete_List),
   maplist(db_erase, To_Delete_List).
-
+*/
 % Copy from DB_In to DB_Out all filtered by Pred
-
+/*
 db_search(DB_In, DB_Out, Pred) :-
 
   db_recorded(DB_In, Term),
@@ -260,7 +244,7 @@ db_copy(DB_In, DB_Out) :-
   fail
   ;
   true.
-
+*/
 dump_db(DB_Key) :- dump_db([logger(dump_db)], DB_Key).
 
 dump_db(Options, DB_Key) :-
@@ -283,18 +267,18 @@ dump_db(Options, DB_Key) :-
 %
 % db_to_list(+DB_Key, ?Functor, ?List)
 %
-
+/*
 db_to_list(DB_Key, Functor, List) :-
 
   ground(DB_Key),
   findall(Object,
           (db_recorded(DB_Key, Object), functor(Object, Functor, _)),
           List).
-
+*/
 %
 % On bt return all records selected by Query
 %
-
+/*
 db_iterate(DB_Key, Query, Object) :-
 
    db_iterate(DB_Key, Query, true, Object).
@@ -315,7 +299,6 @@ db_iterate(DB_Key, Query, Filter_Pred, w(DB_Ref, Pred)) :-
    -> true
    ; once(call(Filter_Pred, Pred))
    ).
-
 
 db_iterate_replace2(DB_Key, Pred, Query, Filter_Pred) :-
 
@@ -370,29 +353,7 @@ db_iterate_replace(DB_Key, Pred, Query, Filter_Pred, Lim) :-
            true
        )
    ).
-
-
-%
-% Unify with all classes in DB
-%
-% db_object_class(+DB_Key, ?Class)
-%
-% FIXME performance
-
-db_object_class(DB_Key, Class) :-
-
-  atom(DB_Key), !,
-
-  %! TODO do not use list
-
-  findall(Cl, (db_recorded(DB_Key, X), functor(X, Cl, _)), Cls),
-  list_to_set(Cls, All_Classes),
-  !,
-  member(Class, All_Classes).
-
-db_object_class(DB_Key, Class) :-
-
-  call_db_pred(DB_Key, object_class, [Class]).
+*/
 
 db_move_all_data(From_DB, To_DB) :-
 
@@ -414,7 +375,7 @@ db_size(DB_Key, N) :-
 % Change (reset+unify) fields in DB
 % is det.
 %
-
+/*
 db_change(DB_Key, Fields, Vals, Query) :-
 
    is_list(Vals), ground(Vals), % TODO performance
@@ -540,47 +501,7 @@ check_record(\/(Expr1, Expr2), Record) :-
    (   check_record(Expr1, Record)
    ;   check_record(Expr2, Record)
    ), !.
-
-
-%
-% Field names -> arg nums in the query
-%
-% resolve_args(+Class, +Query, -Arg_Query)
-%
-
-resolve_args(Class, Query, Arg_Query) :-
-
-   ground(Query),
-   spec_term(Class, Descriptor),
-   resolve_args2(Descriptor, Query, Arg_Query), !.
-
-resolve_args2(_, true, true) :- !.
-
-resolve_args2(_, functor(\+ Functor), not_functor(Functor)) :- !.
-
-resolve_args2(_, functor(Functor), functor(Functor)) :- !.
-
-resolve_args2(Descriptor, Expr, Arg_Query) :-
-
-   Expr =.. [Field, + State], !,
-   arg(Num, Descriptor, Field), !,
-   Arg_Query =.. [State, Num].
-
-resolve_args2(Descriptor, Expr, not_value(Num, Value)) :-
-
-   Expr =.. [Field, \+ Value], !,
-   arg(Num, Descriptor, Field), !.
-
-resolve_args2(Descriptor, Expr, value(Num, Value)) :-
-
-   Expr =.. [Field, Value], !,
-   arg(Num, Descriptor, Field), !.
-
-resolve_args2(Descriptor, Expr, Arg_Query) :-
-
-   Expr =.. [Functor | Expr_Args], !,
-   maplist(resolve_args2(Descriptor), Expr_Args, Resolved_Args),
-   Arg_Query =.. [Functor | Resolved_Args].
+*/
 
 %
 % try unify DB1_Key x DB2_Key with key restrictions,
@@ -589,7 +510,7 @@ resolve_args2(Descriptor, Expr, Arg_Query) :-
 % Drop all values with incomplete keys.
 % Don't unify if a key is empty (it is a performance restriction).
 %
-
+/*
 db_merge(DB1_Key, DB2_Key) :-
 
   db_merge(DB1_Key, DB2_Key, default).
@@ -645,7 +566,7 @@ db_merge(DB1_Key, DB2_Key, Key) :-
    db_clear(DB2_Key),
    db_move_all_data(DB_Tmp, DB1_Key).
 
-
+*/
 
 
 

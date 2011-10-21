@@ -42,8 +42,8 @@
 
            obj_construct/4,
            obj_construct_weak/4,
-           obj_copy/2,       % +From, -To
-           obj_copy/3,       % +Field_List, +From, -To
+           %obj_copy/2,       % +From, -To
+           %obj_copy/3,       % +Field_List, +From, -To
            obj_is_descendant/2,
            obj_diff/3,
            obj_diff_print/1,
@@ -141,21 +141,6 @@ obj_field_wf(Obj, Field_Name, Value) :-
    ;  check_object_arg(Obj, context(obj_field/3, _), Class_Id)
    ),
    obj_field_int(Class_Id, Field_Name, fail, Obj, Value, _).
-
-
-% NB evaluated fields can be also processed as `Weak'
-
-obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type) :-
-
-   (  objects:field(Class_Id, Field_Name, Obj, Value, Type, _,
-                    _)
-   -> true
-   ;  Weak == weak
-   -> true
-   ;  Weak == fail
-   -> fail
-   ;  throw(no_object_field(Obj, Field_Name))
-   ).
 
 
 named_arg(Obj, Field, Value) :-
@@ -403,8 +388,7 @@ obj_downcast(From, To_Class, To) :-
    ).
 
 
-obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To,
-                 Ctx) :-
+obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To, _) :-
 
    From_Class_Id \== To_Class_Id,
 
@@ -797,6 +781,7 @@ build_diff_list(Obj1, Obj2, [Field|Tail], Diff_In, Diff_Out) :-
 %
 % obj_copy(+From, -To)
 %
+/*
 obj_copy(From, To) :-
 
    Ctx = context(obj_copy/2, _),
@@ -838,7 +823,7 @@ obj_copy_int(Class_Id, From, To) :-
    -> true
    ;  print_message(warning, undef_operation(copy, Class_Id))
    ).
-
+*/
 
 
 %class_field_type(Class, Field, Type) :-

@@ -1,17 +1,20 @@
 :- module(check_arg,
-          [check_inst/2,
+          [
            check_class_arg/2,
            check_db_key/2,
            check_existing_class_arg/2,
            check_existing_class_arg/3,
            check_fields_arg/2,
+           check_inst/2,
            check_list_fast_arg/2,
            check_values_arg/3,
            check_object_arg/3,
-           check_rebase_rule/2
+           check_rebase_rule/2,
+           check_values_arg/3
            ]).
 
 :- use_module(objects_i).
+:- use_module(db_i).
 
 check_inst(Arg, Ctx) :-
 
@@ -19,7 +22,7 @@ check_inst(Arg, Ctx) :-
    -> throw(error(instantiation_error, Ctx))
    ;  true
    ).
-  
+
 check_class_arg(Class, Err_Context) :-
 
    nonvar(Class),
@@ -43,9 +46,10 @@ check_existing_class_arg(Class, Ctx, Class_Id) :-
 
 check_db_key(DB_Key, Ctx) :-
 
-   (  db_key_id_valud(DB_Key)
+   check_inst(DB_Key, Ctx),
+   (  db_key_is_valid(DB_Key)
    -> true
-   ;  throw(error(domain_error(uranium_db_key, DB_Key), Ctx))
+   ;  throw(error(domain_error(db_key, DB_Key), Ctx))
    ).
 
 check_fields_arg(Field_Names, Ctx) :-
@@ -81,7 +85,7 @@ check_list_fast_arg(List, Ctx) :-
 
 check_values_arg(Field_List, Value_List, Ctx) :-
 
-   nonvar(Value_List), 
+   nonvar(Value_List),
    ( \+ is_list(Value_List)
    -> throw(error(type_error(list, Value_List), Ctx))
    ;  length(Field_List, LL), length(Value_List, LL)

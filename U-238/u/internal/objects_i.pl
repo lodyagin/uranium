@@ -41,12 +41,14 @@
            list_inheritance/3,
            obj_class_id/2,
            obj_construct_int/5,
+           obj_field_int/6,
            obj_unify_int/5,
            parent/2,
            same_or_descendant/3,
            u_class/1,
            u_object/1,
-           unbounded_fields/2 %+Obj, -Field_Names
+           unbounded_fields/2, %+Obj, -Field_Names
+           prolog:message/3
            ]).
 
 :- use_module(library(lists)).
@@ -235,6 +237,22 @@ obj_construct_int(Class_Id, Field_Names, Weak, Field_Values,
    arg(1, Object, Class_Id),
    obj_unify_int(Class_Id, Field_Names, Weak, Object,
                  Field_Values).
+
+% NB evaluated fields can be also processed as `Weak'
+
+obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type) :-
+
+   (  objects:field(Class_Id, Field_Name, Obj, Value, Type, _,
+                    _)
+   -> true
+   ;  Weak == weak
+   -> true
+   ;  Weak == fail
+   -> fail
+      %%FIXME! no valid error (if eval fails)
+   ;  fail %throw(no_object_field(Obj, Field_Name))
+   ).
+
 
 
 obj_unify_int(_, [], _, _, []) :- !.
