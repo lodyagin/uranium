@@ -1,5 +1,6 @@
 :- module(html_piece_v, []).
 
+:- use_module(u(v)).
 :- use_module(u(html/v/standard/html_tag_v)).
 
                      
