@@ -1,0 +1,6 @@
+The Uranium is a test framework.
+Now it tested with SWI-Prolog only.
+
+Before using Uranium you should define the Uranium path in you .plrc like this:
+
+:- assertz(file_search_path(u, '/home/serg/uranium-test/U-238/u')).
