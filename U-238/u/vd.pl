@@ -51,7 +51,10 @@
            %db_to_list/3,
            dump_db/1,  % +DB_Key
            dump_db/2   % +Options, +DB_Key
-%           filter_on_db/3
+%           filter_on_db/3,
+
+           %named_arg_unify/5
+          
            ]).
 
 :- use_module(u(internal/check_arg)).
@@ -568,4 +571,34 @@ db_merge(DB1_Key, DB2_Key, Key) :-
 
 
 
+
+% named_arg_unify(+DB_Key, ?Functor, +Field_Name, ?Value, -Term)
+%
+% Унификация с расширенной базой данных пролога по полю Field_Name
+% и значению Value для тех фактов, которые созданы как классы
+%
+/*
+named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
+
+   Ctx = context(named_arg_unify/5, _),
+   check_db_key(DB_Key, Ctx),
+   (  var(Functor) -> true; check_class_arg(Functor, Ctx) ),
+   check_field_arg(Field_Name, Ctx),
+   
+    obj_field(Term, db_ref, Term_Ref),
+
+    db_object_class(DB_Key, Functor), % unify with each class in db
+    spec_term(Functor, Spec_Term),
+
+    % find the position of the first object field Field_Name
+    (arg(Field_Pos, Spec_Term, Field_Name) -> true; false),
+
+    functor(Spec_Term, _, Arity),
+    functor(Term, Functor, Arity),
+
+    % Bound the field with the Value
+    arg(Field_Pos, Term, Value),
+
+    db_recorded(DB_Key, Term, Term_Ref).
+*/
 

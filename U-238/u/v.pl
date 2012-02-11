@@ -35,7 +35,6 @@
 
            named_arg/3,
            named_arg/4,
-           %named_arg_unify/5,
            named_args_unify/3,
            named_args_weak_unify/3,
            %named_args_unify/5,
@@ -159,31 +158,6 @@ named_arg(Term, Field_Name, Value, Type) :-
    ;  check_object_arg(Term, context(named_arg/4, _), Class_Id)
    ),
    obj_field_int(Class_Id, Field_Name, strict, Term, Value, Type).
-
-%
-% Унификация с расширенной базой данных пролога по полю Field_Name
-% и значению Value для тех фактов, которые созданы как классы
-/*
-named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
-
-    ground(Field_Name),
-
-    obj_field(Term, db_ref, Term_Ref),
-
-    db_object_class(DB_Key, Functor), % unify with each class in db
-    spec_term(Functor, Spec_Term),
-
-    % find the position of the first object field Field_Name
-    (arg(Field_Pos, Spec_Term, Field_Name) -> true; false),
-
-    functor(Spec_Term, _, Arity),
-    functor(Term, Functor, Arity),
-
-    % Bound the field with the Value
-    arg(Field_Pos, Term, Value),
-
-    db_recorded(DB_Key, Term, Term_Ref).
-*/
 
 obj_unify(Term, Field_List, Value_List) :-
 
