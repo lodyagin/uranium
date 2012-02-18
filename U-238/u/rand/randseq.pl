@@ -1,11 +1,11 @@
 :- module(randseq,
           [randseq/2,
-           lcq_gnu/1]
+           lcq/2]
          ).
 
 :- use_module(library(clpfd)).
 
-lcq_gnu(lcq(1103515245, 12345, 4294967296)).
+lcq(gnu, lcq(1103515245, 12345, 4294967296)).
 
 randseq(LCQ, L) :-
 
@@ -25,10 +25,10 @@ randseq(LCQ, [X|L], [Seed|S]) :-
 
    S = [Seed1|_],
    norm(Seed, X),
-   lcq(LCQ, Seed, Seed1),
+   lcq_eval(LCQ, Seed, Seed1),
    randseq(LCQ, L, S).
 
-lcq(lcq(A, C, M), X0, X) :-
+lcq_eval(lcq(A, C, M), X0, X) :-
 
    X #= (A * X0 + C) mod M.
 
