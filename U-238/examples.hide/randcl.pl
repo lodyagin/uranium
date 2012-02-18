@@ -1,31 +1,33 @@
-% example:
-% length(L, 20), L ins 32..126, randseq(32, 126, L, S), S ins 0..4294967295, all_different(L), label(S), writeln(L).
-
 :- use_module(library(clpfd)).
 
-randseq(Min .. Max, L) :-
+randseq(L) :-
 
-   randseq(Min, Max, L, _).
+   randseq(L, S),
+   Max is 2 ^ 32 - 1,
+   S ins 0..Max,
+   label(S).
 
-randseq(_, _, [], []) :- !.
+randseq([], []) :- !.
 
-randseq(Min, Max, [X], [Seed]) :-
+randseq([X], [Seed]) :-
 
-   norm(Min, Max, Seed, X), !.
+   norm(Seed, X), !.
 
-randseq(Min, Max, [X|L], [Seed|S]) :-
+randseq([X|L], [Seed|S]) :-
 
    S = [Seed1|_],
-   norm(Min, Max, Seed, X),
+   norm(Seed, X),
    lcq(Seed, Seed1),
-   randseq(Min, Max, L, S).
+   randseq(L, S).
 
 lcq(X0, X) :-
 
    X #= (1103515245 * X0 + 12345) mod 2 ^ 32.
 
 % map Seed to X domain
-norm(Min, Max, Seed, X) :-
+norm(Seed, X) :-
+   fd_inf(X, Min),
+   fd_sup(X, Max),
    X #= Seed mod (Max - Min + 1) + Min.
 
    
