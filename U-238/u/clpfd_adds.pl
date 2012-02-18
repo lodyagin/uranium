@@ -25,7 +25,8 @@
 
 :- module(clpfd_adds,
           [
-           drep_nth0/3
+           drep_nth0/3,
+           idx_dom_list/2
           ]).
 
 :- use_module(library(clpfd)).
@@ -60,3 +61,17 @@ drep_nth0(_, N0, N, _) :-
   N is N0 - 1.
   
 
+% drep_list0(+IL, +L)
+% map indexes to domains of L elements
+
+idx_dom_list([], []) :- !.
+
+idx_dom_list([Idx|IL], [X|L]) :-
+
+  fd_dom(X, Dom),
+  drep_nth0(Idx, Dom, X),
+  idx_dom_list(IL, L).
+
+
+  
+          
