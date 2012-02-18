@@ -1,20 +1,27 @@
 :- use_module(library(clpfd)).
 
-%randseq(Seed, L) :-
+randseq(L) :-
 
-%   randseq(Seed, L, _).
+   randseq(L, _).
 
+randseq([], []) :- !.
 
-randseq(_, []) :- !.
+randseq([Seed], [Seed]) :- !.
 
-randseq(Seed, [Seed]) :- !.
+randseq([X|L], [Seed|S]) :-
 
-randseq(Seed, [Seed|S]) :-
-
+   norm(Seed, X),
    lcq(Seed, Seed1),
-   randseq(Seed1, S).
+   randseq(Seed1, L, S).
 
 lcq(X0, X) :-
 
    X #= (1103515245 * X0 + 12345) mod 2 ^ 32.
+
+% map Seed to X domain
+norm(Seed, X) :-
+   fd_inf(X, Min),
+   fd_sup(X, Max),
+   X #= Seed mod (Max - Min + 1) + Min.
+
    
