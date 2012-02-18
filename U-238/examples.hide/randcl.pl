@@ -1,19 +1,20 @@
 :- use_module(library(clpfd)).
 
-randseq(0, _, []).
+%randseq(Seed, L) :-
 
-randseq(1, Seed, [Seed]).
+%   randseq(Seed, L, _).
 
-randseq(N, Seed, L) :-
-   N > 1,
-   N1 is N - 1,
-   randseq(N1, Seed, L0),
-   L0 = [X0|_],
-   lcq(X0, X),
-   L = [X|L0],
-   all_different(L).
+
+randseq(_, []) :- !.
+
+randseq(Seed, [Seed]) :- !.
+
+randseq(Seed, [Seed|S]) :-
+
+   lcq(Seed, Seed1),
+   randseq(Seed1, S).
 
 lcq(X0, X) :-
 
-   X #= (1103515245 * X0 + 12345) mod 32.
+   X #= (1103515245 * X0 + 12345) mod 2 ^ 32.
    
