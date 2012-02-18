@@ -1,3 +1,6 @@
+% example:
+% lcq(gnu, LCQ), length(L, 5), L ins 0..9, L = [5|_], randseq(LCQ, L).
+
 :- module(randseq,
           [randseq/2,
            lcq/2]
