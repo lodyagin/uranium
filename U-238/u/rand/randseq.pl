@@ -1,5 +1,5 @@
 % example:
-% lcq(gnu, LCQ), length(L, 5), L ins 1..100, randseq(LCQ, L, S), repeat, X0 is random(100), L=[X0|_], label(S), !, atom_codes(A, L).
+% lcq(gnu, LCQ), length(L, 5), xml_nmtoken(L), randseq(L, LCQ, S, IL), label(S), idx_dom_list(IL, L), atom_codes(A, L).
 
 :- module(randseq,
           [randseq/4,
