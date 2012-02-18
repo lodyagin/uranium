@@ -1,8 +1,8 @@
 % example:
-% lcq(gnu, LCQ), length(L, 5), L ins 0..9, L = [5|_], randseq(LCQ, L).
+% lcq(gnu, LCQ), length(L, 5), L ins 1..100, randseq(LCQ, L, S), repeat, X0 is random(100), L=[X0|_], label(S), !, atom_codes(A, L).
 
 :- module(randseq,
-          [randseq/2,
+          [randseq/3,
            lcq/2]
          ).
 
@@ -10,26 +10,25 @@
 
 lcq(gnu, lcq(1103515245, 12345, 4294967296)).
 
-randseq(LCQ, L) :-
+randseq(LCQ, L, S) :-
 
    LCQ = lcq(_, _, M),
-   randseq(LCQ, L, S),
+   randseq2(LCQ, L, S),
    Max is M - 1,
-   S ins 0..Max,
-   label(S).
+   S ins 0..Max.
 
-randseq(_, [], []) :- !.
+randseq2(_, [], []) :- !.
 
-randseq(_, [X], [Seed]) :-
+randseq2(_, [X], [Seed]) :-
 
    norm(Seed, X), !.
 
-randseq(LCQ, [X|L], [Seed|S]) :-
+randseq2(LCQ, [X|L], [Seed|S]) :-
 
    S = [Seed1|_],
    norm(Seed, X),
    lcq_eval(LCQ, Seed, Seed1),
-   randseq(LCQ, L, S).
+   randseq2(LCQ, L, S).
 
 lcq_eval(lcq(A, C, M), X0, X) :-
 
