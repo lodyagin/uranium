@@ -40,21 +40,21 @@ drep_nth0(N, Drep, K) :-
   drep_nth0(Drep, N, _, K),
   nonvar(K).
 
-drep_nth0(Drep1 \/ Drep2, N0, N, K) :-
+drep_nth0(Drep1 \/ Drep2, N0, N, K) :- !,
 
   drep_nth0(Drep1, N0, N1, K),
   (  var(K)
   -> drep_nth0(Drep2, N1, N, K)
-  ;  true ), !.
+  ;  true ).
 
-drep_nth0(I..J, N0, N, K) :-
+drep_nth0(I..J, N0, N, K) :- !,
 
   (  I + N0 =< J
   -> K is I + N0
   ;  N is N0 - (J - I + 1)
   ), !.
   
-drep_nth0(I, 0, _, I) :- !.
+drep_nth0(I, 0, _, I) :-  !.
 
 drep_nth0(_, N0, N, _) :- 
 
@@ -64,14 +64,21 @@ drep_nth0(_, N0, N, _) :-
 % drep_list0(+IL, +L)
 % map indexes to domains of L elements
 
-idx_dom_list([], []) :- !.
+idx_dom_list(Idxs, L) :-
 
-idx_dom_list([Idx|IL], [X|L]) :-
+  % Get all domains before assigments
+  % because they will be changing during
+  % the assigments
+  maplist(fd_dom, L, Doms),
+  
+  dom_list(Idxs, Doms, L).
 
-  fd_dom(X, Dom),
+dom_list([], [], []) :- !.
+
+dom_list([Idx|IL], [Dom|DL], [X|L]) :-
+
   drep_nth0(Idx, Dom, X),
-  idx_dom_list(IL, L).
-
+  dom_list(IL, DL, L).
 
   
           
