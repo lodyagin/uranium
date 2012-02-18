@@ -2,7 +2,7 @@
 % lcq(gnu, LCQ), length(L, 5), L ins 1..100, randseq(LCQ, L, S), repeat, X0 is random(100), L=[X0|_], label(S), !, atom_codes(A, L).
 
 :- module(randseq,
-          [randseq/3,
+          [randseq/4,
            lcq/2]
          ).
 
@@ -10,34 +10,35 @@
 
 lcq(gnu, lcq(1103515245, 12345, 4294967296)).
 
-randseq(LCQ, L, S) :-
+randseq(L, LCQ, S, Idxs) :-
 
    LCQ = lcq(_, _, M),
-   randseq2(LCQ, L, S),
+   randseq2(L, LCQ, S, Idxs),
    Max is M - 1,
    S ins 0..Max.
 
-randseq2(_, [], []) :- !.
+randseq2([], _, [], []) :- !.
 
-randseq2(_, [X], [Seed]) :-
+randseq2([X], _, [Seed], [Idx]) :-
 
-   norm(Seed, X), !.
+   norm(X, Seed, Idx), !.
 
-randseq2(LCQ, [X|L], [Seed|S]) :-
+randseq2([X|L], LCQ, [Seed|S], [Idx|IL]) :-
 
    S = [Seed1|_],
-   norm(Seed, X),
+   norm(X, Seed, Idx),
    lcq_eval(LCQ, Seed, Seed1),
-   randseq2(LCQ, L, S).
+   randseq2(L, LCQ, S, IL).
 
 lcq_eval(lcq(A, C, M), X0, X) :-
 
    X #= (A * X0 + C) mod M.
 
-% map Seed to X domain
-norm(Seed, X) :-
-   fd_inf(X, Min),
-   fd_sup(X, Max),
-   X #= Seed mod (Max - Min + 1) + Min.
+% norm(@X, +Seed, -Idx)
+% map Seed to X domain index
+norm(X, Seed, Idx) :-
+
+  fd_size(X, Size),
+  Idx #= Seed mod Size.
 
    
