@@ -31,7 +31,7 @@ random_string(Options, Str) :-
 
   random_string(Options,
                 Options,
-                default(random_generator(lcq, gnu)),
+                default(random_generator(std, std)),
                 default_to_multi([empty, length(1, 80)]),
                 default(pattern(default_string_pattern)),
                 Str).
@@ -64,26 +64,25 @@ random_string2(Generator, Lengths, Pattern, Str) :-
   ;
      % Generate string equation
      length(Str, N),
-     length(Indexes, N),
-     call(Pattern, Str, Indexes),
-     randseq(Str, Generator, Seeds, Indexes),
+     call(Pattern, Str, _),
+
+     call(Generator, Rand, _),
      
-     % Randomization of the result
-     Seeds = [Seed|_],
-     call(Generator, _, Max_Seed),
-     Random_Par is Max_Seed + 1,
-
-     repeat, % may be try different seeds
-     Seed is random(Random_Par),
-
-     % Find the indexes
-     label(Seeds),
-     !,
-
-     % Map indexes to domains
-     idx_dom_list(Indexes, Str)
+     % Selection
+     randsel(Rand, Str)
   ).
-  
+
+randsel(_, []) :- !.
+
+randsel(Rand, [X|L]) :-
+
+  fd_dom(X, Drep),
+  repeat,
+  call(Rand, Drep, X),
+  !,
+  randsel(Rand, L).
+
+
 generator(random_generator(Class, Type)) :-
   must_be(atom, Class),
   must_be(atom, Type).
