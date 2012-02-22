@@ -27,7 +27,9 @@
 % for random strings generation.
 
 :- module(gt_strings,
-          [random_string/3,
+          [random_string/1,
+	   random_string/2,
+	   random_string/3,
 	   random_string/4,
 	   range_pattern/2
            ]).
@@ -36,11 +38,24 @@
 :- use_module(library(clpfd)).
 :- use_module(u(clpfd_adds)).
 
+random_string(Str) :-
+
+  random_string([], Str).
+
+random_string(Options, Str) :-
+
+  append(Options,
+	 [range(match(Drep))], % should be after user options
+	 Options1),
+  random_string(gt_strings:range_pattern(Drep), Options1, Str).
+
+
 :- meta_predicate random_string(1, +, -).
 
 random_string(Pattern, Options, Str) :-
 
   random_string(Pattern, gt_strings:std_random, Options, Str).
+
 
 :- meta_predicate random_string(1, 2, +, -).
 
@@ -60,20 +75,24 @@ random_string(Pattern, Generator, Options, Str) :-
 		    Options,
 		    Options,
 		    default_to_multi([empty, length(1, 80)]),
+		    default(range(32..126)),
 		    Str).
 
 random_string_int(Pattern, Generator, [O|Os], Options,
-		  Lengths, Str) :- !,
+		  Lengths, Range, Str) :- !,
 
   (  var(O) -> instantiation_error(O)
   ;  override(length, Lengths, O, Options, Lengths1) ->
      random_string_int(Pattern, Generator, Os, Options,
-		       Lengths1, Str)
+		       Lengths1, Range, Str)
+  ;  override(range, Range, O, Options, Range1) ->
+     random_string_int(Pattern, Generator, Os, Options,
+		       Lengths, Range1, Str)
   ;  domain_error(random_string_option, O)
   ).
 
 random_string_int(Pattern, Generator, [], _,
-		  Lengths, Str) :-
+		  Lengths, _, Str) :-
 
   maplist(arg(1), [Lengths], [L]),
   random_string_int(Pattern, Generator, L, Codes),
@@ -123,10 +142,20 @@ length(length(N1, N2)) :- !,
   must_be(nonneg, N2).
   % TODO check N2 >= N1
 
+range(range(_)) :- !.
+
 override(What, Prev, Value, Options, Result) :-
         call(What, Value),
         override_(Prev, Value, Options, Result).
 
+override_(Stu, Prev_Stu, _, Stu) :-
+	functor(Stu, _, 1),      %e.g. default(opt(Val))
+	functor(Prev_Stu, _, 1), %e.g. opt(match(Val))
+	arg(1, Prev_Stu, match(Val)),
+	!,
+	arg(1, Stu, Opt),
+	functor(Opt, _, 1),
+	arg(1, Opt, Val).
 override_(default(_), Value, _, user(Value)) :- !.
 override_(user(Prev), Value, Options, _) :- !,
         (   Value == Prev ->
@@ -168,21 +197,3 @@ std_random(Drep, X) :-
   succ(Max, Max1),
   Idx is random(Max1),
   drep_nth0(Idx, Drep, X).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

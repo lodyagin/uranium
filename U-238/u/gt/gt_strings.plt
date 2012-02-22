@@ -14,6 +14,19 @@ test(all_different_full) :-
   perm_check(Codes, Etalon).
   % Codes must be always a permutation of the Etalon
 
+test(empty_atom) :-
+
+  findall(A, (between(1, 100, _),
+	      random_string([empty], atom(A))),
+	  AL),
+  sort(AL, ['']).
+
+test(one_length_one_char) :-
+
+  findall(A, (between(1, 100, _),
+	      random_string([length(5), range(0'a)], atom(A))), %'
+	      AL),
+  sort(AL, ['aaaaa']).
 
 % add test on only one lenth option
 
