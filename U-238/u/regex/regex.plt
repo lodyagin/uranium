@@ -19,7 +19,7 @@ test(syntax_positive,
 	    )
      ]) :-
 
-	findall('.', phrase(regex:expr, Pat, []), ['.']).
+	findall('.', phrase(regex(_), Pat, []), ['.']).
 
 
 test(syntax_negative,
@@ -35,7 +35,8 @@ test(syntax_negative,
 	  ), fail
      ]) :-
 
-	phrase(regex:expr, Pat, []).
+	phrase(regex(_), Pat, []).
 
 
 :- end_tests(regex).
+

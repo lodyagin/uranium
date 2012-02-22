@@ -1,21 +1,75 @@
-:- module(regex, []).
+:- module(regex,
+	  [regex//1]
+	 ).
 
-expr --> expr2 | [].
+% nfa(States, Arcs, Initial, Final).
 
-expr2 --> part, "|", expr2 | part.
+regex(NFA) -->
+	expr2(NFA)
+	| [], { NFA = nfa([S], [], [S], [S]) }.
 
-part --> left, part | left.
+expr2(NFA) -->
+	part(NFA1), "|", expr2(NFA2), { or_nfa(NFA1, NFA2, NFA) }
+	| part(NFA).
 
-left -->  mult | solid .
+part(NFA) -->
+	left(NFA1), part(NFA2), { conc_nfa(NFA1, NFA2, NFA) }
+	| left(NFA).
 
-mult --> solid, "*".
+left(NFA) -->  mult(NFA) | solid(NFA) .
 
-solid --> "(", expr2, ")" | letter.
+mult(NFA) --> solid(NFA1), "*", { mult_nfa(NFA1, NFA) }.
 
-letter -->
+solid(NFA) --> "(", expr2(NFA), ")" | letter(NFA).
+
+letter(nfa([Start, End],
+	   [arc(Start, C, End)],
+	   [Start], [End])
+      )
+-->
+
 	[C], { is_usual_symbol(C) }.
 
 is_usual_symbol(C) :-
 
    \+ member(C, "()*|").
+
+
+conc_nfa(nfa(States1, Arcs1, [Initial1], [Final1]),
+	 nfa(States2, Arcs2, [Final1], [Final2]),
+	 nfa(States3, Arcs3, [Initial1], [Final2])
+	) :-
+
+	merge(States1, States2, States3),
+	append(Arcs1, Arcs2, Arcs3).
+
+or_nfa(nfa(States1, Arcs1, [Initial1], [Final1]),
+       nfa(States2, Arcs2, [Initial2], [Final2]),
+       nfa(States3, Arcs3, [Initial3], [Final3])
+      ) :-
+
+	append(States1, States2, States_),
+	States3 = [Initial3,Final3|States_],
+	append(Arcs1, Arcs2, Arcs_),
+	Arcs3 = [arc(Initial3, -1, Initial1),
+		 arc(Initial3, -1, Initial2),
+		 arc(Final1, -1, Final3),
+		 arc(Final2, -1, Final3)
+		 | Arcs_
+		].
+
+mult_nfa(nfa(States1, Arcs1, [Initial1], [Final1]),
+	 nfa(States2, Arcs2, [Initial2], [Final2])
+	) :-
+
+	States2 = [Initial2, Final2 | States1],
+	Arcs2 = [arc(Initial2, -1, Final2),
+		 arc(Initial2, -1, Initial1),
+		 arc(Final1, -1, Final2),
+		 arc(Final1, -1, Initial1)
+		 | Arcs1
+		].
+
+
+
 
