@@ -5,8 +5,16 @@
 % nfa(States, Arcs, Initial, Final).
 
 regex(NFA) -->
-	expr2(NFA)
-	| [], { NFA = nfa([S], [], [S], [S]) }.
+	(   expr2(NFA),
+	    {
+	     NFA = nfa(States0, _, _, _),
+	     sort(States0, States),
+	     length(States, NStates),
+	     numlist(1, NStates, States)
+	    }
+	;   [],
+	    { NFA = nfa([1], [], [1], [1]) }
+	).
 
 expr2(NFA) -->
 	part(NFA1), "|", expr2(NFA2), { or_nfa(NFA1, NFA2, NFA) }
