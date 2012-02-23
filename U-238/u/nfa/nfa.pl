@@ -9,7 +9,7 @@
 :- dynamic arc/3, dfa_arc/3, state/3, egraph/1, dfa_state/3.
 
 
-nfa_dfa(nfa(_, NFA_Arcs, [NFA_S0], NFA_Final),
+nfa_dfa(nfa(_, NFA_Arcs, NFA_S0, NFA_Final),
 	dfa(DFA_States, DFA_Arcs, DFA_Initial, DFA_Final)
        ) :-
 
@@ -118,19 +118,26 @@ assert_egraph :-
 closure(S, Closure) :-
 
 	egraph(Graph), !,
-	reachable(S, Graph, Closure0),
-	list_to_ord_set([S|Closure0], Closure).
+	(   Graph == []
+	->  Closure = [S]
+	;   reachable(S, Graph, Closure0),
+	    list_to_ord_set([S|Closure0], Closure)
+	).
 
 closures(State_Set, Closure) :-
 
 	egraph(Graph), !,
+	(   Graph == []
+	->  Closure = State_Set
+	;
 	findall(C,
 		(   member(S, State_Set),
 		    reachable(S, Graph, C)
 		),
 		Closure0),
 	append([State_Set|Closure0], Closure1),
-	list_to_ord_set(Closure1, Closure).
+	list_to_ord_set(Closure1, Closure)
+	).
 
 
 

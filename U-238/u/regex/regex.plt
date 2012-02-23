@@ -19,7 +19,9 @@ test(syntax_positive,
 	    )
      ]) :-
 
-	findall('.', phrase(regex(_), Pat, []), ['.']).
+	regex_nfa(Pat, _).
+
+	%findall('.', phrase(regex(_), Pat, []), ['.']).
 
 
 test(syntax_negative,
@@ -35,7 +37,15 @@ test(syntax_negative,
 	  ), fail
      ]) :-
 
-	phrase(regex(_), Pat, []).
+	regex_nfa(Pat, _).
+
+test(nfa_n_states,
+     [forall(member((Pat, N_States), [("ab*", 5)]))]
+    ) :-
+
+	regex_nfa(Pat, nfa(States, _, _, _)),
+	numlist(1, N_States, States).
+
 
 
 :- end_tests(regex).

@@ -1,7 +1,14 @@
 :- begin_tests(nfa).
 :- use_module(u(nfa/nfa)).
 
-test(dragon_book_nfa_to_dfa,
+test(one_symbol_nfa_dfa,
+     [dfa(States, Arcs, Initial, Final) == dfa([1, 2], [arc(1, 0'a, 2)], 1, [2])]
+    ) :-
+
+	one_symbol_nfa(NFA),
+	nfa_dfa(NFA, dfa(States, Arcs, Initial, Final)).
+
+test(dragon_book_nfa_dfa,
      [c(N_States, N_Arcs, N_Final) == c(5, 10, 1) ]
     ) :-
 
@@ -12,8 +19,11 @@ test(dragon_book_nfa_to_dfa,
 	length(Arcs, N_Arcs),
 	length(Final, N_Final).
 
+
+one_symbol_nfa(nfa([1, 2], [arc(1, 0'a, 2)], 1, [2])).
+
 % NFA for (a|b)*abb
-dragon_book_nfa(nfa(States, Arcs, [0], [10])) :-
+dragon_book_nfa(nfa(States, Arcs, 0, [10])) :-
 
 	length(States, 11),
 	numlist(0, 10, States),
