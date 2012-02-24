@@ -39,6 +39,18 @@ test(syntax_negative,
 
 	regex_nfa(Pat, _).
 
+test(nfa_1_state,
+     [nfa([1], [], 1, [1]) = NFA]
+    ) :-
+
+	regex_nfa("", NFA).
+
+test(dfa_1_state,
+     [dfa([1], [], 1, [1]) = DFA]
+    ) :-
+
+	regex_dfa("", DFA).
+
 test(nfa_n_states,
      [forall(member((Pat, N_States), [("ab*", 5)]))]
     ) :-
@@ -49,4 +61,6 @@ test(nfa_n_states,
 
 
 :- end_tests(regex).
+
+
 
