@@ -54,7 +54,7 @@
 %           filter_on_db/3,
 
            %named_arg_unify/5
-          
+
            ]).
 
 :- use_module(u(internal/check_arg)).
@@ -66,18 +66,20 @@
 :- use_module(u(ur_lists)).
 :- use_module(u(ur_terms)).
 
-:- module_transparent db_put_objects/3, db_search/3.
+%:- module_transparent db_put_objects/3, db_search/3.
 %                      db_iterate/3, db_iterate/4,
 %                      db_iterate_replace/3, db_iterate_replace/4,
 %                      db_iterate_replace/5,
 %                      db_iterate_replace2/4.
+
+:- meta_predicate db_put_objects(+, 1, +).
 
 db_clear(DB_Key) :-
 
    Ctx = context(db_clear/1, _),
    check_db_key(DB_Key, Ctx),
    db_clear_int(DB_Key).
-   
+
 /*
 db_bind_obj(DB_Key, w(Ref0, Object0), w(Ref, Object)) :- !,
 
@@ -201,7 +203,7 @@ db_put_object_int(DB_Key, Class_Id, Option, Object0, Object) :-
 db_put_objects(DB_Key, Pred, Options) :-
 
    call(Pred, Object),
-   db_put_object(DB_Key, Object, Options),
+   db_put_object(DB_Key, Options, Object, _),
    fail ; true.
 
 %
@@ -584,7 +586,7 @@ named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
    check_db_key(DB_Key, Ctx),
    (  var(Functor) -> true; check_class_arg(Functor, Ctx) ),
    check_field_arg(Field_Name, Ctx),
-   
+
     obj_field(Term, db_ref, Term_Ref),
 
     db_object_class(DB_Key, Functor), % unify with each class in db
