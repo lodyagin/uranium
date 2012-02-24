@@ -35,7 +35,13 @@ nfa_dfa(nfa(_, NFA_Arcs, NFA_S0, NFA_Final),
 	resolve_unmarked_states(NFA_Final_Set),
 
 	state_renumbering(DFA_States, DFA_Arcs,
-			  DFA_Initial, DFA_Final).
+			  DFA_Initial, DFA_Final0),
+
+	% check whether the start state is also final
+	(   memberchk(NFA_S0, NFA_Final)
+	->  DFA_Final = [DFA_Initial|DFA_Final0]
+	;   DFA_Final = DFA_Final0
+	).
 
 
 state_renumbering(States, Arcs, Initial, Final) :-
@@ -63,7 +69,9 @@ state_renumbering(States, Arcs, Initial, Final) :-
 
 	dfa_state(_, Initial, start),
 	!, % only one start state is possible
+
 	findall(S, dfa_state(_, S, final), Final).
+
 
 
 resolve_unmarked_states(NFA_Final) :-
