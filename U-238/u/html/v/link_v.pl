@@ -29,6 +29,7 @@
 :- module(link_v, []).
 
 :- use_module(library(uri)).
+:- use_module(u(v)).
 
 new_class(link_v, http_result_v, [link_url, text], [link_url]).
 

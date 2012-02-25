@@ -26,6 +26,7 @@
 :- module(html_tag_html_v, []).
 
 :- use_module(u(ixpath)).
+:- use_module(u(v)).
 
 
 new_class(html_tag_html_v, html_tag_v, []).
