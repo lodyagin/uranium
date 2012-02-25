@@ -53,6 +53,7 @@
            ]).
 
 :- use_module(library(lists)).
+:- use_module(library(error)).
 :- use_module(u(ur_lists)).
 
 :- multifile prolog:message/3.
@@ -209,6 +210,7 @@ gen_new_class_id(Class_Id) :-
 
 get_key(Class_Id, Key) :-
 
+  must_be(positive_integer, Class_Id),
   (objects:key(Class_Id, _, Key) -> true ; Key = []).
 
 

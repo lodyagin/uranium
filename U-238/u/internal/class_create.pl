@@ -29,6 +29,7 @@
            class_rebase/3
           ]).
 
+:- use_module(library(error)).
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/check_arg)).
 
@@ -93,7 +94,7 @@ class_create(Class, Parent, Fields, New_Key) :-
    (  Key_Length > Parent_Key_Length
    -> class_primary_id(Class, Class_Id),
       assert_new_key(Class_Id, Key_Set)
-   ;  assert_parent_key(Class_Id, Parent_Id)
+   ;  assert_parent_key(Parent_Id, Parent_Id)
    ),
    assert_copy(Class_Id, Parent_Id).
 
@@ -205,10 +206,12 @@ assert_new_key(_, []) :- !.
 
 assert_new_key(Class_Id, Keys) :-
 
-  assertz(objects:key(Class_Id, Class_Id, Keys)).
+   must_be(positive_integer, Class_Id),
+   assertz(objects:key(Class_Id, Class_Id, Keys)).
 
 assert_parent_key(Class_Id, Parent_Id) :-
 
+   must_be(positive_integer, Class_Id),
   (  objects:key(Parent_Id, _, Key)
   -> assertz(objects:key(Class_Id, Parent_Id, Key))
   ;  true ).
