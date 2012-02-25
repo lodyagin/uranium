@@ -28,6 +28,8 @@
 
 :- module(db_i,
           [
+	   %db_add_class/3,
+	   db_class_id/3,
            db_clear_int/1,
            %db_erase/1,
            db_key_is_valid/1,
@@ -45,6 +47,73 @@
 
 :- multifile prolog:message/3.
 :- multifile db_recorded/3, db_erase/1, db_recordz/2.
+
+% DB maintain its own namespace of class ids
+
+% DB service predicates:
+%
+% db_class_des(DB_Class_Id, DB_Parent_Class_Id,
+%              Name, Arity, Fields, Key)
+% db_next_class_id(Id).
+
+db_next_class_id(DB_Key, Id) :-
+
+   (   recorded(DB_Key, db_next_class_id(Id), Ref)
+   ->  erase(Ref)
+   ;   Id = 2 ),
+
+   succ(Id, Next_Id),
+   recordz(DB_Key, db_next_class_id(Next_Id)).
+
+% Store class information in db and return new id
+db_add_class(DB_Key, Local_Id, DB_Id) :-
+
+   parent(Local_Id, Local_Parent_Id),
+   db_class_id(DB_Key, Local_Parent_Id, DB_Parent_Id),
+
+   db_next_class_id(DB_Key, DB_Id),
+   class_arity(Local_Id, Arity),
+   class_all_fields(Local_Id, Fields),
+   get_key(Local_Id, Key),
+   class_id(Local_Id, Class),
+   recordz(DB_Key,
+	   db_class_des(DB_Id, DB_Parent_Id, Class, Arity,
+			Fields, Key)).
+
+% Get id for the class
+% Fail if no such class in db.
+db_class_id(DB_Key, Local_Class_Id, DB_Class_Id) :-
+
+   class_id(Local_Class_Id, Class),
+   (
+       Class = object_v
+   ->
+       DB_Class_Id = 1  % DB_Class_Id for object_v is always 1
+   ;
+%       class_primary_id(db_object_v, DB_Object_V_Id),
+%       (
+%       same_or_descendant(Local_Class_Id, _, DB_Object_V_Id)
+%       ->
+%       throw(error(implementation_error(
+%	 'db_class_id is not implemented for db_object_v yet')))
+%       ;
+       (
+       recorded(DB_Key,
+		db_class_des(DB_Class_Id, _, Class, _, DB_Fields,
+			     _))
+       ->  % a descriptor of this class is already in db
+       class_all_fields(Local_Class_Id, Local_Fields),
+       (
+        % check fields
+	Local_Fields == DB_Fields -> true
+       ;   throw(error(class_fields_mismatch(
+	      DB_Key, Class, Local_Fields, DB_Fields)))
+       )
+       ;
+       db_add_class(DB_Key, Local_Class_Id, DB_Class_Id)
+       )
+   ).
+
 
 db_clear_int(DB_Key) :-
 
@@ -203,6 +272,13 @@ prolog:message(db_key_exists(DB_Key, DB_Object, New_Object)) -->
    - [DB_Key, New_Object]],
    [ nl ],
    [ 'The existing object in DB: ~p' - [DB_Object]].
+
+prolog:message(class_fields_mismatch(DB_Key, Class, Local, DB))
+-->
+
+   ['The DB ~a has another fields for the class ~a~n'
+    - [DB_Key, Class]],
+   ['our fields: ~w ~ndb fields: ~w' - [Local, DB]].
 
 %prolog:message(db_ungrounded_key(Key, Key_Value, Action)) -->
 
