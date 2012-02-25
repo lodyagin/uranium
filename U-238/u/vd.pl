@@ -41,10 +41,11 @@
            %db_merge/2,  % by key
            %db_merge/3,  % by custom values
            db_move_all_data/2,
-           %db_object_class/2,
+           db_object_class/2, % +DB_Key, -Class
            db_put_object/3,  % +DB_Key, +Object0, -Object
            db_put_object/4,  % +DB_Key,+Options,+Object0,-Object
            db_put_objects/3, % +DB_Key, :Pred, +Options
+	   db_recorded/2,    % +DB_Key, ?Object
            %db_reset/3,    % +DB_Key, +Fields, +Query
            %db_search/3,
            db_size/2,        % +DB_Key, ?Size
@@ -205,6 +206,15 @@ db_put_objects(DB_Key, Pred, Options) :-
    call(Pred, Object),
    db_put_object(DB_Key, Options, Object, _),
    fail ; true.
+
+db_recorded(DB_Key, Object) :-
+
+   Ctx = context(db_recorded/2, _),
+   (   var(Object)
+   ->  true
+   ;   check_object_arg(Object, Ctx, _)
+   ),
+   db_recorded_int(DB_Key, Object).
 
 %
 % Leave only matched objects from DB by a search criteria
@@ -579,13 +589,13 @@ db_merge(DB1_Key, DB2_Key, Key) :-
 % Унификация с расширенной базой данных пролога по полю Field_Name
 % и значению Value для тех фактов, которые созданы как классы
 %
-/*
+
 named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
 
    Ctx = context(named_arg_unify/5, _),
    check_db_key(DB_Key, Ctx),
    (  var(Functor) -> true; check_class_arg(Functor, Ctx) ),
-   check_field_arg(Field_Name, Ctx),
+   check_fields_arg(Field_Name, Ctx),
 
     obj_field(Term, db_ref, Term_Ref),
 
@@ -602,5 +612,11 @@ named_arg_unify(DB_Key, Functor, Field_Name, Value, Term) :-
     arg(Field_Pos, Term, Value),
 
     db_recorded(DB_Key, Term, Term_Ref).
-*/
+
+
+db_object_class(DB_Key, Class) :-
+
+   db_object_class_int(DB_Key, Class_Id),
+   class_id(Class_Id, Class).
+
 

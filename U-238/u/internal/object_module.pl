@@ -29,6 +29,7 @@
 
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/class_create)).
+:- use_module(u(internal/db_vocab)).
 
 % module_class_def(+Main_Class, -Class) :-
 % find all class definitions
@@ -194,6 +195,8 @@ dynamic_import(Module_From, Module_To, Functor) :-
 
 reload_all_classes :-
 
+   db_vocab_clear(_), % clear all current db class caches
+   
    % clear the db
    abolish(objects:arity/2),
    abolish(objects:class_id/3),

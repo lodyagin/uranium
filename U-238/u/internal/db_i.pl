@@ -28,14 +28,14 @@
 
 :- module(db_i,
           [
-	   %db_add_class/3,
-	   db_class_id/3,
+	   db_conv_local_db/4,
            db_clear_int/1,
-           %db_erase/1,
+           db_erase/1,
            db_key_is_valid/1,
-           db_recorded/2,
+           db_object_class_int/2,
+           db_recorded_int/2,
            db_recordz/2,
-           db_unify_int/6,
+%           db_unify_int/6,
            erase_conflicts/3,
            key_conflict/4,
            prolog:message/3
@@ -43,10 +43,11 @@
 
 :- use_module(library(ordsets)).
 :- use_module(u(internal/objects_i)).
+:- use_module(u(internal/db_vocab)).
 :- use_module(u(v)).
 
 :- multifile prolog:message/3.
-:- multifile db_recorded/3, db_erase/1, db_recordz/2.
+:- multifile db_recorded_int/2, db_erase/1, db_recordz/2.
 
 % DB maintain its own namespace of class ids
 
@@ -55,6 +56,10 @@
 % db_class_des(DB_Class_Id, DB_Parent_Class_Id,
 %              Name, Arity, Fields, Key)
 % db_next_class_id(Id).
+
+db_erase(recorded(Ref)) :- !,
+
+   erase(Ref).
 
 db_next_class_id(DB_Key, Id) :-
 
@@ -66,23 +71,39 @@ db_next_class_id(DB_Key, Id) :-
    recordz(DB_Key, db_next_class_id(Next_Id)).
 
 % Store class information in db and return new id
-db_add_class(DB_Key, Local_Id, DB_Id) :-
+db_add_class(DB_Key, Local_Id, DB_Id, Des) :-
 
    parent(Local_Id, Local_Parent_Id),
-   db_class_id(DB_Key, Local_Parent_Id, DB_Parent_Id),
+   db_conv_local_db(DB_Key, Local_Parent_Id, DB_Parent_Id, _),
 
    db_next_class_id(DB_Key, DB_Id),
-   class_arity(Local_Id, Arity),
+   class_arity(Local_Id, Arity), % arity = num fields+1
    class_all_fields(Local_Id, Fields),
    get_key(Local_Id, Key),
    class_id(Local_Id, Class),
-   recordz(DB_Key,
-	   db_class_des(DB_Id, DB_Parent_Id, Class, Arity,
-			Fields, Key)).
+   Des = db_class_des(DB_Id, DB_Parent_Id, Class, Arity,
+		      Fields, Key),
+   recordz(DB_Key, Des).
 
-% Get id for the class
+% class_db_local_id(+DB_Key, ?Local_Id, ?DB_Id, -Des)
+% Convert local <-> db id for the class
+% Des is unified db_class_des service term from db for this class
 % Fail if no such class in db.
-db_class_id(DB_Key, Local_Class_Id, DB_Class_Id) :-
+
+% in this case get answer from the cash
+db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
+
+   db_vocab_local_db(DB_Key, Local_Class_Id, DB_Class_Id),
+   !,
+   (   DB_Class_Id =:= 1
+   ->  true  % object_v is not stored in db
+   ;   Des = db_class_des(DB_Class_Id, _, _, _, _, _),
+       recorded(DB_Key, Des), !
+   ).
+
+db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
+
+   var(DB_Class_Id), integer(Local_Class_Id), !,
 
    class_id(Local_Class_Id, Class),
    (
@@ -90,29 +111,65 @@ db_class_id(DB_Key, Local_Class_Id, DB_Class_Id) :-
    ->
        DB_Class_Id = 1  % DB_Class_Id for object_v is always 1
    ;
-%       class_primary_id(db_object_v, DB_Object_V_Id),
-%       (
-%       same_or_descendant(Local_Class_Id, _, DB_Object_V_Id)
-%       ->
-%       throw(error(implementation_error(
-%	 'db_class_id is not implemented for db_object_v yet')))
-%       ;
-       (
-       recorded(DB_Key,
-		db_class_des(DB_Class_Id, _, Class, _, DB_Fields,
-			     _))
+       (   recorded(DB_Key,
+		    db_class_des(DB_Class_Id, A1, Class, A2,
+				 DB_Fields, A3))
        ->  % a descriptor of this class is already in db
-       class_all_fields(Local_Class_Id, Local_Fields),
-       (
-        % check fields
-	Local_Fields == DB_Fields -> true
-       ;   throw(error(class_fields_mismatch(
-	      DB_Key, Class, Local_Fields, DB_Fields)))
-       )
+
+           (   db_local_db_compare_class(Local_Class_Id,
+					 DB_Fields,
+					 Local_Fields)
+	   ->  true
+	   ;   throw(error(class_fields_mismatch(
+	          DB_Key, Class, Local_Fields, DB_Fields)))
+	   ),
+
+           Des = db_class_des(DB_Class_Id, A1, Class, A2,
+			      DB_Fields, A3)
        ;
-       db_add_class(DB_Key, Local_Class_Id, DB_Class_Id)
+           db_add_class(DB_Key, Local_Class_Id, DB_Class_Id, Des)
        )
-   ).
+   ),
+   db_vocab_local_db_add(DB_Key, Local_Class_Id, DB_Class_Id).
+
+db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
+
+   var(Local_Class_Id), integer(DB_Class_Id), !,
+
+   (   DB_Class_Id =:= 1   % object_v
+   ->  class_id(Local_Class_Id, object_v), !
+   ;   Des = db_class_des(DB_Class_Id, DB_Parent_Id, Class, _,
+		       DB_Fields, _),
+       !,
+
+       (   recorded(DB_Key, Des) -> true
+       ;   throw(error(invalid_db_class_id(DB_Key,
+					   DB_Class_Id)))
+       ),
+
+       class_id(Local_Class_Id, Class), % try next class id
+
+       % check class compatibility (can BT to next local id)
+       db_local_db_compare_class(Local_Class_Id, DB_Fields,
+				 _),
+
+       % Check the parent
+       db_conv_local_db(DB_Key, _, DB_Parent_Id, _),
+       ! % no more BT
+   ),
+   db_vocab_local_db_add(DB_Key, Local_Class_Id, DB_Class_Id).
+
+
+%db_local_db_compare_class(+Local_Class_Id, +DB_Fields,
+%		          -Local_Fields)
+% Compare local and db class
+% Fail if mismatch
+db_local_db_compare_class(Local_Class_Id, DB_Fields,
+			  Local_Fields)
+:-
+
+   class_all_fields(Local_Class_Id, Local_Fields),
+   Local_Fields == DB_Fields.
 
 
 db_clear_int(DB_Key) :-
@@ -121,16 +178,54 @@ db_clear_int(DB_Key) :-
    (  recorded(DB_Key, _, Ref),
       erase(Ref),
       fail ; true
-   ).
+   ),
+   db_vocab_clear(DB_Key).
 
-db_recorded(DB_Key, Object) :-
+%db_object_class_int(+DB_Key, -Local_Class_Id)
+% unify Local_Class_Id with all classes in DB on BT
+db_object_class_int(DB_Key, Local_Class_Id) :-
 
-    atom(DB_Key), !,
-    recorded(DB_Key, Object, Ref),
-    u_object(Object),
-    arg(1, Object, Class_Id),
-    obj_field_int(Class_Id, db_ref, strict, Object,
+   atom(DB_Key), !,
+   recorded(DB_Key, db_class_des(DB_Class_Id, _, _, _, _, _)),
+   db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, _).
+
+% db_recorded_int(+DB_Key, ?L_Object)
+db_recorded_int(DB_Key, L_Object) :-
+
+    atom(DB_Key), nonvar(L_Object), !,
+
+    arg(1, L_Object, Local_Class_Id),
+    object_local_db(DB_Key, L_Object, DB_Object),
+
+    % find the matched record
+    recorded(DB_Key, DB_Object, Ref),
+
+    object_local_db(DB_Key, L_Object1, DB_Object),
+
+    % populate values from db
+    L_Object = L_Object1,
+
+    % store the db record reference
+    obj_field_int(Local_Class_Id, db_ref, strict, L_Object,
                   recorded(Ref), _).
+
+% the case of free L_Object, unify with all records in DB
+db_recorded_int(DB_Key, L_Object) :-
+
+    atom(DB_Key), var(L_Object), !,
+
+    % get any record
+    recorded(DB_Key, DB_Object, Ref),
+    functor(DB_Object, Class, _),
+    atom_concat(_, '_v', Class),
+
+    object_local_db(DB_Key, L_Object, DB_Object),
+
+    % store the db record reference
+    arg(1, L_Object, Local_Class_Id),
+    obj_field_int(Local_Class_Id, db_ref, strict, L_Object,
+                  recorded(Ref), _).
+
 
 %db_recorded(DB_Key, Term, DB_Ref) :-
 
@@ -150,17 +245,62 @@ db_erase(recorded(DB_Key, Ref)) :-
 %
 % Set db_ref in Object
 
-db_recordz(DB_Key, Object) :-
+db_recordz(DB_Key, Object0) :-
 
-    atom(DB_Key), !,
-    (  obj_field(Object, db_ref, Ref)
+    atom(DB_Key), !, % this is prolog DB version
+    (  obj_field(Object0, db_ref, Ref)
     -> var(Ref)
     ;  Ctx = context(db_recordz/2, _),
-       throw(error(domain_error(db_object_v_desc, Object), Ctx))
+       throw(error(domain_error(db_object_v_desc, Object0),
+		   Ctx))
     ),
-%    record_control_pred(DB_Key, Object),
+
+    object_local_db(DB_Key, Object0, Object),
+
     recordz(DB_Key, Object, R),
     Ref = recorded(R).
+
+
+%object_local_db(+DB_Key, ?Local_Object, ?DB_Object)
+% Convert between local and db object term
+object_local_db(DB_Key, Local_Object, DB_Object) :-
+
+    % it is from Local to DB case
+    nonvar(Local_Object), var(DB_Object), !,
+
+    % get db id (and store service predicates if necessary)
+    arg(1, Local_Object, Local_Class_Id),
+    db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id,
+		     Des),
+    Des = db_class_des(_, _, Class, _, Fields, _),
+
+    % replace the id
+    obj_unify_int(Local_Class_Id, Fields, throw,
+		  Local_Object, DB_Field_Vals),
+
+    DB_Object =.. [Class, DB_Class_Id | DB_Field_Vals].
+
+
+object_local_db(DB_Key, Local_Object, DB_Object) :-
+
+    % it is from DB to Local case
+    var(Local_Object), nonvar(DB_Object), !,
+
+    % get local class id
+    arg(1, DB_Object, DB_Class_Id),
+    db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id,
+		     Des),
+    class_id(Local_Class_Id, Class),%get the local class name
+
+    Des = db_class_des(_, _, _, _, Fields, _),
+
+    % replace the id
+    % <NB> DB_Object should be field-compatible with Local_Object
+    obj_unify_int(Local_Class_Id, Fields, throw,
+		  DB_Object, DB_Field_Vals),
+
+    Local_Object =.. [Class, Local_Class_Id| DB_Field_Vals].
+
 
 % FIXME
 %db_recordz(DB_Key, Term, Ref) :-
@@ -220,20 +360,20 @@ db_key_is_valid(DB_Key) :-
 %
 % In a case of Weak \== weak Fields must be ordset!
 
-db_unify_int(DB_Key, Class_Id, Fields, Weak, Values, Object) :-
-
-   (  Weak == weak
-   -> true
-   ;  % need to check presence of all Fields
-      class_fields(Class_Id, _, _, Class_Fields),
-      ord_subset(Fields, Class_Fields)
-   ),
-
-   % Construct new unbounded object for DB unification
-   obj_construct_int(Class_Id, Fields, Weak, Values, Object),
-
-   % bt on all matched records
-   db_recorded(DB_Key, Object).
+%db_unify_int(DB_Key, Class_Id, Fields, Weak, Values, Object) :-
+%
+%   (  Weak == weak
+%   -> true
+%   ;  % need to check presence of all Fields
+%      class_fields(Class_Id, _, _, Class_Fields),
+%      ord_subset(Fields, Class_Fields)
+%   ),
+%
+%   % Construct new unbounded object for DB unification
+%   obj_construct_int(Class_Id, Fields, Weak, Values, Object),
+%
+%   % bt on all matched records
+%   db_recorded(DB_Key, Object).
 
 
 % erase_conflicts(+DB_Key, +Class_Id, @Object)
@@ -254,7 +394,7 @@ erase_conflicts(DB_Key, Class_Id, Object) :-
 
 key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
 
-   db_recorded(DB_Key, '#keymaster'(Key_Class_Id)),
+   recorded(DB_Key, '#keymaster'(Key_Class_Id)),
    same_or_descendant(Key_Class_Id, false, Class_Id),
    % false means test all rebased classes as well
 
@@ -265,6 +405,12 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
    db_unify_int(DB_Key, DB_Class_Id, Key, strict, Key_Value,
                 Conflicting).
 
+
+prolog:message(db_system_bad_state(Format, Args)) -->
+
+   ['The Uranium DB system may be corrupted: '],
+   [ nl ],
+   [Format - Args].
 
 prolog:message(db_key_exists(DB_Key, DB_Object, New_Object)) -->
 
@@ -280,8 +426,23 @@ prolog:message(class_fields_mismatch(DB_Key, Class, Local, DB))
     - [DB_Key, Class]],
    ['our fields: ~w ~ndb fields: ~w' - [Local, DB]].
 
+prolog:message(invalid_db_class_id(DB_Key, DB_Class_Id)) -->
+
+   ['The db class id ~w is not found in db ~w'
+    - [DB_Class_Id, DB_Key]].
+
 %prolog:message(db_ungrounded_key(Key, Key_Value, Action)) -->
 
 %   ['When try ~a the ungrounded key ~p = ~p was found'
 %   - [Action, Key, Key_Value]].
+
+
+
+
+
+
+
+
+
+
 
