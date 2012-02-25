@@ -128,8 +128,9 @@ closure(S, Closure) :-
 	egraph(Graph), !,
 	(   Graph == []
 	->  Closure = [S]
-	;   reachable(S, Graph, Closure0),
-	    list_to_ord_set([S|Closure0], Closure)
+	;   reachable(S, Graph, Closure0)
+	->  list_to_ord_set([S|Closure0], Closure)
+	;   Closure = [S]
 	).
 
 closures(State_Set, Closure) :-
