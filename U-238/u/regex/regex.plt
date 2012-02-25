@@ -4,14 +4,16 @@
 test(syntax_positive,
      [forall(
 	  member(Pat,
-		 ["", "a", "ab", "a*", "a*a", "a|b", "a|b|c",
-		  "(a)", "((a))", "(((ab)))",
+		 ["", "a", "ab", "a*", "a*a", "ab*",
+                  "a|b", "a|b|c",
+		  "(a)", "((a))", "(((ab)))", 
 		  "b*|b", "ab*b",
 		  "(a|b)", "(a*|b)", "(ab*|b)", "(b*|b*)",
 		  "(b*|b*)*", "(b|a|c)*", "b|a|c*", "a|ab*|abc*",
 		  "(a|ab*|abc*)d", "(a|ab*|abc*)(a)d",
 		  "(a|ab*|abc*)(a*)d", "(a|ab*|abc*)(a*)(d)",
-		  "(a|ab*|abc*)(a*)(d)|e*", "(a|ab*|abc*)(a*)(d)|e",
+		  "(a|ab*|abc*)(a*)(d)|e*",
+                  "(a|ab*|abc*)(a*)(d)|e",
 		  "(a|ab*|abc*)(a*)(d)|(e|d*)",
 		  "((a|ab*|abc*)(a*)(d)|(e|d*))",
 		  "(((a|ab*|abc*)(a*)(d)|(e|d*)))"
@@ -19,7 +21,7 @@ test(syntax_positive,
 	    )
      ]) :-
 
-	regex_nfa(Pat, _).
+	regex_dfa(Pat, _).
 
 	%findall('.', phrase(regex(_), Pat, []), ['.']).
 
