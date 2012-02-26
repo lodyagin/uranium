@@ -31,6 +31,7 @@
 	   db_conv_local_db/4,
            db_clear_int/1,
            db_erase/1,
+           db_des/2,  % +DB_Key, ?Des
            db_key_is_valid/1,
            db_object_class_int/2,
            db_recorded_int/2,
@@ -48,6 +49,12 @@
 
 :- multifile prolog:message/3.
 :- multifile db_recorded_int/2, db_erase/1, db_recordz/2.
+
+db_des(DB_Key, Des) :-
+
+   atom(DB_Key), !,
+   Des = db_class_des(_, _, _, _, _, _),
+   recorded(DB_Key, Des).
 
 % DB maintain its own namespace of class ids
 
@@ -101,6 +108,8 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
        recorded(DB_Key, Des), !
    ).
 
+%db_conv_local_db(+DB_Key, ?(+)Local_Class_Id, ?(-)DB_Class_Id,
+%                 -Des)
 db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
 
    var(DB_Class_Id), integer(Local_Class_Id), !,
