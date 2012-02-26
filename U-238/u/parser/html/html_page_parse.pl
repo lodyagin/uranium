@@ -28,6 +28,7 @@
 :- use_module(u(v)).
 :- use_module(library(xpath)).
 :- use_module(u(logging)).
+:- use_module(u(internal/check_arg)).
 
 %
 % Parse DOM of html page and create a list of objects
@@ -37,8 +38,9 @@
 
 html_page_parse(DB_Key, Page, Elements_To_Extract) :-
 
-  atom(DB_Key),
-  is_list(Elements_To_Extract),
+  Ctx = context(html_page_parse/3, _),
+  check_db_key(DB_Key, Ctx),
+  check_list_fast_arg(Elements_To_Extract, Ctx),
   list_to_set(Elements_To_Extract, Elements_Set),
   maplist(extract_elements(DB_Key, Page), Elements_Set).
 
