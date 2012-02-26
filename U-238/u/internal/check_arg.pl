@@ -10,8 +10,7 @@
            check_list_fast_arg/2,
            check_values_arg/3,
            check_object_arg/3,
-           check_rebase_rule/2,
-           check_values_arg/3
+           check_rebase_rule/2
            ]).
 
 :- use_module(objects_i).
