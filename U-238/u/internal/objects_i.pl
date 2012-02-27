@@ -73,6 +73,7 @@
            objects:module_class_def/3, % Class, Parent, Module
            objects:parent/2, % Class_Id, Parent_Class_Id
            objects:pretty_print/4,
+           objects:rebased_class/3,% Orig_Id, Parents, Rebased_Id
            objects:typedef_flag/2.
 
 % class_arity(+Class_Id, -Arity)

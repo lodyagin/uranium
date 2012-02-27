@@ -233,10 +233,20 @@ assert_copy(Class_Id, Parent_Id) :-
    ).
 
 
+% class_rebase(+Parents, -Class_New_Id, -Rebased)
+%
+% Parents - a list of new parents ids for this class (it is
+% started from nearest and ended with object_base_v (id = 0)
+%
+
 class_rebase([], -1, false) :- !.
 
 class_rebase([Class_Orig_Id|Parents], Class_New_Id, Rebase) :-
 
+   (  objects:rebased_class(Class_Orig_Id, Parents, Class_New_Id)
+   -> Rebase = rebase
+   ;
+   
    class_rebase(Parents, Parent_Id, Rebase1),
 
    % check whether do rebase
@@ -254,9 +264,12 @@ class_rebase([Class_Orig_Id|Parents], Class_New_Id, Rebase) :-
    -> class_new_fields(Class_Orig_Id, New_Fields),
       class_id(Class_Orig_Id, Class),
       assert_new_class_rebased(Class, Parent_Id, New_Fields,
-                               Class_New_Id, _)
+                               Class_New_Id, _),
+      assertz(objects:rebased_class(Class_Orig_Id, Parents,
+                                    Class_New_Id))
    ;  % the same class is sufficient
       Class_New_Id = Class_Orig_Id
+   )
    ).
 
 assert_new_class_id(Class_Id, Parent_Id, New_Fields, Ctx) :-
