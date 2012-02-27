@@ -99,7 +99,7 @@ class_create(Class, Parent, Fields, New_Key) :-
    assert_copy(Class_Id, Parent_Id).
 
 
-assert_new_class(Class, Parent_Id, Fields, Ctx) :-
+assert_new_class(Class, Parent_Id, Fields0, Ctx) :-
 
   (  class_primary_id(Class, Class_Id)
   -> true % class id can be already created by object_module
@@ -111,19 +111,20 @@ assert_new_class(Class, Parent_Id, Fields, Ctx) :-
   ;  true
   ),
 
-  (  fields_names_types(Fields, Field_Names, _)
+  (  fields_names_types(Fields0, Field_Names0, _)
   -> true
   ;  throw(error(type_error(object_fields_and_types,Fields), Ctx))
   ),
-  (  is_set(Field_Names) -> true
+  (  is_set(Field_Names0) -> true
   ;  Ctx = context(_, 'duplicates were found'),
-     throw(error(domain_error(object_fields, Field_Names), Ctx))
+     throw(error(domain_error(object_fields, Field_Names0), Ctx))
   ),
 
   (  \+ class_id(Class_Id, _)
   -> objects:assertz(class_id(Class_Id, true, Class))
   ;  true ),
 
+  list_to_ord_set(Fields0, Fields),
   assert_new_class_id(Class_Id, Parent_Id, Fields, Ctx).
 
 
