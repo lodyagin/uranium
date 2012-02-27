@@ -26,12 +26,13 @@
 :- module(class_create,
           [class_create/3,
            class_create/4,
-           class_rebase/3
+           class_rebase/4
           ]).
 
 :- use_module(library(error)).
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/check_arg)).
+
 
 check_class_create(Class, Parent, Fields, Ctx) :-
 
@@ -125,7 +126,7 @@ assert_new_class(Class, Parent_Id, Fields0, Ctx) :-
   ;  true ),
 
   list_to_ord_set(Fields0, Fields),
-  assert_new_class_id(Class_Id, Parent_Id, Fields, Ctx).
+  assert_new_class_id(Class_Id, Class, Parent_Id, Fields, Ctx).
 
 
 assert_new_class_rebased(Class, Parent_Id, New_Fields, Class_Id,
@@ -136,7 +137,8 @@ assert_new_class_rebased(Class, Parent_Id, New_Fields, Class_Id,
    objects:assertz(class_id(Class_Id, false, Class)),
    % NB arg2 = false means rebased class
 
-   assert_new_class_id(Class_Id, Parent_Id, New_Fields, Ctx).
+   assert_new_class_id(Class_Id, Class, Parent_Id, New_Fields,
+                       Ctx).
 
 
 assert_class_fields(Class_Id, Top_Fields, Arg0, Arg) :-
@@ -233,21 +235,22 @@ assert_copy(Class_Id, Parent_Id) :-
    ).
 
 
-% class_rebase(+Parents, -Class_New_Id, -Rebased)
+% class_rebase(+Parents, +Class_Name, -Class_New_Id, -Rebased)
 %
 % Parents - a list of new parents ids for this class (it is
 % started from nearest and ended with object_base_v (id = 0)
 %
 
-class_rebase([], -1, false) :- !.
+class_rebase([], _, -1, false) :- !.
 
-class_rebase([Class_Orig_Id|Parents], Class_New_Id, Rebase) :-
+class_rebase([Class_Orig_Id|Parents], Class_Name, Class_New_Id,
+             Rebase) :-
 
-   (  objects:rebased_class(Class_Orig_Id, Parents, Class_New_Id)
+   (  objects:rebased_class(Class_Name, Parents, Class_New_Id)
    -> Rebase = rebase
    ;
    
-   class_rebase(Parents, Parent_Id, Rebase1),
+   class_rebase(Parents, Class_Name, Parent_Id, Rebase1),
 
    % check whether do rebase
    (  Rebase1 \== rebase
@@ -264,17 +267,16 @@ class_rebase([Class_Orig_Id|Parents], Class_New_Id, Rebase) :-
    -> class_new_fields(Class_Orig_Id, New_Fields),
       class_id(Class_Orig_Id, Class),
       assert_new_class_rebased(Class, Parent_Id, New_Fields,
-                               Class_New_Id, _),
-      assertz(objects:rebased_class(Class_Orig_Id, Parents,
-                                    Class_New_Id))
+                               Class_New_Id, _)
    ;  % the same class is sufficient
       Class_New_Id = Class_Orig_Id
    )
    ).
 
-assert_new_class_id(Class_Id, Parent_Id, New_Fields, Ctx) :-
+assert_new_class_id(Class_Id, Class_Name, Parent_Id, New_Fields,
+                    Ctx) :-
 
-  % assert the parent relation
+   % assert the parent relation
    objects:assertz(parent(Class_Id, Parent_Id)),
 
    assert_class_fields(Class_Id, New_Fields, _, Next_Arg),
@@ -287,7 +289,16 @@ assert_new_class_id(Class_Id, Parent_Id, New_Fields, Ctx) :-
    class_noneval_new_fields_db(Class_Id, New_Field_Names),
    objects:assertz(fields(Class_Id, All_Field_Names,
                           New_Field_Names)),
-   objects:assertz(arity(Class_Id, Arity)).
+   objects:assertz(arity(Class_Id, Arity)),
+
+   % any class is rebase of itself
+   list_inheritance(Class_Id, Parents_List0),
+   reverse(Parents_List0, [_|Parents_List]),
+   (  objects:rebased_class(Class_Name, Parents_List, Class_Id)
+   -> true
+   ;  assertz(objects:rebased_class(Class_Name, Parents_List,
+                                    Class_Id))
+   ).
 
 
 % All_Field_Names_Set - ordset of all noneval fields

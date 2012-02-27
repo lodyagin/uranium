@@ -209,6 +209,7 @@ reload_all_classes :-
    abolish(objects:module_class_def/3),
    abolish(objects:parent/2),
    abolish(objects:pretty_print/4),
+   abolish(objects:rebased_class/3),
    abolish(objects:reinterpret/4),
    abolish(objects:typedef_flag/2),
    abolish(db_pg:pl_pg_type/3),
@@ -218,6 +219,7 @@ reload_all_classes :-
    objects:assertz(parent(0, -1)),
    objects:assertz(typedef_flag(hidden, object_base_v)),
    objects:assertz(key(0, 0, [])),
+   objects:assertz(rebased_class(object_base_v, [], 0)),
 
    % Load all class modules
    (  find_class_module(Module_Path),

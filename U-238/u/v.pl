@@ -456,7 +456,8 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
    append(New_Parents1, New_Parents2, New_Parents_R),
    reverse(New_Parents_R, New_Parents),
 
-   class_rebase(New_Parents, Rebased_Id, Rebase),
+   functor(Object0, Class_Name, _),
+   class_rebase(New_Parents, Class_Name, Rebased_Id, Rebase),
    (  Rebase == rebase -> true
    ;  throw(implementation_error(
             ['class_rebase called for no actual rebasing case']))
