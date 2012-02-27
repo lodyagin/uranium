@@ -12,7 +12,14 @@ test(obj_rebase_bug1) :-
    arg(1, Obj1, Class_Id1),
    arg(1, Obj2, Class_Id2),
 
-   assertion(Class_Id1 =:= Class_Id2).
+   assertion(Class_Id1 =:= Class_Id2),
+
+   obj_rebase((db_object_v -> object_v), Obj2, Obj3),
+
+   arg(1, Obj2_0, Class_Id0),
+   arg(1, Obj3, Class_Id3),
+   assertion(Class_Id0 =:= Class_Id3),
+   assertion(Obj2_0 == Obj3).
 
 test(obj_construct_bug1) :-
 
