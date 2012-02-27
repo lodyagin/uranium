@@ -26,7 +26,7 @@
 :- module(class_create,
           [class_create/3,
            class_create/4,
-           class_rebase/4
+           class_rebase/3
           ]).
 
 :- use_module(library(error)).
@@ -235,22 +235,23 @@ assert_copy(Class_Id, Parent_Id) :-
    ).
 
 
-% class_rebase(+Parents, +Class_Name, -Class_New_Id, -Rebased)
+% class_rebase(+Parents, -Class_New_Id, -Rebased)
 %
 % Parents - a list of new parents ids for this class (it is
 % started from nearest and ended with object_base_v (id = 0)
 %
 
-class_rebase([], _, -1, false) :- !.
+class_rebase([], -1, false) :- !.
 
-class_rebase([Class_Orig_Id|Parents], Class_Name, Class_New_Id,
-             Rebase) :-
+class_rebase([Class_Orig_Id|Parents], Class_New_Id, Rebase) :-
 
+   class_id(Class_Orig_Id, Class_Name),
+   
    (  objects:rebased_class(Class_Name, Parents, Class_New_Id)
    -> Rebase = rebase
    ;
    
-   class_rebase(Parents, Class_Name, Parent_Id, Rebase1),
+   class_rebase(Parents, Parent_Id, Rebase1),
 
    % check whether do rebase
    (  Rebase1 \== rebase
