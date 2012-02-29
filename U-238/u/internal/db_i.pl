@@ -204,6 +204,13 @@ db_recorded_int(DB_Key, L_Object) :-
 
     atom(DB_Key), nonvar(L_Object), !,
 
+    (  obj_field(L_Object, db_ref, Ref)
+    -> var(Ref)
+    ;  Ctx = context(db_recorded_int/2, _),
+       throw(error(domain_error(db_object_v_desc, L_Object),
+		   Ctx))
+    ),
+
     arg(1, L_Object, Local_Class_Id),
     object_local_db(DB_Key, L_Object, DB_Object),
 

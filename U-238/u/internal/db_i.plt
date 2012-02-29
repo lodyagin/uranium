@@ -37,6 +37,22 @@ test(db_conv_local_db1, [setup(setup)]) :-
 	assertion(Man_DB_Id =\= Object_DB_Id).
 
 
+test(db_recorded_int,
+     [throws(error(domain_error(db_object_v_desc, _), _))]
+    ) :-
+
+        obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),
+        db_put_object(test2, Obj0, _),
+        db_recorded_int(test2, Obj0).
+
+test(db_recorded_int,
+     [fail]) :-
+
+        obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),
+        db_put_object(test2, Obj0, Obj),
+        db_recorded(test2, Obj).
+     
+
 setup :-
 
 	db_clear(db_i_test).
