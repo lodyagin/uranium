@@ -129,7 +129,8 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
 					 DB_Fields,
 					 Local_Fields)
 	   ->  true
-	   ;   throw(error(class_fields_mismatch(
+	   ;   class_all_fields(Local_Class_Id, Local_Fields),
+	       throw(error(class_fields_mismatch(
 	          DB_Key, Class, Local_Fields, DB_Fields)))
 	   ),
 
