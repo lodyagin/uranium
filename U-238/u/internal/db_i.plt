@@ -38,19 +38,20 @@ test(db_conv_local_db1, [setup(setup)]) :-
 
 
 test(db_recorded_int,
-     [throws(error(domain_error(db_object_v_desc, _), _))]
+     [setup(setup),
+      throws(error(domain_error(db_object_v_desc, _), _))]
     ) :-
 
         obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),
-        db_put_object(test2, Obj0, _),
-        db_recorded_int(test2, Obj0).
+        db_put_object(db_i_test, Obj0, _),
+        db_recorded_int(db_i_test, Obj0).
 
 test(db_recorded_int,
-     [fail]) :-
+     [setup(setup), fail]) :-
 
         obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),
-        db_put_object(test2, Obj0, Obj),
-        db_recorded(test2, Obj).
+        db_put_object(db_i_test, Obj0, Obj),
+        db_recorded(db_i_test, Obj).
      
 
 setup :-

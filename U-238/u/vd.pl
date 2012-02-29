@@ -32,7 +32,7 @@
 %           db_bind_obj/3, % +DB_Key, +Object0, -Object
 %           db_change/4,   % +DB_Key, +Fields, +Vals, +Query
            db_clear/1,
-           %db_copy/2,
+           db_copy/2,
            %db_iterate/3,  % +DB_Key, +Query, -Object
            %db_iterate/4,  % +DB_Key, +Query, +Filter_Pred, -Object
            %db_iterate_replace/3,  % +DB_Key, +Pred, +Query
@@ -250,7 +250,7 @@ db_search(DB_In, DB_Out, Pred) :-
   fail
   ;
   true.
-
+*/
 db_copy(DB_In, DB_Out) :-
 
   db_recorded(DB_In, Term),
@@ -258,7 +258,7 @@ db_copy(DB_In, DB_Out) :-
   fail
   ;
   true.
-*/
+
 dump_db(DB_Key) :- dump_db([logger(dump_db)], DB_Key).
 
 dump_db(Options, DB_Key) :-
