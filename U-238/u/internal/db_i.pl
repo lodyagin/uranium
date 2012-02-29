@@ -204,8 +204,8 @@ db_recorded_int(DB_Key, L_Object) :-
 
     atom(DB_Key), nonvar(L_Object), !,
 
-    (  obj_field(L_Object, db_ref, Ref)
-    -> var(Ref)
+    (  obj_field(L_Object, db_ref, Ref1)
+    -> var(Ref1)
     ;  Ctx = context(db_recorded_int/2, _),
        throw(error(domain_error(db_object_v_desc, L_Object),
 		   Ctx))
