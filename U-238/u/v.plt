@@ -1,6 +1,35 @@
 :- begin_tests(v).
 :- use_module(u(v)).
 
+test(class_fields) :-
+
+   class_fields(object_base_v, Object_Base_V_Fields),
+   assertion(Object_Base_V_Fields == []),
+
+   class_fields_new(object_base_v, Object_Base_V_New_Fields),
+   assertion(Object_Base_V_New_Fields == []),
+   
+   class_fields(object_v, Object_V_Fields),
+   assertion(Object_V_Fields == []),
+
+   class_fields_new(object_v, Object_V_New_Fields),
+   assertion(Object_V_New_Fields == []),
+   
+   class_fields(man_v, Man_V_Fields),
+   assertion(Man_V_Fields == [height, name, sex, surname, weight]),
+
+   class_fields_new(man_v, Man_V_New_Fields),
+   assertion(Man_V_New_Fields == [height, name, sex, surname,
+                                  weight]),
+   
+   class_fields(citizen_v, Citizen_V_Fields),
+   assertion(Citizen_V_Fields == [birthday, country, height, id,
+                                  name, sex, surname, weight]),
+
+   class_fields_new(citizen_v, Citizen_V_New_Fields),
+   assertion(Citizen_V_New_Fields == [birthday, country, id]).
+   
+
 test(obj_rebase_bug1) :-
 
    obj_construct(man_v, [sex, name], [man, 'Adam'], Obj1_0),

@@ -158,12 +158,18 @@ list_inheritance(From_Id, To_Id, List0, List) :-
 
 class_all_fields(Class_Id, Fields) :-
 
-   objects:fields(Class_Id, Fields, _), !.
+   (  Class_Id =:= 0
+   -> Fields = []
+   ; objects:fields(Class_Id, Fields, _), !
+   ).
 
 
 class_new_fields(Class_Id, New_Fields) :-
 
-   objects:fields(Class_Id, _, New_Fields), !.
+   (  Class_Id =:= 0
+   -> New_Fields = []
+   ;  objects:fields(Class_Id, _, New_Fields), !
+   ).
 
 
 % parse Name : Type lists and check all values
