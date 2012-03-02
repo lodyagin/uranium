@@ -12,11 +12,13 @@
            check_object_arg/3,
            check_rebase_rule/2,
 
-           decode_arg/4  % +Vals_LOL, +Arg_Val, -Result, +Ctx
+           decode_arg/4,  % +Vals_LOL, +Arg_Val, -Result, +Ctx
+           clear_decode_arg
            ]).
 
 :- use_module(objects_i).
 :- use_module(db_i).
+:- use_module(u(ur_lists)).
 
 :- dynamic arg_decode/4.
 
@@ -130,12 +132,17 @@ check_rebase_rule(Rebase_Rule, Ctx) :-
 
 decode_arg(Vals_LOL, Arg_Val, Result, Ctx) :-
 
+   Self_Ctx = decode_arg/4,
+   (  ground(Ctx)
+   -> true
+   ;  throw(error(instantiation_error, Self_Ctx))
+   ),
    (  Ctx = Pred_Name/Arity
    -> true
-   ;  Pred_Name = Ctx, Arity = '?'
+   ;  atom(Ctx)
+   -> Pred_Name = Ctx, Arity = '?'
+   ;  throw(error(domain_error(context, Ctx), Self_Ctx))
    ),
-   
-   check_inst(Arg_Val, Ctx),
    
    (  arg_decode(Pred_Name, Arity, Arg_Val, Result0)
    -> true
@@ -158,7 +165,11 @@ decode_arg_int([], _, _) :- fail.
 
 decode_arg_int([Vals_List|LOL_Tail], Arg_Val, R) :-
 
-   (  memberchk(Arg_Val, Vals_List)
+   (  gen_memberchk('=@=', Arg_Val, Vals_List)
    -> Vals_List = [R|_] % normalize to the first element
    ;  decode_arg_int(LOL_Tail, Arg_Val, R)
    ).
+
+clear_decode_arg :-
+
+   retractall(arg_decode(_, _, _, _)).
