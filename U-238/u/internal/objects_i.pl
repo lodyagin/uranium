@@ -287,9 +287,9 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type) :-
    (  objects:field(Class_Id, Field_Name, Obj, Value, Type, _,
                     _)
    -> true
-   ;  Weak == weak
+   ;  ( Weak == weak ; Weak == true )
    -> true
-   ;  Weak == fail
+   ;  ( Weak == strict ; Weak == false ; Weak == fail )
    -> fail
       %%FIXME! no valid error (if eval fails)
    ;  fail %throw(no_object_field(Obj, Field_Name))

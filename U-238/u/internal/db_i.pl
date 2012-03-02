@@ -35,7 +35,7 @@
            db_key_is_valid/1,
            db_object_class_int/2,
            db_recorded_int/2,
-           db_recordz/2,
+           db_recordz_int/2,
 %           db_unify_int/6,
            erase_conflicts/3,
            key_conflict/4,
@@ -48,7 +48,7 @@
 :- use_module(u(v)).
 
 :- multifile prolog:message/3.
-:- multifile db_recorded_int/2, db_erase/1, db_recordz/2.
+:- multifile db_recorded_int/2, db_erase/1, db_recordz_int/2.
 
 db_des(DB_Key, Des) :-
 
@@ -258,17 +258,20 @@ db_erase(recorded(DB_Key, Ref)) :-
     call_db_pred(DB_Ref, erase, []).
 */
 
-% db_recordz(+DB_Key, +Object)
+% db_recordz_int(+DB_Key, +Object)
 %
 % Set db_ref in Object
 
-db_recordz(DB_Key, Object0) :-
+db_recordz_int(DB_Key, Object0) :-
 
     atom(DB_Key), !, % this is prolog DB version
+    Ctx = context(db_recordz_int/2, _),
     (  obj_field(Object0, db_ref, Ref)
-    -> var(Ref)
-    ;  Ctx = context(db_recordz/2, _),
-       throw(error(domain_error(db_object_v_desc, Object0),
+    -> (  var(Ref)
+       -> true
+       ;  throw(error(domain_error(unbound_db_ref, Object0),Ctx))
+       )
+    ;  throw(error(domain_error(db_object_v_desc, Object0),
 		   Ctx))
     ),
 

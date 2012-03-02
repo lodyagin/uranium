@@ -46,6 +46,7 @@
            db_put_object/4,  % +DB_Key,+Options,+Object0,-Object
            db_put_objects/3, % +DB_Key, :Pred, +Options
 	   db_recorded/2,    % +DB_Key, ?Object
+           db_recordz/2,     % +DB_Key, +Object
            %db_reset/3,    % +DB_Key, +Fields, +Query
            %db_search/3,
            db_size/2,        % +DB_Key, ?Size
@@ -191,7 +192,7 @@ db_put_object_int(DB_Key, Class_Id, Option, Object0, Object) :-
    % Put in db
    (  \+ Continue -> true
    ;
-      db_recordz(DB_Key, Object)
+      db_recordz_int(DB_Key, Object)
    ).
 
 %
@@ -216,6 +217,21 @@ db_recorded(DB_Key, Object) :-
    ;   check_object_arg(Object, Ctx, _)
    ),
    db_recorded_int(DB_Key, Object).
+
+db_recordz(DB_Key, Object0) :-
+
+   Ctx = context(db_recordz/2, _),
+   check_db_key(DB_Key, Ctx),
+   check_inst(Object0, Ctx),
+   check_object_arg(Object0, Ctx, Class_Id),
+
+   class_id(DB_Object_V_Id, db_object_v),
+   (  same_or_descendant(DB_Object_V_Id, _, Class_Id)
+   -> obj_reset_fields([db_ref], Object0, Object)
+   ;  obj_rebase((object_v -> db_object_v), Object0, Object)
+   ),
+   
+   db_recordz_int(DB_Key, Object).
 
 %
 % Leave only matched objects from DB by a search criteria
