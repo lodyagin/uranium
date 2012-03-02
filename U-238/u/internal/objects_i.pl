@@ -97,15 +97,21 @@ class_arity(Class_Id, Arity) :-
 class_fields(Class_Id, Native, Eval, Fields) :-
 
    (  setof(Field_Name:Field_Type,
-        Obj^Value^Body^ (objects:clause(
+        Obj^Value^Body^Native^Eval^ (objects:clause(
            field(Class_Id, Field_Name, Obj, Value, Field_Type,
                  Native, Eval),
            Body )),
-        Fields
+        Fields0
       )
-   -> true
+   -> predsort(compare_obj_fields, Fields0, Fields)
    ;  Fields = []
    ).
+
+
+compare_obj_fields(Delta, F1:_, F2:_) :-
+
+   compare(Delta, F1, F2).
+
 
 class_id(Class_Id, Class) :-
 

@@ -103,8 +103,10 @@ process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
    call(Module:current_predicate(Head, Term)),
    call(Module:clause(Term, _)),
    Term =.. [Head, E_Obj, E_Field, E_Value],
+
+   % <NB> native attribute is not defined yet
    objects:assertz(
-      (field(Class_Id, E_Field, E_Obj, E_Value, _, true, true) :-
+      (field(Class_Id, E_Field, E_Obj, E_Value, _, _, true) :-
           Module:Term) % call with proper context module
       ),
    fail ; true ),
@@ -233,7 +235,27 @@ reload_all_classes :-
 
    (  member(Class_Def, Class_Defs),
       process_class_def(Class_Def),
-      fail ; true ).
+      fail ; true
+   ),
+
+   fix_no_native_evals.
+
+
+fix_no_native_evals :-
+
+   retract(objects:':-'(field(Class_Id, Field, A, B, C, unknown,
+                              true), Body)),
+   
+   (  parent(Class_Id, Parent_Id),
+      clause(objects:field(Parent_Id, Field, _, _, _, _, true),
+             _)
+   -> Native = false
+   ;  Native = true
+   ),
+
+   assertz(objects:':-'(field(Class_Id, Field, A, B, C, Native,
+                              true), Body)),
+   fail ; true.
 
 
 class_module_file(Start, Path) :-

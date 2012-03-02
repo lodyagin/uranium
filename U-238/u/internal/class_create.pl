@@ -141,6 +141,11 @@ assert_new_class_rebased(Class, Parent_Id, New_Fields, Class_Id,
                        Ctx).
 
 
+% assert_class_fields(+Class_Id, +New_Fields, -Arity)
+%assert_class_fields(Class_Id, New_Fields, Arity) :-
+
+%   objects
+
 assert_class_fields(Class_Id, Top_Fields, Arg0, Arg) :-
 
    assert_inherited_fields(Class_Id, Class_Id, Arg0, Arg1),
