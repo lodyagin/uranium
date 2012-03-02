@@ -37,6 +37,7 @@
 	  [common_head/3, % +List1, +List2, -Head
            common_head_rev/3, % +List1, +List2, -Head
            corteging/4,  %+Functor, ?List1, ?List2, ?List3
+           gen_memberchk/3, % +Op, ?Member, ?List
            list_head/4,
            mapkeys/3,
            num_diff_list/2,
@@ -99,6 +100,17 @@ corteging(Functor, [A1|T1], [A2|T2], [Res|T_Res]) :-
 %      corteging(Functor, TL, T_Res),
 %      Res_List = [Res|T_Res]
 %  ).
+
+gen_memberchk(_, _, []) :- fail.
+
+gen_memberchk(Op, Member, [El|T]) :-
+
+   (  call(Op, Member, El)
+   -> true
+   ;  gen_memberchk(Op, Member, T)
+   ).
+
+   
 
 transpose_list_matrix([], []) :- !.
 
