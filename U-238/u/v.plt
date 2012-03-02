@@ -1,5 +1,6 @@
 :- begin_tests(v).
 :- use_module(u(v)).
+:- use_module(u(internal/objects_i)).
 
 test(class_fields) :-
 
@@ -57,5 +58,40 @@ test(obj_construct_bug1) :-
    Obj =.. [man_v, _|Field_Names2],
 
    assertion(Field_Names == Field_Names2).
+
+test(obj_reset_fields1) :-
+
+   obj_construct(man_v,
+                 [sex, name, weight, height],
+                 [man, 'Simeon', 63, 1.75], Man0),
+   
+   obj_reset_fields([name, height], Man0, Man1),
+   obj_class_id(Man1, Class_Id),
+   assertion(Man1 =@= man_v(Class_Id, _, _, man, _, 63)),
+   
+   obj_reset_fields([weight], Man1, Man2),
+   assertion(Man2 =@= man_v(Class_Id, _, _, man, _, _)),
+   
+   obj_reset_fields([], Man2, Man3),
+   assertion(Man3 =@= Man2).
+   
+test(obj_reset_fields2, [fail]) :-
+
+   obj_construct(man_v,
+                 [sex, name, weight, height],
+                 [man, 'Simeon', 63, 1.75], Man0),
+   
+   obj_reset_fields([name, height, age], Man0, _).
+   
+test(obj_reset_fields_weak) :-
+
+   obj_construct(man_v,
+                 [sex, name, weight, height],
+                 [man, 'Simeon', 63, 1.75], Man0),
+   
+   obj_reset_fields_weak([name, height, age], Man0, Man1),
+   obj_class_id(Man1, Class_Id),
+   assertion(Man1 =@= man_v(Class_Id, _, _, man, _, 63)).
+   
 
 :- end_tests(v).

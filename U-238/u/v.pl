@@ -54,10 +54,10 @@
            obj_get_key/2,     % +Object, ?Key
            obj_rebase/3,     % ?Rebase_Rule, @Object0, -Object
            obj_reinterpret/2, % +From, -To
-%           obj_reset_fields/3, % +[Field|...], +Obj_In, -Obj_Out
-%           obj_reset_fields/4, % +[Field|...], +Obj_In, -Obj_Out, Is_Succ
-%           obj_reset_fields_weak/3, % +[Field|...], +Obj_In, -Obj_Out
-%           obj_reset_fields_weak/4, % +[Field|...], +Obj_In, -Obj_Out, I
+           obj_reset_fields/3, % +[Field|...], +Obj_In, -Obj_Out
+           obj_reset_fields/4, % +[Field|...], +Obj_In, -Obj_Out, Is_Succ
+           obj_reset_fields_weak/3, % +[Field|...], +Obj_In, -Obj_Out
+           obj_reset_fields_weak/4, % +[Field|...], +Obj_In, -Obj_Out, I
            obj_merge/4,
            obj_pretty_print/1,
            obj_pretty_print/2,
@@ -218,42 +218,58 @@ named_args_unify(DB_Key,
 %
 % Set the field as unbound
 %
-/*
+
 obj_reset_fields(Fields_List, Object_In, Object_Out) :-
 
-  obj_reset_fields(Fields_List, Object_In, Object_Out, _).
+   Ctx = obj_reset_fields/3,
+   obj_reset_fields_int(Fields_List, Object_In, Object_Out,
+                        strict, Ctx).
 
 %
 % this form is for using in db_iterate_replace
 %
 obj_reset_fields(Fields_List, Object0, Object, true) :-
 
-    functor(Object0, Class, _),
-    maplist(class_arg_num(Class), Arg_Nums, Fields_List),
-    duplicate_term(Object0, Object),
-    length(Fields_List, N),
-    length(Free_Var_List, N),
-    maplist(setarg_tnv(Object), Arg_Nums, Free_Var_List), !.
+   Ctx = obj_reset_fields/4,
+   obj_reset_fields_int(Fields_List, Object0, Object, strict,
+                        Ctx).
 
 obj_reset_fields_weak(Fields_List, Object0, Object) :-
 
-  obj_reset_fields_weak(Fields_List, Object0, Object, _).
-
+   Ctx = obj_reset_fields_weak/3,
+   obj_reset_fields_int(Fields_List, Object0, Object, weak, Ctx).
 
 %
 % this form is for using in db_iterate_replace
 %
 obj_reset_fields_weak(Fields_List, Object0, Object, true) :-
 
-    functor(Object0, Class, _),
-    maplist(class_arg_num_weak(Class), Arg_Nums0, Fields_List),
-    delete(Arg_Nums0, 0, Arg_Nums),
-    duplicate_term(Object0, Object),
-    length(Arg_Nums, N),
-    length(Free_Var_List, N),
-    maplist(setarg_tnv(Object), Arg_Nums, Free_Var_List), !.
-*/
+   Ctx = obj_reset_fields_weak/4,
+   obj_reset_fields_int(Fields_List, Object0, Object, weak, Ctx).
+   
 
+obj_reset_fields_int(Fields_List, Object0, Object, Weak, Ctx) :-
+
+   Self_Ctx = obj_reset_fields_int/5,
+   check_inst(Fields_List, Ctx),
+   check_inst(Object0, Ctx),
+   check_list_fast_arg(Fields_List, Ctx),
+   check_object_arg(Object0, Ctx, Class_Id),
+
+   list_to_ord_set(Fields_List, Reset_Set),
+   class_all_fields(Class_Id, All_Fields_Set),
+
+   % check the 'strict' condition
+   (  decode_arg([[weak], [strict]], Weak, strict, Self_Ctx)
+   -> % must not be nonexisting fields
+      ord_subtract(Reset_Set, All_Fields_Set, [])
+   ;  true ),
+
+   ord_subtract(All_Fields_Set, Reset_Set, Copy_Set),
+
+   obj_unify_int(Class_Id, Copy_Set, Weak, Object0, Values),
+   obj_construct_int(Class_Id, Copy_Set, Weak, Values, Object).
+    
 
 %
 % Сборка экземпляра класса с установкой только заданных полей
