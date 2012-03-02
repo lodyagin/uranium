@@ -14,17 +14,39 @@ test(db_recorded_bug1, [setup(model_db), N =:= 3]) :-
    findall('.', db_recorded(people, _), L),
    length(L, N).
 
-test(db_recorded, [setup(model_db)]) :-
+test(db_recorded1,
+     [setup(model_db),
+      throws(error(domain_error(db_object_v_desc, X), _))]) :-
 
-   findall('.',
-           (obj_construct(man_v, [sex], [man], X),
-            db_recorded(people, X)),
-           L1),
-   length(L1, N1),
-   assertion(N1 =:= 2),
+   obj_construct(man_v, [sex], [man], X),
+   db_recorded(people, X).
+
+
+test(db_recorded2, [setup(model_db)]) :-
 
    findall('.',
            (obj_construct(man_v, [sex], [man], X0),
+            obj_rebase((object_v -> db_object_v), X0, X), 
+            db_recorded(people, X)),
+           L2),
+   length(L2, N2),
+   assertion(N2 =:= 1).
+   
+
+test(db_recorded3, [setup(model_db)]) :-
+
+   findall('.',
+           (obj_construct(man_v, [], [], X0),
+            obj_rebase((object_v -> db_object_v), X0, X), 
+            db_recorded(people, X)),
+           L2),
+   length(L2, N2),
+   assertion(N2 =:= 2).
+   
+test(db_recorded4, [setup(model_db)]) :-
+
+   findall('.',
+           (obj_construct(man_v, [height], [1.76], X0),
             obj_rebase((object_v -> db_object_v), X0, X), 
             db_recorded(people, X)),
            L2),
@@ -56,7 +78,7 @@ test(db_put_objects,
 test(store_and_retrieve1,
     [setup(db_clear(people)),
      man(Sex, Name, Surname, Weight, Height) ==
-    man(man, 'Adam', 'Adamov', 1, 3)]
+     man(man, 'Adam', 'Adamov', 1, 3)]
     ) :-
 
 	obj_construct(man_v,
