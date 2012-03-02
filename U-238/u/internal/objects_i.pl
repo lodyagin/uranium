@@ -25,11 +25,14 @@
 
 :- module(objects_i,
           [
+           class_all_fields/2,  % +Class_Id, -Fields
            class_arity/2,
-           class_fields/4,
+
+           % @Pattern, +Class_Id, ?Native, ?Eval, ?Fields
+           class_fields/5,
+
            class_id/2,
-           class_all_fields/2,
-           class_new_fields/2,
+           class_new_fields/2,  % +Class_Id, -Fields
            class_primary_id/2,
            common_parent/3,
            fields_names_types/3,
@@ -54,6 +57,7 @@
 
 :- use_module(library(lists)).
 :- use_module(library(error)).
+:- use_module(library(pairs)).
 :- use_module(u(ur_lists)).
 
 :- multifile prolog:message/3.
@@ -66,8 +70,6 @@
            objects:field/7,    % Class_Id, Field_Name, Obj, Value,
                                % Field_Type, Is_Native, Is_Eval
 
-           objects:fields/3,   % Class_Id, All_Fields, New_Fields
-                               % (ordset)
            objects:key/3,      % Class_Id, Keymaster_Id, Key (ordset)
            objects:module/2,
            objects:module_class_def/3, % Class, Parent, Module
@@ -75,6 +77,11 @@
            objects:pretty_print/4,
            objects:rebased_class/3,% Name, Parents, Id
            objects:typedef_flag/2.
+
+
+class_all_fields(Class_Id, Fields) :-
+
+   class_fields(_, Class_Id, _, false, Fields).
 
 
 % class_arity(+Class_Id, -Arity)
@@ -87,16 +94,39 @@ class_arity(Class_Id, Arity) :-
             'no objects:arity/2 for class id ~d' - Class_Id))
    ).
 
-% class_fields(+Class_Id, ?Native, ?Eval, ?Fields)
+
+% class_fields(@Pattern, +Class_Id, ?Native, ?Eval, ?Fields)
 % Get list of fields/types
-% Native = true means no field from parent
-% (Native = false - only parent fields)
+% Native == true means no field from parent
+% Native == false - only parent fields
+% Native unbound - both
+%
+% Eval == true - only eval fields
+% Eval == false - only non-eval fields
+% Eval unbound - both
 %
 % It returns ordset (coz it uses setof)
 
-class_fields(Class_Id, Native, Eval, Fields) :-
+class_fields(Pattern, Class_Id, Native, Eval, Fields) :-
 
-   (  setof(Field_Name:Field_Type,
+   var(Pattern), !,
+
+   class_fields(_-_, Class_Id, Native, Eval, Fields0),
+   pairs_keys(Fields0, Fields).
+
+class_fields(_-_, Class_Id, Native, Eval, Fields) :- !,
+
+   class_fields2(Class_Id, Native, Eval, Fields).
+
+class_fields(Pattern, Class_Id, Native, Eval, Fields) :-
+
+   functor(Pattern, Symbol, 2),
+   class_fields(_-_, Class_Id, Native, Eval, Fields0),
+   pairs_replace_functor(Symbol, Fields0, Fields).
+
+class_fields2(Class_Id, Native, Eval, Fields) :-
+
+   (  setof(Field_Name-Field_Type,
         Obj^Value^Body^Native^Eval^ (objects:clause(
            field(Class_Id, Field_Name, Obj, Value, Field_Type,
                  Native, Eval),
@@ -107,11 +137,9 @@ class_fields(Class_Id, Native, Eval, Fields) :-
    ;  Fields = []
    ).
 
+compare_obj_fields(Delta, E1-_, E2-_) :-
 
-compare_obj_fields(Delta, F1:_, F2:_) :-
-
-   compare(Delta, F1, F2).
-
+   compare(Delta, E1, E2).
 
 class_id(Class_Id, Class) :-
 
@@ -121,6 +149,11 @@ class_id(Class_Id, Class) :-
 class_id(Class_Id, Class) :-
 
    objects:class_id(Class_Id, _, Class).
+
+
+class_new_fields(Class_Id, Fields) :-
+
+   class_fields(_, Class_Id, true, false, Fields).
 
 
 class_primary_id(Class, Class_Id) :-
@@ -160,22 +193,6 @@ list_inheritance(From_Id, To_Id, List0, List) :-
 
    objects:parent(To_Id, Parent_Id),
    list_inheritance(From_Id, Parent_Id, [To_Id|List0], List).
-
-
-class_all_fields(Class_Id, Fields) :-
-
-   (  Class_Id =:= 0
-   -> Fields = []
-   ; objects:fields(Class_Id, Fields, _), !
-   ).
-
-
-class_new_fields(Class_Id, New_Fields) :-
-
-   (  Class_Id =:= 0
-   -> New_Fields = []
-   ;  objects:fields(Class_Id, _, New_Fields), !
-   ).
 
 
 % parse Name : Type lists and check all values

@@ -142,55 +142,35 @@ assert_new_class_rebased(Class, Parent_Id, New_Fields, Class_Id,
 
 
 % assert_class_fields(+Class_Id, +New_Fields, -Arity)
-%assert_class_fields(Class_Id, New_Fields, Arity) :-
+assert_class_fields(Class_Id, New_Fields, Arity) :-
 
-%   objects
+   parent(Class_Id, Parent_Id),
+   class_fields(_:_, Parent_Id, _, _, Old_Fields),
+   merge(Old_Fields, New_Fields, Fields),
+   assert_class_fields2(Fields, 2, Next_Arg, Class_Id, Parent_Id),
+   Arity is Next_Arg - 1.
 
-assert_class_fields(Class_Id, Top_Fields, Arg0, Arg) :-
+assert_class_fields2([], Arg, Arg, _, _) :- !.
 
-   assert_inherited_fields(Class_Id, Class_Id, Arg0, Arg1),
-   assert_class_fields2(Class_Id, Class_Id, Top_Fields, Arg1, Arg).
+assert_class_fields2([Field_Name:Field_Type|FT], Arg0, Arg,
+                        Class_Id, Parent_Id) :-
 
-% reset Arg to 2 (always 1 holds class id)
-assert_inherited_fields(_, 0, _, 2) :- !.
-
-assert_inherited_fields(Class_Id, Ref_Class_Id, Arg0, Arg) :-
-
-   % process parent's fields
-   objects:parent(Ref_Class_Id, Parent_Id), !,
-   assert_inherited_fields(Class_Id, Parent_Id, Arg0, Arg1),
-
-   class_fields(Parent_Id, true, _, New_Fields),
-   assert_class_fields2(Class_Id, Parent_Id, New_Fields,
-                        Arg1, Arg).
-
-
-assert_class_fields2(_, _, [], Arg, Arg) :- !.
-
-
-assert_class_fields2(Class_Id, Native_Id,
-                    [Field_Name:Field_Type|FT], Arg0, Arg) :- !,
-
-   (  Class_Id =\= Native_Id
+   (  objects:clause(field(Parent_Id, Field_Name, Obj, Value,
+                          Field_Type, _, Is_Eval), Body)
    -> % re-assert inherited field with new class id
-      objects:clause(
-         field(Native_Id, Field_Name, Obj, Value, Field_Type,
-            true, %true marks fields introduced by Native_Id
-            Is_Eval),
-         Body),
-      (  Is_Eval \== true
+      (  Is_Eval == false
       ->
          objects:assertz(
            (field(Class_Id, Field_Name, Obj, Value, Field_Type,
                   false, false) :- arg(Arg0, Obj, Value))
          ),
          Arg1 is Arg0 + 1
-      ;  % eval fields not depends on Arg
+      ;
          objects:assertz(
            (field(Class_Id, Field_Name, Obj, Value, Field_Type,
                   false, true) :- Body)
          ),
-         Arg1 = Arg0
+         Arg1 = Arg0 % eval fields not depends on Arg
       )
    ;  % assert new fields
       % NB new evaluated fields are not in this list
@@ -201,13 +181,14 @@ assert_class_fields2(Class_Id, Native_Id,
       Arg1 is Arg0 + 1
    ),
 
-   assert_class_fields2(Class_Id, Native_Id, FT, Arg1, Arg).
+   assert_class_fields2(FT, Arg1, Arg, Class_Id, Parent_Id), !.
 
-assert_class_fields2(Class_Id, Native_Id,
-                    [Field_Name|FT], Arg0, Arg) :-
 
-   assert_class_fields2(Class_Id, Native_Id,
-                        [Field_Name:_|FT], Arg0, Arg).
+assert_class_fields2([Field_Name|FT], Arg0, Arg, Class_Id,
+                     Parent_Id) :-
+
+   assert_class_fields2([Field_Name:_|FT], Arg0, Arg, Class_Id,
+                        Parent_Id).
 
 
 assert_new_key(_, []) :- !.
@@ -251,11 +232,11 @@ class_rebase([], -1, false) :- !.
 class_rebase([Class_Orig_Id|Parents], Class_New_Id, Rebase) :-
 
    class_id(Class_Orig_Id, Class_Name),
-   
+
    (  objects:rebased_class(Class_Name, Parents, Class_New_Id)
    -> Rebase = rebase
    ;
-   
+
    class_rebase(Parents, Parent_Id, Rebase1),
 
    % check whether do rebase
@@ -270,7 +251,7 @@ class_rebase([Class_Orig_Id|Parents], Class_New_Id, Rebase) :-
 
    % rebase if needed
    (  Rebase == rebase
-   -> class_new_fields(Class_Orig_Id, New_Fields),
+   -> class_fields(_:_, Class_Orig_Id, true, false, New_Fields),
       class_id(Class_Orig_Id, Class),
       assert_new_class_rebased(Class, Parent_Id, New_Fields,
                                Class_New_Id, _)
@@ -285,16 +266,15 @@ assert_new_class_id(Class_Id, Class_Name, Parent_Id, New_Fields,
    % assert the parent relation
    objects:assertz(parent(Class_Id, Parent_Id)),
 
-   assert_class_fields(Class_Id, New_Fields, _, Next_Arg),
-   Arity is Next_Arg - 1,
+   assert_class_fields(Class_Id, New_Fields, Arity),
 
-   check_field_names_db(Class_Id, All_Field_Names, Ctx),
+   check_field_names_db(Class_Id, _, Ctx),
 
    !,
    % if all ok make final asserts
-   class_noneval_new_fields_db(Class_Id, New_Field_Names),
-   objects:assertz(fields(Class_Id, All_Field_Names,
-                          New_Field_Names)),
+   %class_noneval_new_fields_db(Class_Id, New_Field_Names),
+   %objects:assertz(fields(Class_Id, All_Field_Names,
+   %                       New_Field_Names)),
    objects:assertz(arity(Class_Id, Arity)),
 
    % any class is rebase of itself

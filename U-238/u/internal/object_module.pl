@@ -205,7 +205,7 @@ reload_all_classes :-
    abolish(objects:copy/4),
    abolish(objects:downcast/4),
    abolish(objects:field/7),
-   abolish(objects:fields/3),
+   %abolish(objects:fields/3),
    abolish(objects:key/3),
    abolish(objects:module/2),
    abolish(objects:module_class_def/3),
