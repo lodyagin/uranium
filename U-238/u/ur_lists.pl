@@ -42,6 +42,7 @@
            num_diff_list/2,
            index_list/4,
            extract_by_key_order/3,
+           pairs_replace_functor/3,
            select_value/4,
            sort_linked/2,
            swap_keyed_list/2,
@@ -57,6 +58,7 @@
            write_delimited/3     % +Write_Pred, +Delimiter, +List
 ]).
 
+:- use_module(library(error)).
 :- use_module(u(logging)).
 
 :- module_transparent switch_by_value/4, weak_maplist/3.
@@ -139,6 +141,15 @@ extract_by_key_order(Order, Source, Destination) :-
     swap_keyed_list(Order_I, Order_SI),
     sort(Order_SI, Order_SSI),
     predsort(key_order_compare(Order_SSI), Source, Destination).
+
+% replace the functor in pairs
+pairs_replace_functor(_, [], []) :- !.
+
+pairs_replace_functor(New_Functor, [El1|T1], [El2|T2]) :-
+
+   El1 =.. [_, Key, Value],
+   El2 =.. [New_Functor, Key, Value],
+   pairs_replace_functor(New_Functor, T1, T2).
 
 key_order_compare(Order_SSI, Ord, AI - _, BI - _) :-
     ord_memberchk(AI - K1, Order_SSI),
