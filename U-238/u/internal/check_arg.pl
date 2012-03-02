@@ -10,11 +10,15 @@
            check_list_fast_arg/2,
            check_values_arg/3,
            check_object_arg/3,
-           check_rebase_rule/2
+           check_rebase_rule/2,
+
+           decode_arg/4  % +Vals_LOL, +Arg_Val, -Result, +Ctx
            ]).
 
 :- use_module(objects_i).
 :- use_module(db_i).
+
+:- dynamic arg_decode/4.
 
 check_inst(Arg, Ctx) :-
 
@@ -122,3 +126,39 @@ check_rebase_rule(Rebase_Rule, Ctx) :-
    ;  true ),
    check_class_arg(Old_Base, Ctx),
    check_class_arg(New_Base, Ctx).
+
+
+decode_arg(Vals_LOL, Arg_Val, Result, Ctx) :-
+
+   (  Ctx = Pred_Name/Arity
+   -> true
+   ;  Pred_Name = Ctx, Arity = '?'
+   ),
+   
+   check_inst(Arg_Val, Ctx),
+   
+   (  arg_decode(Pred_Name, Arity, Arg_Val, Result0)
+   -> true
+   ;  (  Vals_LOL = [_|_] % not empty list
+      -> (  decode_arg_int(Vals_LOL, Arg_Val, Result0)
+         -> assertz(arg_decode(Pred_Name, Arity, Arg_Val,
+                               Result0))
+         ;  % make the domain and throw the error
+            flatten(Vals_LOL, Domain),
+            throw(error(domain_error(Domain, Arg_Val), Ctx))
+         )
+      ;
+         throw(error(domain_error(not_empty_list_of_lists,
+                                  Vals_LOL)))
+      )
+   ),
+   Result = Result0.
+
+decode_arg_int([], _, _) :- fail.
+
+decode_arg_int([Vals_List|LOL_Tail], Arg_Val, R) :-
+
+   (  memberchk(Arg_Val, Vals_List)
+   -> Vals_List = [R|_] % normalize to the first element
+   ;  decode_arg_int(LOL_Tail, Arg_Val, R)
+   ).
