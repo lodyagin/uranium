@@ -470,9 +470,10 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
    list_inheritance(New_Base_Id, New_Parents1),
    list_inheritance(Old_Base_Id, Orig_Id, [_|New_Parents2]),
    append(New_Parents1, New_Parents2, New_Parents_R),
-   reverse(New_Parents_R, New_Parents),
+   reverse(New_Parents_R, New_Parents3),
 
-   class_rebase(New_Parents, Rebased_Id, Rebase),
+   class_rebase(New_Parents3, New_Parents, Rebase),
+   New_Parents = [Rebased_Id|_],
    (  Rebase == rebase -> true
    ;  throw(implementation_error(
             ['class_rebase called for no actual rebasing case']))

@@ -227,37 +227,40 @@ assert_copy(Class_Id, Parent_Id) :-
 % started from nearest and ended with object_base_v (id = 0)
 %
 
-class_rebase([], -1, false) :- !.
+class_rebase([0], [0], false) :- !.
 
-class_rebase([Class_Orig_Id|Parents], Class_New_Id, Rebase) :-
+class_rebase([Class_Orig_Id|Parents0], [Class_New_Id|Parents],
+             Rebase) :-
 
-   class_id(Class_Orig_Id, Class_Name),
+   % The recursion into parents
+   class_rebase(Parents0, Parents, Rebase1),
+   Parents = [Parent_Id|_],
 
+   % Check the rebased classes cache (by the class name)
+   class_id(Class_Orig_Id, Class_Name), % get Class_Name
    (  objects:rebased_class(Class_Name, Parents, Class_New_Id)
-   -> Rebase = rebase
-   ;
-
-   class_rebase(Parents, Parent_Id, Rebase1),
-
-   % check whether do rebase
-   (  Rebase1 \== rebase
-   -> (  objects:parent(Class_Orig_Id, Parent_Id)
-      -> Rebase = false
-      ;  Rebase = rebase )
-   ;
-      % parents already rebased, need rebase
+   ->
       Rebase = rebase
-   ),
+   ;
+      % check whether do rebase
+      (  Rebase1 \== rebase
+      -> (  objects:parent(Class_Orig_Id, Parent_Id)
+         -> Rebase = false
+         ;  Rebase = rebase )
+      ;
+         % parents already rebased, need rebase
+         Rebase = rebase
+      ),
 
-   % rebase if needed
-   (  Rebase == rebase
-   -> class_fields(_:_, Class_Orig_Id, true, false, New_Fields),
-      class_id(Class_Orig_Id, Class),
-      assert_new_class_rebased(Class, Parent_Id, New_Fields,
-                               Class_New_Id, _)
-   ;  % the same class is sufficient
-      Class_New_Id = Class_Orig_Id
-   )
+      % rebase if needed
+      (  Rebase == rebase
+      -> class_fields(_:_, Class_Orig_Id, true, false, New_Fields),
+         class_id(Class_Orig_Id, Class),
+         assert_new_class_rebased(Class, Parent_Id, New_Fields,
+                                  Class_New_Id, _)
+      ;  % the same class is sufficient
+         Class_New_Id = Class_Orig_Id
+      )
    ).
 
 assert_new_class_id(Class_Id, Class_Name, Parent_Id, New_Fields,
