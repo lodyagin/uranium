@@ -81,6 +81,12 @@ test(named_args_unify_bug1, [setup(model_db)]) :-
            named_args_unify(people, citizen_v, [sex], [man], _),
            ['.']).
 
+test(named_args_unify1, [setup(model_db)]) :-
+
+   findall('.',
+           named_args_unify(people, _, [sex], [man], _),
+           ['.', '.']).
+
 test(store_and_retrieve1,
     [setup(db_clear(people)),
      man(Sex, Name, Surname, Weight, Height) ==

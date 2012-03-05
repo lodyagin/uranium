@@ -610,47 +610,50 @@ db_merge(DB1_Key, DB2_Key, Key) :-
 % и значению Value для тех фактов, которые созданы как классы
 %
 
+% this is a version for +Functor
 named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
+
+   nonvar(Functor), !,
+   
+   Ctx = context(named_args_unify/5, _),
+   check_db_key(DB_Key, Ctx),
+   check_fields_arg(Field_Names, Ctx),
+   check_class_arg(Functor, Ctx),
+
+   % <NB> the class Functor can not be defined locally
+   Des = db_class_des(_, _, Functor, _, _, _),
+   db_des(DB_Key, Des),
+   named_args_unify_int(DB_Key, Des, Field_Names, Values, Term).
+   
+% this is a version for -Functor
+named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
+
+   var(Functor), !, 
 
    Ctx = context(named_args_unify/5, _),
    check_db_key(DB_Key, Ctx),
    check_fields_arg(Field_Names, Ctx),
-   nonvar(Functor),
-   !, % in this case the class is defined by functor
-   check_class_arg(Functor, Ctx),
 
-   % <NB> the class Functor can not be defined locally
-   Des = db_class_des(DB_Class_Id, _, Functor, _, _, _),
+   % BT on all classes
    db_des(DB_Key, Des),
+   Des = db_class_des(_, _, Functor, _, _, _),
 
+   % check the Functor as a correct class name
+   (  nonvar(Functor), u_class(Functor) -> true
+   ;  throw(error(bad_db(DB_Key, 'Bad class name: ~w', [Functor]),
+                  Ctx))
+   ),
+   named_args_unify_int(DB_Key, Des, Field_Names, Values, Term).
+   
+named_args_unify_int(DB_Key, Des, Field_Names, Values, Term) :-
+
+   Des = db_class_des(DB_Class_Id, _, Functor, _, _, _),
    db_conv_local_db(DB_Key, _, DB_Class_Id, _),
    % now the class is definitly loaded
 
    obj_construct(Functor, Field_Names, Values, Term0),
    obj_rebase((object_v -> db_object_v), Term0, Term),
    db_recorded_int(DB_Key, Term).
-   
-%    ->
-%       % unify with each class in db
-%       db_object_class(DB_Key, Functor), 
-      
-%    ; check_class_arg(Functor, Ctx) ),
-%    check_fields_arg(Field_Name, Ctx),
-
-%     obj_field(Term, db_ref, Term_Ref),
-
-    
-
-%     % find the position of the first object field Field_Name
-%     (arg(Field_Pos, Spec_Term, Field_Name) -> true; false),
-
-%     functor(Spec_Term, _, Arity),
-%     functor(Term, Functor, Arity),
-
-%     % Bound the field with the Value
-%     arg(Field_Pos, Term, Value),
-
-%     db_recorded(DB_Key, Term, Term_Ref).
 
 
 db_object_class(DB_Key, Class) :-

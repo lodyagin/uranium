@@ -434,6 +434,11 @@ prolog:message(db_system_bad_state(Format, Args)) -->
    [ nl ],
    [Format - Args].
 
+prolog:message(bad_db(DB_Key, Format, Args)) -->
+
+   ['Bad DB ~w~n' - [DB_Key]],
+   [Format - Args].
+
 prolog:message(db_key_exists(DB_Key, DB_Object, New_Object)) -->
 
    ['Duplicate DB key for DB ~a when put ~p'
