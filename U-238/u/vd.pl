@@ -635,10 +635,12 @@ named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
    Ctx = context(named_args_unify/5, _),
    check_db_key(DB_Key, Ctx),
    check_fields_arg(Field_Names, Ctx),
+   list_to_ord_set(Field_Names, Req_Fields),
 
    % BT on all classes
    db_des(DB_Key, Des),
-   Des = db_class_des(_, _, Functor, _, _, _),
+   Des = db_class_des(_, _, Functor, _, DB_Fields, _),
+   ord_subset(Req_Fields, DB_Fields),
 
    % check the Functor as a correct class name
    (  nonvar(Functor), u_class(Functor) -> true
