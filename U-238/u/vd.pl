@@ -26,6 +26,8 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 %  --------------------------------------------------------------
 
+% This is an object database
+% The internal prolog DB implementation.
 
 :- module(vd,
           [
@@ -164,8 +166,8 @@ db_put_object_int(DB_Key, Class_Id, Option, Object0, Object) :-
    % TODO replacing object when db_ref is already bound
 
    % Rebase if needed
-   (  class_id(DB_Object_V_Id, db_object_v),
-      same_or_descendant(DB_Object_V_Id, _, Class_Id)
+   class_primary_id(db_object_v, DB_Object_V_Id),
+   (  same_or_descendant(DB_Object_V_Id, _, Class_Id)
    -> Object = Object0 % already has a db_object_v ancestor
    ;  obj_rebase((object_v -> db_object_v), Object0, Object) ),
 
@@ -228,12 +230,12 @@ db_recordz(DB_Key, Object0) :-
    check_inst(Object0, Ctx),
    check_object_arg(Object0, Ctx, Class_Id),
 
-   class_id(DB_Object_V_Id, db_object_v),
+   class_primary_id(db_object_v, DB_Object_V_Id),
    (  same_or_descendant(DB_Object_V_Id, _, Class_Id)
    -> obj_reset_fields([db_ref], Object0, Object)
    ;  obj_rebase((object_v -> db_object_v), Object0, Object)
    ),
-   
+
    db_recordz_int(DB_Key, Object).
 
 %
@@ -614,7 +616,7 @@ db_merge(DB1_Key, DB2_Key, Key) :-
 named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
 
    nonvar(Functor), !,
-   
+
    Ctx = context(named_args_unify/5, _),
    check_db_key(DB_Key, Ctx),
    check_fields_arg(Field_Names, Ctx),
@@ -624,11 +626,11 @@ named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
    Des = db_class_des(_, _, Functor, _, _, _),
    db_des(DB_Key, Des),
    named_args_unify_int(DB_Key, Des, Field_Names, Values, Term).
-   
+
 % this is a version for -Functor
 named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
 
-   var(Functor), !, 
+   var(Functor), !,
 
    Ctx = context(named_args_unify/5, _),
    check_db_key(DB_Key, Ctx),
@@ -644,7 +646,7 @@ named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
                   Ctx))
    ),
    named_args_unify_int(DB_Key, Des, Field_Names, Values, Term).
-   
+
 named_args_unify_int(DB_Key, Des, Field_Names, Values, Term) :-
 
    Des = db_class_des(DB_Class_Id, _, Functor, _, _, _),
