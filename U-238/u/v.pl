@@ -67,9 +67,12 @@
 %           class_arg_num_weak/3,  % +Class, ?Arg_Num, +Arg_Name
 
            u_class/1,
-           u_object/1
+           u_object/1,
+
+           prolog:message/3
            ]).
 
+:- multifile prolog:message/3.
 
 :- reexport(u(internal/objects_i),
             [
@@ -459,36 +462,70 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
    ;  check_object_arg(Object0, Ctx, Orig_Id)
    ),
 
-   Rebase_Rule = '->'(Old_Base, New_Base),
-   class_primary_id(Old_Base, Old_Base_Id),
-   class_primary_id(New_Base, New_Base_Id),
-
-   % find the common base class
-   common_parent(Old_Base_Id, New_Base_Id, Cmn_Base_Id),
-
-   % find the new parent line
-   list_inheritance(New_Base_Id, New_Parents1),
-   list_inheritance(Old_Base_Id, Orig_Id, [_|New_Parents2]),
-   append(New_Parents1, New_Parents2, New_Parents_R),
-   reverse(New_Parents_R, New_Parents3),
-
-   class_rebase(New_Parents3, New_Parents, Rebase),
-   New_Parents = [Rebased_Id|_],
-   (  Rebase == rebase -> true
-   ;  throw(implementation_error(
-            ['class_rebase called for no actual rebasing case']))
+   % Check the Old_Base and New_Base
+   % convert it to the rebased base id if needed
+   (  rebased_base(Orig_Id, Old_Base, Old_Base_Id) -> true
+   ;  throw(error(old_base_is_invalid(Old_Base, Orig_Id), Ctx))
+   ),
+   
+   (  rebased_base(Orig_Id, New_Base, New_Base_Id)
+   -> New_Base_Is_Ancestor = true
+   ;  class_primary_id(New_Base, New_Base_Id),
+      New_Base_Is_Ancestor = false
    ),
 
-   % find the fields to through out
-   class_all_fields(Old_Base_Id, Old_Base_List),
-   class_all_fields(Cmn_Base_Id, Cmn_Base_List),
-   ord_subtract(Old_Base_List, Cmn_Base_List, Through_Out),
-   % find the fields we will transfer to the new object
-   class_all_fields(Orig_Id, Orig_List),
-   ord_subtract(Orig_List, Through_Out, Transfer_Fields),
-   obj_unify(Object0, Transfer_Fields, Transfer_Values),
-   obj_construct_int(Rebased_Id, Transfer_Fields, strict,
-                     Transfer_Values, Object).
+   (  class_id(New_Base_Id, object_base_v)
+   -> throw(error(cant_rebase_to_object_base_v, Ctx))
+   ;  true ),
+   
+   % In some cases we do not need rebase
+   (  New_Base_Is_Ancestor == true,
+      same_or_descendant(Old_Base_Id, any, New_Base_Id)
+   ->
+      true, % no need rebasing at all
+      Object = Object0
+   ;
+      % find the common base class
+      common_parent(Old_Base_Id, New_Base_Id, Cmn_Base_Id),
+
+      % find the new parent line
+      list_inheritance(New_Base_Id, New_Parents1),
+      list_inheritance(Old_Base_Id, Orig_Id, [_|New_Parents2]),
+      append(New_Parents1, New_Parents2, New_Parents_R),
+      reverse(New_Parents_R, New_Parents3),
+
+      class_rebase(New_Parents3, New_Parents, Rebase),
+      New_Parents = [Rebased_Id|_],
+      (  Rebase == rebase -> true
+      ;  throw(error(implementation_error(
+          'class_rebase is called in not rebasing case', []),
+                     Ctx))
+      ),
+
+      % find the fields to through out
+      class_all_fields(Old_Base_Id, Old_Base_List),
+      class_all_fields(Cmn_Base_Id, Cmn_Base_List),
+      ord_subtract(Old_Base_List, Cmn_Base_List, Through_Out),
+      % find the fields we will transfer to the new object
+      class_all_fields(Orig_Id, Orig_List),
+      ord_subtract(Orig_List, Through_Out, Transfer_Fields),
+      obj_unify(Object0, Transfer_Fields, Transfer_Values),
+      obj_construct_int(Rebased_Id, Transfer_Fields, strict,
+                        Transfer_Values, Object)
+   ).
+
+% If Base is a same or ancestor return its id
+% (it will be rebased if it is rebased already)
+rebased_base(Id, Base, Id) :-
+
+   class_id(Id, Base), !.
+   
+rebased_base(Id, Base, Base_Id) :-
+
+   parent(Id, Parent_Id),
+   rebased_base(Parent_Id, Base, Base_Id).
+
+   
 
 
 % obj_reinterpret(+From, -To) is nondet
@@ -821,3 +858,12 @@ obj_copy_int(Class_Id, From, To) :-
 %   objects:Type_Term,
 %   arg(Arg_Num, Type_Term, Type), !.
 
+
+prolog:message(old_base_is_invalid(Old_Base, Orig_Id)) -->
+
+   ['~a is not a base for the class with id ~d'
+   - [Old_Base, Orig_Id]].
+
+prolog:message(cant_rebase_to_object_base_v) -->
+
+   ['Can\'t rebase to object_base_v'].

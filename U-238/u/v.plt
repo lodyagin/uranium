@@ -71,6 +71,63 @@ test(obj_rebase_bug2) :-
    assertion(Class_Id0 =:= Class_Id3),
    assertion(Obj2_0 == Obj3).
 
+test(obj_rebase_bug3_1) :-
+
+   obj_construct(db_object_v, [], [], Obj1_0),
+   obj_rebase((object_v -> db_object_v), Obj1_0, Obj1),
+
+   obj_construct(db_object_v, [], [], Obj2_0),
+   obj_rebase((object_v -> db_object_v), Obj2_0, Obj2),
+
+   arg(1, Obj1, Class_Id1),
+   arg(1, Obj2, Class_Id2),
+
+   assertion(Class_Id1 =:= Class_Id2),
+
+   obj_rebase((db_object_v -> object_v), Obj2, Obj3),
+
+   arg(1, Obj2_0, Class_Id0),
+   arg(1, Obj3, Class_Id3),
+   assertion(Class_Id0 =\= Class_Id3),
+
+   class_primary_id(object_v, Object_V_Id),
+   assertion(Obj3 == object_v(Object_V_Id)).
+
+test(obj_rebase_bug3_2) :-
+
+   obj_construct(citizen_v, [], [], Obj1_0),
+   obj_rebase((man_v -> citizen_v), Obj1_0, Obj1),
+
+   obj_construct(citizen_v, [], [], Obj2_0),
+   obj_rebase((object_v -> man_v), Obj2_0, Obj2),
+
+   arg(1, Obj1, Class_Id1),
+   arg(1, Obj2, Class_Id2),
+
+   assertion(Class_Id1 =:= Class_Id2).
+
+test(obj_rebase_bug4,
+     [throws(error(cant_rebase_to_object_base_v,
+                   context(obj_rebase/3, _)))]) :-
+
+   obj_construct(citizen_v, [], [], Obj1_0),
+   obj_rebase((citizen_v -> object_base_v), Obj1_0, Obj1),
+
+   obj_construct(citizen_v, [], [], Obj2_0),
+   obj_rebase((citizen_v -> object_base_v), Obj2_0, Obj2),
+
+   arg(1, Obj1, Class_Id1),
+   arg(1, Obj2, Class_Id2),
+
+   assertion(Class_Id1 =:= Class_Id2),
+
+   obj_rebase((object_base_v -> citizen_v), Obj2, Obj3),
+
+   arg(1, Obj2_0, Class_Id0),
+   arg(1, Obj3, Class_Id3),
+   assertion(Class_Id0 =:= Class_Id3),
+   assertion(Obj2_0 == Obj3).
+
 test(obj_construct_bug1) :-
 
    class_fields(man_v, Field_Names),

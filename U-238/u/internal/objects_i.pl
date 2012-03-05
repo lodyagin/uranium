@@ -366,9 +366,10 @@ prolog:message(class_system_bad_state(Details)) -->
    [ nl ],
    [Details].
 
-prolog:message(implementation_error(Details)) -->
+prolog:message(implementation_error(Format, Args)) -->
 
-   ['Internal Uranium error: ', nl, Details].
+   ['Internal Uranium error: ', nl],
+   [Format - Args].
 
 prolog:message(class_exists(Class)) -->
 
