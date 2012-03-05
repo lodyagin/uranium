@@ -75,17 +75,29 @@ test(db_put_objects,
 
 	db_size(people, DB_Size).
 
+test(named_args_unify1, [setup(model_db)]) :-
+
+   findall('.',
+           named_args_unify(people, _, [sex], [man], _),
+           ['.', '.']).
+
+test(named_args_unify2, [setup(model_db)]) :-
+
+   findall('.',
+           named_args_unify(people, _, [sex, sex], [man, man], _),
+           ['.', '.']).
+
 test(named_args_unify_bug1, [setup(model_db)]) :-
 
    findall('.',
            named_args_unify(people, citizen_v, [sex], [man], _),
            ['.']).
 
-test(named_args_unify1, [setup(model_db)]) :-
+test(named_args_unify_bug2, [setup(model_db)]) :-
 
    findall('.',
-           named_args_unify(people, _, [sex], [man], _),
-           ['.', '.']).
+           named_args_unify(people, _, [], [], _),
+           ['.', '.', '.']).
 
 test(store_and_retrieve1,
     [setup(db_clear(people)),
