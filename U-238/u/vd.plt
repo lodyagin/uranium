@@ -75,6 +75,10 @@ test(db_put_objects,
 
 	db_size(people, DB_Size).
 
+test(named_args_unify_bug1, [setup(model_db)]) :-
+
+   named_args_unify(people, citizen_v, [sex], [man], _).
+
 test(store_and_retrieve1,
     [setup(db_clear(people)),
      man(Sex, Name, Surname, Weight, Height) ==
