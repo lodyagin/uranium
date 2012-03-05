@@ -30,7 +30,7 @@
           [
 	   db_conv_local_db/4,
            db_clear_int/1,
-           db_erase/1,
+           db_erase_int/1,
            db_des/2,  % +DB_Key, ?Des
            db_key_is_valid/1,
            db_object_class_int/2,
@@ -48,7 +48,7 @@
 :- use_module(u(v)).
 
 :- multifile prolog:message/3.
-:- multifile db_recorded_int/2, db_erase/1, db_recordz_int/2.
+:- multifile db_recorded_int/2, db_erase_int/1, db_recordz_int/2.
 
 db_des(DB_Key, Des) :-
 
@@ -64,7 +64,7 @@ db_des(DB_Key, Des) :-
 %              Name, Arity, Fields, Key)
 % db_next_class_id(Id).
 
-db_erase(recorded(Ref)) :- !,
+db_erase_int(recorded(Ref)) :- !,
 
    erase(Ref).
 
@@ -250,12 +250,7 @@ db_recorded_int(DB_Key, L_Object) :-
 
 %    call_db_pred(DB_Key, recorded, [Term, DB_Ref]).
 /*
-db_erase(recorded(DB_Key, Ref)) :-
-
-    !,
-    (
-
-%db_erase(DB_Ref) :-
+%db_erase_int(DB_Ref) :-
 
     call_db_pred(DB_Ref, erase, []).
 */
@@ -357,7 +352,7 @@ db_erase_by_key(DB_Key, Key, Key_Value) :-
    ( db_unify_int(DB_Key, Key, strict, Key_Value,
                   Existing_Object),
      db_obj_field(Existing_Object, db_ref, Ref),
-     db_erase(Ref),
+     db_erase_int(Ref),
      fail ; true ).
 */
 %    call_db_pred(DB_Key, recordz, [Term, Ref]).
@@ -406,7 +401,7 @@ erase_conflicts(DB_Key, Class_Id, Object) :-
 
   (  key_conflict(DB_Key, Class_Id, Object, Conflicting),
      obj_field(Conflicting, db_ref, DB_Ref),
-     db_erase(DB_Ref),
+     db_erase_int(DB_Ref),
      fail ; true ).
 
 % key_conflict(+DB_Key, +Class_Id, @Object, -Conflicting)

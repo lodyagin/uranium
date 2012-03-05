@@ -9,6 +9,19 @@ test(clear_test_db, [fail, setup(db_clear(people))]) :-
 
 	db_recorded(people, _).
 
+test(db_erase, [setup(model_db)]) :-
+
+   (  named_args_unify(people, _,
+                       [name, surname], ['Adam', _], X),
+      db_erase(X),
+      fail ; true
+   ),
+
+   findall(Y,
+           db_recorded(people, Y),
+           LY),
+   assertion(LY = [man_v(_, _, _, 'Eva', woman, _, _)]).
+
 test(db_recorded_bug1, [setup(model_db), N =:= 3]) :-
 
    findall('.', db_recorded(people, _), L),

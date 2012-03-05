@@ -35,6 +35,7 @@
 %           db_change/4,   % +DB_Key, +Fields, +Vals, +Query
            db_clear/1,
            db_copy/2,
+           db_erase/1,
            %db_iterate/3,  % +DB_Key, +Query, -Object
            %db_iterate/4,  % +DB_Key, +Query, +Filter_Pred, -Object
            %db_iterate_replace/3,  % +DB_Key, +Pred, +Query
@@ -71,7 +72,7 @@
 :- use_module(u(ur_lists)).
 :- use_module(u(ur_terms)).
 
-%:- module_transparent db_put_objects/3, db_search/3.
+%:- module_transparent db_search/3.
 %                      db_iterate/3, db_iterate/4,
 %                      db_iterate_replace/3, db_iterate_replace/4,
 %                      db_iterate_replace/5,
@@ -84,6 +85,17 @@ db_clear(DB_Key) :-
    Ctx = context(db_clear/1, _),
    check_db_key(DB_Key, Ctx),
    db_clear_int(DB_Key).
+
+db_erase(Obj) :-
+
+   Ctx = context(db_erase/1, _),
+   check_object_arg(Obj, Ctx, _),
+
+   (   obj_field(Obj, db_ref, DB_Ref)
+   ->  db_erase_int(DB_Ref)
+   ;
+       throw(error(domain_error(db_object_v_desc, Obj), Ctx))
+   ).
 
 /*
 db_bind_obj(DB_Key, w(Ref0, Object0), w(Ref, Object)) :- !,
