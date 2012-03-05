@@ -147,7 +147,7 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
    var(Local_Class_Id), integer(DB_Class_Id), !,
 
    (   DB_Class_Id =:= 1   % object_v
-   ->  class_id(Local_Class_Id, object_v), !
+   ->  class_primary_id(object_v, Local_Class_Id)
    ;   Des = db_class_des(DB_Class_Id, DB_Parent_Id, Class, _,
 		       DB_Fields, _),
        !,
