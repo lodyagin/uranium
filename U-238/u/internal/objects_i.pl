@@ -146,6 +146,9 @@ class_id(Class_Id, Class) :-
    nonvar(Class_Id), !,
    objects:class_id(Class_Id, _, Class), !. % ensure no BT
 
+% Nondet!
+% Use it only for get all Class_Ids (primary + rebased)
+% In the case you need a single id see class_primary_id
 class_id(Class_Id, Class) :-
 
    objects:class_id(Class_Id, _, Class).
@@ -155,7 +158,7 @@ class_new_fields(Class_Id, Fields) :-
 
    class_fields(_, Class_Id, true, false, Fields).
 
-
+% det
 class_primary_id(Class, Class_Id) :-
 
    objects:class_id(Class_Id, true, Class), !.
