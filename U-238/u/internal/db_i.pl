@@ -231,14 +231,16 @@ db_recorded_int(DB_Key, L_Object) :-
 
     atom(DB_Key), var(L_Object), !,
 
-    % get any record
+    % BT on all classes
+    recorded(DB_Key, db_class_des(_, _, Class, Arity, _, _)),
+
+    % BT on all class records
+    functor(DB_Object, Class, Arity),
     recorded(DB_Key, DB_Object, Ref),
-    functor(DB_Object, Class, _),
-    atom_concat(_, '_v', Class),
 
     object_local_db(DB_Key, L_Object, DB_Object),
 
-    % store the db record reference
+    % inplant the db reference
     arg(1, L_Object, Local_Class_Id),
     obj_field_int(Local_Class_Id, db_ref, strict, L_Object,
                   recorded(Ref), _).
