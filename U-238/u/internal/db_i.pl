@@ -36,7 +36,6 @@
            db_object_class_int/2,
            db_recorded_int/2,
            db_recordz_int/2,
-%           db_unify_int/6,
            erase_conflicts/3,
            key_conflict/4,
            prolog:message/3
@@ -419,8 +418,9 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
    obj_unify_int(Class_Id, Key, strict, Object, Key_Value),
    ground(Key_Value),           % unbounded key is not a key
    same_or_descendant(Key_Class_Id, false, DB_Class_Id),
-   db_unify_int(DB_Key, DB_Class_Id, Key, strict, Key_Value,
-                Conflicting).
+
+   class_id(DB_Class_Id, Class),
+   named_args_unify(DB_Key, Class, Key, Key_Value, Conflicting).
 
 
 prolog:message(db_system_bad_state(Format, Args)) -->

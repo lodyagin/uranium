@@ -404,9 +404,9 @@ db_iterate_replace(DB_Key, Pred, Query, Filter_Pred, Lim) :-
 
 db_move_all_data(From_DB, To_DB) :-
 
-  db_recorded(From_DB, Record, From_Ref),
+  db_recorded(From_DB, Record),
   db_recordz(To_DB, Record),
-  db_erase(From_Ref),
+  db_erase(Record),
   fail
   ;
   true.

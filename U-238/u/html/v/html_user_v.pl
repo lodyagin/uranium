@@ -34,15 +34,15 @@ new_class(html_user_v, object_v,
 
 copy(html_user_v, From, To) :-
 
-   duplicate_term(From, To),
-   obj_field(To, cookie_db_key, Old_DB_Key),
+   obj_reset_fields([cookie_db_key], From, To),
+
+   obj_field(From, cookie_db_key, Old_DB_Key),
    (   ground(Old_DB_Key)
    ->  use_module(u(html/cookies_man)),
        new_cookie_db_key(New_DB_Key),
        use_module(u(vd)),
        db_copy(Old_DB_Key, New_DB_Key),
-       class_arg_num(html_user_v, N, cookie_db_key),
-       setarg(N, To, New_DB_Key)
+       obj_field(To, cookie_db_key, New_DB_Key)
    ;   true
    ).
 
