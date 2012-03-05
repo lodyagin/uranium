@@ -30,7 +30,6 @@ test(class_fields) :-
    class_fields_new(citizen_v, Citizen_V_New_Fields),
    assertion(Citizen_V_New_Fields == [birthday, country, id]).
    
-
 test(obj_rebase_bug1) :-
 
    obj_construct(man_v, [sex, name], [man, 'Adam'], Obj1_0),
@@ -169,6 +168,12 @@ test(obj_reset_fields_weak) :-
    obj_reset_fields_weak([name, height, age], Man0, Man1),
    obj_class_id(Man1, Class_Id),
    assertion(Man1 =@= man_v(Class_Id, _, _, man, _, 63)).
-   
+
+% After some time it will always fails (coz it depends
+% on the current year, see The Uranium Book).
+test(eval_fields1, [Class == callup_v]) :-
+
+   obj_construct(citizen_v, [birthday], [1986], C), 
+   obj_field(C, class, Class).
 
 :- end_tests(v).
