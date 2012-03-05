@@ -48,7 +48,7 @@
            obj_field_int/6,
            obj_unify_int/5,
            parent/2,
-           same_or_descendant/3,
+           same_or_descendant/3,%+Parent_Id, +No_Rebased, ?Desc_Id
            u_class/1,
            u_object/1,
            unbounded_fields/2, %+Obj, -Field_Names
