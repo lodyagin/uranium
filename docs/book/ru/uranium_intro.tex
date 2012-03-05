@@ -27,7 +27,7 @@
 \def\Te{Т.\thinspace е.}
 \def\itd{и т.\thinspace д.}
 \def\ur{Uranium}
-\def\na{named\_arg*}
+\def\na{named_args_unify}
 
 \graphicspath{{pics/}}
 
@@ -3490,21 +3490,19 @@ X = citizen_v(man, _G9, 'Mayakovsky', _G11, _G12, ['Soviet Union'], _G14, _G15).
 
 \end{comment}
 
-\section{Семейство унификаторов named_arg*}
+\section{Семейство унификаторов named_args_unify}
 \label{named_arg_db}
 
 \na{} --- это семейство унификаторов по именованным
-полям. Соответственно, те, что начинаются с named_arg_
-унифицируют одно поле, а те, что с named_args_ --- списком
-(как в фильме, огласите весь список)
+полям. 
 
-named_arg_unify(+DB_Key, ?Functor, +Field_Name, ?Value, ?Term)
+named_args_unify(+DB_Key, ?Functor, +Field_Names, ?Values, ?Term)
 
-эта форма унифицирует объект по одному полю и функтору. Если
+унифицирует объект по списку полей и функтору. Если
 функтор не определён, то проявляется полиморфизм
 
 \begin{example}{Поиск мужчин}{find_men}
-?- named_arg_unify(people, Functor, sex, man, Man).
+?- named_args_unify(people, Functor, [sex], [man], Man).
 
 Functor = man_v,
 Man = man_v(man, 'Adam', _G24, _G25, _G26) ;
@@ -3566,7 +3564,7 @@ Adam ?
 Adam Mayakovsky
 \end{example}
 
-Т.о., можно сказать, что предикаты named_arg* являются
+Т.о., можно сказать, что предикаты \na{} являются
 не очень совершенным методом работы с базой объектов и могут
 рассматриваться только как низкоуровневые предикаты. При их
 использовании мы сталкиваемся со следующими проблемами:
@@ -3593,6 +3591,8 @@ Adam Mayakovsky
   (db_erase)}
 \label{db_erase}
 \label{db_copy}
+
+% Переписать!
 
 Для удаления объекта из базы его необходимо, для начала,
 найти. Пока нам известно только два способа поиска объекта -
