@@ -52,10 +52,10 @@
            db_size/2,        % +DB_Key, ?Size
            %db_to_list/3,
            dump_db/1,  % +DB_Key
-           dump_db/2   % +Options, +DB_Key
+           dump_db/2,   % +Options, +DB_Key
 %           filter_on_db/3,
 
-           %named_arg_unify/5
+           named_args_unify/5
 
            ]).
 
@@ -209,6 +209,9 @@ db_put_objects(DB_Key, Pred, Options) :-
    db_put_object(DB_Key, Options, Object, _),
    fail ; true.
 
+% Low-level db unification.
+% Object is var or db_object_v desc.
+% Doesn't process inheritance
 db_recorded(DB_Key, Object) :-
 
    Ctx = context(db_recorded/2, _),
