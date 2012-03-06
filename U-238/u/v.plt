@@ -38,6 +38,21 @@ test(obj_construct_bug1) :-
 
    assertion(Field_Names == Field_Names2).
 
+test(obj_field1, [Flds == Vals]) :-
+
+   class_fields(citizen_v, Flds),
+   obj_construct(citizen_v, Flds, Flds, Obj),
+   findall(Val, (obj_field(Obj, Fld, Val), member(Fld, Flds)), Vals).
+
+test(obj_field2, [blocked(todo), Flds3 == Flds4]) :-
+% Each eval field must be evaluable only once
+
+   class_fields(citizen_v, Flds),
+   obj_construct(citizen_v, Flds, Flds, Obj),
+   findall(Fld, obj_field(Obj, Fld, Val), Flds2),
+   sort(Flds2, Flds3),
+   msort(Flds2, Flds4).
+  
 test(obj_field_bug1, [fail]) :-
 
    obj_construct(citizen_v, [sex], [woman], Obj),
