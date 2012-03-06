@@ -45,8 +45,8 @@
            list_inheritance/3,
            obj_class_id/2,
            obj_construct_int/5,
-           obj_field_int/6,
-           obj_unify_int/5,
+           obj_field_int/7,
+           obj_unify_int/6,
            parent/2,
            same_or_descendant/3,%+Parent_Id, +No_Rebased, ?Desc_Id
            u_class/1,
@@ -59,6 +59,7 @@
 :- use_module(library(error)).
 :- use_module(library(pairs)).
 :- use_module(u(ur_lists)).
+:- use_module(u(internal/check_arg)).
 
 :- multifile prolog:message/3.
 
@@ -276,35 +277,77 @@ parent(Id, Parent_Id) :-
 obj_construct_int(Class_Id, Field_Names, Weak, Field_Values,
                   Object) :-
 
+   Ctx = context(obj_construct_int/5, _),
+
+   decode_arg([[throw, throws, strict, s],
+               [unbound, weak, w],
+               [fail, false, f]
+              ], Weak, Weak1, Ctx),
+   
    class_id(Class_Id, Class),
    class_arity(Class_Id, Arity),
    functor(Object, Class, Arity),
    arg(1, Object, Class_Id),
-   obj_unify_int(Class_Id, Field_Names, Weak, Object,
-                 Field_Values).
+   obj_unify_int(Class_Id, Field_Names, Weak1, Object,
+                 Field_Values, Ctx).
 
-% NB evaluated fields can be also processed as `Weak'
+obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx)
+:-
 
-obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type) :-
+   % whether to be det or nondet
+   (  nonvar(Field_Name) -> Det = t ; Det = f ),
 
-   (  objects:field(Class_Id, Field_Name, Obj, Value, Type, _,
-                    _)
-   -> true
-   ;  ( Weak == weak ; Weak == true )
-   -> true
-   ;  ( Weak == strict ; Weak == false ; Weak == fail )
-   -> fail
-      %%FIXME! no valid error (if eval fails)
-   ;  fail %throw(no_object_field(Obj, Field_Name))
+   (
+      (  Is_Eval = false,
+         objects:field(Class_Id, Field_Name, Obj, Value, Type, _,
+                     Is_Eval)
+      ;
+         Is_Eval = true,
+         objects:clause(field(Class_Id, Field_Name, Obj, Value,
+                              Type, _, Is_Eval),
+                        Eval_Module:Eval_Pred)
+      )
+
+   *->
+
+      ( Is_Eval = false
+      -> (Det = t -> ! ; true)  %% return the fixed value
+      ;
+         (  objects:field(Class_Id, Field_Name, Obj, Value, Type,
+                          _, Is_Eval)
+            % <NB> delete choicepoints in the Eval_Pred
+         -> (Det = t -> ! ; true)  %% return the evaluated value
+         ;
+            functor(Eval_Pred, Eval_Functor, Eval_Arity),
+            Eval_Ctx = context(
+                 Eval_Module:Eval_Functor/Eval_Arity, _),
+            throw(error(bad_eval_result(Obj, Field_Name),
+                        Eval_Ctx))
+         )
+      )
+   ;
+      % no such field
+
+      (  Weak = unbound
+      -> (Det = t -> ! ; true) %% return an unbound value
+      ;  Weak = fail
+      -> fail
+      ;  Weak = throw
+      -> throw(error(no_object_field(Obj, Field_Name), Ctx))
+      ;  Self_Ctx = context(obj_field_int/7, _),
+         decode_arg([[unbound], [fail], [throw]], Weak, _,
+                    Self_Ctx)
+      )
    ).
 
 
-obj_unify_int(_, [], _, _, []) :- !.
+obj_unify_int(_, [], _, _, [], _) :- !.
 
-obj_unify_int(Class_Id, [Field|FT], Weak, Term, [Value|VT]) :-
+obj_unify_int(Class_Id, [Field|FT], Weak, Term, [Value|VT], Ctx)
+:-
 
-   obj_field_int(Class_Id, Field, Weak, Term, Value, _),
-   obj_unify_int(Class_Id, FT, Weak, Term, VT).
+   obj_field_int(Class_Id, Field, Weak, Term, Value, _, Ctx),
+   obj_unify_int(Class_Id, FT, Weak, Term, VT, Ctx).
 
 % same_or_descendant(+Parent_Id, +No_Rebased, ?Desc_Id)
 

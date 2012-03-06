@@ -39,7 +39,7 @@ test(db_conv_local_db1, [setup(setup)]) :-
 
 test(db_recorded_int,
      [setup(setup),
-      throws(error(domain_error(db_object_v_desc, _), _))]
+      throws(error(no_object_field(X, db_ref), _))]
     ) :-
 
         obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),

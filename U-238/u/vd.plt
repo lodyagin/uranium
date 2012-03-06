@@ -29,7 +29,7 @@ test(db_recorded_bug1, [setup(model_db), N =:= 3]) :-
 
 test(db_recorded1,
      [setup(model_db),
-      throws(error(domain_error(db_object_v_desc, X), _))]) :-
+      throws(error(no_object_field(X, db_ref), _))]) :-
 
    obj_construct(man_v, [sex], [man], X),
    db_recorded(people, X).

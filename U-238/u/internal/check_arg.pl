@@ -4,7 +4,7 @@
            check_db_key/2,
            check_existing_class_arg/2,
            check_existing_class_arg/3,
-           %check_field_arg/2,
+           check_field_name/2,
            check_fields_arg/2,
            check_inst/2,
            check_list_fast_arg/2,

@@ -201,14 +201,11 @@ db_object_class_int(DB_Key, Local_Class_Id) :-
 % db_recorded_int(+DB_Key, ?L_Object)
 db_recorded_int(DB_Key, L_Object) :-
 
+    Ctx = context(db_recorded_int/2, _),
     atom(DB_Key), nonvar(L_Object), !,
 
-    (  obj_field(L_Object, db_ref, Ref1)
-    -> var(Ref1)
-    ;  Ctx = context(db_recorded_int/2, _),
-       throw(error(domain_error(db_object_v_desc, L_Object),
-		   Ctx))
-    ),
+    obj_field(L_Object, db_ref, Ref1),
+    var(Ref1),
 
     arg(1, L_Object, Local_Class_Id),
     object_local_db(DB_Key, L_Object, DB_Object),
@@ -222,12 +219,13 @@ db_recorded_int(DB_Key, L_Object) :-
     L_Object = L_Object1,
 
     % store the db record reference
-    obj_field_int(Local_Class_Id, db_ref, strict, L_Object,
-                  recorded(Ref), _).
+    obj_field_int(Local_Class_Id, db_ref, throw, L_Object,
+                  recorded(Ref), _, Ctx).
 
 % the case of free L_Object, unify with all records in DB
 db_recorded_int(DB_Key, L_Object) :-
 
+    Ctx = context(db_recorded_int/2, _),
     atom(DB_Key), var(L_Object), !,
 
     % BT on all classes
@@ -241,8 +239,8 @@ db_recorded_int(DB_Key, L_Object) :-
 
     % inplant the db reference
     arg(1, L_Object, Local_Class_Id),
-    obj_field_int(Local_Class_Id, db_ref, strict, L_Object,
-                  recorded(Ref), _).
+    obj_field_int(Local_Class_Id, db_ref, throw, L_Object,
+                  recorded(Ref), _, Ctx).
 
 
 %db_recorded(DB_Key, Term, DB_Ref) :-
@@ -262,13 +260,9 @@ db_recordz_int(DB_Key, Object0) :-
 
     atom(DB_Key), !, % this is prolog DB version
     Ctx = context(db_recordz_int/2, _),
-    (  obj_field(Object0, db_ref, Ref)
-    -> (  var(Ref)
-       -> true
-       ;  throw(error(domain_error(unbound_db_ref, Object0),Ctx))
-       )
-    ;  throw(error(domain_error(db_object_v_desc, Object0),
-		   Ctx))
+    obj_field(Object0, db_ref, Ref),
+    (  var(Ref) -> true
+    ;  throw(error(domain_error(unbound_db_ref, Object0),Ctx))
     ),
 
     object_local_db(DB_Key, Object0, Object),
@@ -281,6 +275,7 @@ db_recordz_int(DB_Key, Object0) :-
 % Convert between local and db object term
 object_local_db(DB_Key, Local_Object, DB_Object) :-
 
+    Ctx = context(object_local_db/3, _),
     % it is from Local to DB case
     nonvar(Local_Object), var(DB_Object), !,
 
@@ -292,13 +287,14 @@ object_local_db(DB_Key, Local_Object, DB_Object) :-
 
     % replace the id
     obj_unify_int(Local_Class_Id, Fields, throw,
-		  Local_Object, DB_Field_Vals),
+		  Local_Object, DB_Field_Vals, Ctx),
 
     DB_Object =.. [Class, DB_Class_Id | DB_Field_Vals].
 
 
 object_local_db(DB_Key, Local_Object, DB_Object) :-
 
+    Ctx = context(object_local_db/3, _),
     % it is from DB to Local case
     var(Local_Object), nonvar(DB_Object), !,
 
@@ -313,7 +309,7 @@ object_local_db(DB_Key, Local_Object, DB_Object) :-
     % replace the id
     % <NB> DB_Object should be field-compatible with Local_Object
     obj_unify_int(Local_Class_Id, Fields, throw,
-		  DB_Object, DB_Field_Vals),
+		  DB_Object, DB_Field_Vals, Ctx),
 
     Local_Object =.. [Class, Local_Class_Id| DB_Field_Vals].
 
@@ -410,12 +406,13 @@ erase_conflicts(DB_Key, Class_Id, Object) :-
 
 key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
 
+   Ctx = context(key_conflict/4, _),
    recorded(DB_Key, '#keymaster'(Key_Class_Id)),
    same_or_descendant(Key_Class_Id, false, Class_Id),
    % false means test all rebased classes as well
 
    get_key(Key_Class_Id, Key),
-   obj_unify_int(Class_Id, Key, strict, Object, Key_Value),
+   obj_unify_int(Class_Id, Key, throw, Object, Key_Value, Ctx),
    ground(Key_Value),           % unbounded key is not a key
    same_or_descendant(Key_Class_Id, false, DB_Class_Id),
 

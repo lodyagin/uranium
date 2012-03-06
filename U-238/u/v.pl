@@ -49,9 +49,9 @@
            obj_diff_print/2,
            obj_downcast/2,   % +Parent, -Descendant
            obj_downcast/3,   % +Parent, +Class_To, -Descendant
-           obj_field/3,
-           obj_field_wf/3,
-           obj_get_key/2,     % +Object, ?Key
+           obj_field/3,      % +Obj, ?Field, ?Value
+           obj_field/4,      % +Obj, +Weak, ?Field, ?Value
+           obj_get_key/2,    % +Object, ?Key
            obj_rebase/3,     % ?Rebase_Rule, @Object0, -Object
            obj_reinterpret/2, % +From, -To
            obj_reset_fields/3, % +[Field|...], +Obj_In, -Obj_Out
@@ -110,37 +110,38 @@ class_exists(Class) :-
    check_class_arg(Class, Ctx),
    class_primary_id(Class, _).
 
-% obj_field(+Obj, +Field_Name, ?Value)
+% obj_field(+Obj, ?Field_Name, ?Value)
 
 obj_field(Obj, Field_Name, Value) :-
 
-   (  (var(Obj) ; var(Field_Name))
-   -> throw(error(instantiation_error,
-                  context(obj_field/3, _)))
-   ;  \+ atom(Field_Name)
-   -> throw(error(type_error(atom, Field_Name),
-                  context(obj_field/3, _)))
-   ;  check_object_arg(Obj, context(obj_field/3, _), Class_Id)
+   Ctx = context(obj_field/3, _),
+
+   check_inst(Obj, Ctx),
+   check_object_arg(Obj, Ctx, Class_Id),
+   (  var(Field_Name) -> true
+   ;  check_field_name(Field_Name, Ctx)
    ),
-   obj_field_int(Class_Id, Field_Name, false, Obj, Value, _).
+   
+   obj_field_int(Class_Id, Field_Name, throw, Obj, Value, _,
+                 Ctx).
 
+% obj_field(+Obj, +Weak, ?Field_Name, ?Value)
 
-% obj_field_wf(+Obj, +Field_Name, ?Value)
+obj_field(Obj, Weak, Field_Name, Value) :-
 
-% Weak version of obj_field/3 which fails the attribute
-% on unexisting field instead of throwing the exception
+   Ctx = context(obj_field/4, _),
 
-obj_field_wf(Obj, Field_Name, Value) :-
-
-   (  (var(Obj) ; var(Field_Name))
-   -> throw(error(instantiation_error,
-                  context(obj_field/3, _)))
-   ;  \+ atom(Field_Name)
-   -> throw(error(type_error(atom, Field_Name),
-                  context(obj_field/3, _)))
-   ;  check_object_arg(Obj, context(obj_field/3, _), Class_Id)
+   check_inst(Obj, Ctx),
+   decode_arg([[throw, throws, strict, s],
+               [unbound, weak, w],
+               [fail, false, f]
+              ], Weak, Weak1, Ctx),
+   check_object_arg(Obj, Ctx, Class_Id),
+   (  var(Field_Name) -> true
+   ;  check_field_name(Field_Name, Ctx)
    ),
-   obj_field_int(Class_Id, Field_Name, fail, Obj, Value, _).
+   
+   obj_field_int(Class_Id, Field_Name, Weak1, Obj, Value, _, Ctx).
 
 
 named_arg(Obj, Field, Value) :-
@@ -152,15 +153,14 @@ named_arg(Obj, Field, Value) :-
 
 named_arg(Term, Field_Name, Value, Type) :-
 
-   (  (var(Term) ; var(Field_Name))
-   -> throw(error(instantiation_error,
-                  context(named_arg/4, _)))
-   ;  \+ atom(Field_Name)
-   -> throw(error(type_error(atom, Field_Name),
-                  context(named_arg/4, _)))
-   ;  check_object_arg(Term, context(named_arg/4, _), Class_Id)
+   Ctx = context(named_arg/4, _),
+   check_inst(Term, Ctx), check_object_arg(Term, Ctx, Class_Id),
+   (  var(Field_Name) -> true
+   ;  check_field_name(Field_Name, Ctx)
    ),
-   obj_field_int(Class_Id, Field_Name, strict, Term, Value, Type).
+
+   obj_field_int(Class_Id, Field_Name, throw, Term, Value, Type,
+                 Ctx).
 
 obj_unify(Term, Field_List, Value_List) :-
 
@@ -191,7 +191,14 @@ named_args_unify2(Term, Field_List, Value_List, Weak, Ctx) :-
    ;  check_values_arg(Field_List, Value_List, Ctx)
    ),
    check_object_arg(Term, Ctx, Class_Id),
-   obj_unify_int(Class_Id, Field_List, Weak, Term, Value_List).
+
+   decode_arg([[throw, throws, strict, s],
+               [unbound, weak, w],
+               [fail, false, f]
+              ], Weak, Weak1, Ctx),
+
+   obj_unify_int(Class_Id, Field_List, Weak1, Term, Value_List,
+                 Ctx).
 
 
 /*
@@ -224,7 +231,7 @@ named_args_unify(DB_Key,
 
 obj_reset_fields(Fields_List, Object_In, Object_Out) :-
 
-   Ctx = obj_reset_fields/3,
+   Ctx = context(obj_reset_fields/3, _),
    obj_reset_fields_int(Fields_List, Object_In, Object_Out,
                         strict, Ctx).
 
@@ -233,13 +240,13 @@ obj_reset_fields(Fields_List, Object_In, Object_Out) :-
 %
 obj_reset_fields(Fields_List, Object0, Object, true) :-
 
-   Ctx = obj_reset_fields/4,
+   Ctx = context(obj_reset_fields/4, _),
    obj_reset_fields_int(Fields_List, Object0, Object, strict,
                         Ctx).
 
 obj_reset_fields_weak(Fields_List, Object0, Object) :-
 
-   Ctx = obj_reset_fields_weak/3,
+   Ctx = context(obj_reset_fields_weak/3, _),
    obj_reset_fields_int(Fields_List, Object0, Object, weak, Ctx).
 
 %
@@ -247,13 +254,13 @@ obj_reset_fields_weak(Fields_List, Object0, Object) :-
 %
 obj_reset_fields_weak(Fields_List, Object0, Object, true) :-
 
-   Ctx = obj_reset_fields_weak/4,
+   Ctx = context(obj_reset_fields_weak/4, _),
    obj_reset_fields_int(Fields_List, Object0, Object, weak, Ctx).
    
 
 obj_reset_fields_int(Fields_List, Object0, Object, Weak, Ctx) :-
 
-   Self_Ctx = obj_reset_fields_int/5,
+   Self_Ctx = context(obj_reset_fields_int/5, _),
    check_inst(Fields_List, Ctx),
    check_inst(Object0, Ctx),
    check_list_fast_arg(Fields_List, Ctx),
@@ -270,7 +277,7 @@ obj_reset_fields_int(Fields_List, Object0, Object, Weak, Ctx) :-
 
    ord_subtract(All_Fields_Set, Reset_Set, Copy_Set),
 
-   obj_unify_int(Class_Id, Copy_Set, Weak, Object0, Values),
+   obj_unify_int(Class_Id, Copy_Set, Weak, Object0, Values, Ctx),
    obj_construct_int(Class_Id, Copy_Set, Weak, Values, Object).
     
 
@@ -282,7 +289,7 @@ obj_reset_fields_int(Fields_List, Object0, Object, Weak, Ctx) :-
 
 obj_construct(Class, Field_Names, Field_Values, Object) :-
 
-   obj_construct2(Class, Field_Names, Field_Values, false, Object).
+   obj_construct2(Class, Field_Names, Field_Values, throw, Object).
 
 %
 % 'Weak' версия игнорирует поля в Field_Names, не присутствующие
@@ -377,7 +384,8 @@ obj_downcast(From, To_Class, To) :-
    ).
 
 
-obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To, _) :-
+obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To,
+                 Ctx) :-
 
    From_Class_Id \== To_Class_Id,
 
@@ -403,11 +411,11 @@ obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To, _) :-
    % Unify fields which are still unbounded
    unbounded_fields(To, Unbound_U),
    list_to_ord_set(Unbound_U, Unbound_Fields),
-   obj_unify_int(From_Class_Id, Unbound_Fields, weak, From,
-                 Field_Values),
+   obj_unify_int(From_Class_Id, Unbound_Fields, throw, From,
+                 Field_Values, Ctx),
 
-   (  obj_unify_int(To_Class_Id, Unbound_Fields, strict, To,
-                    Field_Values)
+   (  obj_unify_int(To_Class_Id, Unbound_Fields, fail, To,
+                    Field_Values, Ctx)
    -> true
    ;
       % some fields are inter-bounded

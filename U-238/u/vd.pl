@@ -91,11 +91,8 @@ db_erase(Obj) :-
    Ctx = context(db_erase/1, _),
    check_object_arg(Obj, Ctx, _),
 
-   (   obj_field(Obj, db_ref, DB_Ref)
-   ->  db_erase_int(DB_Ref)
-   ;
-       throw(error(domain_error(db_object_v_desc, Obj), Ctx))
-   ).
+   obj_field(Obj, db_ref, DB_Ref),
+   db_erase_int(DB_Ref).
 
 /*
 db_bind_obj(DB_Key, w(Ref0, Object0), w(Ref, Object)) :- !,
