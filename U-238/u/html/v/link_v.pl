@@ -40,10 +40,46 @@ new_class(global_link_v, link_v, [], []).
 'link_v?'(Link, class, Class) :-
 
    obj_field(Link, link_url, Url),
-   uri_components(Url, Uri),
-   uri_data(authority, Uri, Domain),
-   (  var(Domain)
-   -> Class = local_link_v
-   ;  Class = global_link_v
+   atom(Url),
+   (  \+ uri_is_global(Url)
+   ->
+      Class = local_link_v
+   ;
+      obj_field(Link, http_request_url, Base_Url),
+      atom(Base_Url),
+      uri_resolve(Url, Base_Url, Global_Url),
+      uri_components(Base_Url, Base_Url_Comps),
+      uri_components(Global_Url, Global_Url_Comps),
+      uri_data(authority, Base_Url_Comps, Base_Domain),
+      uri_data(authority, Global_Url_Comps, Link_Domain),
+      
+      (   Base_Domain == Link_Domain
+      ->  Class = local_link_v
+      ;   Class = global_link_v
+      )
    ).
 
+downcast(link_v, local_link_v, From, To) :-
+
+   obj_field(From, link_url, Orig_Link_Url),
+   atom(Orig_Link_Url),
+   obj_field(From, http_request_url, Base_Url0),
+   atom(Base_Url0),
+   uri_normalized(Base_Url0, Base_Url),
+   uri_normalized(Orig_Link_Url, Base_Url, Link_Url),
+   obj_field(To, link_url, Link_Url),
+   obj_field(To, http_request_url, Base_Url).
+
+downcast(link_v, global_link_v, From, To) :-
+
+   obj_field(From, link_url, Orig_Link_Url),
+   atom(Orig_Link_Url),
+   obj_field(From, http_request_url, Base_Url0),
+   atom(Base_Url0),
+   uri_normalized(Base_Url0, Base_Url),
+   uri_normalized(Orig_Link_Url, Link_Url),
+   obj_field(To, link_url, Link_Url),
+   obj_field(To, http_request_url, Base_Url).
+
+   
+   
