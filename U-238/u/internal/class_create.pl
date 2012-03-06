@@ -142,9 +142,10 @@ assert_new_class_rebased(Class, Parent_Id, New_Fields, Class_Id,
 
 
 % assert_class_fields(+Class_Id, +New_Fields, -Arity)
-assert_class_fields(Class_Id, New_Fields, Arity) :-
+assert_class_fields(Class_Id, New_Fields0, Arity) :-
 
    parent(Class_Id, Parent_Id),
+   normalize_fields_def(New_Fields0, New_Fields),
    class_fields(_:_, Parent_Id, _, _, Old_Fields),
    merge(Old_Fields, New_Fields, Fields),
    assert_class_fields2(Fields, 2, Next_Arg, Class_Id, Parent_Id),
@@ -325,5 +326,15 @@ class_noneval_new_fields_db(Class_Id, New_Field_Set) :-
    ;  New_Field_Set = []
    ).
 
+
+normalize_fields_def([], []) :- !.
+
+normalize_fields_def([Name:Type|T1], [Name:Type|T2]) :- !,
+
+  normalize_fields_def(T1, T2).
+
+normalize_fields_def([Name|T1], [Name:_|T2]) :- 
+
+  normalize_fields_def(T1, T2).
 
 
