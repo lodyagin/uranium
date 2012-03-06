@@ -63,16 +63,19 @@
            obj_pretty_print/2,
            obj_unify/3,
            most_narrowed/3, %+Class1, +Class2, -Most_Narrowed_Class
-%           class_arg_num/3, % +Class, ?Arg_Num, +Arg_Name
-%           class_arg_num_weak/3,  % +Class, ?Arg_Num, +Arg_Name
-
-           u_class/1,
-           u_object/1,
 
            prolog:message/3
            ]).
 
 :- multifile prolog:message/3.
+
+:- use_module(u(internal/objects_i)).
+:- use_module(u(internal/check_arg)).
+:- use_module(u(internal/class_create)).
+:- use_module(library(lists)).
+:- use_module(library(ordsets)).
+:- use_module(u(ur_lists)).
+:- use_module(u(logging)).
 
 :- reexport(u(internal/objects_i),
             [
@@ -87,15 +90,6 @@
             [class_create/3,
              class_create/4]).
 
-
-:- use_module(u(internal/objects_i)).
-:- use_module(u(internal/check_arg)).
-:- use_module(u(internal/class_create)).
-:- use_module(library(lists)).
-:- use_module(library(ordsets)).
-%:- use_module(u(vd)).
-:- use_module(u(ur_lists)).
-:- use_module(u(logging)).
 
 /** <module> Uranium Objects
 

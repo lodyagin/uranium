@@ -38,6 +38,7 @@
            db_recordz_int/2,
            erase_conflicts/3,
            key_conflict/4,
+           named_args_unify_int/5,
            prolog:message/3
            ]).
 
@@ -417,7 +418,20 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
    same_or_descendant(Key_Class_Id, false, DB_Class_Id),
 
    class_id(DB_Class_Id, Class),
-   named_args_unify(DB_Key, Class, Key, Key_Value, Conflicting).
+   Des = db_class_des(_, _, Class, _, _, _),
+   db_des(DB_Key, Des),
+   named_args_unify_int(DB_Key, Des, Key, Key_Value, Conflicting).
+
+
+named_args_unify_int(DB_Key, Des, Field_Names, Values, Term) :-
+
+   Des = db_class_des(DB_Class_Id, _, Functor, _, _, _),
+   db_conv_local_db(DB_Key, _, DB_Class_Id, _),
+   % now the class is definitly loaded
+
+   obj_construct(Functor, Field_Names, Values, Term0),
+   obj_rebase((object_v -> db_object_v), Term0, Term),
+   db_recorded_int(DB_Key, Term).
 
 
 prolog:message(db_system_bad_state(Format, Args)) -->

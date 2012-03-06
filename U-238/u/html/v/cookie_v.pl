@@ -25,6 +25,7 @@
            ]).
 
 :- use_module(u(v)).
+:- use_module(u(vd)).
 
 :- module_transparent unify_cookie/4.
 

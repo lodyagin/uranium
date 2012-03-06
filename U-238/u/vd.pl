@@ -658,16 +658,6 @@ named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
    ),
    named_args_unify_int(DB_Key, Des, Field_Names, Values, Term).
 
-named_args_unify_int(DB_Key, Des, Field_Names, Values, Term) :-
-
-   Des = db_class_des(DB_Class_Id, _, Functor, _, _, _),
-   db_conv_local_db(DB_Key, _, DB_Class_Id, _),
-   % now the class is definitly loaded
-
-   obj_construct(Functor, Field_Names, Values, Term0),
-   obj_rebase((object_v -> db_object_v), Term0, Term),
-   db_recorded_int(DB_Key, Term).
-
 
 db_object_class(DB_Key, Class) :-
 
