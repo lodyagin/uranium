@@ -2,7 +2,8 @@
 
 'citizen_v?'(Term, class, callup_v) :-
 
-        obj_field(Term, sex, man),
+        obj_field(Term, sex, Sex),
+        Sex == man,
         obj_field(Term, age, Age),
         between(18, 25, Age), !.
 

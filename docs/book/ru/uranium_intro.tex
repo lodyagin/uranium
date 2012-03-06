@@ -2864,7 +2864,8 @@ new_class(callup_v, citizen_v, [fit_for_military_service]).
 
 'citizen_v?'(Term, class, callup_v) :-
 
-        obj_field(Term, sex, man),
+        obj_field(Term, sex, Sex),
+        Sex == man,
         obj_field(Term, age, Age),
         between(18, 25, Age), !.
 
@@ -2888,12 +2889,15 @@ new_class(callup_v, citizen_v, [fit_for_military_service]).
 new_class(citizen_v, man_v, [country, id, birthday]).
 \end{example}
 
+% Объяснить, почему Sex == man
+
 По сравнению с предыдущим, мы добавили правила вычисления class,
 переопределив правило его вычисления из object_v. Это даёт такой
 результат:
 
+% перегенерить примеры
 \begin{example}{}{}
-?- obj_construct(citizen_v, [birthday], [1976], C), 
+?- obj_construct(citizen_v, [sex, birthday], [man, 1976], C), 
    obj_field(C, class, Class).
 
 C = citizen_v(_G15, _G16, _G17, _G18, _G19, _G20, _G21, 1976),
@@ -2913,11 +2917,12 @@ Class = callup_v.
 обычных. Мы не можем задать объекту citizen_v значение поля
 fit_for_military_service:
 
+% 1986 -> 1994 во всех примерах
 \begin{example}{}{}
-?- obj_construct(citizen_v, [birthday], [1986], C), 
+?- obj_construct(citizen_v, [sex, birthday], [man, 1994], C), 
    obj_field(C, fit_for_military_service, yes).
 
-false
+ERROR: obj_field/3: Unknown error term: no_object_field(citizen_v(4,1994,_G3565,_G3566,_G3567,_G3568,man,_G3570,_G3571),fit_for_military_service)
 \end{example}
 
 Потому как объект сконструирован с термом citizen_v

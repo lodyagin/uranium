@@ -41,9 +41,9 @@ test(obj_construct_bug1) :-
 % After some time it will always fails (because it depends
 % on the current year).
 test(obj_downcast1,
-     [C1 =@= callup_v(Class_Id, 1994, _, _, _, _, _, _, _, _)]) :-
+     [C1 =@= callup_v(Class_Id, 1994, _, _, _, _, _, man, _, _)]) :-
 
-   obj_construct(citizen_v, [birthday], [1994], C0),
+   obj_construct(citizen_v, [sex, birthday], [man, 1994], C0),
    obj_downcast(C0, C1),
    arg(1, C1, Class_Id).
 
@@ -202,7 +202,7 @@ test(obj_reset_fields_weak) :-
 % on the current year, see The Uranium Book).
 test(eval_fields1, [Class == callup_v]) :-
 
-   obj_construct(citizen_v, [birthday], [1994], C), 
+   obj_construct(citizen_v, [sex, birthday], [man, 1994], C), 
    obj_field(C, class, Class).
 
 :- end_tests(v).

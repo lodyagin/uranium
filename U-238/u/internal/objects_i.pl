@@ -284,7 +284,7 @@ obj_construct_int(Class_Id, Field_Names, Weak, Field_Values,
                [unbound, weak, w],
                [fail, false, f]
               ], Weak, Weak1, Ctx),
-   
+
    class_id(Class_Id, Class),
    class_arity(Class_Id, Arity),
    functor(Object, Class, Arity),
@@ -362,10 +362,10 @@ find_eval_pred(Field, Object, Class_Id, Eval_Pred, Value) :-
                     Body)
   *->
      % found it (and leave a choice point)
-     Eval_Pred = Eval_Module:Name 
+     Eval_Pred = Eval_Module:Name
   ;
      parent(Class_Id, Parent_Id),
-     find_eval_pred(Parent_Id, Field, Object, Eval_Pred, Value)
+     find_eval_pred(Field, Object, Parent_Id, Eval_Pred, Value)
   ).
 
 
