@@ -22,6 +22,11 @@ test(db_erase, [setup(model_db)]) :-
            LY),
    assertion(LY = [man_v(_, _, _, 'Eva', woman, _, _)]).
 
+test(db_iterate1, [setup(model_db), N =:= 3]) :-
+
+   findall('.', db_iterate(people, true, _), L),
+   length(L, N).
+
 test(db_recorded_bug1, [setup(model_db), N =:= 3]) :-
 
    findall('.', db_recorded(people, _), L),

@@ -36,7 +36,7 @@
            db_clear/1,
            db_copy/2,
            db_erase/1,
-           %db_iterate/3,  % +DB_Key, +Query, -Object
+           db_iterate/3,  % +DB_Key, +Query, -Object
            %db_iterate/4,  % +DB_Key, +Query, +Filter_Pred, -Object
            %db_iterate_replace/3,  % +DB_Key, +Pred, +Query
            %db_iterate_replace/4,  % +DB_Key, +Pred, +Query, +Filter
@@ -73,12 +73,13 @@
 :- use_module(u(ur_terms)).
 
 %:- module_transparent db_search/3.
-%                      db_iterate/3, db_iterate/4,
+%                      db_iterate/4,
 %                      db_iterate_replace/3, db_iterate_replace/4,
 %                      db_iterate_replace/5,
 %                      db_iterate_replace2/4.
 
 :- meta_predicate db_put_objects(+, 1, +).
+%:- meta_predicate db_iterate(+, +, 1, -).
 
 db_clear(DB_Key) :-
 
@@ -322,16 +323,26 @@ db_to_list(DB_Key, Functor, List) :-
 %
 % On bt return all records selected by Query
 %
-/*
+
 db_iterate(DB_Key, Query, Object) :-
 
-   db_iterate(DB_Key, Query, true, Object).
+   Ctx = context(db_iterate/3),
+   check_inst(Query, Ctx),
+   check_db_key(DB_Key, Ctx),
+
+   db_recorded(DB_Key, Object).
 
 
-db_iterate(DB_Key, Query, Filter_Pred, w(DB_Ref, Pred)) :-
+/*
+db_iterate(DB_Key, Query, Filter_Pred, Object) :-
 
-   ground(Query),
+   Ctx = context(db_iterate/4, _),
+   check_inst(Query, Ctx),
+   check_db_key(DB_Key, Ctx),
+   must_be(callable, Filter_Pred),
 
+   db_recorded(DB_Key, Object),
+   
    db_object_class(DB_Key, Class),
    resolve_args(Class, Query, Arg_Query),
    spec_term(Class, Spec_Term),
