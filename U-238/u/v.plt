@@ -30,6 +30,19 @@ test(class_fields) :-
    class_fields_new(citizen_v, Citizen_V_New_Fields),
    assertion(Citizen_V_New_Fields == [birthday, country, id]).
    
+test(obj_construct_bug1) :-
+
+   class_fields(man_v, Field_Names),
+   obj_construct(man_v, Field_Names, Field_Names, Obj),
+   Obj =.. [man_v, _|Field_Names2],
+
+   assertion(Field_Names == Field_Names2).
+
+test(obj_field_bug1, [fail]) :-
+
+   obj_construct(citizen_v, [sex], [woman], Obj),
+   obj_field(Obj, sex, man).
+
 test(obj_rebase_bug1) :-
 
    obj_construct(man_v, [sex, name], [man, 'Adam'], Obj1_0),
@@ -126,14 +139,6 @@ test(obj_rebase_bug4,
    arg(1, Obj3, Class_Id3),
    assertion(Class_Id0 =:= Class_Id3),
    assertion(Obj2_0 == Obj3).
-
-test(obj_construct_bug1) :-
-
-   class_fields(man_v, Field_Names),
-   obj_construct(man_v, Field_Names, Field_Names, Obj),
-   Obj =.. [man_v, _|Field_Names2],
-
-   assertion(Field_Names == Field_Names2).
 
 test(obj_reset_fields1) :-
 

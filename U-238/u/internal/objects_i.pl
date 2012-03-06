@@ -326,17 +326,22 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx)
          )
       )
    ;
-      % no such field
+      % no such field or invalid value ?
 
-      (  Weak = unbound
-      -> (Det = t -> ! ; true) %% return an unbound value
-      ;  Weak = fail
-      -> fail
-      ;  Weak = throw
-      -> throw(error(no_object_field(Obj, Field_Name), Ctx))
-      ;  Self_Ctx = context(obj_field_int/7, _),
-         decode_arg([[unbound], [fail], [throw]], Weak, _,
-                    Self_Ctx)
+      (  objects:clause(field(Class_Id, Field_Name, _, _, _, _,
+                              _), _)
+      -> fail % no value
+      ;
+         (  Weak = unbound
+         -> (Det = t -> ! ; true) %% return an unbound value
+         ;  Weak = fail
+         -> fail
+         ;  Weak = throw
+         -> throw(error(no_object_field(Obj, Field_Name), Ctx))
+         ;  Self_Ctx = context(obj_field_int/7, _),
+            decode_arg([[unbound], [fail], [throw]], Weak, _,
+                       Self_Ctx)
+         )
       )
    ).
 
