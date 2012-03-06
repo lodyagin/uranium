@@ -342,8 +342,13 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx)
    ).
 
 
-% The evaluation order can't be defined during class creation
-% because of rebasing 
+% Now the evaluation order can't be defined during class creation
+% because of rebasing
+
+% TODO move this discovery to class creation time
+% Eval time must statically calls aready asserted function
+% Thus, they should be asserted in the proper order
+
 find_eval_pred(_, _, 0, _, _) :- fail. % no evals on object_base_v
 
 find_eval_pred(Field, Object, Class_Id, Eval_Pred, Value) :-
