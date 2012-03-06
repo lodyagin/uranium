@@ -38,6 +38,15 @@ test(obj_construct_bug1) :-
 
    assertion(Field_Names == Field_Names2).
 
+% After some time it will always fails (because it depends
+% on the current year).
+test(obj_downcast1,
+     [C1 =@= callup_v(Class_Id, 1994, _, _, _, _, _, _, _, _)]) :-
+
+   obj_construct(citizen_v, [birthday], [1994], C0),
+   obj_downcast(C0, C1),
+   arg(1, C1, Class_Id).
+
 test(obj_field1, [Flds == Vals]) :-
 
    class_fields(citizen_v, Flds),
@@ -189,7 +198,7 @@ test(obj_reset_fields_weak) :-
    obj_class_id(Man1, Class_Id),
    assertion(Man1 =@= man_v(Class_Id, _, _, man, _, 63)).
 
-% After some time it will always fails (coz it depends
+% After some time it will always fails (because it depends
 % on the current year, see The Uranium Book).
 test(eval_fields1, [Class == callup_v]) :-
 

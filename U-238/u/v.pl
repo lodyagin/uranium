@@ -115,7 +115,7 @@ obj_field(Obj, Field_Name, Value) :-
    (  var(Field_Name) -> true
    ;  check_field_name(Field_Name, Ctx)
    ),
-   
+
    obj_field_int(Class_Id, Field_Name, throw, Obj, Value, _,
                  Ctx).
 
@@ -134,7 +134,7 @@ obj_field(Obj, Weak, Field_Name, Value) :-
    (  var(Field_Name) -> true
    ;  check_field_name(Field_Name, Ctx)
    ),
-   
+
    obj_field_int(Class_Id, Field_Name, Weak1, Obj, Value, _, Ctx).
 
 
@@ -250,7 +250,7 @@ obj_reset_fields_weak(Fields_List, Object0, Object, true) :-
 
    Ctx = context(obj_reset_fields_weak/4, _),
    obj_reset_fields_int(Fields_List, Object0, Object, weak, Ctx).
-   
+
 
 obj_reset_fields_int(Fields_List, Object0, Object, Weak, Ctx) :-
 
@@ -273,7 +273,7 @@ obj_reset_fields_int(Fields_List, Object0, Object, Weak, Ctx) :-
 
    obj_unify_int(Class_Id, Copy_Set, Weak, Object0, Values, Ctx),
    obj_construct_int(Class_Id, Copy_Set, Weak, Values, Object).
-    
+
 
 %
 % Сборка экземпляра класса с установкой только заданных полей
@@ -405,7 +405,7 @@ obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To,
    % Unify fields which are still unbounded
    unbounded_fields(To, Unbound_U),
    list_to_ord_set(Unbound_U, Unbound_Fields),
-   obj_unify_int(From_Class_Id, Unbound_Fields, throw, From,
+   obj_unify_int(From_Class_Id, Unbound_Fields, unbound, From,
                  Field_Values, Ctx),
 
    (  obj_unify_int(To_Class_Id, Unbound_Fields, fail, To,
@@ -469,7 +469,7 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
    (  rebased_base(Orig_Id, Old_Base, Old_Base_Id) -> true
    ;  throw(error(old_base_is_invalid(Old_Base, Orig_Id), Ctx))
    ),
-   
+
    (  rebased_base(Orig_Id, New_Base, New_Base_Id)
    -> New_Base_Is_Ancestor = true
    ;  class_primary_id(New_Base, New_Base_Id),
@@ -479,7 +479,7 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
    (  class_id(New_Base_Id, object_base_v)
    -> throw(error(cant_rebase_to_object_base_v, Ctx))
    ;  true ),
-   
+
    % In some cases we do not need rebase
    (  New_Base_Is_Ancestor == true,
       same_or_descendant(Old_Base_Id, any, New_Base_Id)
@@ -521,13 +521,13 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
 rebased_base(Id, Base, Id) :-
 
    class_id(Id, Base), !.
-   
+
 rebased_base(Id, Base, Base_Id) :-
 
    parent(Id, Parent_Id),
    rebased_base(Parent_Id, Base, Base_Id).
 
-   
+
 
 
 % obj_reinterpret(+From, -To) is nondet
