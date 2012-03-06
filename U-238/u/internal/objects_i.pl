@@ -303,8 +303,10 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx)
                      Is_Eval)
       ;
          Is_Eval = true,
-         objects:clause(field(Class_Id, Field_Name, Obj, Value,
-                              Type, _, Is_Eval),
+         % <NB> Value is unbound coz can be several eval preds,
+         % not to clash with objects:field call below
+         objects:clause(field(Class_Id, Field_Name, Obj, _, Type, _,
+                              Is_Eval), 
                         Eval_Module:Eval_Pred)
       )
 
