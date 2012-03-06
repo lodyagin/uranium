@@ -47,11 +47,11 @@
            obj_construct_int/5,
            obj_field_int/7,
            obj_unify_int/6,
-           parent/2,
+           parent/2,            % ?Id, ?Parent_Id
            same_or_descendant/3,%+Parent_Id, +No_Rebased, ?Desc_Id
            u_class/1,
            u_object/1,
-           unbounded_fields/2, %+Obj, -Field_Names
+           unbounded_fields/2, % +Obj, -Field_Names
            prolog:message/3
            ]).
 
@@ -272,7 +272,7 @@ obj_class_id(Object, Class_Id) :-
 
 parent(Id, Parent_Id) :-
 
-   objects:parent(Id, Parent_Id),
+   objects:parent(Id, Parent_Id), !,
    Id =\= 0.
 
 obj_construct_int(Class_Id, Field_Names, Weak, Field_Values,
@@ -304,11 +304,13 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx)
                      Is_Eval)
       ;
          Is_Eval = true,
-         % <NB> Value is unbound coz can be several eval preds,
-         % not to clash with objects:field call below
-         objects:clause(field(Class_Id, Field_Name, Obj, _, Type, _,
-                              Is_Eval), 
-                        Eval_Module:Eval_Pred)
+
+         % each eval field must be evaluable only once
+         class_fields(_, Class_Id, _, true, All_Eval_Fields),
+         member(Field_Name, All_Eval_Fields),
+
+         % BT on different eval preds (up to a hierarchy)
+         find_eval_pred(Field_Name, Obj, Class_Id, Eval_Pred, Value)
       )
 
    *->
@@ -316,17 +318,8 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx)
       ( Is_Eval = false
       -> (Det = t -> ! ; true)  %% return the fixed value
       ;
-         (  objects:field(Class_Id, Field_Name, Obj, Value, Type,
-                          _, Is_Eval)
-            % <NB> delete choicepoints in the Eval_Pred
-         -> (Det = t -> ! ; true)  %% return the evaluated value
-         ;
-            functor(Eval_Pred, Eval_Functor, Eval_Arity),
-            Eval_Ctx = context(
-                 Eval_Module:Eval_Functor/Eval_Arity, _),
-            throw(error(bad_eval_result(Obj, Field_Name),
-                        Eval_Ctx))
-         )
+         call(Eval_Pred, Obj, Field_Name, Value),
+         (Det = t -> ! ; true) %% return the evaluated value
       )
    ;
       % no such field or invalid value ?
@@ -347,6 +340,28 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx)
          )
       )
    ).
+
+
+% The evaluation order can't be defined during class creation
+% because of rebasing 
+find_eval_pred(_, _, 0, _, _) :- fail. % no evals on object_base_v
+
+find_eval_pred(Field, Object, Class_Id, Eval_Pred, Value) :-
+
+  class_id(Class_Id, Class),
+  atom_concat(Class, '?', Name),
+  Eval_Term =.. [Name, Object, Field, Value],
+  Body = Eval_Module:Eval_Term,
+  (
+     objects:clause(field(Class_Id, Field, Object, Value, _, _, true),
+                    Body)
+  *->
+     % found it (and leave a choice point)
+     Eval_Pred = Eval_Module:Name 
+  ;
+     parent(Class_Id, Parent_Id),
+     find_eval_pred(Parent_Id, Field, Object, Eval_Pred, Value)
+  ).
 
 
 obj_unify_int(_, [], _, _, [], _) :- !.

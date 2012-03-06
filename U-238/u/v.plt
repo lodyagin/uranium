@@ -44,12 +44,12 @@ test(obj_field1, [Flds == Vals]) :-
    obj_construct(citizen_v, Flds, Flds, Obj),
    findall(Val, (obj_field(Obj, Fld, Val), member(Fld, Flds)), Vals).
 
-test(obj_field2, [blocked(todo), Flds3 == Flds4]) :-
+test(obj_field2, [Flds3 == Flds4]) :-
 % Each eval field must be evaluable only once
 
    class_fields(citizen_v, Flds),
    obj_construct(citizen_v, Flds, Flds, Obj),
-   findall(Fld, obj_field(Obj, Fld, Val), Flds2),
+   findall(Fld, obj_field(Obj, Fld, _), Flds2),
    sort(Flds2, Flds3),
    msort(Flds2, Flds4).
   
@@ -193,7 +193,7 @@ test(obj_reset_fields_weak) :-
 % on the current year, see The Uranium Book).
 test(eval_fields1, [Class == callup_v]) :-
 
-   obj_construct(citizen_v, [birthday], [1986], C), 
+   obj_construct(citizen_v, [birthday], [1994], C), 
    obj_field(C, class, Class).
 
 :- end_tests(v).
