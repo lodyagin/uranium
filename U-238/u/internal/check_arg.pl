@@ -132,17 +132,9 @@ check_rebase_rule(Rebase_Rule, Ctx) :-
 
 decode_arg(Vals_LOL, Arg_Val, Result, Ctx) :-
 
-   Self_Ctx = decode_arg/4,
-   (  ground(Ctx)
-   -> true
-   ;  throw(error(instantiation_error, Self_Ctx))
-   ),
-   (  Ctx = Pred_Name/Arity
-   -> true
-   ;  atom(Ctx)
-   -> Pred_Name = Ctx, Arity = '?'
-   ;  throw(error(domain_error(context, Ctx), Self_Ctx))
-   ),
+   nonvar(Ctx),
+   Ctx = context(Pred_Name/Arity, _),
+   atom(Pred_Name), integer(Arity),
    
    (  arg_decode(Pred_Name, Arity, Arg_Val, Result0)
    -> true
