@@ -199,7 +199,8 @@ list_inheritance(From_Id, To_Id, List0, List) :-
    list_inheritance(From_Id, Parent_Id, [To_Id|List0], List).
 
 
-% parse Name : Type lists and check all values
+% fields_names_types(?Fields_Def, ?Names, ?Types)
+
 fields_names_types([], [], []).
 
 fields_names_types([Name:Type|FT], [Name|NT], [Type|TT]) :-
