@@ -330,8 +330,28 @@ db_iterate(DB_Key, Query, Object) :-
    check_inst(Query, Ctx),
    check_db_key(DB_Key, Ctx),
 
-   db_recorded(DB_Key, Object).
+   % BT 1
+   parse_db_query(DB_Key, Query, Des, Fields, Values),
 
+   % BT 2
+   named_args_unify_int(DB_Key, Des, Fields, Values, Object).
+
+
+parse_db_query(DB_Key, true, Des, [], []) :-
+
+   db_des(DB_Key, Des).
+
+parse_db_query(DB_Key, Expr, Des, [Field], [Value]) :-
+
+   functor(Expr, Field, 1), !,
+   arg(1, Expr, Value),
+   
+   Des = db_class_des(_, _, _, _, DB_Fields, _),
+   db_des(DB_Key, Des),
+
+   % only those classes which contain Field
+   ord_memberchk(Field, DB_Fields).
+   
 
 /*
 db_iterate(DB_Key, Query, Filter_Pred, Object) :-
