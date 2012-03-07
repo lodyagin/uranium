@@ -58,7 +58,8 @@
            dump_db/2,   % +Options, +DB_Key
 %           filter_on_db/3,
 
-           named_args_unify/5
+           named_args_unify/5 % +DB_Key, ?Functor, +Field_Names,
+                              % ?Values, -Term
 
            ]).
 
