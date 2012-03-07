@@ -406,8 +406,9 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
 
    Des = db_class_des(_, _, _, _, _, Key),
    obj_unify_int(Class_Id, Key, throw, Object, Key_Value, Ctx),
-   ground(Key_Value),           % unbounded key is not a key
+   %ground(Key_Value),           % unbounded key is not a key
    named_args_unify_int(DB_Key, Des, Key, Key_Value, Conflicting).
+   
 
 
 named_args_unify_int(DB_Key, Des, Field_Names, Values, Term) :-

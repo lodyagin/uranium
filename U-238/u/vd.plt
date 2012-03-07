@@ -12,7 +12,7 @@ test(clear_test_db, [fail, setup(db_clear(people))]) :-
 test(db_erase, [setup(model_db)]) :-
 
    (  named_args_unify(people, _,
-                       [name, surname], ['Adam', _], X),
+                       [weight, surname], [73, _], X),
       db_erase(X),
       fail ; true
    ),
@@ -158,22 +158,15 @@ model_db :-
 	db_clear(people),
 	db_clear(people2),
         
-        obj_construct(man_v, 
-                      [sex, name], 
-                      [man, 'Adam'], Man1), 
-        db_put_object(people, Man1, _),
+        db_construct(people, man_v,
+                     [sex, name, weight], [man, 'Adam', 73]), 
+        db_construct(people, man_v,
+                     [sex, name, weight], [woman, 'Eva', 64]), 
 
-        obj_construct(man_v, 
-                      [sex, name], 
-                      [woman, 'Eva'], Man2), 
-        db_put_object(people, Man2, _),
-
-        obj_construct(citizen_v, 
-                      [sex, surname, country], 
-                      [man, 'Mayakovsky', ['Soviet Union']],
-                      Man3), 
-        db_put_object(people, Man3, _). 
-
+        db_construct(people, citizen_v, 
+                      [sex, name, surname, country], 
+                      [man, 'Vladimir', 'Mayakovsky',
+                       ['Soviet Union']]).
 
 :- end_tests(vd).
 
