@@ -46,6 +46,7 @@
            obj_class_id/2,
            obj_construct_int/5,
            obj_field_int/7,
+           obj_reset_fields_int/6,
            obj_unify_int/6,
            parent/2,            % ?Id, ?Parent_Id
            same_or_descendant/3,%+Parent_Id, +No_Rebased, ?Desc_Id
@@ -340,6 +341,23 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx)
          )
       )
    ).
+
+obj_reset_fields_int(Class_Id, Fields_List, Object0, Object,
+                     Weak, Ctx) :-
+
+   list_to_ord_set(Fields_List, Reset_Set),
+   class_all_fields(Class_Id, All_Fields_Set),
+
+   % check the 'strict' condition
+   (  Weak = strict
+   -> % must not be nonexisting fields
+      ord_subtract(Reset_Set, All_Fields_Set, [])
+   ;  true ),
+
+   ord_subtract(All_Fields_Set, Reset_Set, Copy_Set),
+
+   obj_unify_int(Class_Id, Copy_Set, Weak, Object0, Values, Ctx),
+   obj_construct_int(Class_Id, Copy_Set, Weak, Values, Object).
 
 
 % Now the evaluation order can't be defined during class creation

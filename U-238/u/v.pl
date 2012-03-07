@@ -227,7 +227,7 @@ named_args_unify(DB_Key,
 obj_reset_fields(Fields_List, Object_In, Object_Out) :-
 
    Ctx = context(obj_reset_fields/3, _),
-   obj_reset_fields_int(Fields_List, Object_In, Object_Out,
+   obj_reset_fields2(Fields_List, Object_In, Object_Out,
                         strict, Ctx).
 
 %
@@ -236,13 +236,13 @@ obj_reset_fields(Fields_List, Object_In, Object_Out) :-
 obj_reset_fields(Fields_List, Object0, Object, true) :-
 
    Ctx = context(obj_reset_fields/4, _),
-   obj_reset_fields_int(Fields_List, Object0, Object, strict,
+   obj_reset_fields2(Fields_List, Object0, Object, strict,
                         Ctx).
 
 obj_reset_fields_weak(Fields_List, Object0, Object) :-
 
    Ctx = context(obj_reset_fields_weak/3, _),
-   obj_reset_fields_int(Fields_List, Object0, Object, weak, Ctx).
+   obj_reset_fields2(Fields_List, Object0, Object, weak, Ctx).
 
 %
 % this form is for using in db_iterate_replace
@@ -250,30 +250,19 @@ obj_reset_fields_weak(Fields_List, Object0, Object) :-
 obj_reset_fields_weak(Fields_List, Object0, Object, true) :-
 
    Ctx = context(obj_reset_fields_weak/4, _),
-   obj_reset_fields_int(Fields_List, Object0, Object, weak, Ctx).
+   obj_reset_fields2(Fields_List, Object0, Object, weak, Ctx).
 
 
-obj_reset_fields_int(Fields_List, Object0, Object, Weak, Ctx) :-
+obj_reset_fields2(Fields_List, Object0, Object, Weak, Ctx) :-
 
-   Self_Ctx = context(obj_reset_fields_int/5, _),
    check_inst(Fields_List, Ctx),
    check_inst(Object0, Ctx),
    check_list_fast_arg(Fields_List, Ctx),
    check_object_arg(Object0, Ctx, Class_Id),
+   decode_arg([[weak], [strict]], Weak, Weak1, Ctx),
 
-   list_to_ord_set(Fields_List, Reset_Set),
-   class_all_fields(Class_Id, All_Fields_Set),
-
-   % check the 'strict' condition
-   (  decode_arg([[weak], [strict]], Weak, strict, Self_Ctx)
-   -> % must not be nonexisting fields
-      ord_subtract(Reset_Set, All_Fields_Set, [])
-   ;  true ),
-
-   ord_subtract(All_Fields_Set, Reset_Set, Copy_Set),
-
-   obj_unify_int(Class_Id, Copy_Set, Weak, Object0, Values, Ctx),
-   obj_construct_int(Class_Id, Copy_Set, Weak, Values, Object).
+   obj_reset_fields_int(Class_Id, Fields_List, Object0, Object,
+                        Weak1, Ctx).
 
 
 %
