@@ -88,8 +88,8 @@ test(db_recorded4, [setup(model_db)]) :-
 test(db_recorded5, [setup(db_clear(people))]) :-
 
    db_construct(people, man_v, [], []),
-   db_recorded(test1, X), !,
-   db_recorded(test1, X).
+   db_recorded(people, X), !,
+   db_recorded(people, X).
 
 
 test(db_copy, [setup(model_db), N =:= 3]) :-

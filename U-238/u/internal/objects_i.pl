@@ -280,7 +280,7 @@ obj_construct_int(Class_Id, Field_Names, Weak, Field_Values,
                   Object) :-
 
    Ctx = context(obj_construct_int/5, _),
-
+   % FIXME move this checking to callers
    decode_arg([[throw, throws, strict, s],
                [unbound, weak, w],
                [fail, false, f]

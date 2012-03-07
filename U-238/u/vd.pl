@@ -261,10 +261,10 @@ db_put_objects(DB_Key, Pred, Options) :-
 % Doesn't process inheritance
 db_recorded(DB_Key, Object) :-
 
-   Ctx = context(db_recorded/2, _),
-   (   var(Object)
-   ->  true
-   ;   check_object_arg(Object, Ctx, _)
+   (   var(Object) ->  true
+   ;
+       Ctx = context(db_recorded/2, _),
+       check_object_arg(Object, Ctx, _)
    ),
    db_recorded_int(DB_Key, Object).
 
@@ -364,7 +364,6 @@ db_to_list(DB_Key, Functor, List) :-
 % expr ::= ( expr )
 % expr ::= field(Value) | field(+bound) | field(+free) | true
 % expr ::= field(\+ Value)
-% expr ::= functor(Functor) | functor(\+ Functor)
 %
 
 %
@@ -398,7 +397,8 @@ db_iterate2(DB_Key, Query, Object) :-
    parse_db_query(DB_Key, Query, Des, Fields, Values),
 
    % BT 2
-   named_args_unify_int(DB_Key, Des, Fields, Values, Object).
+   named_args_unify_int(DB_Key, fail, Des, Fields, Values,
+                        Object).
 
 
 %
@@ -459,11 +459,11 @@ parse_db_query(DB_Key, true, Des, [], []) :- !,
 
    db_des(DB_Key, Des).
 
-parse_db_query(DB_Key, functor(Class), Des, [], []) :- !,
+%parse_db_query(DB_Key, functor(Class), Des, [], []) :- !,
 
    % check_class_arg
-   Des = db_class_des(_, _, Class, _, _, _),
-   db_des(DB_Key, Des).
+%   Des = db_class_des(_, _, Class, _, _, _),
+%   db_des(DB_Key, Des).
 
 parse_db_query(DB_Key, Expr, Des, [Field], [Value]) :-
 
@@ -471,10 +471,11 @@ parse_db_query(DB_Key, Expr, Des, [Field], [Value]) :-
    arg(1, Expr, Value),
    
    Des = db_class_des(_, _, _, _, DB_Fields, _),
-   db_des(DB_Key, Des),
+   db_des(DB_Key, Des).
 
    % only those classes which contain Field
-   ord_memberchk(Field, DB_Fields).
+   % <NB> no evaluated fields
+%   ord_memberchk(Field, DB_Fields).
    
 
 db_move_all_data(From_DB, To_DB) :-
@@ -713,7 +714,8 @@ named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
    % <NB> the class Functor can not be defined locally
    Des = db_class_des(_, _, Functor, _, _, _),
    db_des(DB_Key, Des),
-   named_args_unify_int(DB_Key, Des, Field_Names, Values, Term).
+   named_args_unify_int(DB_Key, throw, Des, Field_Names, Values,
+                        Term).
 
 % this is a version for -Functor
 named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
@@ -735,7 +737,8 @@ named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
    ;  throw(error(bad_db(DB_Key, 'Bad class name: ~w', [Functor]),
                   Ctx))
    ),
-   named_args_unify_int(DB_Key, Des, Field_Names, Values, Term).
+   named_args_unify_int(DB_Key, throw, Des, Field_Names, Values,
+                        Term).
 
 
 db_object_class(DB_Key, Class) :-

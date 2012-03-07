@@ -38,7 +38,7 @@
            db_recordz_int/2,
            erase_conflicts/3,
            key_conflict/4,
-           named_args_unify_int/5,
+           named_args_unify_int/6,
            prolog:message/3
            ]).
 
@@ -211,8 +211,8 @@ db_object_class_int(DB_Key, Local_Class_Id) :-
 % db_recorded_int(+DB_Key, ?L_Object)
 db_recorded_int(DB_Key, L_Object) :-
 
-    Ctx = context(db_recorded_int/2, _),
     atom(DB_Key), nonvar(L_Object), !,
+    Ctx = context(db_recorded_int/2, _),
 
     % check whether L_Object has db_ref
     arg(1, L_Object, Local_Class_Id),
@@ -236,8 +236,8 @@ db_recorded_int(DB_Key, L_Object) :-
 % the case of free L_Object, unify with all records in DB
 db_recorded_int(DB_Key, L_Object) :-
 
-    Ctx = context(db_recorded_int/2, _),
     atom(DB_Key), var(L_Object), !,
+    Ctx = context(db_recorded_int/2, _),
 
     % BT on all classes
     recorded(DB_Key, db_class_des(_, _, Class, Arity, _, _)),
@@ -286,9 +286,9 @@ db_recordz_int(DB_Key, Object0) :-
 % Convert between local and db object term
 object_local_db(DB_Key, Local_Object, DB_Object) :-
 
-    Ctx = context(object_local_db/3, _),
     % it is from Local to DB case
     nonvar(Local_Object), var(DB_Object), !,
+    Ctx = context(object_local_db/3, _),
 
     % get db id (and store service predicates if necessary)
     arg(1, Local_Object, Local_Class_Id),
@@ -305,9 +305,9 @@ object_local_db(DB_Key, Local_Object, DB_Object) :-
 
 object_local_db(DB_Key, Local_Object, DB_Object) :-
 
-    Ctx = context(object_local_db/3, _),
     % it is from DB to Local case
     var(Local_Object), nonvar(DB_Object), !,
+    Ctx = context(object_local_db/3, _),
 
     % get local class id
     arg(1, DB_Object, DB_Class_Id),
@@ -407,17 +407,20 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
    Des = db_class_des(_, _, _, _, _, Key),
    obj_unify_int(Class_Id, Key, throw, Object, Key_Value, Ctx),
    %ground(Key_Value),           % unbounded key is not a key
-   named_args_unify_int(DB_Key, Des, Key, Key_Value, Conflicting).
+   named_args_unify_int(DB_Key, throw, Des, Key, Key_Value,
+                        Conflicting).
    
 
 
-named_args_unify_int(DB_Key, Des, Field_Names, Values, Term) :-
+named_args_unify_int(DB_Key, Option, Des, Field_Names, Values,
+                     Term) :-
 
    Des = db_class_des(DB_Class_Id, _, Functor, _, _, _),
-   db_conv_local_db(DB_Key, _, DB_Class_Id, _),
+   db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, _),
    % now the class is definitly loaded
 
-   obj_construct(Functor, Field_Names, Values, Term0),
+   obj_construct_int(Local_Class_Id, Field_Names, Option, Values,
+                     Term0),
    obj_rebase((object_v -> db_object_v), Term0, Term),
    db_recorded_int(DB_Key, Term).
 
