@@ -356,6 +356,18 @@ db_to_list(DB_Key, Functor, List) :-
           (db_recorded(DB_Key, Object), functor(Object, Functor, _)),
           List).
 */
+
+%
+% DB search
+%
+% expr ::= expr \/ expr
+% expr ::= expr /\ expr
+% expr ::= ( expr )
+% expr ::= field(Value) | field(+bound) | field(+free) | true
+% expr ::= field(\+ Value)
+% expr ::= functor(Functor) | functor(\+ Functor)
+%
+
 %
 % On bt return all records selected by Query
 %
@@ -373,8 +385,14 @@ db_iterate(DB_Key, Query, Object) :-
    named_args_unify_int(DB_Key, Des, Fields, Values, Object).
 
 
-parse_db_query(DB_Key, true, Des, [], []) :-
+parse_db_query(DB_Key, true, Des, [], []) :- !,
 
+   db_des(DB_Key, Des).
+
+parse_db_query(DB_Key, functor(Class), Des, [], []) :- !,
+
+   % check_class_arg
+   Des = db_class_des(_, _, Class, _, _, _),
    db_des(DB_Key, Des).
 
 parse_db_query(DB_Key, Expr, Des, [Field], [Value]) :-

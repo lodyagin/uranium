@@ -32,6 +32,15 @@ test(db_iterate2, [setup(model_db), N =:= 2]) :-
    findall(O, db_iterate(people, sex(man), O), L),
    length(L, N).
 
+test(db_iterate3, [setup(model_db), fail]) :-
+
+   db_iterate(people, unexisting_name(man_v), _).
+
+test(db_iterate4, [setup(model_db), N =:= 2]) :-
+
+   findall(O, db_iterate(people, functor(man_v), O), L),
+   length(L, N).
+
 test(db_recorded_bug1, [setup(model_db), N =:= 3]) :-
 
    findall('.', db_recorded(people, _), L),
