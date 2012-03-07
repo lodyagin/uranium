@@ -194,7 +194,7 @@ db_put_object(DB_Key, Option, Object0, Object) :-
 
 
 handle_key_dup(throw, DB_Key, _, DB_Object, New_Object) :-
-   throw(db_key_exists(DB_Key, DB_Object, New_Object)).
+   throw(error(db_key_exists(DB_Key, DB_Object, New_Object), _)).
 handle_key_dup(fail, _, _, _, _) :- !, fail.
 handle_key_dup(ignore, _, _, _, _) :- !.
 handle_key_dup(overwrite, DB_Key, Class_Id, _, New_Object) :-
