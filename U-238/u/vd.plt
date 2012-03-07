@@ -108,7 +108,7 @@ test(db_put_objects,
 		Men),
 
 	db_put_objects(people,
-		       arg_reorder(member, [2,1], Men),
+		       Men+\El^member(El, Men),
 		       fail),
 
 	db_size(people, DB_Size).
