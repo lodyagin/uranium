@@ -34,6 +34,8 @@
 %           db_bind_obj/3, % +DB_Key, +Object0, -Object
 %           db_change/4,   % +DB_Key, +Fields, +Vals, +Query
            db_clear/1,
+           db_construct/4, % +DB_Key, +Fields, +Values
+           db_construct/5, % +DB_Key, +Fields, +Values, -Object
            db_copy/2,
            db_erase/1,
            db_iterate/3,  % +DB_Key, +Query, -Object
@@ -87,6 +89,33 @@ db_clear(DB_Key) :-
    Ctx = context(db_clear/1, _),
    check_db_key(DB_Key, Ctx),
    db_clear_int(DB_Key).
+
+% db_construct(+DB_Key, +Fields, +Values)
+%
+% Construct the object directly in the DB
+db_construct(DB_Key, Class, Fields, Values) :-
+
+   Ctx = context(db_construct/4, _),
+   db_construct2(DB_Key, Class, Fields, Values, _, Ctx).
+
+% db_construct(+DB_Key, +Fields, +Values, -Obj)
+%
+% This form returns the object (with db_ref)
+db_construct(DB_Key, Class, Fields, Values, Obj) :-
+
+   Ctx = context(db_construct/3, _),
+   db_construct2(DB_Key, Class, Fields, Values, Obj, Ctx).
+
+db_construct2(DB_Key, Class, Fields, Values, Obj, Ctx) :-
+
+   check_inst(Class, Ctx),
+   check_db_key(DB_Key, Ctx),
+   check_existing_class_arg(Class, Ctx, Class_Id),
+   check_fields_arg(Fields, Ctx),
+   check_values_arg(Fields, Values, Ctx),
+
+   obj_construct_int(Class_Id, Fields, throw, Values, Tmp),
+   db_put_object_int(DB_Key, Class_Id, throw, Tmp, Obj).
 
 db_erase(Obj) :-
 
@@ -172,15 +201,21 @@ handle_key_dup(overwrite, DB_Key, Class_Id, _, New_Object) :-
    erase_conflicts(DB_Key, Class_Id, New_Object), !.
 
 
-db_put_object_int(DB_Key, Class_Id, Option, Object0, Object) :-
+db_put_object_int(DB_Key, Class_Id0, Option, Object0, Object) :-
 
    % TODO replacing object when db_ref is already bound
 
    % Rebase if needed
+
+   % Find db_object_v class id
    class_primary_id(db_object_v, DB_Object_V_Id),
-   (  same_or_descendant(DB_Object_V_Id, _, Class_Id)
-   -> Object = Object0 % already has a db_object_v ancestor
-   ;  obj_rebase((object_v -> db_object_v), Object0, Object) ),
+   
+   (  same_or_descendant(DB_Object_V_Id, _, Class_Id0)
+   -> Object = Object0, % already has a db_object_v ancestor
+      Class_Id = Class_Id0
+   ;  obj_rebase((object_v -> db_object_v), Object0, Object),
+      arg(1, Object, Class_Id)
+   ),
 
    % Check key if any
    get_key(Class_Id, Key),
