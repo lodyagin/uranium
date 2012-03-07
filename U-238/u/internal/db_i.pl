@@ -58,6 +58,7 @@ db_des(DB_Key, Des) :-
    recorded(DB_Key, Des).
 
 % db_key_policy(+DB_Key, -Old, ?New)
+% is det
 db_key_policy(DB_Key, Old, New) :-
 
    atom(DB_Key),
@@ -78,7 +79,7 @@ db_key_policy(DB_Key, Old, New) :-
    ;  Old = throw  % default is throw
    ),
 
-   recordz(DB_Key, db_key_policy(New)).
+   recorda(DB_Key, db_key_policy(New)).
 
 % DB maintain its own namespace of class ids
 
