@@ -90,7 +90,16 @@ db_add_class(DB_Key, Local_Id, DB_Id, Des) :-
    class_id(Local_Id, Class),
    Des = db_class_des(DB_Id, DB_Parent_Id, Class, Arity,
 		      Fields, Key),
-   recordz(DB_Key, Des).
+   recordz(DB_Key, Des),
+
+   % Parents are added before children.
+   % Thus, need check keymaster only once - for parents
+   (  get_keymaster(Local_Id, Local_Id)
+   -> % the new key is introduced
+      recordz(DB_Key, db_keymaster(DB_Id))
+   ;
+      true   % in hope the parent already added it
+   ).
 
 % class_db_local_id(+DB_Key, ?Local_Id, ?DB_Id, -Des)
 % Convert local <-> db id for the class
@@ -205,10 +214,11 @@ db_recorded_int(DB_Key, L_Object) :-
     Ctx = context(db_recorded_int/2, _),
     atom(DB_Key), nonvar(L_Object), !,
 
-    obj_field(L_Object, db_ref, Ref1),
-    var(Ref1),
-
+    % check whether L_Object has db_ref
     arg(1, L_Object, Local_Class_Id),
+    obj_field_int(Local_Class_Id, db_ref, throw, L_Object, _, _,
+                  Ctx),
+
     object_local_db(DB_Key, L_Object, DB_Object),
 
     % find the matched record
@@ -315,26 +325,6 @@ object_local_db(DB_Key, Local_Object, DB_Object) :-
     Local_Object =.. [Class, Local_Class_Id| DB_Field_Vals].
 
 
-% FIXME
-%db_recordz(DB_Key, Term, Ref) :-
-
-
-%record_control_pred(DB_Key, Object) :-
-
-%   true. %TODO record '#keymaster'/1
-   %functor(Object, Functor, _),
-
-
-/*next_db_id(DB_Key, Id) :-
-
-   (  recorded(DB_Key, '#next_db_id'(Id), Ref),
-      erase(Ref)
-   -> true
-   ;  Id = 1 ),
-   Next_Id is Id + 1,
-   recordz(DB_Key, '#next_db_id'(Next_Id)).
-*/
-
 % db_erase_by_key(+DB_Key, +Key, +Key_Value)
 %
 % Erase all objects matching key
@@ -401,25 +391,22 @@ erase_conflicts(DB_Key, Class_Id, Object) :-
      fail ; true ).
 
 % key_conflict(+DB_Key, +Class_Id, @Object, -Conflicting)
+% nondet 
 %
-% Return the conflicting object.
+% Return the conflicting objects.
 % Using of ground(Key_Value) ensures Object is not changed
 
 key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
 
    Ctx = context(key_conflict/4, _),
-   recorded(DB_Key, '#keymaster'(Key_Class_Id)),
+   recorded(DB_Key, db_keymaster(DB_Key_Class_Id)),
+   db_conv_local_db(DB_Key, Key_Class_Id, DB_Key_Class_Id, Des),
    same_or_descendant(Key_Class_Id, false, Class_Id),
    % false means test all rebased classes as well
 
-   get_key(Key_Class_Id, Key),
+   Des = db_class_des(_, _, _, _, _, Key),
    obj_unify_int(Class_Id, Key, throw, Object, Key_Value, Ctx),
    ground(Key_Value),           % unbounded key is not a key
-   same_or_descendant(Key_Class_Id, false, DB_Class_Id),
-
-   class_id(DB_Class_Id, Class),
-   Des = db_class_des(_, _, Class, _, _, _),
-   db_des(DB_Key, Des),
    named_args_unify_int(DB_Key, Des, Key, Key_Value, Conflicting).
 
 

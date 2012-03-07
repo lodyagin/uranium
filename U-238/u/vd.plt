@@ -76,6 +76,12 @@ test(db_recorded4, [setup(model_db)]) :-
    length(L2, N2),
    assertion(N2 =:= 2).
    
+test(db_recorded5, [setup(db_clear(people))]) :-
+
+   db_construct(people, man_v, [], []),
+   db_recorded(test1, X), !,
+   db_recorded(test1, X).
+
 
 test(db_copy, [setup(model_db), N =:= 3]) :-
 
@@ -97,6 +103,7 @@ test(db_put_objects,
 		       fail),
 
 	db_size(people, DB_Size).
+
 
 test(named_args_unify1, [setup(model_db)]) :-
 
