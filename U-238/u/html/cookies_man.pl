@@ -63,7 +63,7 @@ store_cookies(DB_Key, Headers, Domain, Path) :-
 extract_cookie(DB_Key, Domain, Path, Set_Cookie) :-
 
    cookie_object(Domain, Path, Cookie_Obj, Set_Cookie),
-   db_put_object(DB_Key, Cookie_Obj, [overwrite]),
+   db_put_object(DB_Key, overwrite, Cookie_Obj, _),
    write_log(['New cookie in', DB_Key, ':', Cookie_Obj],
              [logger(cookies), lf(1, before), lf(1)]).
 
