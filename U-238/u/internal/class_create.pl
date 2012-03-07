@@ -88,15 +88,8 @@ class_create(Class, Parent, Fields, New_Key) :-
    ),
    class_primary_id(Parent, Parent_Id),
    assert_new_class(Class, Parent_Id, Fields, Ctx),
-   get_key(Parent_Id, Parent_Key_Set),
-   ord_union(Parent_Key_Set, New_Key_Set, Key_Set),
-   length(Parent_Key_Set, Parent_Key_Length),
-   length(Key_Set, Key_Length),
-   (  Key_Length > Parent_Key_Length
-   -> class_primary_id(Class, Class_Id),
-      assert_new_key(Class_Id, Key_Set)
-   ;  assert_parent_key(Parent_Id, Parent_Id)
-   ),
+   class_primary_id(Class, Class_Id),
+   assert_new_key(Class_Id, New_Key_Set),
    assert_copy(Class_Id, Parent_Id).
 
 
