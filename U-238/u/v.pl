@@ -51,7 +51,8 @@
            obj_downcast/3,   % +Parent, +Class_To, -Descendant
            obj_field/3,      % +Obj, ?Field, ?Value
            obj_field/4,      % +Obj, +Weak, ?Field, ?Value
-           obj_get_key/2,    % +Object, ?Key
+           obj_key/2,    % +Object, -Key
+           obj_key_value/2,    % +Object, -Key_Value
            obj_rebase/3,     % ?Rebase_Rule, @Object0, -Object
            obj_reinterpret/2, % +From, -To
            obj_reset_fields/3, % +[Field|...], +Obj_In, -Obj_Out
@@ -758,15 +759,26 @@ most_narrowed(Class1, Class2, Most_Narrowed_Class) :-
   Most_Narrowed_Class = Class1, !.
 
 %
-% obj_get_key(+Object, -Key)
+% obj_key(+Object, -Key)
 %
 
-obj_get_key(Object, Key) :-
+obj_key(Object, Key) :-
 
-  % TODO check args
-  compound(Object), !,
-  obj_class_id(Object, Class_Id),
+  Ctx = context(obj_key/2, _),
+  check_object_arg(Object, Ctx, Class_Id),
   get_key(Class_Id, Key).
+
+
+%
+% obj_key_value(+Object, -Key_Value)
+%
+
+obj_key_value(Object, Key_Value) :-
+
+  Ctx = context(obj_key_value/2, _),
+  check_object_arg(Object, Ctx, Class_Id),
+  get_key(Class_Id, Key),
+  obj_unify_int(Class_Id, Key, throw, Object, Key_Value, Ctx).
 
 
 %

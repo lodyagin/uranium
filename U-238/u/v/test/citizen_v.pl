@@ -24,4 +24,4 @@
         ).
         
 
-new_class(citizen_v, man_v, [country, id, birthday]).
+new_class(citizen_v, man_v, [country, id, birthday], [id]).

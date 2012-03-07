@@ -67,6 +67,24 @@ test(obj_field_bug1, [fail]) :-
    obj_construct(citizen_v, [sex], [woman], Obj),
    obj_field(Obj, sex, man).
 
+test(obj_key1) :-
+
+   obj_construct(man_v, [sex, name], [man, 'Adam'], Man1),
+   obj_key(Man1, Key1),
+   assertion(Key1 == [name, surname]),
+   obj_key_value(Man1, Key_Value1),
+   assertion(Key_Value1 =@= ['Adam', _]),
+
+   obj_construct(citizen_v, 
+                 [sex, surname, country], 
+                 [man, 'Mayakovsky', ['Soviet Union']],
+                 Man2),
+   obj_key(Man2, Key2),
+   assertion(Key2 == [id]),
+   obj_key_value(Man2, Key_Value2),
+   assertion(Key_Value2 =@= [_]).
+
+
 test(obj_rebase_bug1) :-
 
    obj_construct(man_v, [sex, name], [man, 'Adam'], Obj1_0),
