@@ -152,7 +152,134 @@ test(store_and_retrieve1,
 	obj_field(Man1, weight, Weight),
 	obj_field(Man1, height, Height).
 
+test(key_rule1,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
 
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Lodyagin']),
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Lodyagin']).
+                
+test(key_rule2,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
+
+   db_construct(people, man_v, [], []),
+   db_construct(people, man_v, [], []).
+                
+test(key_rule3,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
+
+   db_construct(people, man_v, [name], ['Sergei']),
+   db_construct(people, man_v, [], []).
+                
+test(key_rule4,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
+
+   db_construct(people, man_v, [], []),
+   db_construct(people, man_v, [name], ['Sergei']).
+                
+test(key_rule5, [setup(db_clear(people))]) :-
+
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Lodyagin']),
+   
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Sikorsky']).
+
+test(key_rule6,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
+
+   db_construct(people, man_v,
+                [name], ['Sergei']),
+   
+   db_construct(people, man_v,
+                [name], ['Sergei']).
+
+test(key_rule7,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
+
+   db_construct(people, man_v,
+                [name], ['Sergei']),
+   
+   db_construct(people, man_v,
+                [surname], ['Lodyagin']).
+
+test(key_rule8, [setup(db_clear(people))]) :-
+
+   db_construct(people, man_v,
+                [name], ['Sergei']),
+   
+   db_construct(people, man_v,
+                [name], ['Artem']).
+
+test(key_rule9,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
+
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Sysoev']),
+   
+   db_construct(people, man_v,
+                [name], ['Sergei']).
+
+test(key_rule10,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
+
+   db_construct(people, man_v,
+                [name], ['Sergei']),
+
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Sysoev']).
+   
+test(key_rule11,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
+
+   db_construct(people, citizen_v, [id], [4]),
+   db_construct(people, citizen_v, [], []).
+                
+test(key_rule12, [setup(db_clear(people))]) :-
+
+   db_construct(people, citizen_v, [id], [4]),
+   db_construct(people, man_v, [], []).
+                
+test(key_rule13, [setup(db_clear(people))]) :-
+
+   db_construct(people, citizen_v, [id], [4]),
+   db_construct(people, man_v, [name], ['James']).
+                
+test(key_rule14,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
+
+   db_construct(people, citizen_v, [id], [4]),
+   db_construct(people, man_v, [], []),
+   db_construct(people, citizen_v, [id], [5]).
+                
+test(key_rule15, [setup(db_clear(people))]) :-
+
+   db_construct(people, citizen_v, [id], [4]),
+   db_construct(people, man_v,
+                [name, surname], ['James', 'Crick']),
+   db_construct(people, citizen_v,
+                [name, surname, id], ['Adam', 'Adamovitch', 5]).
+   
+test(key_rule16,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
+
+   db_construct(people, man_v, [name], ['James']),
+   db_construct(people, citizen_v, [id], [4]).
+   
+                
+   
 model_db :-
 
 	db_clear(people),
