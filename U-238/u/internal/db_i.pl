@@ -33,6 +33,7 @@
            db_erase_int/1,
            db_des/2,  % +DB_Key, ?Des
            db_key_is_valid/1,
+           db_key_policy/3,  % +DB_Key, -Old, ?New
            db_object_class_int/2,
            db_recorded_int/2,
            db_recordz_int/2,
@@ -55,6 +56,29 @@ db_des(DB_Key, Des) :-
    atom(DB_Key), !,
    Des = db_class_des(_, _, _, _, _, _),
    recorded(DB_Key, Des).
+
+% db_key_policy(+DB_Key, -Old, ?New)
+db_key_policy(DB_Key, Old, New) :-
+
+   atom(DB_Key),
+   var(New),  % do not set, only return
+   !,
+
+   Old = New,
+   (  recorded(DB_Key, db_key_policy(Old)) -> true
+   ;  Old = throw  % default is throw
+   ).
+
+db_key_policy(DB_Key, Old, New) :-
+
+   atom(DB_Key), !,
+
+   (  recorded(DB_Key, db_key_policy(Old), Ref)
+   -> erase(Ref)
+   ;  Old = throw  % default is throw
+   ),
+
+   recordz(DB_Key, db_key_policy(New)).
 
 % DB maintain its own namespace of class ids
 
@@ -415,7 +439,7 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
 named_args_unify_int(DB_Key, Option, Des, Field_Names, Values,
                      Term) :-
 
-   Des = db_class_des(DB_Class_Id, _, Functor, _, _, _),
+   Des = db_class_des(DB_Class_Id, _, _, _, _, _),
    db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, _),
    % now the class is definitly loaded
 

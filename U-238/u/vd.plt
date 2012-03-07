@@ -9,6 +9,12 @@ test(clear_test_db, [fail, setup(db_clear(people))]) :-
 
 	db_recorded(people, _).
 
+test(db_copy, [setup(model_db), N =:= 3]) :-
+
+   db_copy(people, people2),
+   findall('.', db_recorded(people2, _), L),
+   length(L, N).
+
 test(db_erase, [setup(model_db)]) :-
 
    (  named_args_unify(people, _,
@@ -40,6 +46,41 @@ test(db_iterate4, [setup(model_db), N =:= 2]) :-
 
    findall(O, db_iterate(people, functor(man_v), O), L),
    length(L, N).
+
+test(db_iterate4, [setup(model_db), N =:= 3]) :-
+
+   findall(O, db_iterate(people, functor(_), O), L),
+   length(L, N).
+
+test(db_to_list, [setup(model_db)]) :-
+
+   db_to_list(people, man_v, L1),
+   length(L1, N1),
+   assertion(N1 =:= 2),
+
+   db_to_list(people, citizen_v, L2),
+   length(L2, N2),
+   assertion(N2 =:= 1),
+
+   db_to_list(people, _, L3),
+   length(L3, N3),
+   assertion(N3 =:= 3).
+
+test(db_put_objects,
+    [setup(db_clear(people)),
+     DB_Size =:= 3]
+    ) :-
+
+	maplist(obj_construct(man_v, [name]),
+		[['Valera'], ['Vika'], ['Yura']],
+		Men),
+
+	db_put_objects(people,
+		       Men+\El^member(El, Men),
+		       fail),
+
+	db_size(people, DB_Size).
+
 
 test(db_recorded_bug1, [setup(model_db), N =:= 3]) :-
 
@@ -90,29 +131,6 @@ test(db_recorded5, [setup(db_clear(people))]) :-
    db_construct(people, man_v, [], []),
    db_recorded(people, X), !,
    db_recorded(people, X).
-
-
-test(db_copy, [setup(model_db), N =:= 3]) :-
-
-   db_copy(people, people2),
-   findall('.', db_recorded(people2, _), L),
-   length(L, N).
-
-test(db_put_objects,
-    [setup(db_clear(people)),
-     DB_Size =:= 3]
-    ) :-
-
-	maplist(obj_construct(man_v, [name]),
-		[['Valera'], ['Vika'], ['Yura']],
-		Men),
-
-	db_put_objects(people,
-		       Men+\El^member(El, Men),
-		       fail),
-
-	db_size(people, DB_Size).
-
 
 test(named_args_unify1, [setup(model_db)]) :-
 
@@ -286,7 +304,18 @@ test(key_rule16,
 
    db_construct(people, man_v, [name], ['James']),
    db_construct(people, citizen_v, [id], [4]).
+
+
+test(db_singleton_v1, [setup(db_clear(people))]) :-
+
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Lodyagin']),
+   db_construct(people, db_singleton_v,
+                [key_policy], [overwrite]),
+   db_construct(people, man_v, [surname], ['Lodyagin']),
    
+   true.
+
                 
    
 model_db :-

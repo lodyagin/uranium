@@ -36,21 +36,40 @@ test(db_conv_local_db1, [setup(setup)]) :-
 	assertion(Object_DB_Id =:= 1), % always 1
 	assertion(Man_DB_Id =\= Object_DB_Id).
 
+test(db_key_policy, [setup(setup)]) :-
+
+   db_key_policy(db_i_test, Old1, New1),
+   assertion(Old1 == throw),
+   assertion(New1 == throw),
+
+   db_key_policy(db_i_test, Old2, overwrite),
+   assertion(Old2 == throw),
+
+   db_key_policy(db_i_test, _, overwrite),
+   db_key_policy(db_i_test, overwrite, _),
+   db_key_policy(db_i_test, overwrite, overwrite),
+
+   db_key_policy(db_i_test, overwrite, throw),
+
+   db_key_policy(db_i_test, Old3, New3),
+   assertion(Old3 == throw),
+   assertion(New3 == throw).   
+   
 
 test(db_recorded_int,
      [setup(setup),
       throws(error(no_object_field(Obj0, db_ref), _))]
     ) :-
 
-        obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),
-        db_put_object(db_i_test, Obj0, _),
-        db_recorded_int(db_i_test, Obj0).
+   obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),
+   db_put_object(db_i_test, Obj0, _),
+   db_recorded_int(db_i_test, Obj0).
 
 test(db_recorded_int, [setup(setup)]) :-
 
-        obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),
-        db_put_object(db_i_test, Obj0, Obj),
-        db_recorded(db_i_test, Obj).
+   obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),
+   db_put_object(db_i_test, Obj0, Obj),
+   db_recorded(db_i_test, Obj).
 
 test(key_conflict, [setup(model_db(Slod1))]) :-
 

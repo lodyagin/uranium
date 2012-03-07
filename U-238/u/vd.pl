@@ -55,7 +55,7 @@
            %db_reset/3,    % +DB_Key, +Fields, +Query
            %db_search/3,
            db_size/2,        % +DB_Key, ?Size
-           %db_to_list/3,
+           db_to_list/3,     % +DB_Key, ?Functor, -List
            dump_db/1,  % +DB_Key
            dump_db/2,   % +Options, +DB_Key
 %           filter_on_db/3,
@@ -114,7 +114,7 @@ db_construct2(DB_Key, Class, Fields, Values, Obj, Ctx) :-
    check_values_arg(Fields, Values, Ctx),
 
    obj_construct_int(Class_Id, Fields, throw, Values, Tmp),
-   db_put_object_int(DB_Key, Class_Id, throw, Tmp, Obj).
+   db_put_object_int(DB_Key, Class_Id, _, Tmp, Obj).
 
 db_erase(Obj) :-
 
@@ -157,7 +157,7 @@ db_put_object(DB_Key, Object0, Object) :-
    check_db_key(DB_Key, Ctx),
    check_object_arg(Object0, Ctx, Class_Id),
 
-   db_put_object_int(DB_Key, Class_Id, throw, Object0, Object).
+   db_put_object_int(DB_Key, Class_Id, _, Object0, Object).
 
 
 % db_put_object(+DB_Key, +Option, +Object0, -Object)
@@ -192,6 +192,16 @@ db_put_object(DB_Key, Option, Object0, Object) :-
                      Object0, Object).
 
 
+handle_key_dup(Option, DB_Key, Class_Id, DB_Object, New_Object) :-
+
+   var(Option), !,
+
+   db_key_policy(DB_Key, Option, _), 
+   % Options is always bound after the call
+   
+   handle_key_dup(Option, DB_Key, Class_Id, DB_Object,
+                  New_Object).
+
 handle_key_dup(throw, DB_Key, _, DB_Object, New_Object) :-
    throw(error(db_key_exists(DB_Key, DB_Object, New_Object), _)).
 handle_key_dup(fail, _, _, _, _) :- !, fail.
@@ -200,6 +210,7 @@ handle_key_dup(overwrite, DB_Key, Class_Id, _, New_Object) :-
    erase_conflicts(DB_Key, Class_Id, New_Object), !.
 
 
+%db_put_object_int(+DB_Key, +Class_Id0,?Option, +Object0, -Object)
 db_put_object_int(DB_Key, Class_Id0, Option, Object0, Object) :-
 
    % TODO replacing object when db_ref is already bound
@@ -220,6 +231,10 @@ db_put_object_int(DB_Key, Class_Id0, Option, Object0, Object) :-
    get_key(Class_Id, Key),
    (  Key \== []
    ->
+      % ... it always has key, hide under key-checking
+      % for performance
+      db_singleton_hook(DB_Key, Class_Id, Object),
+                         
       (  % Check the existence of an object with the same key
          key_conflict(DB_Key, Class_Id, Object, Conflicting)
       ->
@@ -241,6 +256,19 @@ db_put_object_int(DB_Key, Class_Id0, Option, Object0, Object) :-
    ;
       db_recordz_int(DB_Key, Object)
    ).
+
+db_singleton_hook(DB_Key, Class_Id, DB_Singleton) :-
+
+   functor(DB_Singleton, db_singleton_v, _), !,
+   obj_field_int(Class_Id, key_policy, throw, DB_Singleton,
+                 Key_Policy, _, _),
+   (  var(Key_Policy) -> Key_Policy = throw
+   ; true
+   ),
+   db_key_policy(DB_Key, _, Key_Policy).
+   
+
+db_singleton_hook(_, _, _).  % a hook should always succeed
 
 %
 % Record all solutions of the Pred.
@@ -345,16 +373,22 @@ dump_db(Options, DB_Key) :-
   ; true.
 
 %
-% db_to_list(+DB_Key, ?Functor, ?List)
+% db_to_list(+DB_Key, ?Functor, -List)
 %
-/*
+
 db_to_list(DB_Key, Functor, List) :-
 
-  ground(DB_Key),
-  findall(Object,
-          (db_recorded(DB_Key, Object), functor(Object, Functor, _)),
-          List).
-*/
+   Ctx = context(db_to_list/3, _),
+   check_db_key(DB_Key, Ctx),
+   (  var(Functor) -> true
+   ;  check_class_arg(Functor, Ctx)
+   ),
+
+   bagof(O,
+         Functor^db_iterate2(people, functor(Functor), O),
+         List
+        ).
+
 
 %
 % DB search
@@ -470,7 +504,7 @@ parse_db_query(DB_Key, Expr, Des, [Field], [Value]) :-
    functor(Expr, Field, 1), !,
    arg(1, Expr, Value),
    
-   Des = db_class_des(_, _, _, _, DB_Fields, _),
+   %Des = db_class_des(_, _, _, _, DB_Fields, _),
    db_des(DB_Key, Des).
 
    % only those classes which contain Field
