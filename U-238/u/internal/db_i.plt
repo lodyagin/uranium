@@ -52,7 +52,68 @@ test(db_recorded_int, [setup(setup)]) :-
         db_put_object(db_i_test, Obj0, Obj),
         db_recorded(db_i_test, Obj).
 
-test(key_conflict) :-
+test(key_conflict, [setup(model_db(Slod1))]) :-
+
+   obj_construct(man_v,
+                 [name, surname], ['Sergei', 'Lodyagin'], Man1_0),
+   obj_rebase((object_v -> db_object_v), Man1_0, Man1),
+
+   arg(1, Man1, Man_V_Re_Id),
+
+   findall(C,
+           key_conflict(people, Man_V_Re_Id, Man1, C),
+           List1),
+   assertion(List1 =@= [Slod1]),
+
+   obj_construct(man_v, [name], ['Sergei'], Man2_0),
+   obj_rebase((object_v -> db_object_v), Man2_0, Man2),
+
+   findall(Name,
+           (  key_conflict(people, Man_V_Re_Id, Man2, O),
+              obj_field(O, surname, Name)
+           ),
+           List2),
+   assertion(List2 =@= ['Lodyagin', 'Sikorsky'
+                        %'Sysoev', 'Ivan'
+                        % (man_v is not desc. of citizen_v)
+                        ]),
+
+   obj_construct(man_v, [], [], Man3_0),
+   obj_rebase((object_v -> db_object_v), Man3_0, Man3),
+
+   findall(C,
+           key_conflict(people, Man_V_Re_Id, Man3, C),
+           List3),
+   length(List3, N3),
+   assertion(N3 =:= 5),
+
+   obj_construct(citizen_v, [name, id], ['Sergei', 4], Man4_0),
+   obj_rebase((object_v -> db_object_v), Man4_0, Man4),
+
+   arg(1, Man4, Citizen_V_Re_Id),
+   
+   findall(Name,
+           (  key_conflict(people, Citizen_V_Re_Id, Man4, O),
+              obj_field(O, surname, Name)
+           ),
+           List4),
+   assertion(List4 =@= ['Lodyagin', 'Sikorsky', 'Sysoev']),
+   
+   obj_construct(citizen_v,
+                 [name, surname, id],
+                 ['Igor', 'Litvin', 4], Man5_0),
+   obj_rebase((object_v -> db_object_v), Man5_0, Man5),
+
+   findall(Name,
+           (  key_conflict(people, Citizen_V_Re_Id, Man5, O),
+              obj_field(O, surname, Name)
+           ),
+           List5),
+   assertion(List5 =@= ['Sysoev']).
+   
+   
+
+model_db(Slod1) :-
 
    db_clear(people),
    db_construct(people, man_v,
@@ -68,19 +129,7 @@ test(key_conflict) :-
    db_construct(people, citizen_v,
                 [name, surname, id], ['Sergei', 'Sysoev', 4]),
    db_construct(people, citizen_v,
-                [name, surname, id], ['Sergei', 'Ivan', 5]),
-
-   obj_construct(man_v,
-                 [name, surname], ['Sergei', 'Lodyagin'], Man0),
-   obj_rebase((object_v -> db_object_v), Man0, Man),
-
-   arg(1, Man, Man_V_Re_Id),
-   findall(C,
-           key_conflict(people, Man_V_Re_Id, Man, C),
-           List1),
-   assertion(List1 =@= [Slod1]).
-   
-
+                [name, surname, id], ['Sergei', 'Ivan', 5]).
 
 setup :-
 
