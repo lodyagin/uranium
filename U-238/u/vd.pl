@@ -39,10 +39,10 @@
            db_copy/2,
            db_erase/1,
            db_iterate/3,  % +DB_Key, +Query, -Object
-           %db_iterate/4,  % +DB_Key, +Query, +Filter_Pred, -Object
-           %db_iterate_replace/3,  % +DB_Key, +Pred, +Query
-           %db_iterate_replace/4,  % +DB_Key, +Pred, +Query, +Filter
-           %db_iterate_replace/5,  % +DB_Key, +Pred, +Query, +Filter_Pred, +Count
+           db_iterate/4,  % +DB_Key, +Query, +Filter_Pred, -Object
+           db_iterate_replace/3,  % +DB_Key, +Pred, +Query
+           db_iterate_replace/4,  % +DB_Key, +Pred, +Query, +Filter
+           db_iterate_replace/5,  % +DB_Key, +Pred, +Query, +Filter_Pred, +Count
            %db_merge/2,  % by key
            %db_merge/3,  % by custom values
            db_move_all_data/2,
@@ -76,13 +76,12 @@
 :- use_module(u(ur_terms)).
 
 %:- module_transparent db_search/3.
-%                      db_iterate/4,
-%                      db_iterate_replace/3, db_iterate_replace/4,
-%                      db_iterate_replace/5,
-%                      db_iterate_replace2/4.
 
 :- meta_predicate db_put_objects(+, 1, +).
-%:- meta_predicate db_iterate(+, +, 1, -).
+:- meta_predicate db_iterate(+, +, 1, -).
+:- meta_predicate db_iterate_replace(+, 3, +).
+:- meta_predicate db_iterate_replace(+, 3, +, 1).
+:- meta_predicate db_iterate_replace(+, 3, +, 1, +).
 
 db_clear(DB_Key) :-
 
@@ -378,36 +377,8 @@ db_iterate(DB_Key, Query, Object) :-
    check_inst(Query, Ctx),
    check_db_key(DB_Key, Ctx),
 
-   % BT 1
-   parse_db_query(DB_Key, Query, Des, Fields, Values),
+   db_iterate2(DB_Key, Query, Object).
 
-   % BT 2
-   named_args_unify_int(DB_Key, Des, Fields, Values, Object).
-
-
-parse_db_query(DB_Key, true, Des, [], []) :- !,
-
-   db_des(DB_Key, Des).
-
-parse_db_query(DB_Key, functor(Class), Des, [], []) :- !,
-
-   % check_class_arg
-   Des = db_class_des(_, _, Class, _, _, _),
-   db_des(DB_Key, Des).
-
-parse_db_query(DB_Key, Expr, Des, [Field], [Value]) :-
-
-   functor(Expr, Field, 1), !,
-   arg(1, Expr, Value),
-   
-   Des = db_class_des(_, _, _, _, DB_Fields, _),
-   db_des(DB_Key, Des),
-
-   % only those classes which contain Field
-   ord_memberchk(Field, DB_Fields).
-   
-
-/*
 db_iterate(DB_Key, Query, Filter_Pred, Object) :-
 
    Ctx = context(db_iterate/4, _),
@@ -415,29 +386,20 @@ db_iterate(DB_Key, Query, Filter_Pred, Object) :-
    check_db_key(DB_Key, Ctx),
    must_be(callable, Filter_Pred),
 
-   db_recorded(DB_Key, Object),
-   
-   db_object_class(DB_Key, Class),
-   resolve_args(Class, Query, Arg_Query),
-   spec_term(Class, Spec_Term),
-   functor(Spec_Term, _, Arity),
-   functor(Pred, Class, Arity),
-   db_recorded(DB_Key, Pred, DB_Ref),
-   check_record(Arg_Query, Pred),
-   ( Filter_Pred = true
+   db_iterate2(DB_Key, Query, Object),
+   ( Filter_Pred = _:true
    -> true
-   ; once(call(Filter_Pred, Pred))
+   ; once(call(Filter_Pred, Object))
    ).
 
-db_iterate_replace2(DB_Key, Pred, Query, Filter_Pred) :-
+db_iterate2(DB_Key, Query, Object) :-
+   
+   % BT 1
+   parse_db_query(DB_Key, Query, Des, Fields, Values),
 
-   db_iterate(DB_Key, Query, Filter_Pred, w(DB_Ref, Obj_In)),
-   once(call(Pred, Obj_In, Obj_Out, _)),
-   db_erase(DB_Ref),
-   db_put_object(DB_Key, Obj_Out, [overwrite]),
-   fail
-   ;
-   true.
+   % BT 2
+   named_args_unify_int(DB_Key, Des, Fields, Values, Object).
+
 
 %
 % Call Pred on all records meat the criteria
@@ -468,10 +430,10 @@ db_iterate_replace(DB_Key, Pred, Query, Filter_Pred, Lim) :-
    ->  db_iterate_replace2(DB_Key, Pred, Query, Filter_Pred)
    ;   integer(Lim), Lim > 0,
        nb_setval(db_iterate_replace_counter, 0),
-       (   db_iterate(DB_Key, Query, w(DB_Ref, Obj_In)),
+       (   db_iterate(DB_Key, Query, Obj_In),
            once(call(Pred, Obj_In, Obj_Out, Is_Succ)),
-           db_erase(DB_Ref),
-           db_put_object(DB_Key, Obj_Out, [overwrite]),
+           db_erase(Obj_In),
+           db_put_object(DB_Key, overwrite, Obj_Out, _),
            (  Is_Succ
            -> nb_getval(db_iterate_replace_counter, Cnt),
 	      succ(Cnt, Cnt1),
@@ -482,7 +444,38 @@ db_iterate_replace(DB_Key, Pred, Query, Filter_Pred, Lim) :-
            true
        )
    ).
-*/
+
+db_iterate_replace2(DB_Key, Pred, Query, Filter_Pred) :-
+
+   db_iterate(DB_Key, Query, Filter_Pred, Obj_In),
+   once(call(Pred, Obj_In, Obj_Out, _)),
+   db_erase(Obj_In),
+   db_put_object(DB_Key, overwrite, Obj_Out, _),
+   fail
+   ;
+   true.
+
+parse_db_query(DB_Key, true, Des, [], []) :- !,
+
+   db_des(DB_Key, Des).
+
+parse_db_query(DB_Key, functor(Class), Des, [], []) :- !,
+
+   % check_class_arg
+   Des = db_class_des(_, _, Class, _, _, _),
+   db_des(DB_Key, Des).
+
+parse_db_query(DB_Key, Expr, Des, [Field], [Value]) :-
+
+   functor(Expr, Field, 1), !,
+   arg(1, Expr, Value),
+   
+   Des = db_class_des(_, _, _, _, DB_Fields, _),
+   db_des(DB_Key, Des),
+
+   % only those classes which contain Field
+   ord_memberchk(Field, DB_Fields).
+   
 
 db_move_all_data(From_DB, To_DB) :-
 
@@ -497,6 +490,7 @@ db_move_all_data(From_DB, To_DB) :-
 
 db_size(DB_Key, N) :-
 
+   % TODO improve (memory usage)
    findall('.', db_recorded(DB_Key, _), AL),
    length(AL, N).
 
