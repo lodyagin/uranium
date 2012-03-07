@@ -251,7 +251,11 @@ class_rebase([Class_Orig_Id|Parents0], [Class_New_Id|Parents],
       -> class_fields(_:_, Class_Orig_Id, true, false, New_Fields),
          class_id(Class_Orig_Id, Class),
          assert_new_class_rebased(Class, Parent_Id, New_Fields,
-                                  Class_New_Id, _)
+                                  Class_New_Id, _),
+
+         get_key(Class_Orig_Id, Orig_Key),
+         assert_new_key(Class_New_Id, Orig_Key)
+      
       ;  % the same class is sufficient
          Class_New_Id = Class_Orig_Id
       )

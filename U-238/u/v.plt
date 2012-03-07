@@ -84,7 +84,26 @@ test(obj_key1) :-
    obj_key_value(Man2, Key_Value2),
    assertion(Key_Value2 =@= [_]).
 
+test(obj_key2) :-
 
+   obj_construct(man_v, [sex, name], [man, 'Adam'], Man1_0),
+   obj_rebase((object_v -> db_object_v), Man1_0, Man1),
+   obj_key(Man1, Key1),
+   assertion(Key1 == [name, surname]),
+   obj_key_value(Man1, Key_Value1),
+   assertion(Key_Value1 =@= ['Adam', _]),
+
+   obj_construct(citizen_v, 
+                 [sex, surname, country], 
+                 [man, 'Mayakovsky', ['Soviet Union']],
+                 Man2_0),
+   obj_rebase((object_v -> db_object_v), Man2_0, Man2),
+   obj_key(Man2, Key2),
+   assertion(Key2 == [id]),
+   obj_key_value(Man2, Key_Value2),
+   assertion(Key_Value2 =@= [_]).
+
+ 
 test(obj_rebase_bug1) :-
 
    obj_construct(man_v, [sex, name], [man, 'Adam'], Obj1_0),
