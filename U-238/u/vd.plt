@@ -371,7 +371,11 @@ test(db_singleton_v1, [setup(db_clear(people))]) :-
                 [key_policy], [overwrite]),
    db_construct(people, man_v, [surname], ['Lodyagin']),
    
-   true.
+   findall([Name, Surname],
+           named_args_unify(people, _, [name, surname],
+                            [Name, Surname], _),
+           List1),
+   assertion(List1 =@= [_, 'Lodyagin']).
 
                 
    
