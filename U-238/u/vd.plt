@@ -26,7 +26,7 @@ test(db_erase, [setup(model_db)]) :-
    findall(Y,
            db_recorded(people, Y),
            LY),
-   assertion(LY = [man_v(_, _, _, 'Eva', woman, _, _)]).
+   assertion(LY = [man_v(_, _, _, _, 'Eva', woman, _, _)]).
 
 test(db_iterate1, [setup(model_db), N =:= 3]) :-
 
@@ -65,6 +65,23 @@ test(db_to_list, [setup(model_db)]) :-
    db_to_list(people, _, L3),
    length(L3, N3),
    assertion(N3 =:= 3).
+
+test(db_put_object1, [setup(model_db)]) :-
+
+   obj_construct(man_v, [name], ['Moses'], Man),
+   db_put_object(people, Man).
+
+test(db_put_object2, [setup(model_db)]) :-
+
+   obj_construct(man_v, [name], ['Moses'], Man0),
+   obj_rebase((object_v -> db_object_v), Man0, Man),
+   db_put_object(people, Man).
+
+test(db_put_object3, [setup(model_db)]) :-
+
+   db_construct(people2, man_v, [name], ['Moses']),
+   db_recorded(people2, Man), !,
+   db_put_object(people2, Man).
 
 test(db_put_objects,
     [setup(db_clear(people)),
