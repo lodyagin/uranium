@@ -363,7 +363,7 @@ test(key_rule16,
    db_construct(people, citizen_v, [id], [4]).
 
 
-test(db_singleton_v1, [setup(db_clear(people))]) :-
+test(db_singleton_v1_overwrite, [setup(db_clear(people))]) :-
 
    db_construct(people, man_v,
                 [name, surname], ['Sergei', 'Lodyagin']),
@@ -375,8 +375,24 @@ test(db_singleton_v1, [setup(db_clear(people))]) :-
            named_args_unify(people, _, [name, surname],
                             [Name, Surname], _),
            List1),
-   assertion(List1 =@= [_, 'Lodyagin']).
+   assertion(List1 =@= [[_, 'Lodyagin']]).
 
+test(db_singleton_v2_throw,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
+
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Lodyagin']),
+   db_construct(people, db_singleton_v,
+                [key_policy], [overwrite]),
+   db_construct(people, man_v, [surname], ['Lodyagin']),
+   db_construct(people, db_singleton_v,
+                [key_policy], [throw]),
+   db_construct(people, man_v, [name], ['Sergei']).
+
+   %named_args_unify(people, db_singleton_v, [], _, Singl1),
+   %db_put_object(people, _, Singl1, _, replaced),
+   
                 
    
 model_db :-
