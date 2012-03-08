@@ -300,7 +300,7 @@ db_recorded_int(DB_Key, L_Object) :-
 
 % db_recordz_int(+DB_Key, +Object)
 %
-% Set db_ref in Object
+% Set db_ref (and db_key if it is unbound) in Object
 
 db_recordz_int(DB_Key, Object0) :-
 
@@ -328,6 +328,9 @@ db_recordz_int(DB_Key, Object0) :-
 % Convert between local and db object term
 object_local_db(DB_Key, Local_Object, DB_Object) :-
 
+    % TODO: db_key and db_ref can not be included
+    % in a db object
+   
     % it is from Local to DB case
     nonvar(Local_Object), var(DB_Object), !,
     Ctx = context(object_local_db/3, _),
