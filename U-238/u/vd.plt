@@ -79,7 +79,7 @@ test(db_put_object2, [setup(model_db)]) :-
 
 test(db_put_object3,
      [setup(model_db),
-      error(db_obj_replace_protector(people2, Man))]) :-
+      error(db_obj_replace_protector(people2, _, Man))]) :-
 
    db_construct(people2, man_v, [name], ['Moses']),
    db_recorded(people2, Man), !,
@@ -123,6 +123,25 @@ test(db_put_object6,
    obj_reset_fields([db_ref], Man0, Man),
    db_put_object(people, throw, Man, _, _).
 
+test(db_put_object7,
+     [setup(model_db),
+      error(db_obj_replace_protector(people2, replaced, Man1))]) :-
+
+   db_construct(people2, man_v, [name], ['Moses']),
+   db_recorded(people2, Man0), !,
+   obj_rewrite(Man0, [db_ref, name], [_, 'Moses'], [_, _], Man1),
+   db_put_object(people2, throw, Man1, _, replaced).
+   % does not replace because of unbound db_ref
+
+test(db_put_object8,
+     [setup(model_db),
+      error(db_obj_replace_protector(people2, replaced, Man))]) :-
+
+   db_construct(people2, man_v, [name], ['Moses']),
+   obj_construct(man_v, [name], ['Simeon'], Man),
+   db_put_object(people2, _, Man, _, replaced).
+   % does not replace because of not db_object_v descendant
+  
 test(db_put_objects,
     [setup(db_clear(people)),
      DB_Size =:= 3]

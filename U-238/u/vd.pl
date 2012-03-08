@@ -285,8 +285,8 @@ db_put_object_int(DB_Key, Class_Id0, Option, Object0, Object,
          (
             Replaced = replaced
          -> true % the replacing is allowed
-         ;  throw(error(db_obj_replace_protector(DB_Key, Object0),
-                        Ctx))
+         ;  throw(error(db_obj_replace_protector(DB_Key,
+                  Replaced, Object0), Ctx))
          )
          
       ;  ground(Old_DB_Ref)
@@ -297,13 +297,20 @@ db_put_object_int(DB_Key, Class_Id0, Option, Object0, Object,
       -> throw(error(domain_error(unbound_or_same_db_key,
                                   Old_DB_Key), Ctx))
       ;
-         Object = Object0,
-         Replaced = false
+         (  Replaced = false -> true
+         ;  throw(error(db_obj_replace_protector(
+                  DB_Key, Replaced, Object0), Ctx))
+         ),
+         Object = Object0
       )
       
-   ;  obj_rebase((object_v -> db_object_v), Object0, Object),
-      arg(1, Object, Class_Id),
-      Replaced = false
+   ;
+      (  Replaced = false -> true
+      ;  throw(error(db_obj_replace_protector(
+               DB_Key, Replaced, Object0), Ctx))
+      ),
+      obj_rebase((object_v -> db_object_v), Object0, Object),
+      arg(1, Object, Class_Id)
    ),
 
    % Remove the old object first (before the key conflicts check)
