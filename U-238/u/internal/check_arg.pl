@@ -1,15 +1,17 @@
 :- module(check_arg,
           [
            check_class_arg/2,
-           check_db_key/2,
+           check_db_key/2,             % inc. inst (inst+)
            check_existing_class_arg/2,
            check_existing_class_arg/3,
-           check_field_name/2,
-           check_fields_arg/2,
+           check_field_name/2, 
+           check_fields_arg/2,         % not inc. inst (inst-)
            check_inst/2,
            check_list_fast_arg/2,
-           check_values_arg/3,
-           check_object_arg/3,
+           check_values_arg/3, % +Field_List, +Value_List, +Ctx
+                               % inst-
+           
+           check_object_arg/3,         % not inc. inst
            check_rebase_rule/2,
 
            decode_arg/4,  % +Vals_LOL, +Arg_Val, -Result, +Ctx
