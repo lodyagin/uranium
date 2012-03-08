@@ -555,10 +555,8 @@ obj_rewrite(Object0, Fields, Old_Vals, New_Vals, Object) :-
    ),
    check_values_arg(Fields, New_Vals, Ctx),
 
-   obj_unify_int(Class_Id, Fields, throw, Object0, Old_Vals, Ctx),
-   obj_reset_fields_int(Class_Id, Fields, Object0, Object, throw,
-                        Ctx),
-   obj_unify_int(Class_Id, Fields, throw, Object, New_Vals, Ctx).
+   obj_rewrite_int(Class_Id, Object0, Fields, Old_Vals, New_Vals,
+                   Object, Ctx).
 
 %
 % Вычисление выражений в операторной форме

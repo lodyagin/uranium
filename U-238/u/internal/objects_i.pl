@@ -47,6 +47,10 @@
            obj_construct_int/5,
            obj_field_int/7,
            obj_reset_fields_int/6,
+           obj_rewrite_int/7,   % +Class_Id, +Object0, +Fields,
+                                % ?Old_Vals, +New_Vals, -Object,
+                                % +Ctx
+           
            obj_unify_int/6,     % +Class_Id, +Fields, +Weak,
                                 % +Term, ?Value, +Ctx
            
@@ -360,6 +364,19 @@ obj_reset_fields_int(Class_Id, Fields_List, Object0, Object,
 
    obj_unify_int(Class_Id, Copy_Set, Weak, Object0, Values, Ctx),
    obj_construct_int(Class_Id, Copy_Set, Weak, Values, Object).
+
+% obj_rewrite_int(+Class_Id, +Object0, +Fields, ?Old_Vals,
+%                 +New_Vals, -Object, +Ctx)
+
+obj_rewrite_int(Class_Id, Object0, Fields, Old_Vals, New_Vals,
+                Object, Ctx) :-
+
+   obj_unify_int(Class_Id, Fields, throw, Object0, Old_Vals, Ctx),
+   obj_reset_fields_int(Class_Id, Fields, Object0, Object, throw,
+                        Ctx),
+   obj_unify_int(Class_Id, Fields, throw, Object, New_Vals, Ctx).
+
+
 
 
 % Now the evaluation order can't be defined during class creation
