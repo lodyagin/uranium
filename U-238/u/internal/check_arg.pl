@@ -1,6 +1,6 @@
 :- module(check_arg,
           [
-           check_class_arg/2,
+           check_class_arg/2,          % inst-
            check_db_key/2,             % inc. inst (inst+)
            check_existing_class_arg/2,
            check_existing_class_arg/3,
