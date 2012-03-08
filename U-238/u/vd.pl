@@ -56,10 +56,15 @@
            db_put_objects/3, % +DB_Key, :Pred, +Options
 	   db_recorded/2,    % +DB_Key, ?Object
                              % -Object
+           db_rewrite/5,     % +DB_Key, ?Functor, +Fields,
+                             % ?Old_Vals, +New_Vals
+           
            %db_reset/3,    % +DB_Key, +Fields, +Query
            %db_search/3,
            db_size/2,        % +DB_Key, ?Size
            db_to_list/3,     % +DB_Key, ?Functor, -List
+%           db_fields_to_list/4, % +DB_Key, ?Functor, +Fields, -List
+%           db_fields_to_list/5, % +DB_Key, @Weak, ?Functor, +Fields, -List
            dump_db/1,  % +DB_Key
            dump_db/2,   % +Options, +DB_Key
 %           filter_on_db/3,
@@ -388,21 +393,46 @@ db_recorded(DB_Key, Object) :-
    ),
    db_recorded_int(DB_Key, Object).
 
-% It does not check keys
-%db_recordz(DB_Key, Object0) :-
+% db_rewrite(+DB_Key, ?Functor, +Fields, ?Old_Vals, +New_Vals)
 %
-%   Ctx = context(db_recordz/2, _),
-%   check_db_key(DB_Key, Ctx),
-%   check_inst(Object0, Ctx),
-%   check_object_arg(Object0, Ctx, Class_Id),
-%
-%   class_primary_id(db_object_v, DB_Object_V_Id),
-%   (  same_or_descendant(DB_Object_V_Id, _, Class_Id)
-%   -> obj_reset_fields([db_ref], Object0, Object)
-%   ;  obj_rebase((object_v -> db_object_v), Object0, Object)
-%   ),
-%
-%   db_recordz_int(DB_Key, Object).
+% Change fields in all objects unified with Old_Vals
+
+db_rewrite(DB_Key, Functor, Fields, Old_Vals, New_Vals) :-
+
+  Ctx = context(db_rewrite/4),
+  check_inst(Fields, Ctx),
+  check_inst(New_Vals, Ctx),
+  check_db_key(DB_Key, Ctx),
+  check_fields_arg(Fields, Ctx),
+  (   var(Old_Vals) -> true
+  ;   check_values_arg(Fields, Old_Vals, Ctx)
+  ),
+  check_values_arg(Fields, New_Vals, Ctx),
+
+  db_rewrite_int(DB_Key, Functor, Fields, Old_Vals, New_Vals,
+                 Ctx).
+
+db_rewrite_int(DB_Key, Functor, Fields, Old_Vals, New_Vals,
+               Ctx) :-
+
+  nonvar(Functor), !,
+
+  Des = db_class_des(_, _, Functor, _, _, _),
+  db_des(DB_Key, Des),
+  
+  (   named_args_unify_int(DB_Key, throw, Des, Fields, Old_Vals,
+                           Obj0),
+      arg(1, Obj0, Class_Id),
+      
+      obj_rewrite_int(Class_Id, Obj0, Fields, Old_Vals, New_Vals,
+                      Obj1, Ctx),
+      db_put_object_int(DB_Key, Class_Id, _, Obj1, _, replaced,
+                        Ctx),
+      fail ; true
+  ).
+  
+  
+
 
 %
 % Leave only matched objects from DB by a search criteria
@@ -475,6 +505,45 @@ db_to_list(DB_Key, Functor, List) :-
          List
         ).
 
+% % db_fields_to_list(+DB_Key, ?Functor, +Fields, -List)
+% %
+% % Generate list of lists of selected fields
+
+% db_fields_to_list(DB_Key, Functor, Fields, List) :-
+
+%    Ctx = context(db_fields_to_list/4, _),
+%    db_fields_to_list_cmn(DB_Key, throw, Functor, Fields, List,
+%                          Ctx). 
+
+% % db_fields_to_list(+DB_Key, @Weak, ?Functor, +Fields, -List)
+% %
+
+% db_fields_to_list(DB_Key, Weak, Functor, Fields, List) :-
+
+%    Ctx = context(db_fields_to_list/5, _),
+%    db_fields_to_list_cmn(DB_Key, Weak, Functor, Fields, List,
+%                          Ctx). 
+
+% db_fields_to_list_cmn(DB_Key, Weak, Functor, Fields, List,
+%                       Ctx):-
+
+%    check_inst(Fields, Ctx),
+%    check_db_key(DB_Key, Ctx),
+   
+%    decode_arg([[throw, _, throws, strict, s],
+%                [unbound, weak, w],
+%                [fail, false, f]],
+%               Weak, Weak1,
+%               Ctx),
+   
+%    (   var(Functor) -> true
+%    ;   check_class_arg(Functor, Ctx)
+%    ),
+%    check_fields_arg(Fields, Ctx),
+
+%    bagof(Values,
+%          named_args_unify_int(DB_Key, Weak, 
+%    ).
 
 %
 % DB search
@@ -833,42 +902,24 @@ db_merge(DB1_Key, DB2_Key, Key) :-
 % this is a version for +Functor
 named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
 
-   nonvar(Functor), !,
-
    Ctx = context(named_args_unify/5, _),
    check_db_key(DB_Key, Ctx),
    check_fields_arg(Field_Names, Ctx),
-   check_class_arg(Functor, Ctx),
-
-   % <NB> the class Functor can not be defined locally
-   Des = db_class_des(_, _, Functor, _, _, _),
-   db_des(DB_Key, Des),
-   named_args_unify_int(DB_Key, throw, Des, Field_Names, Values,
-                        Term).
-
-% this is a version for -Functor
-named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
-
-   var(Functor), !,
-
-   Ctx = context(named_args_unify/5, _),
-   check_db_key(DB_Key, Ctx),
-   check_fields_arg(Field_Names, Ctx),
-   list_to_ord_set(Field_Names, Req_Fields),
-
-   % BT on all classes
-   db_des(DB_Key, Des),
-   Des = db_class_des(_, _, Functor, _, DB_Fields, _),
-   ord_subset(Req_Fields, DB_Fields),
-
-   % check the Functor as a correct class name
-   (  nonvar(Functor), u_class(Functor) -> true
-   ;  throw(error(bad_db(DB_Key, 'Bad class name: ~w', [Functor]),
-                  Ctx))
+   (   var(Functor) -> true
+   ;   check_class_arg(Functor, Ctx)
    ),
-   named_args_unify_int(DB_Key, throw, Des, Field_Names, Values,
-                        Term).
 
+   list_to_ord_set(Field_Names, Req_Fields),
+   (   % BT on all DB Functor values (if it is unbound)
+       db_functor_des(DB_Key, Functor, Des, Ctx),
+
+       % check fields compatibility
+       Des = db_class_des(_, _, _, _, DB_Fields, _),
+       ord_subset(Req_Fields, DB_Fields),
+
+       named_args_unify_int(DB_Key, throw, Des, Field_Names,
+                            Values, Term)
+   ).
 
 db_object_class(DB_Key, Class) :-
 

@@ -208,6 +208,10 @@ test(db_recorded5, [setup(db_clear(people))]) :-
    db_recorded(people, X), !,
    db_recorded(people, X).
 
+%test(db_rewrite1, [setup(model_db)]) :-
+
+%   db_rewrite(people, _, [weight, surname], _, [66, 'Kasperski'])
+
 test(named_args_unify1, [setup(model_db)]) :-
 
    findall('.',
