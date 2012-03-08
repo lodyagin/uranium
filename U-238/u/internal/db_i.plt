@@ -5,6 +5,30 @@
 :- use_module(u(internal/db_i)).
 :- use_module(u(internal/db_vocab)).
 
+test(db_functor_des, [setup(model_db(_))]) :-
+
+   findall(F, db_functor_des(people, F, _, _), List1_0),
+   msort(List1_0, List1),
+   assertion(List1 == [citizen_v, db_object_v, man_v]),
+
+   findall(F,
+           (F = man_v, db_functor_des(people, F, _, _)),
+           List2_0),
+   msort(List2_0, List2),
+   assertion(List2 == [man_v]),
+
+   findall(F,
+           (F = citizen_v, db_functor_des(people, F, _, _)),
+           List3_0),
+   msort(List3_0, List3),
+   assertion(List3 == [citizen_v]),
+
+   findall(F,
+           (F = callup_v, db_functor_des(people, F, _, _)),
+           List4),
+   assertion(List4 == []).
+
+
 test(db_next_class_id, [setup(setup)]) :-
 
 	db_i:db_next_class_id(db_i_test, Id1),

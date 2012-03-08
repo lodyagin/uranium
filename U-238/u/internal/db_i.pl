@@ -30,8 +30,9 @@
           [
 	   db_conv_local_db/4,
            db_clear_int/1,
-           db_erase_int/2,  % +DB_Key, +DB_Ref
-           db_des/2,        % +DB_Key, ?Des
+           db_erase_int/2,   % +DB_Key, +DB_Ref
+           db_des/2,         % +DB_Key, ?Des
+           db_functor_des/4, % +DB_Key, ?Functor, -Des, +Ctx
            db_key_is_valid/1,
            db_key_policy/3,  % +DB_Key, -Old, ?New
            db_object_class_int/2,
@@ -56,6 +57,25 @@ db_des(DB_Key, Des) :-
    atom(DB_Key), !,
    Des = db_class_des(_, _, _, _, _, _),
    recorded(DB_Key, Des).
+
+% db_functor_des(+DB_Key, ?Functor, -Des, +Ctx)
+% nondet
+%
+% Unify Des with all classes in DB matched with Functor
+
+db_functor_des(DB_Key, Functor, Des, Ctx) :-
+
+   % TODO UT on different rebased versions with the same functor
+   % <NB> the class Functor can not be defined locally
+   Des = db_class_des(_, _, Functor, _, _, _),
+   db_des(DB_Key, Des),
+
+   % check the Functor as a correct class name
+   (  nonvar(Functor), u_class(Functor) -> true
+   ;  throw(error(bad_db(DB_Key, 'Bad class name: ~w', [Functor]),
+                  Ctx))
+   ).
+   
 
 % db_key_policy(+DB_Key, -Old, ?New)
 % is det
@@ -97,6 +117,7 @@ db_erase_int(DB_Key, DB_Ref) :-
 
 db_next_class_id(DB_Key, Id) :-
 
+   atom(DB_Key), !,
    (   recorded(DB_Key, db_next_class_id(Id), Ref)
    ->  erase(Ref)
    ;   Id = 2 ),
