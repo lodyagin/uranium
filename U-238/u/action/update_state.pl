@@ -42,7 +42,7 @@ update_state(SAT, Actor, Old_State, New_State) :-
   ground(Key_Value),
   functor(Old_State, Class, _),
   obj_construct(Class, Key, Key_Value, Key_Object),
-  db_recordz(DB1_Key, Key_Object),
+  db_put_object(DB1_Key, Key_Object),
   call(Update_Pred, DB1_Key, DB2_Key, Actor, Old_State),
   db_merge(DB1_Key, DB2_Key),
   db_recorded(DB1_Key, New_State), !.

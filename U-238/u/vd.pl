@@ -47,11 +47,12 @@
            %db_merge/3,  % by custom values
            db_move_all_data/2,
            db_object_class/2, % +DB_Key, -Class
+           db_put_object/2,  % +DB_Key, +Object
            db_put_object/3,  % +DB_Key, +Object0, -Object
            db_put_object/4,  % +DB_Key,+Options,+Object0,-Object
            db_put_objects/3, % +DB_Key, :Pred, +Options
 	   db_recorded/2,    % +DB_Key, ?Object
-           db_recordz/2,     % +DB_Key, +Object
+                             % -Object
            %db_reset/3,    % +DB_Key, +Fields, +Query
            %db_search/3,
            db_size/2,        % +DB_Key, ?Size
@@ -116,6 +117,15 @@ db_construct2(DB_Key, Class, Fields, Values, Obj, Ctx) :-
    obj_construct_int(Class_Id, Fields, throw, Values, Tmp),
    db_put_object_int(DB_Key, Class_Id, _, Tmp, Obj).
 
+db_copy(DB_In, DB_Out) :-
+
+  db_recorded_int(DB_In, Term),
+  arg(1, Term, Class_Id),
+  db_put_object_int(DB_Out, Class_Id, _, Term, _),
+  fail
+  ;
+  true.
+
 db_erase(Obj) :-
 
    Ctx = context(db_erase/1, _),
@@ -141,23 +151,26 @@ db_bind_obj(DB_Key, w(Ref0, Object0), w(Ref, Object)) :- !,
    ).
 */
 
-% db_put_object(+DB_Key, +Object0, -Object)
+% db_put_object(+DB_Key, +Object)
 %
 % Записывает объект в базу, не допуская повторения ключей
 % Если ключ содержит свободные поля, они вносят дополнительные
 % ограничения, как если бы могли содержать любое значение.
 %
 
+db_put_object(DB_Key, Object) :-
+
+   Ctx = context(db_put_object/2, _),
+   db_put_object_cmn(DB_Key, _, Object, _, Ctx).
+
+% db_put_object(+DB_Key, +Object0, -Object)
+%
+% This version return the object unified with DB
+
 db_put_object(DB_Key, Object0, Object) :-
 
    Ctx = context(db_put_object/3, _),
-   (  var(Object0)
-   -> throw(error(instantiation_error, Ctx))
-   ;  true ),
-   check_db_key(DB_Key, Ctx),
-   check_object_arg(Object0, Ctx, Class_Id),
-
-   db_put_object_int(DB_Key, Class_Id, _, Object0, Object).
+   db_put_object_cmn(DB_Key, _, Object0, Object, Ctx).
 
 
 % db_put_object(+DB_Key, +Option, +Object0, -Object)
@@ -172,24 +185,22 @@ db_put_object(DB_Key, Object0, Object) :-
 db_put_object(DB_Key, Option, Object0, Object) :-
 
    Ctx = context(db_put_object/4, _),
-   (  (var(Option); var(Object0))
-   -> throw(error(instantiation_error, Ctx))
-   ;  true ),
-   (  \+ atom(Option)
-   -> throw(error(type_error(atom, Option), Ctx))
-   ;  (  Option = overwrite
-      ;  Option = ignore
-      ;  Option = fail
-      ;  Option = throw )
-   -> true
-   ;  throw(error(domain_error(valid_option_value, Option), Ctx))
-   ),
+   db_put_object_cmn(DB_Key, Option, Object0, Object, Ctx).
+
+db_put_object_cmn(DB_Key, Option, Object0, Object, Ctx) :-
 
    check_db_key(DB_Key, Ctx),
+   check_inst(Object0, Ctx),
    check_object_arg(Object0, Ctx, Class_Id),
 
-   db_put_object_int(DB_Key, Class_Id, Option,
-                     Object0, Object).
+   decode_arg([[_],
+               [overwrite],
+               [ignore],
+               [fail],
+               [throw], [throws]],
+              Option, Option1, Ctx),
+   
+   db_put_object_int(DB_Key, Class_Id, Option1, Object0, Object).
 
 
 handle_key_dup(Option, DB_Key, Class_Id, DB_Object, New_Object) :-
@@ -296,20 +307,21 @@ db_recorded(DB_Key, Object) :-
    ),
    db_recorded_int(DB_Key, Object).
 
-db_recordz(DB_Key, Object0) :-
-
-   Ctx = context(db_recordz/2, _),
-   check_db_key(DB_Key, Ctx),
-   check_inst(Object0, Ctx),
-   check_object_arg(Object0, Ctx, Class_Id),
-
-   class_primary_id(db_object_v, DB_Object_V_Id),
-   (  same_or_descendant(DB_Object_V_Id, _, Class_Id)
-   -> obj_reset_fields([db_ref], Object0, Object)
-   ;  obj_rebase((object_v -> db_object_v), Object0, Object)
-   ),
-
-   db_recordz_int(DB_Key, Object).
+% It does not check keys
+%db_recordz(DB_Key, Object0) :-
+%
+%   Ctx = context(db_recordz/2, _),
+%   check_db_key(DB_Key, Ctx),
+%   check_inst(Object0, Ctx),
+%   check_object_arg(Object0, Ctx, Class_Id),
+%
+%   class_primary_id(db_object_v, DB_Object_V_Id),
+%   (  same_or_descendant(DB_Object_V_Id, _, Class_Id)
+%   -> obj_reset_fields([db_ref], Object0, Object)
+%   ;  obj_rebase((object_v -> db_object_v), Object0, Object)
+%   ),
+%
+%   db_recordz_int(DB_Key, Object).
 
 %
 % Leave only matched objects from DB by a search criteria
@@ -345,13 +357,6 @@ db_search(DB_In, DB_Out, Pred) :-
   ;
   true.
 */
-db_copy(DB_In, DB_Out) :-
-
-  db_recorded(DB_In, Term),
-  db_recordz(DB_Out, Term),
-  fail
-  ;
-  true.
 
 dump_db(DB_Key) :- dump_db([logger(dump_db)], DB_Key).
 
@@ -514,12 +519,15 @@ parse_db_query(DB_Key, Expr, Des, [Field], [Value]) :-
 
 db_move_all_data(From_DB, To_DB) :-
 
-  db_recorded(From_DB, Record),
-  db_recordz(To_DB, Record),
-  db_erase(Record),
-  fail
-  ;
-  true.
+   Ctx = context(db_move_all_data/2, _),
+   db_recorded_int(From_DB, Record),
+   arg(1, Record, Class_Id),
+   db_put_object_int(To_DB, Class_Id, _, Record, _),
+   obj_field_int(Class_Id, db_ref, throw, Record, DB_Ref, _, Ctx),
+   db_erase_int(DB_Ref),
+   fail
+   ;
+   true.
 
 % Get a number of recrods
 
