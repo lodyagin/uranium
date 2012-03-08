@@ -118,7 +118,7 @@ db_construct2(DB_Key, Class, Fields, Values, Obj, Ctx) :-
    check_values_arg(Fields, Values, Ctx),
 
    obj_construct_int(Class_Id, Fields, throw, Values, Tmp),
-   db_put_object_int(DB_Key, Class_Id, _, Tmp, Obj, false).
+   db_put_object_int(DB_Key, Class_Id, _, Tmp, Obj, false, Ctx).
 
 
 db_copy(DB_In, DB_Out) :-
@@ -131,7 +131,8 @@ db_copy(DB_In, DB_Out) :-
                        [db_key, db_ref], _,
                        [_, _], Obj1, Ctx),
        
-       db_put_object_int(DB_Out, Class_Id, _, Obj1, _, false),
+       db_put_object_int(DB_Out, Class_Id, _, Obj1, _, false,
+                         Ctx),
        fail
    ;
        true
@@ -236,7 +237,7 @@ db_put_object_cmn(DB_Key, Option, Object0, Object, Replaced,
               Option, Option1, Ctx),
    
    db_put_object_int(DB_Key, Class_Id, Option1, Object0, Object,
-                     Replaced).
+                     Replaced, Ctx).
 
 
 handle_key_dup(Option, DB_Key, Class_Id, DB_Object, New_Object) :-
@@ -258,25 +259,60 @@ handle_key_dup(overwrite, DB_Key, Class_Id, _, New_Object) :-
 
 
 %db_put_object_int(+DB_Key, +Class_Id0,?Option, +Object0, -Object,
-%                  -Replaced)
+%                  -Replaced, +Ctx)
 db_put_object_int(DB_Key, Class_Id0, Option, Object0, Object,
-                  Replaced) :-
-
-   % TODO replacing object when db_ref is already bound
+                  Replaced, Ctx) :-
 
    % Rebase if needed
 
    % Find db_object_v class id
    class_primary_id(db_object_v, DB_Object_V_Id),
-   
+
+   % this block already binds Object and Replaced
    (  same_or_descendant(DB_Object_V_Id, _, Class_Id0)
-   -> Object = Object0, % already has a db_object_v ancestor
-      Class_Id = Class_Id0
+   ->
+      Class_Id = Class_Id0, % already has a db_object_v ancestor
+
+      % Check the replace case
+      obj_rewrite_int(Class_Id, Object0,
+                      [db_key, db_ref],
+                      [Old_DB_Key, Old_DB_Ref], [DB_Key, _],
+                      Object, Ctx),
+      (  ground(Old_DB_Ref),
+         Old_DB_Key = DB_Key
+      ->
+         % it is replacing, try unify the protector
+         (
+            Replaced = replaced
+         -> true % the replacing is allowed
+         ;  throw(error(db_obj_replace_protector(DB_Key, Object0),
+                        Ctx))
+         )
+         
+      ;  ground(Old_DB_Ref)
+      -> throw(error(domain_error(unbound_db_ref, Old_DB_Ref),
+                     Ctx))
+
+      ;  Old_DB_Key \= DB_Key
+      -> throw(error(domain_error(unbound_or_same_db_key,
+                                  Old_DB_Key), Ctx))
+      ;
+         Object = Object0,
+         Replaced = false
+      )
+      
    ;  obj_rebase((object_v -> db_object_v), Object0, Object),
-      arg(1, Object, Class_Id)
+      arg(1, Object, Class_Id),
+      Replaced = false
    ),
 
-   % Check key if any
+   % Remove the old object first (before the key conflicts check)
+   (  Replaced == replaced
+   -> db_erase_int(DB_Key, Old_DB_Ref)
+   ;  true
+   ),
+   
+   % Check the key if any
    get_key(Class_Id, Key),
    (  Key \== []
    ->
@@ -563,7 +599,8 @@ db_move_all_data(From_DB, To_DB) :-
    
    (   db_recorded_int(From_DB, Record),
        arg(1, Record, Class_Id),
-       db_put_object_int(To_DB, Class_Id, _, Record, _, false),
+       db_put_object_int(To_DB, Class_Id, _, Record, _, false,
+                         Ctx),
        obj_field_int(Class_Id, db_ref, throw, Record, DB_Ref,
                      _, Ctx),
        db_erase_int(From_DB, DB_Ref),

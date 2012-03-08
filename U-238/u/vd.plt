@@ -77,11 +77,27 @@ test(db_put_object2, [setup(model_db)]) :-
    obj_rebase((object_v -> db_object_v), Man0, Man),
    db_put_object(people, Man).
 
-test(db_put_object3, [setup(model_db)]) :-
+test(db_put_object3,
+     [setup(model_db),
+      error(db_obj_replace_protector(people2, Man))]) :-
 
    db_construct(people2, man_v, [name], ['Moses']),
    db_recorded(people2, Man), !,
    db_put_object(people2, Man).
+
+test(db_put_object4, [setup(model_db)]) :-
+
+   db_construct(people2, man_v, [name], ['Moses']),
+   db_recorded(people2, Man0), !,
+   obj_rewrite(Man0, [name], ['Moses'], ['Yorik'], Man1),
+   db_put_object(people2, throw, Man1, Man2, Replaced),
+   named_args_unify(Man2,
+                    [name, db_key, db_ref],
+                    [New_Name, DB_Key, DB_Ref]),
+   assertion(New_Name == 'Yorik'),
+   assertion(Replaced == replaced),
+   assertion(nonvar(DB_Ref)),
+   assertion(DB_Key == people2).
 
 test(db_put_objects,
     [setup(db_clear(people)),
@@ -106,7 +122,7 @@ test(db_recorded_bug1, [setup(model_db), N =:= 3]) :-
 
 test(db_recorded1,
      [setup(model_db),
-      throws(error(no_object_field(X, db_ref), _))]) :-
+      error(domain_error(db_object_v_descendant, X))]) :-
 
    obj_construct(man_v, [sex], [man], X),
    db_recorded(people, X).

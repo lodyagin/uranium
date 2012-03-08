@@ -501,6 +501,11 @@ prolog:message(invalid_db_class_id(DB_Key, DB_Class_Id)) -->
    ['The db class id ~w is not found in db ~w'
     - [DB_Class_Id, DB_Key]].
 
+prolog:message(db_obj_replace_protector(DB_Key, Object)) -->
+
+   ['Replace protector when try add ~p into db ~a~n'
+   - [Object, DB_Key]].
+
 %prolog:message(db_ungrounded_key(Key, Key_Value, Action)) -->
 
 %   ['When try ~a the ungrounded key ~p = ~p was found'
