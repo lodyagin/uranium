@@ -86,18 +86,42 @@ test(db_put_object3,
    db_put_object(people2, Man).
 
 test(db_put_object4, [setup(model_db)]) :-
-
+% replacing
+   
    db_construct(people2, man_v, [name], ['Moses']),
    db_recorded(people2, Man0), !,
-   obj_rewrite(Man0, [name], ['Moses'], ['Yorik'], Man1),
+   obj_rewrite(Man0, [name], ['Moses'], [_], Man1),
    db_put_object(people2, throw, Man1, Man2, Replaced),
    named_args_unify(Man2,
                     [name, db_key, db_ref],
                     [New_Name, DB_Key, DB_Ref]),
-   assertion(New_Name == 'Yorik'),
+   assertion(New_Name =@= _),
    assertion(Replaced == replaced),
    assertion(nonvar(DB_Ref)),
-   assertion(DB_Key == people2).
+   assertion(DB_Key == people2),
+
+   db_size(people2, N),
+   assertion(N =:= 1).
+
+test(db_put_object5,
+     [setup(model_db),
+      error(domain_error(unbound_db_ref, DB_Ref))]) :-
+
+   db_construct(people, man_v, [name], ['Moses']),
+   db_construct(people2, man_v, [name], ['Moses']),
+   db_recorded(people2, Man0), !,
+   obj_field(Man0, db_ref, DB_Ref),
+   db_put_object(people, throw, Man0, _, _).
+
+test(db_put_object6,
+     [setup(model_db),
+      error(domain_error(unbound_or_same_db_key, people2))]) :-
+
+   db_construct(people, man_v, [name], ['Moses']),
+   db_construct(people2, man_v, [name], ['Moses']),
+   db_recorded(people2, Man0), !,
+   obj_reset_fields([db_ref], Man0, Man),
+   db_put_object(people, throw, Man, _, _).
 
 test(db_put_objects,
     [setup(db_clear(people)),
