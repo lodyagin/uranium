@@ -409,8 +409,28 @@ test(db_singleton_v2_throw,
                 [key_policy], [throw]),
    db_construct(people, man_v, [name], ['Sergei']).
 
-   %named_args_unify(people, db_singleton_v, [], _, Singl1),
-   %db_put_object(people, _, Singl1, _, replaced),
+test(db_singleton_v3_fail_ignore, [setup(db_clear(people))]) :-
+
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Lodyagin']),
+   db_construct(people, db_singleton_v,
+                [key_policy], [fail]),
+   \+ db_construct(people, man_v, [surname], ['Lodyagin']),
+
+   named_args_unify(people, db_singleton_v, [], _, Singl1), !,
+   obj_rewrite(Singl1, [key_policy], [fail], [ignore], Singl2),
+   db_put_object(people, _, Singl2, _, replaced),
+   
+   db_construct(people, man_v,
+                [name, surname, height], ['Sergei', 'Lodyagin',
+                1.74]),
+
+   findall([Name, Surname, Height],
+           named_args_unify(people, _,
+                            [name, surname, height],
+                            [Name, Surname, Height], _),
+           List1),
+   assertion(List1 =@= [['Sergei', 'Lodyagin', _]]).
    
                 
    
