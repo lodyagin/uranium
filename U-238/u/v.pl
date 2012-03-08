@@ -55,6 +55,9 @@
            obj_key_value/2,    % +Object, -Key_Value
            obj_rebase/3,     % ?Rebase_Rule, @Object0, -Object
            obj_reinterpret/2, % +From, -To
+           obj_rewrite/5,      % +Object0, +Fields, ?Old_Vals,
+                               % +New_Vals, -Object
+           
            obj_reset_fields/3, % +[Field|...], +Obj_In, -Obj_Out
            obj_reset_fields/4, % +[Field|...], +Obj_In, -Obj_Out, Is_Succ
            obj_reset_fields_weak/3, % +[Field|...], +Obj_In, -Obj_Out
@@ -198,7 +201,7 @@ named_args_unify2(Term, Field_List, Value_List, Weak, Ctx) :-
 
 /*
 named_args_unify(DB_Key,
-                 Functor,
+       )          Functor,
                  [Field_Name | FN_Tail],
                  [Value | V_Tail],
                  w(Term_Ref, Term)
@@ -536,6 +539,26 @@ obj_reinterpret(From, To) :-
    ;
       To = From
    ).
+
+% obj_rewrite(+Object0, +Fields, ?Old_Vals, +New_Vals, -Object)
+
+obj_rewrite(Object0, Fields, Old_Vals, New_Vals, Object) :-
+
+   Ctx = context(obj_rewrite/4, _),
+   check_inst(Object0, Ctx),
+   check_inst(Fields, Ctx),
+   check_inst(New_Vals, Ctx),
+   check_object_arg(Object0, Ctx, Class_Id),
+   check_fields_arg(Fields, Ctx),
+   (  var(Old_Vals) -> true
+   ;  check_values_arg(Fields, Old_Vals, Ctx)
+   ),
+   check_values_arg(Fields, New_Vals, Ctx),
+
+   obj_unify_int(Class_Id, Fields, throw, Object0, Old_Vals, Ctx),
+   obj_reset_fields_int(Class_Id, Fields, Object0, Object, throw,
+                        Ctx),
+   obj_unify_int(Class_Id, Fields, throw, Object, New_Vals, Ctx).
 
 %
 % Вычисление выражений в операторной форме

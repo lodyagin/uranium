@@ -235,6 +235,27 @@ test(obj_reset_fields_weak) :-
    obj_class_id(Man1, Class_Id),
    assertion(Man1 =@= man_v(Class_Id, _, _, man, _, 63)).
 
+test(obj_rewrite) :-
+
+   obj_construct(man_v,
+                 [name, height, weight],
+                 ['Luda', 1.40, 99], Luda1),
+   obj_rewrite(Luda1,
+               [height, weight, name],
+               [Old_Height, Old_Weight, Name],
+               [1.44, 69, Name],
+               Luda2),
+   assertion([Old_Height, Old_Weight] =@= [1.40, 99]),
+   obj_rewrite(Luda2,
+               [height, weight, name],
+               Luda2_Pars,
+               [1.45, 64, _],
+               Luda3),
+   assertion(Luda2_Pars =@= [1.44, 69, 'Luda']),
+   named_args_unify(Luda3, [height, weight, name], Luda3_Pars),
+   assertion(Luda3_Pars =@= [1.45, 64, _]).
+
+
 % After some time it will always fails (because it depends
 % on the current year, see The Uranium Book).
 test(eval_fields1, [Class == callup_v]) :-
