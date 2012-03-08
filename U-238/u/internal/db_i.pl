@@ -30,8 +30,8 @@
           [
 	   db_conv_local_db/4,
            db_clear_int/1,
-           db_erase_int/1,
-           db_des/2,  % +DB_Key, ?Des
+           db_erase_int/2,  % +DB_Key, +DB_Ref
+           db_des/2,        % +DB_Key, ?Des
            db_key_is_valid/1,
            db_key_policy/3,  % +DB_Key, -Old, ?New
            db_object_class_int/2,
@@ -89,9 +89,11 @@ db_key_policy(DB_Key, Old, New) :-
 %              Name, Arity, Fields, Key)
 % db_next_class_id(Id).
 
-db_erase_int(recorded(Ref)) :- !,
+db_erase_int(DB_Key, DB_Ref) :-
 
-   erase(Ref).
+   atom(DB_Key), !,
+
+   erase(DB_Ref).
 
 db_next_class_id(DB_Key, Id) :-
 
@@ -239,11 +241,15 @@ db_recorded_int(DB_Key, L_Object) :-
     atom(DB_Key), nonvar(L_Object), !,
     Ctx = context(db_recorded_int/2, _),
 
-    % check whether L_Object has db_ref
+    % check whether L_Object is a db_object_v descendant
     arg(1, L_Object, Local_Class_Id),
-    obj_field_int(Local_Class_Id, db_ref, throw, L_Object, _, _,
-                  Ctx),
-
+    class_primary_id(db_object_v, DB_Object_V_Id),
+    (  same_or_descendant(DB_Object_V_Id, _, Local_Class_Id)
+    -> true
+    ;  throw(error(domain_error(db_object_v_descendant, L_Object),
+                   Ctx))
+    ),
+    
     object_local_db(DB_Key, L_Object, DB_Object),
 
     % find the matched record
@@ -254,9 +260,11 @@ db_recorded_int(DB_Key, L_Object) :-
     % populate values from db
     L_Object = L_Object1,
 
-    % store the db record reference
+    % store the db key and record references
+    obj_field_int(Local_Class_Id, db_key, throw, L_Object,
+                  DB_Key, _, Ctx),
     obj_field_int(Local_Class_Id, db_ref, throw, L_Object,
-                  recorded(Ref), _, Ctx).
+                  Ref, _, Ctx).
 
 % the case of free L_Object, unify with all records in DB
 db_recorded_int(DB_Key, L_Object) :-
@@ -273,10 +281,12 @@ db_recorded_int(DB_Key, L_Object) :-
 
     object_local_db(DB_Key, L_Object, DB_Object),
 
-    % inplant the db reference
+    % inplant the db key and reference
     arg(1, L_Object, Local_Class_Id),
+    obj_field_int(Local_Class_Id, db_key, throw, L_Object,
+                  DB_Key, _, Ctx),
     obj_field_int(Local_Class_Id, db_ref, throw, L_Object,
-                  recorded(Ref), _, Ctx).
+                  Ref, _, Ctx).
 
 
 %db_recorded(DB_Key, Term, DB_Ref) :-
@@ -296,15 +306,22 @@ db_recordz_int(DB_Key, Object0) :-
 
     atom(DB_Key), !, % this is prolog DB version
     Ctx = context(db_recordz_int/2, _),
-    obj_field(Object0, db_ref, Ref),
-    (  var(Ref) -> true
-    ;  throw(error(domain_error(unbound_db_ref, Object0),Ctx))
+    arg(1, Object0, Class_Id),
+    obj_unify_int(Class_Id,
+                  [db_key, db_ref], throw, Object0,
+                  [DB_Key_Val, DB_Ref], Ctx),
+
+    (   DB_Key_Val = DB_Key -> true
+    ;   throw(error(domain_error(unbound_or_same_db_key,
+                                 DB_Key_Val), Ctx))
+    ),
+    (   var(DB_Ref) -> true
+    ;   throw(error(domain_error(unbound_db_ref, DB_Ref),Ctx))
     ),
 
     object_local_db(DB_Key, Object0, Object),
 
-    recordz(DB_Key, Object, R),
-    Ref = recorded(R).
+    recordz(DB_Key, Object, DB_Ref).
 
 
 %object_local_db(+DB_Key, ?Local_Object, ?DB_Object)
@@ -412,8 +429,9 @@ erase_conflicts(DB_Key, Class_Id, Object) :-
 
   (  key_conflict(DB_Key, Class_Id, Object, Conflicting),
      obj_field(Conflicting, db_ref, DB_Ref),
-     db_erase_int(DB_Ref),
-     fail ; true ).
+     db_erase_int(DB_Key, DB_Ref),
+     fail ; true
+  ).
 
 % key_conflict(+DB_Key, +Class_Id, @Object, -Conflicting)
 % nondet 

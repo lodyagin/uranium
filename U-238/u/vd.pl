@@ -100,7 +100,7 @@ db_construct(DB_Key, Class, Fields, Values) :-
 
 % db_construct(+DB_Key, +Fields, +Values, -Obj)
 %
-% This form returns the object (with db_ref)
+% This form returns the object (a db_object_v descendant)
 db_construct(DB_Key, Class, Fields, Values, Obj) :-
 
    Ctx = context(db_construct/3, _),
@@ -129,10 +129,20 @@ db_copy(DB_In, DB_Out) :-
 db_erase(Obj) :-
 
    Ctx = context(db_erase/1, _),
-   check_object_arg(Obj, Ctx, _),
+   check_object_arg(Obj, Ctx, Class_Id),
 
-   obj_field(Obj, db_ref, DB_Ref),
-   db_erase_int(DB_Ref).
+   obj_unify_int(Class_Id,
+                 [db_key, db_ref], throw, Obj,
+                 [DB_Key, DB_Ref], Ctx),
+
+    (   nonvar(DB_Key) -> true
+    ;   throw(error(domain_error(bound_db_key, Obj), Ctx))
+    ),
+    (   nonvar(DB_Ref) -> true
+    ;   throw(error(domain_error(bound_db_ref, Obj),Ctx))
+    ),
+
+   db_erase_int(DB_Key, DB_Ref).
 
 /*
 db_bind_obj(DB_Key, w(Ref0, Object0), w(Ref, Object)) :- !,
@@ -520,14 +530,19 @@ parse_db_query(DB_Key, Expr, Des, [Field], [Value]) :-
 db_move_all_data(From_DB, To_DB) :-
 
    Ctx = context(db_move_all_data/2, _),
-   db_recorded_int(From_DB, Record),
-   arg(1, Record, Class_Id),
-   db_put_object_int(To_DB, Class_Id, _, Record, _),
-   obj_field_int(Class_Id, db_ref, throw, Record, DB_Ref, _, Ctx),
-   db_erase_int(DB_Ref),
-   fail
+   check_db_key(From_DB, Ctx),
+   check_db_key(To_DB, Ctx),
+   
+   (   db_recorded_int(From_DB, Record),
+       arg(1, Record, Class_Id),
+       db_put_object_int(To_DB, Class_Id, _, Record, _),
+       obj_field_int(Class_Id, db_ref, throw, Record, DB_Ref,
+                     _, Ctx),
+       db_erase_int(From_DB, DB_Ref),
+       fail
    ;
-   true.
+       true
+   ).
 
 % Get a number of recrods
 

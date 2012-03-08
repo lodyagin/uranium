@@ -26,7 +26,8 @@
 :- module(db_object_v, []).
 
 new_class(db_object_v, object_v,
-          [db_ref % "physical" address in db
+          [db_key, % uniq identify the db
+           db_ref  % "physical" address in db, it is opaque
            ]).
 
 

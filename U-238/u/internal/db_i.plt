@@ -58,7 +58,7 @@ test(db_key_policy, [setup(setup)]) :-
 
 test(db_recorded_int,
      [setup(setup),
-      throws(error(no_object_field(Obj0, db_ref), _))]
+      error(domain_error(db_object_v_descendant, Obj0))]
     ) :-
 
    obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),
