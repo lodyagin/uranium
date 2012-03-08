@@ -47,7 +47,9 @@
            obj_construct_int/5,
            obj_field_int/7,
            obj_reset_fields_int/6,
-           obj_unify_int/6,
+           obj_unify_int/6,     % +Class_Id, +Fields, +Weak,
+                                % +Term, ?Value, +Ctx
+           
            parent/2,            % ?Id, ?Parent_Id
            same_or_descendant/3,%+Parent_Id, +No_Rebased, ?Desc_Id
            u_class/1,
@@ -386,6 +388,8 @@ find_eval_pred(Field, Object, Class_Id, Eval_Pred, Value) :-
      find_eval_pred(Field, Object, Parent_Id, Eval_Pred, Value)
   ).
 
+
+% obj_unify_int(+Class_Id, +Fields, +Weak, +Term, ?Value, +Ctx)
 
 obj_unify_int(_, [], _, _, [], _) :- !.
 
