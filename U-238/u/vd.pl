@@ -136,8 +136,8 @@ db_construct2(DB_Key, Class, Fields, Values, Obj, Ctx) :-
    check_values_arg(Fields, Values, Ctx),
 
    obj_construct_int(Class_Id, Fields, throw, Values, Tmp),
-   db_put_object_int(DB_Key, Class_Id, _, _, Tmp, Obj, false,
-                     Ctx).
+   db_put_object_int(DB_Key, Class_Id, _, recordz, Tmp, Obj,
+                     false, Ctx).
 
 
 db_copy(DB_In, DB_Out) :-
@@ -150,8 +150,8 @@ db_copy(DB_In, DB_Out) :-
                        [db_key, db_ref], _,
                        [_, _], Obj1, Ctx),
        
-       db_put_object_int(DB_Out, Class_Id, _, _, Obj1, _, false,
-                         Ctx),
+       db_put_object_int(DB_Out, Class_Id, _, recordz, Obj1, _,
+                         false, Ctx),
        fail
    ;
        true
@@ -474,8 +474,8 @@ db_rewrite_int(DB_Key, Functor, Fields, Old_Vals, New_Vals,
        
        obj_rewrite_int(Class_Id, Obj0, Fields, Old_Vals, New_Vals,
                        Obj1, Ctx),
-       db_put_object_int(DB_Key, Class_Id, _, Obj1, _, replaced,
-                         Ctx),
+       db_put_object_int(DB_Key, Class_Id, _, recordz, Obj1, _,
+                         replaced, Ctx),
        fail ; true
    ).
   
@@ -760,8 +760,8 @@ db_move_all_data(From_DB, To_DB) :-
    
    (   db_recorded_int(From_DB, Record),
        arg(1, Record, Class_Id),
-       db_put_object_int(To_DB, Class_Id, _, Record, _, false,
-                         Ctx),
+       db_put_object_int(To_DB, Class_Id, _, recordz, Record, _,
+                         false, Ctx),
        obj_field_int(Class_Id, db_ref, throw, Record, DB_Ref,
                      _, Ctx),
        db_erase_int(From_DB, DB_Ref),
