@@ -57,6 +57,8 @@
            obj_reinterpret/2, % +From, -To
            obj_rewrite/5,      % +Object0, +Fields, ?Old_Vals,
                                % +New_Vals, -Object
+
+           obj_set_field/3,    % +Object, +Field, +Value
            
            obj_reset_fields/3, % +[Field|...], +Obj_In, -Obj_Out
            obj_reset_fields/4, % +[Field|...], +Obj_In, -Obj_Out, Is_Succ
@@ -557,6 +559,16 @@ obj_rewrite(Object0, Fields, Old_Vals, New_Vals, Object) :-
 
    obj_rewrite_int(Class_Id, Object0, Fields, Old_Vals, New_Vals,
                    Object, Ctx).
+
+% obj_set(+Object, +Field, +Value)
+%
+% Like obj_field/3 but do not unify Value, instead make a copy
+% <NB> can be used for reset field
+
+obj_set_field(Object, Field, Value) :-
+
+   copy_term_nat(Value, Value1),
+   obj_field(Object, Field, Value1).
 
 %
 % Вычисление выражений в операторной форме

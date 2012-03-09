@@ -61,12 +61,34 @@ test(obj_field2, [Flds3 == Flds4]) :-
    findall(Fld, obj_field(Obj, Fld, _), Flds2),
    sort(Flds2, Flds3),
    msort(Flds2, Flds4).
+
+test(obj_field3, [Surname == 'Grisha']) :-
+
+   obj_construct(man_v, [], [], Man),
+   obj_field(Man, name, Name),
+   obj_field(Man, surname, Name),
+   Name = 'Grisha',
+   obj_field(Man, surname, Surname).
   
 test(obj_field_bug1, [fail]) :-
 
    obj_construct(citizen_v, [sex], [woman], Obj),
    obj_field(Obj, sex, man).
 
+test(obj_set_field1, [Surname =@= _]) :-
+
+   obj_construct(man_v, [], [], Man),
+   obj_set_field(Man, name, Name),
+   obj_set_field(Man, surname, Name),
+   Name = 'Grisha',
+   obj_field(Man, surname, Surname).
+  
+test(obj_set_field2, [Surname =@= 'Grisha']) :-
+
+   obj_construct(man_v, [name, surname], [Name, Name], Man),
+   obj_set_field(Man, name, 'Grisha'),
+   obj_field(Man, surname, Surname).
+  
 test(obj_key1) :-
 
    obj_construct(man_v, [sex, name], [man, 'Adam'], Man1),
