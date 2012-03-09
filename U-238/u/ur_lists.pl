@@ -44,7 +44,14 @@
            index_list/4,
            extract_by_key_order/3,
            pairs_replace_functor/3,
-           select_value/4,
+           
+           select_value/4, % +Selector, +Selectors,
+                           % ?Values, ?Value (det)
+           
+           select_value/6, % ?Selector, +Selectors,
+                           % -Selectors_Rest, ?Values,
+                           % ?Values_Rest, ?Value (nondet)
+           
            sort_linked/2,
            swap_keyed_list/2,
            switch_by_value/4,
@@ -195,12 +202,40 @@ swap_keyed_list([], []) :- !.
 swap_keyed_list([A - B | T1], [B - A | T2]) :-
     swap_keyed_list(T1, T2).
 
+% select_value(+Selector, +Selector_List, +Value_List, -Value) :-
+% det
 %
 % Выбор значения из списка на основе списка селекторов
 %
 select_value(Selector, Selector_List, Value_List, Value) :-
-    nth1(Index, Selector_List, Selector),
-    nth1(Index, Value_List, Value), !.
+
+   nonvar(Selector),
+   select_value(Selector, Selector_List, _,
+                Value_List, _, Value),
+   !.
+
+% select_value(?Selector, +Selectors,   -Selectors_Rest,
+%              ?Values,   ?Values_Rest, ?Value) :-
+% nondet
+%
+% The same but return new lists without Selector and Value
+% Always complete Values argument if it is var or a partial list
+%
+
+   
+select_value(_, [],  _, _, _, _) :- fail.
+
+select_value(Selector, [Selector|SR], SR,
+             [Value|VR], VR, Value) :-
+
+   (   nonvar(VR) -> true
+   ;   length(SR, NR), length(VR, NR) % complete a partial list
+   ).
+
+select_value(Selector, [SH|ST], [SH|SR],
+             [VH|VT], [VH|VR], Value) :-
+
+   select_value(Selector, ST, SR, VT, VR, Value).
 
 %
 % Оператор case (switch)
