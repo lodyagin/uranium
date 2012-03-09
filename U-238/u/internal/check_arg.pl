@@ -11,6 +11,10 @@
            check_values_arg/3, % +Field_List, +Value_List, +Ctx
                                % inst-
            
+           check_values_partlist_arg/3, % +Field_List,
+                                        % +Value_List, +Ctx
+                                        % inst-
+           
            check_object_arg/3,         % not inc. inst
            check_rebase_rule/2,
 
@@ -18,6 +22,7 @@
            clear_decode_arg/0
            ]).
 
+:- use_module(library(error)).
 :- use_module(objects_i).
 :- use_module(db_i).
 :- use_module(u(ur_lists)).
@@ -102,6 +107,16 @@ check_values_arg(Field_List, Value_List, Ctx) :-
                   (Field_List, Value_List)), Ctx))
    ).
 
+check_values_partlist_arg(Field_List, Value_List, Ctx) :-
+
+   nonvar(Value_List),
+   ( \+ is_of_type(list_or_partial_list, Value_List)
+   -> throw(error(type_error(list, Value_List), Ctx))
+   ;  length(Field_List, LL), length(Value_List, LL)
+   -> true
+   ;  throw(error(domain_error(matched_list_length,
+                  (Field_List, Value_List)), Ctx))
+   ).
 
 check_object_arg(Object, Err_Context, Class_Id) :-
 
