@@ -56,12 +56,12 @@ extract_element(Page, Class, Object) :-
 
   obj_field(Page, dom, DOM),
   ground(DOM),
-  element_type_tag(Class, Tag),
+  element_type_tag(Class, Tag, Cmn_Class),
   xpath(DOM, //Tag, Data),
-  atom_concat(Class, '_parse', Pred),
+  atom_concat(Cmn_Class, '_parse', Pred),
   atom_concat('parser/html/', Pred, Module),
   use_module(u(Module), [Pred/2]),
-  write_log(['Call ', Pred], [logger(html_page_parse)]),
+  debug(html_page_parse, 'Call ~a for ~p', [Pred, Data]),
   call(Pred, Data, Object1),
 
   named_args_unify(Page, [http_request_url, timestamp],
@@ -69,10 +69,16 @@ extract_element(Page, Class, Object) :-
   named_args_unify(Object1, [http_request_url, timestamp],
                    [Obj_Url, Obj_Timestamp]),
 
-  obj_downcast(Object1, Object).
+  obj_downcast(Object1, Object),
+
+  once(( functor(Object, Class, _)
+       ; obj_is_descendant(Object, Class)
+       )).
 
 
 % object - tag mapping
-element_type_tag(table_v, table).
-element_type_tag(form_v, form).
-element_type_tag(link_v, a).
+element_type_tag(table_v, table, table_v).
+element_type_tag(form_v, form, form_v).
+element_type_tag(link_v, a, link_v).
+element_type_tag(local_link_v, a, link_v).
+element_type_tag(global_link_v, a, link_v).
