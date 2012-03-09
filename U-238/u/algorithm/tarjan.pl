@@ -1,4 +1,4 @@
-% -*- fill-column: 65; -*- 
+% -*- fill-column: 65; -*-
 % _____________________________________________________________
 %
 % This file is a part of Uranium, a general-purpose functional
@@ -11,7 +11,7 @@
 % License as published by the Free Software Foundation; either
 % version 2.1 of the License, or (at your option) any later
 % version.
-% 
+%
 % This library is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -26,91 +26,150 @@
 % post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 % _____________________________________________________________
 
-:- module(tarjan, [tarjan/4]).
+:- module(tarjan, [tarjan/7]).
 
+:- use_module(library(debug)).
+:- use_module(library(error)).
+:- use_module(u(internal/check_arg)).
 :- use_module(u(v)).
 :- use_module(u(vd)).
-:- use_module(u(action/click_url)).
-:- use_module(u(parser/html/html_page_parse)).
 
-tarjan(Pages, Links, Url, Scc_List) :-
-
-   load_page(Pages, Links, Url),
-   scc(Pages, Links, Url, [], [], 0, _, [], Scc_List, _).
+:- meta_predicate tarjan(+, +, +, 2, 2, +, -).
 
 
-scc(Pages, Links, Src_Url,
-    Stack0, Stack, Index0, Index, Scc_L0, Scc_L,
-    V) :-
+tarjan(DB,
+       Vertex_Functor, Vertex_Id_Fld,
+       Load_Vertex, Resolve_Destinations,
+       Start_Vertex,
+       Scc) :-
 
-   V0 = vertex(Src_Url, Index0, Index0),
+   Ctx = context(tarjan/7, _),
+   check_inst(Vertex_Functor, Ctx),
+   check_inst(Start_Vertex, Ctx),
+   check_db_key(DB, Ctx),
+   check_field_name(Vertex_Id_Fld, Ctx),
+   check_existing_class_arg(Vertex_Functor, Ctx),
 
-   Index1 is Index0 + 1,
-   Stack1 = [V|Stack0],  %  push to stack
+   must_be(callable, Load_Vertex),
+   must_be(callable, Resolve_Destinations),
 
-   % Get all destination urls
-   findall(Dst_Url,
-           (db_iterate(Links, http_request_url(Src_Url), Link),
-            obj_field(Link, global_link_url, Dst_Url)),
-           Dst_Url_List),
+   check_object_arg(Start_Vertex, Ctx, _),
+   
+   scc(DB,
+       Vertex_Functor, Vertex_Id_Fld,
+       Load_Vertex, Resolve_Destinations,
+       Start_Vertex,
+       [], _, 0, _, [], Scc).
 
-   scc_down(Pages, Links, Dst_Url_List,
-            Stack1, Stack2, Index1, Index, Scc_L0, Scc_L1,
-            V0, V),
+scc(DB,
+    Vertex_Functor, Vertex_Id_Fld,
+    Load_Vertex, Resolve_Destinations,
+    V0,
+    Stack0, Stack, Index0, Index, Scc_L0, Scc_L) :-
 
-   (  V = vertex(_, V_Index, V_Lowlink),
-      V_Index =:= V_Lowlink
+   must_be(nonneg, Index0),
+   
+   named_args_unify(V0,
+                    [tarjan_index, tarjan_lowlink, Vertex_Id_Fld],
+                    [Index0, Index0, V_Id]),
+   debug(tarjan, 'Put vertex ~p into DB', [V_Id]),
+   db_put_object(DB, V0, V1),
+              
+   succ(Index0, Index1),
+   Stack1 = [V_Id|Stack0],
+   (   debugging(tarjan)
+   ->  length(Stack1, Stack1_Size),
+       debug(tarjan, 'Stack size is ~d now', [Stack1_Size])
+   ;   true   ),
+
+   % Load all successors
+   once(call(Resolve_Destinations, V1, W_Id_Lst)),
+   (   debugging(tarjan)
+   ->  length(W_Id_Lst, W_Id_Lst_Size),
+       debug(tarjan, '~p is resloved to ~d destinations',
+             [V_Id, W_Id_Lst_Size])
+   ;   true ),
+
+   scc_down(DB,
+            Vertex_Functor, Vertex_Id_Fld,
+            Load_Vertex, Resolve_Destinations,
+            V1, V, W_Id_Lst,
+            Stack1, Stack2, Index1, Index,
+            Scc_L0, Scc_L1),
+
+   named_args_unify(V,
+                    [tarjan_index, tarjan_lowlink],
+                    [V_Index, V_Lowlink]),
+   
+   (  V_Index =:= V_Lowlink
    ->
       % V it is a root node of an scc subtree
-      scc_up(Stack2, Stack, [], Scc, V),
+      scc_up(Stack2, Stack, [], Scc, V_Id),
       Scc_L = [Scc|Scc_L1]
    ;
-      Scc_L = Scc_L1
+      Scc_L = Scc_L1,
+      Stack = Stack2
    ).
 
 
-scc_down(_, _, [], Stack, Stack, Index, Index, Scc_L, Scc_L, V, V).
+scc_down(_, _, _, _, _, V, V, [],
+         Stack, Stack, Index, Index, Scc_L, Scc_L) :-
+   !.
 
-scc_down(Pages, Links, [Dst_Url|Dst_Url_T],
-         Stack0, Stack, Index0, Index, Scc_L0, Scc_L,
-         V0, V) :-
+scc_down(DB,
+         Vertex_Functor, Vertex_Id_Fld,
+         Load_Vertex, Resolve_Destinations,
+         V0, V, [W_Id|W_Id_T],
+         Stack0, Stack, Index0, Index, Scc_L0, Scc_L) :-
 
-   V0 = vertex(Src_Url, V0_Index, V0_Lowlink),
-   V1 = vertex(Src_Url, V0_Index, V1_Lowlink),
-   
-   (  \+ named_arg_unify(Pages,
-                         http_request_url, Dst_Url, _)
+   obj_field(V0, tarjan_lowlink, V0_Lowlink),
+
+   (  named_args_unify(DB, Vertex_Functor, 
+                   [Vertex_Id_Fld], [W_Id], W)
    ->
-      % found a new page, load and recurse
-      load_page(Pages, Links, Dst_Url),
-      scc(Pages, Links,
-          Stack0, Stack1, Index0, Index1, Scc_L0, Scc_L1,
-          vertex(Dst_Url, _, W_Lowlink)
-         ),
-      V1_Lowlink is min(V0_Lowlink, W_Lowlink)
-   ;
-      % Dst_Page is loaded already
-      memberchk(vertex(Dst_Url, W_Index, _), Stack0)
-   ->
-      % successor is in the current SCC
-      V1_Lowlink is min(V0_Lowlink, W_Index)
+      (   % Dst_Page is loaded already
+          memberchk(W_Id, Stack0)
+      ->
+          % successor is in the current SCC
+          obj_field(W, tarjan_index, W_Index),
+          V1_Lowlink is min(V0_Lowlink, W_Index),
+          obj_rewrite(V0, [tarjan_lowlink], _,  [V1_Lowlink], V1),
+          debug(tarjan,
+                '~p already in SCC, set its lowlink to ~d',
+                [W_Id, V1_Lowlink])
+      ;
+          V1 = V0,
+          debug(tarjan, '~p is loaded already', [W_Id])
+      ),
+      Stack1 = Stack0, Index1 = Index0, Scc_L1 = Scc_L0
+   ;  
+      % The vertex W has not yet been visited
+      once(call(Load_Vertex, W_Id, W)),
+      debug(tarjan, 'New vertex ~p is loaded', [W_Id]),
+      scc(DB,
+          Vertex_Functor, Vertex_Id_Fld,
+          Load_Vertex, Resolve_Destinations,
+          W, 
+          Stack0, Stack1, Index0, Index1, Scc_L0, Scc_L1),
+
+      obj_field(W, tarjan_lowlink, W_Lowlink),
+      V1_Lowlink is min(V0_Lowlink, W_Lowlink),
+      obj_rewrite(V0, [tarjan_lowlink], _,  [V1_Lowlink], V1),
+      (   debugging(tarjan)
+      ->  obj_field(V1, Vertex_Id_Fld, V1_Id_),
+          debug(tarjan,
+                'Set ~p lowlink to ~d', [V1_Id_, V1_Lowlink])
+      ;   true )
    ),
-   scc_down(Pages, Links, Dst_Url_T,
-            Stack1, Stack, Index1, Index, Scc_L1, Scc_L,
-            V1, V).
-          
+   scc_down(DB,
+            Vertex_Functor, Vertex_Id_Fld,
+            Load_Vertex, Resolve_Destinations,
+            V1, V, W_Id_T,
+            Stack1, Stack, Index1, Index, Scc_L1, Scc_L).
+
 scc_up([W|Stack], Stack, Scc, [W|Scc], W) :- !.
 
 scc_up([W|Stack0], Stack, Scc0, [W|Scc], V) :-
 
    scc_up(Stack0, Stack, Scc0, Scc, V).
 
-
-% load_page(+Pages_DB, +Links_DB, +Url)
-% It is called iff Url is not in Pages
-
-load_page(Pages_DB, Links_DB, Url) :-
-
-   click_url(Url, Page),
-   db_put_object(Pages_DB, Page, _),
-   html_page_parse(Links_DB, Page, [link_v]).
