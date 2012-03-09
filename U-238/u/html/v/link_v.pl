@@ -30,12 +30,13 @@
 
 :- use_module(library(uri)).
 :- use_module(u(v)).
+:- use_module(u(ur_url)).
 
 new_class(link_v, http_result_v, [link_url, text], [link_url]).
 
-new_class(local_link_v, link_v, [], []).
+new_class(local_link_v, link_v, []).
 
-new_class(global_link_v, link_v, [], []).
+new_class(global_link_v, link_v, []).
 
 'link_v?'(Link, class, Class) :-
 
@@ -65,8 +66,8 @@ downcast(link_v, local_link_v, From, To) :-
    atom(Orig_Link_Url),
    obj_field(From, http_request_url, Base_Url0),
    atom(Base_Url0),
-   uri_normalized(Base_Url0, Base_Url),
-   uri_normalized(Orig_Link_Url, Base_Url, Link_Url),
+   url_normalize(Base_Url0, Base_Url),
+   url_normalize(Orig_Link_Url, Base_Url, Link_Url),
    obj_field(To, link_url, Link_Url),
    obj_field(To, http_request_url, Base_Url).
 
@@ -76,8 +77,8 @@ downcast(link_v, global_link_v, From, To) :-
    atom(Orig_Link_Url),
    obj_field(From, http_request_url, Base_Url0),
    atom(Base_Url0),
-   uri_normalized(Base_Url0, Base_Url),
-   uri_normalized(Orig_Link_Url, Link_Url),
+   url_normalize(Base_Url0, Base_Url),
+   url_normalize(Orig_Link_Url, Link_Url),
    obj_field(To, link_url, Link_Url),
    obj_field(To, http_request_url, Base_Url).
 
