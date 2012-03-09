@@ -145,16 +145,18 @@ decode_arg(Vals_LOL, Arg_Val, Result, Ctx) :-
    nonvar(Ctx),
    Ctx = context(Pred_Name/Arity, _),
    atom(Pred_Name), integer(Arity),
+
+   (  nonvar(Arg_Val)
+   -> Arg_Val1 = Arg_Val
+   ;  Arg_Val1 = f(_)
+   % will not match with any arg but only with _
+   ),
    
-   (  arg_decode(Pred_Name, Arity, Arg_Val, Result0)
+   (  arg_decode(Pred_Name, Arity, Arg_Val1, Result0)
    -> true
    ;  (  Vals_LOL = [_|_] % not empty list
       -> (  decode_arg_int(Vals_LOL, Arg_Val, Result0)
-         -> (  nonvar(Arg_Val)
-            -> Arg_Val1 = Arg_Val
-            ;  Arg_Val1 = f(_)
-            % will not match with any arg but only with _
-            ),
+         -> 
             assertz(arg_decode(Pred_Name, Arity, Arg_Val1,
                                Result0))
          ;  % make the domain and throw the error
