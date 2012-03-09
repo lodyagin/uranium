@@ -66,7 +66,7 @@
 
 	   db_recorded/2,    % +DB_Key, ?Object
                              % -Object
-           db_rewrite/5,     % +DB_Key, ?Functor, +Fields,
+%           db_rewrite/5,     % +DB_Key, ?Functor, +Fields,
                              % @Old_Vals, +New_Vals
            
            %db_reset/3,    % +DB_Key, +Fields, +Query
@@ -448,36 +448,36 @@ db_recorded(DB_Key, Object) :-
 %
 % Change fields in all objects unified with Old_Vals
 
-db_rewrite(DB_Key, Functor, Fields, Old_Vals, New_Vals) :-
+% db_rewrite(DB_Key, Functor, Fields, Old_Vals, New_Vals) :-
 
-  Ctx = context(db_rewrite/4),
-  check_inst(Fields, Ctx),
-  check_inst(New_Vals, Ctx),
-  check_db_key(DB_Key, Ctx),
-  check_fields_arg(Fields, Ctx),
-  (   var(Old_Vals) -> true
-  ;   check_values_arg(Fields, Old_Vals, Ctx)
-  ),
-  check_values_arg(Fields, New_Vals, Ctx),
+%   Ctx = context(db_rewrite/4),
+%   check_inst(Fields, Ctx),
+%   check_inst(New_Vals, Ctx),
+%   check_db_key(DB_Key, Ctx),
+%   check_fields_arg(Fields, Ctx),
+%   (   var(Old_Vals) -> true
+%   ;   check_values_arg(Fields, Old_Vals, Ctx)
+%   ),
+%   check_values_arg(Fields, New_Vals, Ctx),
 
-  db_rewrite_int(DB_Key, Functor, Fields, Old_Vals, New_Vals,
-                 Ctx).
+%   db_rewrite_int(DB_Key, Functor, Fields, Old_Vals, New_Vals,
+%                  Ctx).
 
-db_rewrite_int(DB_Key, Functor, Fields, Old_Vals, New_Vals,
-               Ctx) :-
+% db_rewrite_int(DB_Key, Functor, Fields, Old_Vals, New_Vals,
+%                Ctx) :-
    
-   db_functor_des(DB_Key, Functor, Des, Ctx),
+%    db_functor_des(DB_Key, Functor, Des, Ctx),
    
-   (   named_args_unify_int(DB_Key, throw, Des, Fields, Old_Vals,
-                            Obj0),
-       arg(1, Obj0, Class_Id),
+%    (   named_args_unify_int(DB_Key, throw, Des, Fields, Old_Vals,
+%                             Obj0),
+%        arg(1, Obj0, Class_Id),
        
-       obj_rewrite_int(Class_Id, Obj0, Fields, Old_Vals, New_Vals,
-                       Obj1, Ctx),
-       db_put_object_int(DB_Key, Class_Id, _, recordz, Obj1, _,
-                         replaced, Ctx),
-       fail ; true
-   ).
+%        obj_rewrite_int(Class_Id, Obj0, Fields, Old_Vals, New_Vals,
+%                        Obj1, Ctx),
+%        db_put_object_int(DB_Key, Class_Id, _, recordz, Obj1, _,
+%                          replaced, Ctx),
+%        fail ; true
+%    ).
   
   
 

@@ -222,11 +222,27 @@ test(db_recorded5, [setup(db_clear(people))]) :-
    db_recorded(people, X).
 
 
-%test(db_rewrite1, [setup(model_db)]) :-
-%
-%   db_rewrite(people, _,
-%              [weight, surname], _, [66, 'Kasperski']),
-%   db_select_list(people, _, [
+% test(db_rewrite1,
+%      [setup(model_db),
+%       List =@= [['Adam', 'Kasperski', 66],
+%                 ['Eva', 'Kasperski', 66],
+%                 ['Vladimir', 'Kasperski', 66]]
+%      ]) :-
+
+%    db_rewrite(people, _,
+%               [weight, surname], _, [66, 'Kasperski']),
+%    db_select_list(people, _, [name, surname, weight], List).
+
+% test(db_rewrite2,
+%      [setup(model_db),
+%       List =@= [['Adam', 'Kasperski', 66],
+%                 ['Eva', 'Kasperski', 66],
+%                 ['Vladimir', 'Mayakovsky', _]]
+%      ]) :-
+
+%    db_rewrite(people, man_v,
+%               [weight, surname], _, [66, 'Kasperski']),
+%    db_select_list(people, _, [name, surname, weight], List).
 
 test(db_select1,
      [setup(model_db),
