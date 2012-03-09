@@ -210,8 +210,41 @@ test(db_recorded5, [setup(db_clear(people))]) :-
 
 
 %test(db_rewrite1, [setup(model_db)]) :-
+%
+%   db_rewrite(people, _,
+%              [weight, surname], _, [66, 'Kasperski']),
+%   db_select_list(people, _, [
 
-%   db_rewrite(people, _, [weight, surname], _, [66, 'Kasperski'])
+test(db_select1,
+     [setup(model_db),
+      List =@= [[man_v, man, 'Adam', _, 73, _],
+                [man_v, woman, 'Eva', _, 64, _],
+                [citizen_v, man, 'Vladimir', 'Mayakovsky', _,
+                 ['Soviet Union']]]
+      ]) :-
+
+   findall(Row,
+           db_select(people,
+                     [class, sex, name, surname, weight, country],
+                     Row),
+           List
+          ).
+
+test(db_select2,
+     [setup(model_db),
+      List =@= [[man_v, man, 'Adam', _, 73, _],
+                [man_v, woman, 'Eva', _, 64, _]]
+      ]) :-
+
+   findall(Row,
+           (   Row = [man_v|_],
+               db_select(people,
+                         [functor, sex, name, surname, weight,
+                          country],
+                         Row)
+           ), List
+          ).
+
 
 test(db_select_list1,
      [setup(model_db),

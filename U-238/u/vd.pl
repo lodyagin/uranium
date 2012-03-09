@@ -65,6 +65,7 @@
            %db_search/3,
            db_size/2,        % +DB_Key, ?Size
            db_to_list/3,     % +DB_Key, ?Functor, -List
+           db_select/3,      % +DB_Key, +Fields, ?Row
            db_select_list/4, % +DB_Key, ?Functor, +Fields, -List
            db_select_list/5, % +DB_Key, ?Functor, ?Weak, +Fields,
                              % -List
@@ -492,6 +493,7 @@ dump_db(Options, DB_Key) :-
 %
 % db_to_list(+DB_Key, ?Functor, -List)
 %
+% TODO rewrite with db_select_list usage
 
 db_to_list(DB_Key, Functor, List) :-
 
@@ -505,6 +507,34 @@ db_to_list(DB_Key, Functor, List) :-
          Functor^db_iterate2(people, functor(Functor), O),
          List
         ).
+
+% db_select(+DB_Key, +Fields, ?Row)
+%
+% BT on all matched rows
+
+db_select(DB_Key, Fields, Row) :-
+
+   Ctx = context(db_select/3, _),
+   check_inst(Fields, Ctx),
+   check_db_key(DB_Key, Ctx),
+   check_fields_arg(Fields, Ctx),
+   (   var(Row) -> true
+   ;   check_values_partlist_arg(Fields, Row, Ctx)
+   ),
+
+   (   select_value(functor, Fields, Fields1, Row, Row1, Functor)
+   ->  true
+   ;   Fields1 = Fields, Row1 = Row
+   ),
+   db_select_int(DB_Key, Functor, weak, Fields1, Row1, Ctx).
+
+
+db_select_int(DB_Key, Functor, Weak, Fields, Row, Ctx) :-
+
+   db_functor_des(DB_Key, Functor, Des, Ctx),
+   named_args_unify_int(DB_Key, Weak, Des, Fields, Row, _).
+       
+
 
 % db_select_list(+DB_Key, ?Functor, +Fields, -List)
 %
@@ -549,11 +579,8 @@ db_select_list_cmn(DB_Key, Functor, Weak, Fields, List,
 
 db_select_list_int(DB_Key, Functor, Weak, Fields, List, Ctx) :-
 
-   findall(Values,
-           (   db_functor_des(DB_Key, Functor, Des, Ctx),
-               named_args_unify_int(DB_Key, Weak, Des, Fields,
-                                    Values, _)
-           ),
+   findall(Row,
+           db_select_int(DB_Key, Functor, Weak, Fields, Row, Ctx),
            List
           ).
 
