@@ -1,5 +1,9 @@
 :- module(citizen_v, []).
 
+% TODO
+% Class eval should be always coded with clpfd
+% to allow reverse class -> functor calculation
+% (e.g. in db_select/3).
 'citizen_v?'(Term, class, callup_v) :-
 
         obj_field(Term, sex, Sex),
