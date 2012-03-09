@@ -89,6 +89,7 @@ class_create(Class, Parent, Fields, New_Key) :-
    class_primary_id(Parent, Parent_Id),
    assert_new_class(Class, Parent_Id, Fields, Ctx),
    class_primary_id(Class, Class_Id),
+   % <NB> when New_Key = [] reset parent key (is it correct)?
    assert_new_key(Class_Id, New_Key_Set),
    assert_copy(Class_Id, Parent_Id).
 
