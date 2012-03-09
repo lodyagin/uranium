@@ -208,9 +208,42 @@ test(db_recorded5, [setup(db_clear(people))]) :-
    db_recorded(people, X), !,
    db_recorded(people, X).
 
+
 %test(db_rewrite1, [setup(model_db)]) :-
 
 %   db_rewrite(people, _, [weight, surname], _, [66, 'Kasperski'])
+
+test(db_select_list1,
+     [setup(model_db),
+      List =@= [[man_v, man, 'Adam', _, 73, _],
+                [man_v, woman, 'Eva', _, 64, _],
+                [citizen_v, man, 'Vladimir', 'Mayakovsky', _,
+                 ['Soviet Union']]]
+      ]) :-
+
+   db_select_list(people, _,
+                  [class, sex, name, surname, weight, country],
+                  List).
+
+test(db_select_list2,
+     [setup(model_db),
+      List =@= [[man_v, man, 'Adam', _, 73, _],
+                [man_v, woman, 'Eva', _, 64, _]]
+      ]) :-
+
+   db_select_list(people, man_v, _,
+                  [class, sex, name, surname, weight, country],
+                  List).
+
+test(db_select_list3,
+     [setup(model_db),
+      error(no_object_field(_, country))
+      ]) :-
+
+   db_select_list(people, man_v, throw,
+                  [class, sex, name, surname, weight, country],
+                  _).
+
 
 test(named_args_unify1, [setup(model_db)]) :-
 

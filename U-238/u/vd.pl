@@ -42,7 +42,9 @@
            db_iterate/4,  % +DB_Key, +Query, +Filter_Pred, -Object
            db_iterate_replace/3,  % +DB_Key, +Pred, +Query
            db_iterate_replace/4,  % +DB_Key, +Pred, +Query, +Filter
-           db_iterate_replace/5,  % +DB_Key, +Pred, +Query, +Filter_Pred, +Count
+           db_iterate_replace/5,  % +DB_Key, +Pred, +Query,
+                                  % +Filter_Pred, +Count
+           
            %db_merge/2,  % by key
            %db_merge/3,  % by custom values
            db_move_all_data/2,
@@ -57,14 +59,16 @@
 	   db_recorded/2,    % +DB_Key, ?Object
                              % -Object
            db_rewrite/5,     % +DB_Key, ?Functor, +Fields,
-                             % ?Old_Vals, +New_Vals
+                             % @Old_Vals, +New_Vals
            
            %db_reset/3,    % +DB_Key, +Fields, +Query
            %db_search/3,
            db_size/2,        % +DB_Key, ?Size
            db_to_list/3,     % +DB_Key, ?Functor, -List
-%           db_fields_to_list/4, % +DB_Key, ?Functor, +Fields, -List
-%           db_fields_to_list/5, % +DB_Key, @Weak, ?Functor, +Fields, -List
+           db_select_list/4, % +DB_Key, ?Functor, +Fields, -List
+           db_select_list/5, % +DB_Key, ?Functor, ?Weak, +Fields,
+                             % -List
+           
            dump_db/1,  % +DB_Key
            dump_db/2,   % +Options, +DB_Key
 %           filter_on_db/3,
@@ -393,7 +397,7 @@ db_recorded(DB_Key, Object) :-
    ),
    db_recorded_int(DB_Key, Object).
 
-% db_rewrite(+DB_Key, ?Functor, +Fields, ?Old_Vals, +New_Vals)
+% db_rewrite(+DB_Key, ?Functor, +Fields, @Old_Vals, +New_Vals)
 %
 % Change fields in all objects unified with Old_Vals
 
@@ -414,22 +418,19 @@ db_rewrite(DB_Key, Functor, Fields, Old_Vals, New_Vals) :-
 
 db_rewrite_int(DB_Key, Functor, Fields, Old_Vals, New_Vals,
                Ctx) :-
-
-  nonvar(Functor), !,
-
-  Des = db_class_des(_, _, Functor, _, _, _),
-  db_des(DB_Key, Des),
-  
-  (   named_args_unify_int(DB_Key, throw, Des, Fields, Old_Vals,
-                           Obj0),
-      arg(1, Obj0, Class_Id),
-      
-      obj_rewrite_int(Class_Id, Obj0, Fields, Old_Vals, New_Vals,
-                      Obj1, Ctx),
-      db_put_object_int(DB_Key, Class_Id, _, Obj1, _, replaced,
-                        Ctx),
-      fail ; true
-  ).
+   
+   db_functor_des(DB_Key, Functor, Des, Ctx),
+   
+   (   named_args_unify_int(DB_Key, throw, Des, Fields, Old_Vals,
+                            Obj0),
+       arg(1, Obj0, Class_Id),
+       
+       obj_rewrite_int(Class_Id, Obj0, Fields, Old_Vals, New_Vals,
+                       Obj1, Ctx),
+       db_put_object_int(DB_Key, Class_Id, _, Obj1, _, replaced,
+                         Ctx),
+       fail ; true
+   ).
   
   
 
@@ -505,45 +506,56 @@ db_to_list(DB_Key, Functor, List) :-
          List
         ).
 
-% % db_fields_to_list(+DB_Key, ?Functor, +Fields, -List)
-% %
-% % Generate list of lists of selected fields
+% db_select_list(+DB_Key, ?Functor, +Fields, -List)
+%
+% Generate list of lists of selected fields
 
-% db_fields_to_list(DB_Key, Functor, Fields, List) :-
+db_select_list(DB_Key, Functor, Fields, List) :-
 
-%    Ctx = context(db_fields_to_list/4, _),
-%    db_fields_to_list_cmn(DB_Key, throw, Functor, Fields, List,
-%                          Ctx). 
+   Ctx = context(db_select_list/4, _),
+   % <NB> weak is default
+   % (to mix class with all descendants in a request)
+   db_select_list_cmn(DB_Key, Functor, weak, Fields, List,
+                         Ctx). 
 
-% % db_fields_to_list(+DB_Key, @Weak, ?Functor, +Fields, -List)
-% %
+% db_select_list(+DB_Key, ?Functor, ?Weak, +Fields, -List)
+%
 
-% db_fields_to_list(DB_Key, Weak, Functor, Fields, List) :-
+db_select_list(DB_Key, Functor, Weak, Fields, List) :-
 
-%    Ctx = context(db_fields_to_list/5, _),
-%    db_fields_to_list_cmn(DB_Key, Weak, Functor, Fields, List,
-%                          Ctx). 
+   Ctx = context(db_select_list/5, _),
+   db_select_list_cmn(DB_Key, Functor, Weak, Fields, List,
+                         Ctx). 
 
-% db_fields_to_list_cmn(DB_Key, Weak, Functor, Fields, List,
-%                       Ctx):-
+db_select_list_cmn(DB_Key, Functor, Weak, Fields, List,
+                      Ctx):-
 
-%    check_inst(Fields, Ctx),
-%    check_db_key(DB_Key, Ctx),
+   check_inst(Fields, Ctx),
+   check_db_key(DB_Key, Ctx),
    
-%    decode_arg([[throw, _, throws, strict, s],
-%                [unbound, weak, w],
-%                [fail, false, f]],
-%               Weak, Weak1,
-%               Ctx),
+   decode_arg([[throw, throws, strict, s],
+               [weak, _, unbound, w],
+               [fail, false, f]],
+              Weak, Weak1,
+              Ctx),
    
-%    (   var(Functor) -> true
-%    ;   check_class_arg(Functor, Ctx)
-%    ),
-%    check_fields_arg(Fields, Ctx),
+   (   var(Functor) -> true
+   ;   check_class_arg(Functor, Ctx)
+   ),
+   check_fields_arg(Fields, Ctx),
 
-%    bagof(Values,
-%          named_args_unify_int(DB_Key, Weak, 
-%    ).
+   db_select_list_int(DB_Key, Functor, Weak1, Fields, List, Ctx).
+
+
+db_select_list_int(DB_Key, Functor, Weak, Fields, List, Ctx) :-
+
+   findall(Values,
+           (   db_functor_des(DB_Key, Functor, Des, Ctx),
+               named_args_unify_int(DB_Key, Weak, Des, Fields,
+                                    Values, _)
+           ),
+           List
+          ).
 
 %
 % DB search
@@ -927,3 +939,4 @@ db_object_class(DB_Key, Class) :-
    class_id(Class_Id, Class).
 
 
+:- initialization check_arg:clear_decode_arg.
