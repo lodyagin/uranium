@@ -242,6 +242,13 @@ db_put_object(DB_Key, Option, Object0, Object, Replaced) :-
    db_put_object_cmn(DB_Key, Option, _, Object0, Object, Replaced,
                      Ctx).
 
+% db_recorda(+DB_Key, +Object)
+%
+% Put object before others objects of the same class
+%
+% <NB> the order is warranteed only between objects of the same
+% class
+
 db_recorda(DB_Key, Object) :-
 
    Ctx = context(db_recorda/2, _),

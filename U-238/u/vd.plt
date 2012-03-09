@@ -66,10 +66,14 @@ test(db_to_list, [setup(model_db)]) :-
    length(L3, N3),
    assertion(N3 =:= 3).
 
-test(db_put_object1, [setup(model_db)]) :-
+test(db_put_object1,
+     [setup(model_db),
+      List == [['Adam'], ['Eva'], ['Moses'], ['Vladimir']]
+      ]) :-
 
    obj_construct(man_v, [name], ['Moses'], Man),
-   db_put_object(people, Man).
+   db_put_object(people, Man),
+   db_select_list(people, _, [name], List).
 
 test(db_put_object2, [setup(model_db)]) :-
 
@@ -141,7 +145,16 @@ test(db_put_object8,
    obj_construct(man_v, [name], ['Simeon'], Man),
    db_put_object(people2, _, Man, _, replaced).
    % does not replace because of not db_object_v descendant
-  
+
+test(db_recorda1,
+     [setup(model_db),
+      List == [['Moses'], ['Adam'], ['Eva'], ['Vladimir']]
+      ]) :-
+
+   obj_construct(man_v, [name], ['Moses'], Man),
+   db_recorda(people, Man),
+   db_select_list(people, _, [name], List).
+
 test(db_put_objects,
     [setup(db_clear(people)),
      DB_Size =:= 3]
