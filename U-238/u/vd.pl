@@ -49,13 +49,21 @@
            %db_merge/3,  % by custom values
            db_move_all_data/2,
            db_object_class/2, % +DB_Key, -Class
+
            db_put_object/2,  % +DB_Key, +Object
            db_put_object/3,  % +DB_Key, +Object0, -Object
            db_put_object/4,  % +DB_Key,+Options,+Object0,-Object
            db_put_object/5,  % +DB_Key,+Options,+Object0,-Object,
                              % -Replaced
            
+           db_recorda/2,     % +DB_Key, +Object
+           db_recorda/3,     % +DB_Key, +Object0, -Object
+           db_recorda/4,     % +DB_Key,+Options,+Object0,-Object
+           db_recorda/5,     % +DB_Key,+Options,+Object0,-Object,
+                             % -Replaced
+           
            db_put_objects/3, % +DB_Key, :Pred, +Options
+
 	   db_recorded/2,    % +DB_Key, ?Object
                              % -Object
            db_rewrite/5,     % +DB_Key, ?Functor, +Fields,
@@ -128,7 +136,8 @@ db_construct2(DB_Key, Class, Fields, Values, Obj, Ctx) :-
    check_values_arg(Fields, Values, Ctx),
 
    obj_construct_int(Class_Id, Fields, throw, Values, Tmp),
-   db_put_object_int(DB_Key, Class_Id, _, Tmp, Obj, false, Ctx).
+   db_put_object_int(DB_Key, Class_Id, _, _, Tmp, Obj, false,
+                     Ctx).
 
 
 db_copy(DB_In, DB_Out) :-
@@ -141,7 +150,7 @@ db_copy(DB_In, DB_Out) :-
                        [db_key, db_ref], _,
                        [_, _], Obj1, Ctx),
        
-       db_put_object_int(DB_Out, Class_Id, _, Obj1, _, false,
+       db_put_object_int(DB_Out, Class_Id, _, _, Obj1, _, false,
                          Ctx),
        fail
    ;
@@ -194,7 +203,7 @@ db_bind_obj(DB_Key, w(Ref0, Object0), w(Ref, Object)) :- !,
 db_put_object(DB_Key, Object) :-
 
    Ctx = context(db_put_object/2, _),
-   db_put_object_cmn(DB_Key, _, Object, _, false, Ctx).
+   db_put_object_cmn(DB_Key, _, _, Object, _, false, Ctx).
 
 % db_put_object(+DB_Key, +Object0, -Object)
 %
@@ -203,7 +212,7 @@ db_put_object(DB_Key, Object) :-
 db_put_object(DB_Key, Object0, Object) :-
 
    Ctx = context(db_put_object/3, _),
-   db_put_object_cmn(DB_Key, _, Object0, Object, false, Ctx).
+   db_put_object_cmn(DB_Key, _, _, Object0, Object, false, Ctx).
 
 
 % db_put_object(+DB_Key, +Option, +Object0, -Object)
@@ -218,7 +227,8 @@ db_put_object(DB_Key, Object0, Object) :-
 db_put_object(DB_Key, Option, Object0, Object) :-
 
    Ctx = context(db_put_object/4, _),
-   db_put_object_cmn(DB_Key, Option, Object0, Object, false, Ctx).
+   db_put_object_cmn(DB_Key, Option, _, Object0, Object, false,
+                     Ctx).
 
 % db_put_object(+DB_Key, +Option, +Object0, -Object, -Replaced)
 %
@@ -229,11 +239,36 @@ db_put_object(DB_Key, Option, Object0, Object) :-
 db_put_object(DB_Key, Option, Object0, Object, Replaced) :-
 
    Ctx = context(db_put_object/5, _),
-   db_put_object_cmn(DB_Key, Option, Object0, Object, Replaced,
+   db_put_object_cmn(DB_Key, Option, _, Object0, Object, Replaced,
                      Ctx).
 
-db_put_object_cmn(DB_Key, Option, Object0, Object, Replaced,
-                  Ctx) :-
+db_recorda(DB_Key, Object) :-
+
+   Ctx = context(db_recorda/2, _),
+   db_put_object_cmn(DB_Key, _, recorda, Object, _, false, Ctx).
+
+db_recorda(DB_Key, Object0, Object) :-
+
+   Ctx = context(db_recorda/3, _),
+   db_put_object_cmn(DB_Key, _, recorda, Object0, Object, false,
+                     Ctx).
+
+db_recorda(DB_Key, Option, Object0, Object) :-
+
+   Ctx = context(db_recorda/4, _),
+   db_put_object_cmn(DB_Key, Option, recorda, Object0, Object,
+                     false, Ctx).
+
+db_recorda(DB_Key, Option, Object0, Object, Replaced) :-
+
+   Ctx = context(db_recorda/5, _),
+   db_put_object_cmn(DB_Key, Option, _, Object0, Object, Replaced,
+                     Ctx).
+
+
+
+db_put_object_cmn(DB_Key, Option, Order, Object0, Object,
+                  Replaced, Ctx) :-
 
    check_db_key(DB_Key, Ctx),
    check_inst(Object0, Ctx),
@@ -245,9 +280,13 @@ db_put_object_cmn(DB_Key, Option, Object0, Object, Replaced,
                [fail],
                [throw], [throws]],
               Option, Option1, Ctx),
+
+   decode_arg([[recordz, _, z],
+               [recorda, a]],
+              Order, Order1, Ctx),
    
-   db_put_object_int(DB_Key, Class_Id, Option1, Object0, Object,
-                     Replaced, Ctx).
+   db_put_object_int(DB_Key, Class_Id, Option1, Order1, Object0,
+                     Object, Replaced, Ctx).
 
 
 handle_key_dup(Option, DB_Key, Class_Id, DB_Object, New_Object) :-
@@ -268,10 +307,10 @@ handle_key_dup(overwrite, DB_Key, Class_Id, _, New_Object) :-
    erase_conflicts(DB_Key, Class_Id, New_Object), !.
 
 
-%db_put_object_int(+DB_Key, +Class_Id0,?Option, +Object0, -Object,
-%                  -Replaced, +Ctx)
-db_put_object_int(DB_Key, Class_Id0, Option, Object0, Object,
-                  Replaced, Ctx) :-
+%db_put_object_int(+DB_Key, +Class_Id0, ?Option, ?Order,
+%                  +Object0, -Object, -Replaced, +Ctx)
+db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
+                  Object, Replaced, Ctx) :-
 
    % Rebase if needed
 
@@ -356,7 +395,7 @@ db_put_object_int(DB_Key, Class_Id0, Option, Object0, Object,
    % Put in db
    (  \+ Continue -> true
    ;
-      db_recordz_int(DB_Key, Object)
+      db_record_int(DB_Key, Order, Object, Ctx)
    ).
 
 db_singleton_hook(DB_Key, Class_Id, DB_Singleton) :-

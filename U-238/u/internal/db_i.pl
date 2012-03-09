@@ -37,7 +37,7 @@
            db_key_policy/3,  % +DB_Key, -Old, ?New
            db_object_class_int/2,
            db_recorded_int/2,
-           db_recordz_int/2,
+           db_record_int/4,  % +DB_Key, +Order, +Object, +Ctx
            erase_conflicts/3,
            key_conflict/4,
            named_args_unify_int/6,
@@ -50,7 +50,7 @@
 :- use_module(u(v)).
 
 :- multifile prolog:message/3.
-:- multifile db_recorded_int/2, db_erase_int/1, db_recordz_int/2.
+:- multifile db_recorded_int/2, db_erase_int/1, db_record_int/4.
 
 db_des(DB_Key, Des) :-
 
@@ -319,14 +319,14 @@ db_recorded_int(DB_Key, L_Object) :-
     call_db_pred(DB_Ref, erase, []).
 */
 
-% db_recordz_int(+DB_Key, +Object)
+% db_record_int(+DB_Key, +Order, +Object, +Ctx)
 %
 % Set db_ref (and db_key if it is unbound) in Object
+% Order = recordz | recorda
 
-db_recordz_int(DB_Key, Object0) :-
+db_record_int(DB_Key, Order, Object0, Ctx) :-
 
     atom(DB_Key), !, % this is prolog DB version
-    Ctx = context(db_recordz_int/2, _),
     arg(1, Object0, Class_Id),
     obj_unify_int(Class_Id,
                   [db_key, db_ref], throw, Object0,
@@ -342,7 +342,10 @@ db_recordz_int(DB_Key, Object0) :-
 
     object_local_db(DB_Key, Object0, Object),
 
-    recordz(DB_Key, Object, DB_Ref).
+    (   Order = recordz
+    ->  recordz(DB_Key, Object, DB_Ref)
+    ;   recorda(DB_Key, Object, DB_Ref)
+    ).
 
 
 %object_local_db(+DB_Key, ?Local_Object, ?DB_Object)
