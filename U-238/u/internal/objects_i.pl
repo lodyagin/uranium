@@ -529,3 +529,4 @@ prolog:message(not_downcast(From_Class, To_Class)) -->
    ['~a -> ~a is not downcast' - [From_Class, To_Class]].
 
 
+:- initialization check_arg:clear_decode_arg.

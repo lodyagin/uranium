@@ -891,3 +891,5 @@ prolog:message(old_base_is_invalid(Old_Base, Orig_Id)) -->
 prolog:message(cant_rebase_to_object_base_v) -->
 
    ['Can\'t rebase to object_base_v'].
+
+:- initialization check_arg:clear_decode_arg.

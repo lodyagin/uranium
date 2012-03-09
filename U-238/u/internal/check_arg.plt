@@ -57,4 +57,23 @@ test(decode_arg6, [fail, setup(clear_decode_arg)]) :-
    decode_arg([[weak, true], [strict, false, fail]], weak, _,
               context(a/3)).
 
+test(decode_arg_bug1,
+     [setup(clear_decode_arg),
+      [Weak1, Weak2] == [weak, throw]
+      ]
+    ) :-
+
+      decode_arg([[throw, throws, strict, s],
+               [weak, _, unbound, w],
+               [fail, false, f]],
+              _, Weak1,
+              context(decode_arg_bug/0, _)),
+
+      decode_arg([[throw, throws, strict, s],
+               [weak, _, unbound, w],
+               [fail, false, f]],
+              throw, Weak2,
+              context(decode_arg_bug/0, _)).
+
+
 :- end_tests(check_arg).

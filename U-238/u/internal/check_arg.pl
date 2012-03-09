@@ -15,7 +15,7 @@
            check_rebase_rule/2,
 
            decode_arg/4,  % +Vals_LOL, +Arg_Val, -Result, +Ctx
-           clear_decode_arg
+           clear_decode_arg/0
            ]).
 
 :- use_module(objects_i).
@@ -132,6 +132,14 @@ check_rebase_rule(Rebase_Rule, Ctx) :-
    check_class_arg(New_Base, Ctx).
 
 
+% decode_arg(+Vals_LOL, +Arg_Val, -Result, +Ctx)
+%
+% Unify Result with first element of the Vals_LOL sublist
+% containing Arg_Val.
+%
+% <NB> All modules used this pred must call
+% check_arg:clear_decode_arg in the initialization section.
+
 decode_arg(Vals_LOL, Arg_Val, Result, Ctx) :-
 
    nonvar(Ctx),
@@ -142,7 +150,12 @@ decode_arg(Vals_LOL, Arg_Val, Result, Ctx) :-
    -> true
    ;  (  Vals_LOL = [_|_] % not empty list
       -> (  decode_arg_int(Vals_LOL, Arg_Val, Result0)
-         -> assertz(arg_decode(Pred_Name, Arity, Arg_Val,
+         -> (  nonvar(Arg_Val)
+            -> Arg_Val1 = Arg_Val
+            ;  Arg_Val1 = f(_)
+            % will not match with any arg but only with _
+            ),
+            assertz(arg_decode(Pred_Name, Arity, Arg_Val1,
                                Result0))
          ;  % make the domain and throw the error
             flatten(Vals_LOL, Domain),
