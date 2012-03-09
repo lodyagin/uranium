@@ -229,7 +229,7 @@ select_value(Selector, [Selector|SR], SR,
              [Value|VR], VR, Value) :-
 
    (   nonvar(VR) -> true
-   ;   length(SR, NR), length(VR, NR) % complete a partial list
+   ;   same_length(SR, VR) % complete a partial list
    ).
 
 select_value(Selector, [SH|ST], [SH|SR],
