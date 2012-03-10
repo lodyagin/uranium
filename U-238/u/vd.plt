@@ -530,8 +530,13 @@ test(db_singleton_v3_fail_ignore, [setup(db_clear(people))]) :-
                             [Name, Surname, Height], _),
            List1),
    assertion(List1 =@= [['Sergei', 'Lodyagin', _]]).
-   
-                
+
+
+test(rebase_collision_bug1, [blocked(till_future_version)]) :-
+
+   obj_construct(man_v, [], [], O0),
+   obj_rebase((object_v -> tarjan_vertex_v), O0, O),
+   db_put_object(people, O).
    
 model_db :-
 
