@@ -174,7 +174,7 @@ db_erase(Obj) :-
     ;   throw(error(domain_error(bound_db_ref, Obj),Ctx))
     ),
 
-   db_erase_int(DB_Key, DB_Ref).
+   db_erase_int(DB_Key, Obj).
 
 /*
 db_bind_obj(DB_Key, w(Ref0, Object0), w(Ref, Object)) :- !,
@@ -371,7 +371,7 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
 
    % Remove the old object first (before the key conflicts check)
    (  Replaced == replaced
-   -> db_erase_int(DB_Key, Old_DB_Ref)
+   -> db_erase_int(DB_Key, Object0)
    ;  true
    ),
    
@@ -762,9 +762,9 @@ db_move_all_data(From_DB, To_DB) :-
        arg(1, Record, Class_Id),
        db_put_object_int(To_DB, Class_Id, _, recordz, Record, _,
                          false, Ctx),
-       obj_field_int(Class_Id, db_ref, throw, Record, DB_Ref,
-                     _, Ctx),
-       db_erase_int(From_DB, DB_Ref),
+       %obj_field_int(Class_Id, db_ref, throw, Record, DB_Ref,
+       %              _, Ctx),
+       db_erase_int(From_DB, Record),
        fail
    ;
        true
