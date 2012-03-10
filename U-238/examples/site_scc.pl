@@ -14,7 +14,7 @@ site_scc(Url, Scc) :-
    db_clear(site_scc),
    tarjan(site_scc,
           page_v, http_request_url,
-          load_page, resolve_links,
+          load_page, resolve_links(site_scc),
           Start_Page,
           Scc).
 
@@ -23,10 +23,8 @@ load_page(Url, Page) :-
    click_url(Url, Page0),
    obj_rebase((object_v -> tarjan_vertex_v), Page0, Page).
 
-resolve_links(Page, Link_Urls) :-
+resolve_links(DB, Page, Link_Urls) :-
 
-   DB = 'site_scc#links_tmp',
-   db_clear(DB),
    html_page_parse(DB, Page, [local_link_v]),
    db_select_list(DB, local_link_v, [link_url], Links_Urls0),
    flatten(Links_Urls0, Link_Urls).
