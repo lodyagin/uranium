@@ -32,7 +32,8 @@
 :- use_module(u(v)).
 :- use_module(u(ur_url)).
 
-new_class(link_v, http_result_v, [link_url, text], [link_url]).
+new_class(link_v, http_result_v, [link_url, text],
+          [http_request_url, link_url]).
 
 new_class(local_link_v, link_v, []).
 

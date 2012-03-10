@@ -11,10 +11,11 @@ site_scc(Url, Scc) :-
 
    load_page(Url1, Start_Page),
 
-   db_clear(site_scc),
-   tarjan(site_scc,
+   db_clear(pages), db_clear(links),
+   
+   tarjan(pages,
           page_v, http_request_url,
-          load_page, resolve_links(site_scc),
+          load_page, resolve_links(links),
           Start_Page,
           Scc).
 
@@ -26,8 +27,12 @@ load_page(Url, Page) :-
 resolve_links(DB, Page, Link_Urls) :-
 
    html_page_parse(DB, Page, [local_link_v]),
-   db_select_list(DB, local_link_v, [link_url], Links_Urls0),
-   flatten(Links_Urls0, Link_Urls).
+   obj_field(Page, http_request_url, Page_Url),
+   findall(Link_Url,
+           db_select(DB, 
+                     [functor, http_request_url, link_url],
+                     [local_link_v, Page_Url, Link_Url]),
+           Link_Urls).
 
 
 
