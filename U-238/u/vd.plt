@@ -9,6 +9,23 @@ test(clear_test_db, [fail, setup(db_clear(people))]) :-
 
 	db_recorded(people, _).
 
+test(db_clear, [setup(model_db), List == []]) :-
+
+   reload_all_classes,
+
+   % clear all DBs with citizen_v
+   (  db_name(DB_Key),
+      (  named_args_unify(DB_Key, citizen_v, [], [], _)
+      -> db_clear(DB_Key)
+      ;  true
+      ),
+      fail ; true
+   ),
+   
+   findall(X,
+           (db_i:current_predicate(citizen_v, X), call(db_i:X)),
+           List).
+
 test(db_copy, [setup(model_db), N =:= 3]) :-
 
    db_copy(people, people2),
