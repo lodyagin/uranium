@@ -98,6 +98,33 @@ term_list_to_ixpath([T1|Tail], Head/T1) :-
    term_list_to_ixpath(Tail, Head).
 
 
+term_list_to_xpath([]) --> [].
+
+term_list_to_xpath([T1|Tail]) -->
+
+   "/", term_to_xpath(T1),
+   term_list_to_xpath(Tail).
+
+term_to_xpath(Term) -->
+
+   { atom(Term), !, atom_codes(Term, Codes) },
+   Codes.
+
+term_to_xpath(Term) -->
+
+   { Term =.. [Functor|Args], atom_codes(Functor, Codes) },
+   Codes, "[", args_to_xpath(Args), "]".
+
+args_to_xpath([Arg]) -->
+
+   { !, atom_codes(Arg, Codes) }, Codes.
+
+args_to_xpath([Arg|T]) -->
+
+   { atom_codes(Arg, Codes) },
+   Codes, ",",
+   args_to_xpath(T).
+
 % preprocess_expr(+Expr, +Orig, -Preprocessed_Expr)
 %
 % build
@@ -292,16 +319,28 @@ proc_option(vx, Path, Path_R, Result0, Result) :- !,
                  Result1),
    obj_downcast(Result1, Result).
 
+proc_option(vix, Path, Path_R, Result0, Result) :- !,
+   proc_option(ixpath(XPath), Path, Path_R, _, _),
+   obj_construct(html_piece_v,
+                 [dom, node_path, node_rpath, xpath],
+                 [Result0, Path, Path_R, XPath],
+                 Result1),
+   obj_downcast(Result1, Result).
+
 proc_option(tag_path(Tag_Path), Path, _, R, R) :- !,
    dom_tag_path(Path, Tag_Path).
 
 proc_option(tag_path_cnt(Tag_Path), Path, _, R, R) :- !,
    dom_tag_path_cnt(Path, Tag_Path).
 
-proc_option(xpath(XPath), _, Path_R, R, R) :- !,
+proc_option(xpath(XPath), Path, _, R, R) :- !,
+   dom_tag_path_cnt(Path, Term_List),
+   phrase(term_list_to_xpath(Term_List), XPath_Codes, []),
+   atom_codes(XPath, XPath_Codes).
+
+proc_option(ixpath(/XPath), _, Path_R, R, R) :- !,
    dom_tag_path_cnt(Path_R, Term_List),
-   term_list_to_ixpath(Term_List, IXPath),
-   ixpath_to_xpath(/IXPath, XPath).
+   term_list_to_ixpath(Term_List, XPath).
 
 proc_option(tag_attr_path(Attr_List, Tag_Attr_Path), Path, _,
             R, R) :- !,
