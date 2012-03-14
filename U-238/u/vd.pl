@@ -48,6 +48,7 @@
            %db_merge/2,  % by key
            %db_merge/3,  % by custom values
            db_move_all_data/2,
+           db_name/1,         % ?DB_Key
            db_object_class/2, % +DB_Key, -Class
 
            db_put_object/2,  % +DB_Key, +Object
@@ -769,6 +770,16 @@ db_move_all_data(From_DB, To_DB) :-
    ;
        true
    ).
+
+
+% db_name(?DB_Key)
+%
+% Iterate on over all DBs
+
+db_name(DB_Key) :-
+
+   db_name_int(DB_Key).
+
 
 % Get a number of recrods
 

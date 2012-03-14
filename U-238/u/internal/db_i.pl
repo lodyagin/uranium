@@ -35,6 +35,7 @@
            db_functor_des/4, % +DB_Key, ?Functor, -Des, +Ctx
            db_key_is_valid/1,
            db_key_policy/3,  % +DB_Key, -Old, ?New
+           db_name_int/1,    % ?DB_Key
            db_object_class_int/2,
            db_recorded_int/2,
            db_record_int/4,  % +DB_Key, +Order, +Object, +Ctx
@@ -106,6 +107,14 @@ db_key_policy(DB_Key, Old, New) :-
    ),
 
    assertz(db_key_policy(DB_Key, New)).
+
+% db_name_int(?DB_Key, +Ctx)
+
+db_name_int(DB_Key) :-
+
+   once((var(DB_Key) ; atom(DB_Key))),
+   db_next_class_id_(DB_Key, _).
+
 
 % DB maintain its own namespace of class ids
 
