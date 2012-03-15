@@ -28,8 +28,9 @@
            class_descendant/2,
            class_exists/1,
            class_fields_new/2,
-           class_fields/2,    %+Class, -Fields (ordset)
+           class_fields/2,    % +Class, -Fields (ordset)
            %class_field_type/3,
+           class_name/1,      % ?Class
            class_parent/2,
            eval_obj_expr/2,
 
@@ -606,6 +607,14 @@ class_descendant(Class, Descendant) :-
       class_id(Descendant_Id, Descendant)
    ).
 
+
+% class_name(?Class)
+%
+
+class_name(Class) :-
+   
+   objects:class_id(_, true, Class).
+           
 
 % class_parent(?Class, ?Parent)
 %
