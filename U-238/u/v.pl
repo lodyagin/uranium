@@ -904,6 +904,4 @@ prolog:message(cant_rebase_to_object_base_v) -->
 
    ['Can\'t rebase to object_base_v'].
 
-:- initialization check_arg:clear_decode_arg,
-                  reload_all_classes.
-
+:- initialization check_arg:clear_decode_arg.
