@@ -31,6 +31,7 @@
 :- use_module(library(debug)).
 :- use_module(library(error)).
 :- use_module(u(internal/check_arg)).
+:- use_module(u(internal/decode_arg)).
 :- use_module(u(v)).
 :- use_module(u(vd)).
 

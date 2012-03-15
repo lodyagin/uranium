@@ -92,6 +92,7 @@
 :- use_module(library(lists)).
 :- use_module(library(error)).
 :- use_module(u(internal/check_arg)).
+:- use_module(u(internal/decode_arg)).
 :- use_module(u(internal/db_i)).
 :- use_module(u(internal/objects_i)).
 :- use_module(u(v)).
@@ -1024,4 +1025,4 @@ db_object_class(DB_Key, Class) :-
    class_id(Class_Id, Class).
 
 
-:- initialization check_arg:clear_decode_arg.
+:- initialization clear_decode_arg.

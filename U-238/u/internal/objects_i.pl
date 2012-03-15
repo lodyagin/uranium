@@ -66,7 +66,7 @@
 :- use_module(library(error)).
 :- use_module(library(pairs)).
 :- use_module(u(ur_lists)).
-:- use_module(u(internal/check_arg)).
+:- use_module(u(internal/decode_arg)).
 
 :- multifile prolog:message/3.
 
@@ -529,4 +529,4 @@ prolog:message(not_downcast(From_Class, To_Class)) -->
    ['~a -> ~a is not downcast' - [From_Class, To_Class]].
 
 
-:- initialization check_arg:clear_decode_arg.
+:- initialization clear_decode_arg.
