@@ -296,5 +296,3 @@ find_class_module(Module_Path) :-
      ; sub_atom(Module_Path, _, _, _, 'HIDE/')
      ).
 
-:- initialization reload_all_classes.
-
