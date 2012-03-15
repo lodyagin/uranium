@@ -1,5 +1,5 @@
-:- begin_tests(check_arg).
-:- use_module(u(internal/check_arg)).
+:- begin_tests(decode_arg).
+:- use_module(u(internal/decode_arg)).
 
 
 test(decode_arg1, [setup(clear_decode_arg)]) :-
@@ -94,4 +94,4 @@ test(decode_arg_bug1_2,
               context(decode_arg_bug/0, _)).
 
 
-:- end_tests(check_arg).
+:- end_tests(decode_arg).
