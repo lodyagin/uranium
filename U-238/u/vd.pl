@@ -83,9 +83,10 @@
            dump_db/2,   % +Options, +DB_Key
 %           filter_on_db/3,
 
-           named_args_unify/5 % +DB_Key, ?Functor, +Field_Names,
+           named_args_unify/5, % +DB_Key, ?Functor, +Field_Names,
                               % ?Values, -Term
 
+           prolog:message//1
            ]).
 
 :- use_module(library(lists)).
@@ -737,7 +738,7 @@ parse_db_query(DB_Key, true, Des, [], []) :- !,
 %parse_db_query(DB_Key, functor(Class), Des, [], []) :- !,
 
    % check_class_arg
-%   Des = db_class_des(_, _, Class, _, _, _),
+%   Des = db_class_des(_, _, Class, _, _, _, _),
 %   db_des(DB_Key, Des).
 
 parse_db_query(DB_Key, Expr, Des, [Field], [Value]) :-
@@ -745,7 +746,7 @@ parse_db_query(DB_Key, Expr, Des, [Field], [Value]) :-
    functor(Expr, Field, 1), !,
    arg(1, Expr, Value),
    
-   %Des = db_class_des(_, _, _, _, DB_Fields, _),
+   %Des = db_class_des(_, _, _, _, DB_Fields, _, _),
    db_des(DB_Key, Des).
 
    % only those classes which contain Field
@@ -1010,7 +1011,7 @@ named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
        db_functor_des(DB_Key, Functor, Des, Ctx),
 
        % check fields compatibility
-       Des = db_class_des(_, _, _, _, DB_Fields, _),
+       Des = db_class_des(_, _, _, _, DB_Fields, _, _),
        ord_subset(Req_Fields, DB_Fields),
 
        named_args_unify_int(DB_Key, throw, Des, Field_Names,

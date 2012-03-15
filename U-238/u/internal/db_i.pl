@@ -42,19 +42,19 @@
            erase_conflicts/3,
            key_conflict/4,
            named_args_unify_int/6,
-           prolog:message/3
+           prolog:message//1
            ]).
 
 :- use_module(library(ordsets)).
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/db_vocab)).
-:- use_module(u(v)).
+%:- use_module(u(v)).
 
 :- multifile prolog:message/3.
 :- multifile db_recorded_int/2, db_erase_int/2, db_record_int/4.
 
-:- dynamic db_class_des/7,     % DB_Class_Id, DB_Parent_Class_Id,
-                               % Name, Arity, Fields, Key
+:- dynamic db_class_des/8,     % DB_Class_Id, DB_Parent_Class_Id,
+                               % Name, Arity, Fields, Key, Parents
            db_key_policy/2,
            db_next_class_id_/2,
            db_keymaster/2.     % DB_Key, DB_Class_Id
@@ -62,8 +62,8 @@
 db_des(DB_Key, Des) :-
 
    atom(DB_Key), !,
-   Des = db_class_des(A, B, C, D, E, F),
-   db_class_des(DB_Key, A, B, C, D, E, F).
+   Des = db_class_des(A, B, C, D, E, F, G),
+   db_class_des(DB_Key, A, B, C, D, E, F, G).
 
 % db_functor_des(+DB_Key, ?Functor, -Des, +Ctx)
 % nondet
@@ -74,7 +74,7 @@ db_functor_des(DB_Key, Functor, Des, Ctx) :-
 
    % TODO UT on different rebased versions with the same functor
    % <NB> the class Functor can not be defined locally
-   Des = db_class_des(_, _, Functor, _, _, _),
+   Des = db_class_des(_, _, Functor, _, _, _, _),
    db_des(DB_Key, Des),
 
    % check the Functor as a correct class name
@@ -121,7 +121,7 @@ db_name_int(DB_Key) :-
 % DB service predicates:
 %
 % db_class_des(DB_Class_Id, DB_Parent_Class_Id,
-%              Name, Arity, Fields, Key)
+%              Name, Arity, Fields, Key, Parents)
 % db_next_class_id(Id).
 
 db_erase_int(DB_Key, Object) :-
@@ -159,10 +159,11 @@ db_add_class(DB_Key, Local_Id, DB_Id, Des) :-
    class_all_fields(Local_Id, Fields),
    get_key(Local_Id, Key),
    class_id(Local_Id, Class),
+   list_inheritance(Local_Id, Parents),
    assertz(db_class_des(DB_Key, DB_Id, DB_Parent_Id, Class, Arity,
-                        Fields, Key)),
+                        Fields, Key, Parents)),
    Des = db_class_des(DB_Id, DB_Parent_Id, Class, Arity, Fields,
-                      Key),
+                      Key, Parents),
    dynamic(Class/Arity),
 
    % Parents are added before children.
@@ -186,10 +187,10 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
    !,
    (   DB_Class_Id =:= 1
    ->  % object_v is not stored in db
-       Des = db_class_des(1, 0, object_v, 0, [], [])
+       Des = db_class_des(1, 0, object_v, 0, [], [], [0, 1])
    ;
-       db_class_des(DB_Key, DB_Class_Id, A, B, C, D, E), !,
-       Des = db_class_des(DB_Class_Id, A, B, C, D, E)
+       db_class_des(DB_Key, DB_Class_Id, A, B, C, D, E, F), !,
+       Des = db_class_des(DB_Class_Id, A, B, C, D, E, F)
    ).
 
 %db_conv_local_db(+DB_Key, ?(+)Local_Class_Id, ?(-)DB_Class_Id,
@@ -203,23 +204,31 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
        Class = object_v
    ->
        DB_Class_Id = 1,  % DB_Class_Id for object_v is always 1
-       Des = db_class_des(1, 0, object_v, 0, [], [])
+       Des = db_class_des(1, 0, object_v, 0, [], [], [0, 1])
    ;
        (   db_class_des(DB_Key, DB_Class_Id, A1, Class, A2,
-                        DB_Fields, A3)
+                        DB_Fields, A3, DB_Parents)
        ->  % a descriptor of this class is already in db
 
-           (   db_local_db_compare_class(Local_Class_Id,
-					 DB_Fields,
-					 Local_Fields)
+           list_inheritance(Local_Class_Id, Local_Parents),
+           (   Local_Parents == DB_Parents
+           ->  true
+           ;
+               print_message(warning,
+                             class_parents_mismatch(DB_Key, Class,
+                                   Local_Parents, DB_Parents)),
+               fail
+           ),
+           class_all_fields(Local_Class_Id, Local_Fields),
+           (   Local_Fields == DB_Fields
 	   ->  true
-	   ;   class_all_fields(Local_Class_Id, Local_Fields),
+	   ;   
 	       throw(error(class_fields_mismatch(
 	          DB_Key, Class, Local_Fields, DB_Fields)))
 	   ),
 
            Des = db_class_des(DB_Class_Id, A1, Class, A2,
-			      DB_Fields, A3)
+			      DB_Fields, A3, DB_Parents)
        ;
            db_add_class(DB_Key, Local_Class_Id, DB_Class_Id, Des)
        )
@@ -231,14 +240,15 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
    var(Local_Class_Id), integer(DB_Class_Id), !,
 
    (   DB_Class_Id =:= 1,   % object_v
-       Des = db_class_des(DB_Key, 1, 0, object_v, 0, [], [])
+       Des = db_class_des(DB_Key, 1, 0, object_v, 0, [], [],
+                          [0, 1])
    ->  class_primary_id(object_v, Local_Class_Id)
    ;   Des = db_class_des(DB_Class_Id, DB_Parent_Id, Class, DBF1,
-		       DB_Fields, DBF2),
+		       DB_Fields, DBF2, DB_Parents),
        !,
 
        (   db_class_des(DB_Key, DB_Class_Id, DB_Parent_Id, Class,
-                        DBF1, DB_Fields, DBF2)
+                        DBF1, DB_Fields, DBF2, DB_Parents)
        -> true
        ;   throw(error(invalid_db_class_id(DB_Key,
 					   DB_Class_Id)))
@@ -247,8 +257,31 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
        class_id(Local_Class_Id, Class), % try next class id
 
        % check class compatibility (can BT to next local id)
-       db_local_db_compare_class(Local_Class_Id, DB_Fields,
-				 _),
+       list_inheritance(Local_Class_Id, Local_Parents),
+       (   Local_Parents == DB_Parents
+       ->  true
+       ;
+           (   %try rebasing
+               db_rebase(Local_Parents, DB_Parents)
+           ->  true
+           ;
+               print_message(warning,
+                             class_parents_mismatch(DB_Key, Class,
+                                Local_Parents, DB_Parents)),
+               fail
+           )
+       ),
+       class_all_fields(Local_Class_Id, Local_Fields),
+       (   Local_Fields == DB_Fields
+       ->  true
+       ;
+           print_message(warning,
+                         class_fields_mismatch(DB_Key, Class,
+                            Local_Fields, DB_Fields)),
+           fail
+       ),
+
+       %FIXME on fail prev pred make the appropriate rebasing here
 
        % Check the parent
        db_conv_local_db(DB_Key, _, DB_Parent_Id, _),
@@ -257,22 +290,21 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
    db_vocab_local_db_add(DB_Key, Local_Class_Id, DB_Class_Id).
 
 
-%db_local_db_compare_class(+Local_Class_Id, +DB_Fields,
-%		          -Local_Fields)
-% Compare local and db class
-% Fail if mismatch
-db_local_db_compare_class(Local_Class_Id, DB_Fields,
-			  Local_Fields)
-:-
+db_rebase(Parents, Parents) :- !.
 
-   class_all_fields(Local_Class_Id, Local_Fields),
-   Local_Fields == DB_Fields.
+db_rebase([Parent|LPT], [Parent|DBPT]) :- !,
 
+   db_rebase(LPT, DBPT).
+
+
+
+   
+   
 
 db_clear_int(DB_Key) :-
 
    atom(DB_Key), !,
-   (  db_des(DB_Key, db_class_des(DB_Id, _, _, _, _, _)),
+   (  db_des(DB_Key, db_class_des(DB_Id, _, _, _, _, _, _)),
       db_conv_local_db(DB_Key, Local_Id, DB_Id, _),
       obj_construct_int(Local_Id, [], throw, [], Obj0),
       object_local_db(DB_Key, Obj0, Obj),
@@ -282,7 +314,7 @@ db_clear_int(DB_Key) :-
    retractall(db_key_policy(DB_Key, _)),
    retractall(db_next_class_id_(DB_Key, _)),
    retractall(db_keymaster(DB_Key, _)),
-   retractall(db_class_des(DB_Key, _, _, _, _, _, _)),
+   retractall(db_class_des(DB_Key, _, _, _, _, _, _, _)),
    db_vocab_clear(DB_Key).
 
 %db_object_class_int(+DB_Key, -Local_Class_Id)
@@ -290,7 +322,7 @@ db_clear_int(DB_Key) :-
 db_object_class_int(DB_Key, Local_Class_Id) :-
 
    atom(DB_Key), !,
-   db_class_des(DB_Key, DB_Class_Id, _, _, _, _, _),
+   db_class_des(DB_Key, DB_Class_Id, _, _, _, _, _, _),
    db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, _).
 
 % db_recorded_int(+DB_Key, ?L_Object)
@@ -334,7 +366,7 @@ db_recorded_int(DB_Key, L_Object) :-
     Ctx = context(db_recorded_int/2, _),
 
     % BT on all classes
-    db_class_des(DB_Key, DB_Class_Id, _, Class, Arity, _, _),
+    db_class_des(DB_Key, DB_Class_Id, _, Class, Arity, _, _, _),
 
     % BT on all class records
     functor(DB_Object0, Class, Arity),
@@ -416,7 +448,7 @@ object_local_db(DB_Key, Local_Object, DB_Object) :-
     arg(1, Local_Object, Local_Class_Id),
     db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id,
 		     Des),
-    Des = db_class_des(_, _, Class, _, Fields, _),
+    Des = db_class_des(_, _, Class, _, Fields, _, _),
 
     % replace the id
     obj_unify_int(Local_Class_Id, Fields, throw,
@@ -437,7 +469,7 @@ object_local_db(DB_Key, Local_Object, DB_Object) :-
 		     Des),
     class_id(Local_Class_Id, Class),%get the local class name
 
-    Des = db_class_des(_, _, _, _, Fields, _),
+    Des = db_class_des(_, _, _, _, Fields, _, _),
 
     % replace the id
     % <NB> DB_Object should be field-compatible with Local_Object
@@ -526,7 +558,7 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
    same_or_descendant(Key_Class_Id, false, Class_Id),
    % false means test all rebased classes as well
 
-   Des = db_class_des(_, _, _, _, _, Key),
+   Des = db_class_des(_, _, _, _, _, Key, _),
    obj_unify_int(Class_Id, Key, throw, Object, Key_Value, Ctx),
    copy_term_nat(Key_Value, Test_Value),
    named_args_unify_int(DB_Key, throw, Des, Key, Test_Value,
@@ -537,7 +569,7 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
 named_args_unify_int(DB_Key, Option, Des, Field_Names, Values,
                      Term) :-
 
-   Des = db_class_des(DB_Class_Id, _, _, _, _, _),
+   Des = db_class_des(DB_Class_Id, _, _, _, _, _, _),
    db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, _),
    % now the class is definitly loaded
 
@@ -585,7 +617,20 @@ prolog:message(class_fields_mismatch(DB_Key, Class, Local, DB))
 
    ['The DB ~a has another fields for the class ~a~n'
     - [DB_Key, Class]],
-   ['our fields: ~w ~ndb fields: ~w' - [Local, DB]].
+   ['our fields: ~w ~ndb  fields: ~w' - [Local, DB]].
+
+prolog:message(class_parents_mismatch(DB_Key, Class, Local, DB))
+-->
+
+   {
+     maplist(class_id, Local, Local_Names),
+     maplist(class_id, DB, DB_Names)
+   },
+   
+   ['The DB ~a has another parents for the class ~a~n'
+    - [DB_Key, Class]],
+   ['our parents: ~w ~ndb  parents: ~w'
+   - [Local_Names, DB_Names]].
 
 prolog:message(invalid_db_class_id(DB_Key, DB_Class_Id)) -->
 
