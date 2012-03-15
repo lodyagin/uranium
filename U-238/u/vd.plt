@@ -11,7 +11,10 @@ test(clear_test_db, [fail, setup(db_clear(people))]) :-
 
 test(db_clear, [setup(model_db), List == []]) :-
 
+   current_prolog_flag(verbose, Old_Verbose),
+   set_prolog_flag(verbose, silent),
    reload_all_classes,
+   set_prolog_flag(verbose, Old_Verbose),
 
    % clear all DBs with citizen_v
    (  db_name(DB_Key),
