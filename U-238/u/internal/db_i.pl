@@ -48,7 +48,7 @@
 :- use_module(library(ordsets)).
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/db_vocab)).
-%:- use_module(u(v)).
+:- use_module(u(v)).
 
 :- multifile prolog:message/3.
 :- multifile db_recorded_int/2, db_erase_int/2, db_record_int/4.

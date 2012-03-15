@@ -24,7 +24,6 @@
 :- use_module(library(error)).
 :- use_module(objects_i).
 :- use_module(db_i).
-:- use_module(u(ur_lists)).
 
 check_inst(Arg, Ctx) :-
 

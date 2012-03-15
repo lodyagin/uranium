@@ -4,6 +4,8 @@
            clear_decode_arg/0
           ]).
 
+:- use_module(u(ur_lists)).
+
 :- dynamic arg_decode/4.
 
 % decode_arg(+Vals_LOL, +Arg_Val, -Result, +Ctx)

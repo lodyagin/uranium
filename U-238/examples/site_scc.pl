@@ -1,5 +1,7 @@
 :- module(site_scc, [site_scc/2]).
 
+:- use_module(u(v)).
+:- use_module(u(vd)).
 :- use_module(u(algorithm/tarjan)).
 :- use_module(u(ur_url)).
 :- use_module(u(action/click_url)).

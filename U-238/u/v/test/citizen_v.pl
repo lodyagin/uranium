@@ -1,5 +1,7 @@
 :- module(citizen_v, []).
 
+:- use_module(u(v)).
+
 % TODO
 % Class eval should be always coded with clpfd
 % to allow reverse class -> functor calculation
