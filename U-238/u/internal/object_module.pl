@@ -205,7 +205,6 @@ reload_all_classes :-
    abolish(objects:copy/4),
    abolish(objects:downcast/4),
    abolish(objects:field/7),
-   %abolish(objects:fields/3),
    abolish(objects:key/3),
    abolish(objects:module/2),
    abolish(objects:module_class_def/3),
@@ -217,6 +216,7 @@ reload_all_classes :-
    abolish(db_pg:pl_pg_type/3),
 
    % Assert definitions for object_base_v
+   objects:assertz(arity(0, 0)),
    objects:assertz(class_id(0, true, object_base_v)),
    objects:assertz(parent(0, -1)),
    objects:assertz(typedef_flag(hidden, object_base_v)),
