@@ -27,6 +27,7 @@
           [reload_all_classes/0
            ]).
 
+:- use_module(u(internal/objects)).
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/class_create)).
 :- use_module(u(internal/db_vocab)).
@@ -49,15 +50,22 @@ all_classes(All_Classes) :-
      (  current_module(Main_Class),
         u_class(Main_Class),
         module_property(Main_Class, file(Module_File)),
-        objects:assertz(module(Main_Class, Module_File)),
+        assertz(objects:module(Main_Class, Module_File)),
+        debug(classes,
+              'assertz(objects:module(~a, ~a))',
+              [Main_Class, Module_File]
+             ),
         module_new_class_def(Main_Class, Class, Parent),
         (  %class_id(_, Class)
            objects:clause(module_class_def(Class, _, _), _)
         -> throw(class_exists(Class))
         ;  true %gen_class_id(Class, Class_Id)
         ),
-        objects:assertz(module_class_def(
-                        Class, Parent, Main_Class)),
+        assertz(objects:module_class_def(Class, Parent,
+                                         Main_Class)),
+        debug(classes,
+              'assertz(objects:module_class_def(~a, ~a, ~a))',
+              [Class, Parent, Main_Class]),
         fail ; true ),
 
      % TODO check no Main_Class repeats
@@ -91,59 +99,72 @@ all_classes(All_Classes) :-
 
 process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
 
-  % Get the definition module
-  objects:module_class_def(Class, Parent, Module), !,
+   Ctx = context(process_class_def/1, _),
+   
+   % Get the definition module
+   objects:module_class_def(Class, Parent, Module), !,
 
-  % Generate new Class_Id
-  gen_class_id(Class, Class_Id),
-  objects:assertz(class_id(Class_Id, true, Class)),
+   % Generate new Class_Id
+   gen_class_id(Class, Class_Id),
+   assertz(objects:class_id(Class_Id, true, Class)),
+   debug(classes, 
+         'assertz(objects:class_id(~d, true, ~a))',
+         [Class_Id, Class]),
 
-  % assert *_v? predicates first (they are used by others)
-  (atom_concat(Class, '?', Head),
-   call(Module:current_predicate(Head, Term)),
-   call(Module:clause(Term, _)),
-   Term =.. [Head, E_Obj, E_Field, E_Value],
+   % assert *_v? predicates first (they are used by others)
+   (atom_concat(Class, '?', Head),
+    call(Module:current_predicate(Head, Term)),
+    call(Module:clause(Term, _)),
+    Term =.. [Head, E_Obj, E_Field, E_Value],
 
-   % <NB> native attribute is not defined yet
-   objects:assertz(
-      (field(Class_Id, E_Field, E_Obj, E_Value, _, _, true) :-
-          Module:Term) % call with proper context module
-      ),
-   fail ; true ),
+    (   atom(E_Field) -> true
+    ;   print_message(error, domain_error(arg2_is_atom, Term)),
+        fail
+    ),
 
-  % assert copy/4
-  (call(Module:current_predicate(copy, Term)),
-   Term = copy(Class, Copy_From, Copy_To),
-   call(Module:clause(Term, _)),
-   objects:assertz(
-      (copy(Class_Id, Class, Copy_From, Copy_To) :-
-          Module:Term)
-      ),
-   fail ; true ),
+    % can assert several eval_field/5 for each Class
+    objects:assertz(eval_field(Class, E_Field, E_Obj, E_Value,
+                               Module:Term)),
+    debug(classes, '~p',
+          [objects:assertz(eval_field(Class, E_Field, E_Obj,
+                                      E_Value, Module:Term))]),
+    fail ; true ),
 
-  % assert reinterpret/4
-  (call(Module:current_predicate(reinterpret, Term)),
-   Term = reinterpret(Class_From, Class_To, Obj_From, Obj_To),
-   call(Module:clause(Term, _)),
-   objects:assertz(
-      (reinterpret(Class_From, Class_To, Obj_From, Obj_To) :-
-          Module:Term)
-      ),
-   fail ; true ),
+    % assert copy/4
+   (call(Module:current_predicate(copy, Term)),
+    Term = copy(Class, Copy_From, Copy_To),
+    call(Module:clause(Term, _)),
+    objects:assertz(
+                    copy(Class_Id, Class, Copy_From, Copy_To) :-
+                   Module:Term
+                   ),
+    debug(classes,
+          'objects:assertz(copy(~d, ~a, ~p, ~p) :- ~a:~p',
+          [Class_Id, Class, Copy_From, Copy_To, Module, Term]),
+    fail ; true ),
 
-  % process class module-scoped objects
-  (  Class == Module
-  -> % import downcast/4 predicates
-     dynamic_import(Module, objects, downcast),
-     % process typedefs
-     process_typedefs(Module)
-  ;  true ),
+    % assert reinterpret/4
+   (call(Module:current_predicate(reinterpret, Term)),
+    Term = reinterpret(Class_From, Class_To, Obj_From, Obj_To),
+    call(Module:clause(Term, _)),
+    objects:assertz(
+     reinterpret(Class_From, Class_To, Obj_From, Obj_To) :-
+                   Module:Term
+                   ),
+    debug(classes,
+          'objects:assertz(reinterpret(~a, ~a, ~p, ~p) :- ~a:~p',
+          [Class_From, Class_To, Obj_From, Obj_To, Module, Term]),
+    fail ; true ),
 
-  % process Class_Def
-  (   nonvar(Key)
-  ->  class_create(Class, Parent, Add_Fields, Key)
-  ;   class_create(Class, Parent, Add_Fields)
-  ).
+    % process class module-scoped objects
+   (  Class == Module
+   -> % import downcast/4 predicates
+      dynamic_import(Module, objects, downcast),
+                                % process typedefs
+      process_typedefs(Module)
+   ;  true ),
+
+   class_create_cmn(Class, Parent, Add_Fields, Key, _, Ctx).
 
 
 process_typedefs(Module) :-
@@ -156,14 +177,21 @@ process_typedefs(Module) :-
      -> print_message(warning,
 		      type_redefined(TD_Type, Some_Class)),
         !, fail
-     ;  objects:assertz(typedef_flag(TD_Type, Module))
+     ;  assertz(objects:typedef_flag(TD_Type, Module)),
+        debug(classes,
+              'objects:typedef_flag(~p, ~a)',
+              [TD_Type, Module])
      ),
 
      % pretty_print
      (  memberchk(pretty_print - TD_PP_Head, TD_List)
      -> TD_PP_Pred =.. [TD_PP_Head, TD_Stream, TD_Value, TD_Opt],
-        objects:assertz((pretty_print(TD_Type, TD_Stream, TD_Value, TD_Opt)
-                        :- Module:TD_PP_Pred))
+        objects:assertz(pretty_print(TD_Type, TD_Stream, TD_Value, TD_Opt)
+                        :- Module:TD_PP_Pred),
+        debug(classes,
+              'objects:assertz(pretty_print(~p, ~p, ~p, ~p) :- ~a:~p',
+              [TD_Type, TD_Stream, TD_Value, TD_Opt, Module,
+               TD_PP_Pred])
      ;  true
      ),
 
@@ -190,7 +218,10 @@ dynamic_import(Module_From, Module_To, Functor) :-
 
   Module_From:current_predicate(Functor, Term),
   Module_From:clause(Term, _),
-  Module_To:assert((Term :- Module_From:Term)),
+  Module_To:assertz(Term :- Module_From:Term),
+  debug(classes,
+        '~a:assertz(~p :- ~a:~p)',
+        [Module_To, Term, Module_From, Term]),
   fail
   ;
   true.
@@ -200,28 +231,22 @@ reload_all_classes :-
    db_vocab_clear(_), % clear all current db class caches
    
    % clear the db
-   abolish(objects:arity/2),
-   abolish(objects:class_id/3),
-   abolish(objects:copy/4),
-   abolish(objects:downcast/4),
-   abolish(objects:field/7),
-   abolish(objects:key/3),
-   abolish(objects:module/2),
-   abolish(objects:module_class_def/3),
-   abolish(objects:parent/2),
-   abolish(objects:pretty_print/4),
-   abolish(objects:rebased_class/3),
-   abolish(objects:reinterpret/4),
-   abolish(objects:typedef_flag/2),
-   abolish(db_pg:pl_pg_type/3),
+   retractall_objects,
+   retractall(db_pg:pl_pg_type(_, _, _)),
 
    % Assert definitions for object_base_v
-   objects:assertz(arity(0, 0)),
+   objects:assertz(arity(0, 1)),
+   debug(classes, 'objects:assertz(arity(0, 0))', []),
    objects:assertz(class_id(0, true, object_base_v)),
-   objects:assertz(parent(0, -1)),
+   debug(classes, 'objects:assertz(class_id(0, true, object_base_v))', []),
+   objects:assertz(parent_(0, -1)),
+   debug(classes, 'objects:assertz(parent_(0, -1))', []),
    objects:assertz(typedef_flag(hidden, object_base_v)),
+   debug(classes, 'objects:assertz(typedef_flag(hidden, object_base_v))', []),
    objects:assertz(key(0, 0, [])),
+   debug(classes, 'objects:assertz(key(0, 0, []))', []),
    objects:assertz(rebased_class(object_base_v, [], 0)),
+   debug(classes, 'objects:assertz(rebased_class(object_base_v, [], 0))', []),
 
    % Load all class modules
    (  find_class_module(Module_Path),
@@ -230,33 +255,47 @@ reload_all_classes :-
    ),
 
    % Get classes in the creation order
-   % (also asserts objects:module_class_def/3 and objects:module/2)
+
    all_classes(Class_Defs),
+   % + module/2
+   % + module_class_def/3
 
    (  member(Class_Def, Class_Defs),
+      
       process_class_def(Class_Def),
+      % + class_id/3
+      % + eval_field/5
+      % + copy/4        :- ...
+      % + reinterpret/4 :- ...
+      % + downcast/4    :- ...
+      % + typedef_flag/2
+      % + pretty_print/4 :- ...
+      % + db_pg:pl_pg_type/3
+      %
+      % >> class_create:
+      % + parent_/2
+      %
+      % >>> assert_new_class_id
+      % >>>> assert_class_fields:
+      % + field/4       :- ...
+      % + field_info/5
+      % <<<<
+      % + arity/2
+      % + rebased_class/3
+      % <<<
+      % + key/3
+      % + copy/4 :- ... (for descendants)
+      % <<
+      
       fail ; true
    ),
 
-   fix_no_native_evals.
-
-
-fix_no_native_evals :-
-
-   retract(objects:':-'(field(Class_Id, Field, A, B, C, unknown,
-                              true), Body)),
-   
-   (  parent(Class_Id, Parent_Id),
-      clause(objects:field(Parent_Id, Field, _, _, _, _, true),
-             _)
-   -> Native = false
-   ;  Native = true
-   ),
-
-   assertz(objects:':-'(field(Class_Id, Field, A, B, C, Native,
-                              true), Body)),
-   fail ; true.
-
+   % Add eval fields
+   (  member(new_class(Class, _, _, _), Class_Defs),
+      class_primary_id(Class, Class_Id),
+      assert_eval_fields(Class_Id),
+      fail ; true
+   ).
 
 class_module_file(Start, Path) :-
 

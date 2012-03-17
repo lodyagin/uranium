@@ -25,6 +25,8 @@
 
 :- module(v,
           [
+           class_create/3,    % +Class, +Parent, +Add_Fields
+           class_create/4,    % +Class, +Parent, +Add_Fields, +Key
            class_descendant/2,
            class_exists/1,
            class_fields_new/2,
@@ -76,6 +78,7 @@
 
 :- multifile prolog:message/3.
 
+:- use_module(u(internal/objects)).
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/check_arg)).
 :- use_module(u(internal/decode_arg)).
@@ -94,16 +97,34 @@
 :- reexport(u(internal/object_module),
             [ reload_all_classes/0]).
 
-:- reexport(u(internal/class_create),
-            [class_create/3,
-             class_create/4]).
+%
+% class_create(+Class, +Parent, +Add_Fields)
+%
+% Assert the new Class definition into the objects module
+%
+% Add_Fields - (non-eval, native) fields from the class definition
+%
 
+class_create(Class, Parent, Fields) :-
 
-/** <module> Uranium Objects
+   Ctx = context(class_create/3, _),
+   class_create_cmn(Class, Parent, Fields, _, Class_Id, Ctx),
+   assert_eval_fields(Class_Id).
 
+%
+% class_create(+Class, +Parent, +Add_Fields, +Key)
+%
+% Assert the new Class definition into the objects module,
+% set a (compound) key to Key
+%
 
+class_create(Class, Parent, Fields, New_Key) :-
 
-  */
+   Ctx = context(class_create/4, _),
+   class_create_cmn(Class, Parent, Fields, New_Key, Class_Id,
+                    Ctx),
+   assert_eval_fields(Class_Id).
+
 
 class_exists(Class) :-
 
@@ -493,12 +514,11 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
       append(New_Parents1, New_Parents2, New_Parents_R),
       reverse(New_Parents_R, New_Parents3),
 
-      class_rebase(New_Parents3, New_Parents, Rebase),
+      class_rebase_int(New_Parents3, New_Parents, Rebase, Ctx),
       New_Parents = [Rebased_Id|_],
       (  Rebase == rebase -> true
       ;  throw(error(implementation_error(
-          'class_rebase is called in not rebasing case', []),
-                     Ctx))
+          'Not rebasing case', []), Ctx))
       ),
 
       % find the fields to through out

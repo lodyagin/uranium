@@ -2,34 +2,107 @@
 :- use_module(u(v)).
 :- use_module(u(internal/objects_i)).
 
-test(class_fields) :-
+test(class_create1) :-
+   % test class_create/3 version
 
-   class_fields(object_base_v, Object_Base_V_Fields),
-   assertion(Object_Base_V_Fields == []),
+   current_prolog_flag(verbose, Old_Verbose),
+   set_prolog_flag(verbose, silent),
+   reload_all_classes,
+   set_prolog_flag(verbose, Old_Verbose),
 
-   class_fields_new(object_base_v, Object_Base_V_New_Fields),
-   assertion(Object_Base_V_New_Fields == []),
+   class_create(class_create_test_v, citizen_v, [a, c, b]),
+   obj_construct(class_create_test_v, [birthday], [1976], CCTO),
+   class_fields(citizen_v, CF), sort(CF, CFS),
+   class_fields(class_create_test_v, CCTF), sort(CCTF, CCTFS),
+   class_fields_new(class_create_test_v, CCTFN),
+   assertion(CF == CFS),
+   assertion(CCTF = CCTFS),
+   assertion(CCTFN == [a, b, c]),
+
+   ord_subtract(CCTF, CF, New_Fields),
+   assertion(New_Fields == CCTFN),
+
+   obj_field(CCTO, age, Age),
+   integer(Age),
+
+   obj_key(CCTO, Key),
+   assertion(Key == [id]).
+
+test(class_create2) :-
+   % test class_create/4 version
+
+   current_prolog_flag(verbose, Old_Verbose),
+   set_prolog_flag(verbose, silent),
+   reload_all_classes,
+   set_prolog_flag(verbose, Old_Verbose),
+
+   class_create(class_create_test_v, citizen_v, [a, c, b],
+                [birthday, a]),
+   obj_construct(class_create_test_v, [birthday], [1976], CCTO),
+   class_fields(citizen_v, CF), sort(CF, CFS),
+   class_fields(class_create_test_v, CCTF), sort(CCTF, CCTFS),
+   class_fields_new(class_create_test_v, CCTFN),
+   assertion(CF == CFS),
+   assertion(CCTF = CCTFS),
+   assertion(CCTFN == [a, b, c]),
+
+   ord_subtract(CCTF, CF, New_Fields),
+   assertion(New_Fields == CCTFN),
+
+   obj_field(CCTO, age, Age),
+   integer(Age),
    
-   class_fields(object_v, Object_V_Fields),
-   assertion(Object_V_Fields == []),
+   obj_key(CCTO, Key),
+   assertion(Key == [a, birthday]).
 
-   class_fields_new(object_v, Object_V_New_Fields),
-   assertion(Object_V_New_Fields == []),
-   
-   class_fields(man_v, Man_V_Fields),
-   assertion(Man_V_Fields == [height, name, sex, surname, weight]),
+test(class_create_feature1) :-
+   % It is a strange feature
 
-   class_fields_new(man_v, Man_V_New_Fields),
-   assertion(Man_V_New_Fields == [height, name, sex, surname,
-                                  weight]),
-   
-   class_fields(citizen_v, Citizen_V_Fields),
-   assertion(Citizen_V_Fields == [birthday, country, height, id,
-                                  name, sex, surname, weight]),
+   current_prolog_flag(verbose, Old_Verbose),
+   set_prolog_flag(verbose, silent),
+   reload_all_classes,
+   set_prolog_flag(verbose, Old_Verbose),
 
-   class_fields_new(citizen_v, Citizen_V_New_Fields),
-   assertion(Citizen_V_New_Fields == [birthday, country, id]).
-   
+   class_create(class_create_test_v, citizen_v, [a, c, b], []),
+   obj_construct(class_create_test_v, [birthday], [1976], CCTO),
+   obj_key(CCTO, Key),
+   assertion(Key == []).
+
+test(obj_construct_with_evals1) :-
+
+    obj_construct(citizen_v,
+                  [functor, class, birthday],
+                  [citizen_v, citizen_v, 1994], O1),
+    obj_field(O1, class, Class1),
+    assertion(Class1 == citizen_v),
+    
+    obj_construct(citizen_v,
+                  [birthday, functor, class],
+                  [1994, citizen_v, citizen_v], O2),
+    obj_field(O2, class, Class2),
+    assertion(Class2 == citizen_v),
+    
+    obj_construct(citizen_v,
+                  [birthday, sex, functor, class],
+                  [1994, man, citizen_v, callup_v], O3),
+    obj_field(O3, class, Class3),
+    assertion(Class3 == callup_v),
+
+    obj_construct(citizen_v,
+                  [functor, class, birthday, sex],
+                  [citizen_v, callup_v, 1994, man], O4),
+    obj_field(O4, class, Class4),
+    assertion(Class4 == callup_v),
+
+    obj_construct(citizen_v,
+                  [functor, class, birthday, sex],
+                  [X, Y, 1994, man], O5),
+    obj_field(O5, class, Class5),
+    assertion(Class5 == callup_v),
+    assertion(X = citizen_v),
+    assertion(Y = callup_v).
+
+    
 test(obj_construct_bug1) :-
 
    class_fields(man_v, Field_Names),
@@ -257,6 +330,11 @@ test(obj_reset_fields_weak) :-
    obj_class_id(Man1, Class_Id),
    assertion(Man1 =@= man_v(Class_Id, _, _, man, _, 63)).
 
+test(obj_reset_fields_with_evals, [fail]) :-
+
+   obj_construct(citizen_v, [sex], [man], O),
+   obj_reset_fields([age], O, _).
+
 test(obj_rewrite) :-
 
    obj_construct(man_v,
@@ -276,6 +354,55 @@ test(obj_rewrite) :-
    assertion(Luda2_Pars =@= [1.44, 69, 'Luda']),
    named_args_unify(Luda3, [height, weight, name], Luda3_Pars),
    assertion(Luda3_Pars =@= [1.45, 64, _]).
+
+test(obj_rewrite_with_evals1, [X == callup_v]) :-
+
+   obj_construct(citizen_v, [sex, birthday], [man, 1994], O),
+   obj_rewrite(O, [class], [X], [callup_v], _).
+
+test(obj_rewrite_with_evals2, [fail]) :-
+
+   obj_construct(citizen_v, [sex, birthday], [man, 1994], O),
+   obj_rewrite(O, [class], [_], [citizen_v], _).
+
+test(obj_rewrite_with_evals3, [X == callup_v]) :-
+
+   obj_construct(citizen_v, [sex, birthday], [man, 1994], O),
+   obj_rewrite(O, [class], [X], [X], _).
+
+test(obj_rewrite_with_evals4) :-
+% <NB> can't reset eval field, compare with test(obj_rewrite)
+   
+   obj_construct(citizen_v, [sex, birthday], [man, 1994], O),
+   obj_rewrite(O, [class], [_], [_], _).
+
+test(class_fields) :-
+
+   class_fields(object_base_v, Object_Base_V_Fields),
+   assertion(Object_Base_V_Fields == []),
+
+   class_fields_new(object_base_v, Object_Base_V_New_Fields),
+   assertion(Object_Base_V_New_Fields == []),
+   
+   class_fields(object_v, Object_V_Fields),
+   assertion(Object_V_Fields == []),
+
+   class_fields_new(object_v, Object_V_New_Fields),
+   assertion(Object_V_New_Fields == []),
+   
+   class_fields(man_v, Man_V_Fields),
+   assertion(Man_V_Fields == [height, name, sex, surname, weight]),
+
+   class_fields_new(man_v, Man_V_New_Fields),
+   assertion(Man_V_New_Fields == [height, name, sex, surname,
+                                  weight]),
+   
+   class_fields(citizen_v, Citizen_V_Fields),
+   assertion(Citizen_V_Fields == [birthday, country, height, id,
+                                  name, sex, surname, weight]),
+
+   class_fields_new(citizen_v, Citizen_V_New_Fields),
+   assertion(Citizen_V_New_Fields == [birthday, country, id]).
 
 
 % After some time it will always fails (because it depends

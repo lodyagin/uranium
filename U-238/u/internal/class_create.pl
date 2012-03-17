@@ -24,12 +24,16 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(class_create,
-          [class_create/3,
-           class_create/4,
-           class_rebase/3
+          [class_create_cmn/6, % +Class, +Parent, +Fields,
+                               % ?New_Key, -Class_Id, +Ctx
+           
+           class_rebase_int/4, % +Parents, -New_Parents, -Rebased,
+                               % +Ctx
+           assert_eval_fields/1   % + Class_Id
           ]).
 
 :- use_module(library(error)).
+:- use_module(u(internal/objects)).
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/check_arg)).
 
@@ -49,50 +53,37 @@ check_class_create(Class, Parent, Fields, Ctx) :-
   ;  throw(error(existence_error(uranium_class, Parent), Ctx))
   ).
 
+% class_create_cmn(+Class, +Parent, +Fields, ?New_Key,
+%                  -Class_Id, +Ctx)
 %
-% class_create(+Class, +Parent, +Add_Fields)
-%
-% Assert the new Class definition into the objects module
-%
+% <NB> It doesn't call assert_eval_fields !
+%      assert_eval_fields must be called in the upper pred
 
-class_create(Class, Parent, Fields) :-
+class_create_cmn(Class, Parent, Fields, New_Key, Class_Id, Ctx) :-
 
-   Ctx = context(class_create/3, _),
    check_class_create(Class, Parent, Fields, Ctx),
-   class_primary_id(Parent, Parent_Id),
-   assert_new_class(Class, Parent_Id, Fields, Ctx),
-   class_primary_id(Class, Class_Id),
-   assert_parent_key(Class_Id, Parent_Id),
-   assert_copy(Class_Id, Parent_Id).
-
-%
-% class_create(+Class, +Parent, +Add_Fields, +Key)
-%
-% Assert the new Class definition into the objects module,
-% set a (compound) key to Key
-%
-
-class_create(Class, Parent, Fields, New_Key) :-
-
-   Ctx = context(class_create/4, _),
-   check_class_create(Class, Parent, Fields, Ctx),
-   (  var(New_Key)
-   -> throw(error(instantiation_error, Ctx))
-   ;  \+ is_list(New_Key)
-   -> throw(error(type_error(list, New_Key), Ctx))
-   ;  \+ is_set(New_Key)
-   -> throw(error(domain_error(no_duplicates, New_Key), Ctx))
-   ;  % check the New_Key contents
-      fields_names_types(New_Key, New_Key_Simpl, _),
-      list_to_ord_set(New_Key_Simpl, New_Key_Set)
+   (  nonvar(New_Key)
+   ->
+      check_inst(New_Key, Ctx),
+      (  \+ is_list(New_Key)
+      -> throw(error(type_error(list, New_Key), Ctx))
+      ;  \+ is_set(New_Key)
+      -> throw(error(domain_error(no_duplicates, New_Key), Ctx))
+      ;  % check the New_Key contents
+         fields_names_types(New_Key, New_Key_Simpl, _),
+         list_to_ord_set(New_Key_Simpl, New_Key_Set)
+      )
+   ;  true
    ),
    class_primary_id(Parent, Parent_Id),
    assert_new_class(Class, Parent_Id, Fields, Ctx),
    class_primary_id(Class, Class_Id),
-   % <NB> when New_Key = [] reset parent key (is it correct)?
-   assert_new_key(Class_Id, New_Key_Set),
+   (  nonvar(New_Key_Set)
+   -> % <NB> when New_Key = [] reset parent key (is it correct)?
+      assert_new_key(Class_Id, New_Key_Set)
+   ;  assert_parent_key(Class_Id, Parent_Id)
+   ),
    assert_copy(Class_Id, Parent_Id).
-
 
 assert_new_class(Class, Parent_Id, Fields0, Ctx) :-
 
@@ -100,8 +91,8 @@ assert_new_class(Class, Parent_Id, Fields0, Ctx) :-
   -> true % class id can be already created by object_module
   ;  gen_class_id(Class, Class_Id) ),
 
-  % arity/2 :- true is only asserted by this module
-  (  objects:clause(arity(Class_Id, _), _)
+  % arity/2 normally only asserted by this module
+  (  objects:arity(Class_Id, _)
   -> throw(class_exists(Class))
   ;  true
   ),
@@ -110,13 +101,19 @@ assert_new_class(Class, Parent_Id, Fields0, Ctx) :-
   -> true
   ;  throw(error(type_error(object_fields_and_types,Fields), Ctx))
   ),
-  (  is_set(Field_Names0) -> true
+
+  (  is_set(Field_Names0)
+     % FIXME this check is only for non-eval fields
+  -> true
   ;  Ctx = context(_, 'duplicates were found'),
      throw(error(domain_error(object_fields, Field_Names0), Ctx))
   ),
 
   (  \+ class_id(Class_Id, _)
-  -> objects:assertz(class_id(Class_Id, true, Class))
+  -> assertz(objects:class_id(Class_Id, true, Class)),
+     debug(classes,
+           'assertz(objects:class_id(~d, true, ~a))',
+           [Class_Id, Class])
   ;  true ),
 
   list_to_ord_set(Fields0, Fields),
@@ -140,7 +137,7 @@ assert_class_fields(Class_Id, New_Fields0, Arity) :-
 
    parent(Class_Id, Parent_Id),
    normalize_fields_def(New_Fields0, New_Fields),
-   class_fields(_:_, Parent_Id, _, _, Old_Fields),
+   class_fields(_:_, Parent_Id, _, false, Old_Fields),
    merge(Old_Fields, New_Fields, Fields),
    assert_class_fields2(Fields, 2, Next_Arg, Class_Id, Parent_Id),
    Arity is Next_Arg - 1.
@@ -150,34 +147,29 @@ assert_class_fields2([], Arg, Arg, _, _) :- !.
 assert_class_fields2([Field_Name:Field_Type|FT], Arg0, Arg,
                         Class_Id, Parent_Id) :-
 
-   (  objects:clause(field(Parent_Id, Field_Name, Obj, Value,
-                          Field_Type, _, Is_Eval), Body)
-   -> % re-assert inherited field with new class id
-      (  Is_Eval == false
-      ->
-         objects:assertz(
-           (field(Class_Id, Field_Name, Obj, Value, Field_Type,
-                  false, false) :- arg(Arg0, Obj, Value))
-         ),
-         Arg1 is Arg0 + 1
-      ;
-         objects:assertz(
-           (field(Class_Id, Field_Name, Obj, Value, Field_Type,
-                  false, true) :- Body)
-         ),
-         Arg1 = Arg0 % eval fields not depends on Arg
-      )
-   ;  % assert new fields
-      % NB new evaluated fields are not in this list
-      objects:assertz(
-        (field(Class_Id, Field_Name, Obj, Value, Field_Type,
-            true, false) :- arg(Arg0, Obj, Value))
-      ),
-      Arg1 is Arg0 + 1
+   % <NB> only non-eval fields
+
+   (   objects:field_info(Parent_Id, Field_Name, _, _, _)
+   ->  Native = false
+   ;   Native = true
    ),
 
-   assert_class_fields2(FT, Arg1, Arg, Class_Id, Parent_Id), !.
+   objects:assertz(
+                   field(Class_Id, Field_Name, Obj, Value)
+                  :- arg(Arg0, Obj, Value)
+                  ),
+   debug(classes,
+         'objects:assertz(field(~d, ~a, ~p, ~p) :- arg(~d, ~p, ~p))',
+         [Class_Id, Field_Name, Obj, Value, Arg0, Obj,
+          Value]),
+   assertz(objects:field_info(Class_Id, Field_Name,
+                              Field_Type, Native, false)),
+   debug(classes,
+         'assertz(objects:field_info(~d, ~a, ~p, ~a, false))',
+         [Class_Id, Field_Name, Field_Type, Native]),
+   Arg1 is Arg0 + 1,
 
+   assert_class_fields2(FT, Arg1, Arg, Class_Id, Parent_Id), !.
 
 assert_class_fields2([Field_Name|FT], Arg0, Arg, Class_Id,
                      Parent_Id) :-
@@ -186,18 +178,118 @@ assert_class_fields2([Field_Name|FT], Arg0, Arg, Class_Id,
                         Parent_Id).
 
 
+% assert_eval_fields(+Class_Id)
+%
+% For each (Class_Id, Field_Name) there are can be several
+% eval_field preds. They should be asserted in order from more
+% specific classes to more general ones.
+%
+% The evaluation oreder can differ for every Class_Id for the same
+% Class because of rebasing
+
+assert_eval_fields(Class_Id) :-
+
+   class_id(Class_Id, Class),
+   
+   % TODO type for eval field
+   (  setof(Name,
+            Parent_Id^Type^Native^
+            Obj^Value^Goal^(objects:eval_field(Class, Name,
+                                               Obj, Value, Goal)
+                           ;
+                            parent(Class_Id, Parent_Id),
+                            objects:field_info(Parent_Id, Name,
+                                               Type, Native, true)
+                           ),
+            Eval_Fields)
+   -> true
+   ;  Eval_Fields = []
+   ),
+
+   maplist(assert_eval_field(Class_Id), Eval_Fields).
+
+assert_eval_field(Class_Id, Field) :-
+
+   eval_batch(Class_Id, Class_Id, Field, [], Batch),
+   parent(Class_Id, Parent_Id),
+   (  objects:field_info(Parent_Id, Field, _, _, _)
+   -> Native = false
+   ;  Native = true
+   ),
+   assert_eval_batch(Batch, Native),
+
+   assertz_pred(classes, objects:field_info(Class_Id, Field, _,
+                                            Native, true)).
+
+
+eval_batch(0, _, _, L, L) :- !.  % object_base_v has no fields
+
+eval_batch(Source_Class_Id, Class_Id, Field, L0, L) :-
+
+   class_id(Source_Class_Id, Source_Class),
+   atom_concat(Source_Class, '?', Name),
+   Eval_Term =.. [Name, Object, Field, Value],
+   Body = _:Eval_Term,
+
+   findall((field(Class_Id, Field, Object, Value) :- Body),
+           (
+              Class_Id =:= Source_Class_Id,
+              objects:eval_field(Source_Class, Field, Object,
+                                 Value, Body),
+              debug(classes, 'Find ~p',
+                    [objects:eval_field(Source_Class, Field,
+                                        Object, Value, Body)]),
+              Native = true
+           ;
+              Class_Id =\= Source_Class_Id,
+              objects:clause(field(Source_Class_Id, Field, Object,
+                                   Value), Body),
+              %debug(classes, 'Find ~p',
+              %      [objects:clause(field(Source_Class_Id, Field, Object,
+              %                     Value), Body)]),
+              Native = false
+           ),
+           Batch),
+
+   %retractall(objects:eval_field(Source_Class_Id, Field, _, _,
+   %                              _)),
+   append(L0, Batch, L1),
+   %debug(classes, '~p', [append(L0, Batch, L1)]),
+
+   parent(Source_Class_Id, Parent_Id),
+   eval_batch(Parent_Id, Class_Id, Field, L1, L).
+
+
+assert_eval_batch([], _) :- !.
+
+assert_eval_batch([Field_Pred|T], Native) :-
+
+   %Field_Pred = (field(Class_Id, Field, _, _) :- _),
+   %(  objects:field_info(Class_Id, Field, _, 
+   assertz_pred(classes, objects:Field_Pred),
+   assert_eval_batch(T, Native).
+
+assertz_pred(classes, Pred) :-
+
+   assertz(Pred),
+   debug(classes, 'assertz(~p)', [Pred]).
+
 assert_new_key(_, []) :- !.
 
 assert_new_key(Class_Id, Keys) :-
 
    must_be(positive_integer, Class_Id),
-   assertz(objects:key(Class_Id, Class_Id, Keys)).
+   assertz(objects:key(Class_Id, Class_Id, Keys)),
+   debug(classes, '~p',
+         [assertz(objects:key(Class_Id, Class_Id, Keys))]).
 
 assert_parent_key(Class_Id, Parent_Id) :-
 
    must_be(positive_integer, Class_Id),
   (  objects:key(Parent_Id, _, Key)
-  -> assertz(objects:key(Class_Id, Parent_Id, Key))
+  -> assertz(objects:key(Class_Id, Parent_Id, Key)),
+     debug(classes, '~p',
+           [assertz(objects:key(Class_Id, Parent_Id, Key))])
   ;  true ).
 
 
@@ -211,24 +303,27 @@ assert_copy(Class_Id, Parent_Id) :-
    (   objects:clause(copy(Parent_Id, Class, From, To), Body)
    ->  objects:assertz(
          (copy(Class_Id, Class, From, To) :- Body)
-      )
+       ),
+       debug(classes, '~p',
+          objects:assertz(
+             (copy(Class_Id, Class, From, To) :- Body)))
    ;  true
    ).
 
 
-% class_rebase(+Parents, -Class_New_Id, -Rebased)
+% class_rebase_int(+Parents, -New_Parents, -Rebased, +Ctx)
 %
 % Parents - a list of new parents ids for this class (it is
 % started from nearest and ended with object_base_v (id = 0)
 %
 
-class_rebase([0], [0], false) :- !.
+class_rebase_int([0], [0], false, _) :- !.
 
-class_rebase([Class_Orig_Id|Parents0], [Class_New_Id|Parents],
-             Rebase) :-
+class_rebase_int([Class_Orig_Id|Parents0], [Class_New_Id|Parents],
+                 Rebase, _) :-
 
    % The recursion into parents
-   class_rebase(Parents0, Parents, Rebase1),
+   class_rebase_int(Parents0, Parents, Rebase1, _),
    Parents = [Parent_Id|_],
 
    % Check the rebased classes cache (by the class name)
@@ -239,7 +334,7 @@ class_rebase([Class_Orig_Id|Parents0], [Class_New_Id|Parents],
    ;
       % check whether do rebase
       (  Rebase1 \== rebase
-      -> (  objects:parent(Class_Orig_Id, Parent_Id)
+      -> (  objects:parent_(Class_Orig_Id, Parent_Id)
          -> Rebase = false
          ;  Rebase = rebase )
       ;
@@ -255,18 +350,24 @@ class_rebase([Class_Orig_Id|Parents0], [Class_New_Id|Parents],
                                   Class_New_Id, _),
 
          get_key(Class_Orig_Id, Orig_Key),
-         assert_new_key(Class_New_Id, Orig_Key)
-      
+         assert_new_key(Class_New_Id, Orig_Key),
+         assert_eval_fields(Class_New_Id)
+
       ;  % the same class is sufficient
          Class_New_Id = Class_Orig_Id
       )
    ).
 
+
+
 assert_new_class_id(Class_Id, Class_Name, Parent_Id, New_Fields,
                     Ctx) :-
 
    % assert the parent relation
-   objects:assertz(parent(Class_Id, Parent_Id)),
+   objects:assertz(parent_(Class_Id, Parent_Id)),
+   debug(classes,
+         'objects:assertz(parent_(~d, ~d))',
+         [Class_Id, Parent_Id]),
 
    assert_class_fields(Class_Id, New_Fields, Arity),
 
@@ -277,7 +378,10 @@ assert_new_class_id(Class_Id, Class_Name, Parent_Id, New_Fields,
    %class_noneval_new_fields_db(Class_Id, New_Field_Names),
    %objects:assertz(fields(Class_Id, All_Field_Names,
    %                       New_Field_Names)),
-   objects:assertz(arity(Class_Id, Arity)),
+   assertz(objects:arity(Class_Id, Arity)),
+   debug(classes,
+         'assertz(objects:arity(~d, ~d))',
+         [Class_Id, Arity]),
 
    % any class is rebase of itself
    list_inheritance(Class_Id, Parents_List0),
@@ -285,7 +389,10 @@ assert_new_class_id(Class_Id, Class_Name, Parent_Id, New_Fields,
    (  objects:rebased_class(Class_Name, Parents_List, Class_Id)
    -> true
    ;  assertz(objects:rebased_class(Class_Name, Parents_List,
-                                    Class_Id))
+                                    Class_Id)),
+      debug(classes,
+            'assertz(objects:rebased_class(~a, ~p, ~d))',
+            [Class_Name, Parents_List, Class_Id])
    ).
 
 
@@ -294,10 +401,10 @@ assert_new_class_id(Class_Id, Class_Name, Parent_Id, New_Fields,
 check_field_names_db(Class_Id, All_Field_Names_Set, Ctx) :-
 
   % check no repeats in the class field names
+  % <NB> no objects:field_info checking
   (  bagof(Field_Name,
-          T1^T2^T3^T4^T5^(objects:clause(
-            field(Class_Id, Field_Name, T1, T2, T3, T4, false),
-            T5)),
+          T1^T2^(objects:clause(
+            field(Class_Id, Field_Name, T1, false), T2)),
           All_Field_Names)
   -> true
   ;  All_Field_Names = []
@@ -305,7 +412,10 @@ check_field_names_db(Class_Id, All_Field_Names_Set, Ctx) :-
   (  \+ is_set(All_Field_Names)
   -> % delete incorrect definitions
      % FIXME remove class cleanup to catch
-     objects:retractall(field(Class_Id, _, _, _, _, _, _)),
+     class_id(Class_Id, Class),
+     objects:retractall(field(Class_Id, _, _, _)),
+     objects:retractall(field_info(Class_Id, _, _, _, _)),
+     objects:retractall(eval_field(Class, _, _, _, _)),
      throw(error(duplicate_field(All_Field_Names), Ctx))
   ;
      list_to_ord_set(All_Field_Names, All_Field_Names_Set)
@@ -315,12 +425,11 @@ check_field_names_db(Class_Id, All_Field_Names_Set, Ctx) :-
 
 class_noneval_new_fields_db(Class_Id, New_Field_Set) :-
 
-   (  bagof(Field_Name,
-           T1^T2^T3^T4^(objects:clause(
-             field(Class_Id, Field_Name, T1, T2, T3, true, false),
-                   T4)),
-           Field_Names)
-   -> list_to_ord_set(Field_Names, New_Field_Set)
+   (  setof(Field_Name,
+           Type^(field_info(Class_Id, Field_Name, Type,
+                            true, false)),
+           New_Field_Set)
+   -> true
    ;  New_Field_Set = []
    ).
 
@@ -331,7 +440,7 @@ normalize_fields_def([Name:Type|T1], [Name:Type|T2]) :- !,
 
   normalize_fields_def(T1, T2).
 
-normalize_fields_def([Name|T1], [Name:_|T2]) :- 
+normalize_fields_def([Name|T1], [Name:_|T2]) :-
 
   normalize_fields_def(T1, T2).
 

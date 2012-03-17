@@ -26,6 +26,7 @@
 :- module(objects_i,
           [
            class_all_fields/2,  % +Class_Id, -Fields
+                                % nonevals only
            class_arity/2,
 
            % @Pattern, +Class_Id, ?Native, ?Eval, ?Fields
@@ -50,10 +51,10 @@
            obj_rewrite_int/7,   % +Class_Id, +Object0, +Fields,
                                 % ?Old_Vals, +New_Vals, -Object,
                                 % +Ctx
-           
+
            obj_unify_int/6,     % +Class_Id, +Fields, +Weak,
                                 % +Term, ?Value, +Ctx
-           
+
            parent/2,            % ?Id, ?Parent_Id
            same_or_descendant/3,%+Parent_Id, +No_Rebased, ?Desc_Id
            u_class/1,
@@ -62,6 +63,7 @@
            prolog:message/3
            ]).
 
+:- use_module(u(internal/objects)).
 :- use_module(library(lists)).
 :- use_module(library(error)).
 :- use_module(library(pairs)).
@@ -69,23 +71,6 @@
 :- use_module(u(internal/decode_arg)).
 
 :- multifile prolog:message/3.
-
-:- dynamic objects:arity/2,    % Class_Id, Arity
-           objects:class_id/3, % Class_Id, Id_Primary, Class
-           objects:copy/4,     % Class_Id, Class_Name, From, To
-           objects:downcast/4,
-
-           objects:field/7,    % Class_Id, Field_Name, Obj, Value,
-                               % Field_Type, Is_Native, Is_Eval
-
-           objects:key/3,      % Class_Id, Keymaster_Id, Key (ordset)
-           objects:module/2,
-           objects:module_class_def/3, % Class, Parent, Module
-           objects:parent/2, % Class_Id, Parent_Class_Id
-           objects:pretty_print/4,
-           objects:rebased_class/3,% Name, Parents, Id
-           objects:typedef_flag/2.
-
 
 class_all_fields(Class_Id, Fields) :-
 
@@ -135,10 +120,9 @@ class_fields(Pattern, Class_Id, Native, Eval, Fields) :-
 class_fields2(Class_Id, Native, Eval, Fields) :-
 
    (  setof(Field_Name-Field_Type,
-        Obj^Value^Body^Native^Eval^ (objects:clause(
-           field(Class_Id, Field_Name, Obj, Value, Field_Type,
-                 Native, Eval),
-           Body )),
+        Native^Eval^(objects:field_info(Class_Id, Field_Name,
+                                        Field_Type, Native, Eval)
+                    ),
         Fields0
       )
    -> predsort(compare_obj_fields, Fields0, Fields)
@@ -202,7 +186,7 @@ list_inheritance(Id, Id, List, [Id|List]) :- !.
 
 list_inheritance(From_Id, To_Id, List0, List) :-
 
-   objects:parent(To_Id, Parent_Id),
+   objects:parent_(To_Id, Parent_Id),
    list_inheritance(From_Id, Parent_Id, [To_Id|List0], List).
 
 
@@ -279,7 +263,7 @@ obj_class_id(Object, Class_Id) :-
 
 parent(Id, Parent_Id) :-
 
-   objects:parent(Id, Parent_Id), !,
+   objects:parent_(Id, Parent_Id), !,
    Id =\= 0.
 
 obj_construct_int(Class_Id, Field_Names, Weak, Field_Values,
@@ -299,54 +283,64 @@ obj_construct_int(Class_Id, Field_Names, Weak, Field_Values,
    obj_unify_int(Class_Id, Field_Names, Weak1, Object,
                  Field_Values, Ctx).
 
-obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx)
-:-
+% obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx)
+% :-
 
-   % whether to be det or nondet
-   (  nonvar(Field_Name) -> Det = t ; Det = f ),
+%    % whether to be det or nondet
+%    (   nonvar(Field_Name) -> Det = t ; Det = f ),
+%    (   objects:field_info(Class_Id, Field_Name, Type, _, Is_Eval),
+%        (  Is_Eval == true
+%        -> once(objects:field(Class_Id, Field_Name, Obj, Value))
+%        ;  objects:field(Class_Id, Field_Name, Obj, Value)
+%        )
+%    *-> (Det = t -> ! ; true)
+%    ;   obj_field_int_error(Class_Id, Weak, Field_Name, Det, Ctx)
+%    ).
 
-   (
-      (  Is_Eval = false,
-         objects:field(Class_Id, Field_Name, Obj, Value, Type, _,
-                     Is_Eval)
-      ;
-         Is_Eval = true,
+obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx) :-
 
-         % each eval field must be evaluable only once
-         class_fields(_, Class_Id, _, true, All_Eval_Fields),
-         member(Field_Name, All_Eval_Fields),
+   (   nonvar(Field_Name) -> Det = t ; Det = f ),
 
-         % BT on different eval preds (up to a hierarchy)
-         find_eval_pred(Field_Name, Obj, Class_Id, Eval_Pred, Value)
-      )
-
+   (   objects:field_info(Class_Id, Field_Name, Type, _, Is_Eval)
    *->
-
-      ( Is_Eval = false
-      -> (Det = t -> ! ; true)  %% return the fixed value
-      ;
-         call(Eval_Pred, Obj, Field_Name, Value),
-         (Det = t -> ! ; true) %% return the evaluated value
-      )
+       (   Is_Eval == true
+       ->  once(objects:field(Class_Id, Field_Name, Obj, Value))
+       ;   objects:field(Class_Id, Field_Name, Obj, Value)
+       )
    ;
-      % no such field or invalid value ?
+       obj_field_int_error(Weak, Field_Name, Obj, Ctx)
+   ),
+   (   Det = t -> ! ; true ).
 
-      (  objects:clause(field(Class_Id, Field_Name, _, _, _, _,
-                              _), _)
-      -> fail % no value
-      ;
-         (  Weak = unbound
-         -> (Det = t -> ! ; true) %% return an unbound value
-         ;  Weak = fail
-         -> fail
-         ;  Weak = throw
-         -> throw(error(no_object_field(Obj, Field_Name), Ctx))
-         ;  Self_Ctx = context(obj_field_int/7, _),
-            decode_arg([[unbound], [fail], [throw]], Weak, _,
-                       Self_Ctx)
-         )
-      )
+
+% the version for eval/noneval fields only
+% Field_Name must be checked with
+% objects:field_info(Class_Id, Field_Name, _, _, Eval)
+% before the call
+obj_field_int_part(false, Class_Id, Field_Name, Obj, Value) :-
+
+   objects:field(Class_Id, Field_Name, Obj, Value).
+
+obj_field_int_part(true, Class_Id, Field_Name, Obj, Value) :-
+
+   once(objects:field(Class_Id, Field_Name, Obj, Value1)),
+   Value = Value1.
+
+
+
+obj_field_int_error(Weak, Field_Name, Obj, Ctx) :-
+
+   (  Weak = unbound
+   -> true %% return an unbound value
+   ;  Weak = fail
+   -> fail
+   ;  Weak = throw
+   -> throw(error(no_object_field(Obj, Field_Name), Ctx))
+   ;  Self_Ctx = context(obj_field_int_error/4, _),
+      decode_arg([[unbound], [fail], [throw]], Weak, _,
+                 Self_Ctx) % report the error
    ).
+
 
 obj_reset_fields_int(Class_Id, Fields_List, Object0, Object,
                      Weak, Ctx) :-
@@ -377,44 +371,48 @@ obj_rewrite_int(Class_Id, Object0, Fields, Old_Vals, New_Vals,
    obj_unify_int(Class_Id, Fields, throw, Object, New_Vals, Ctx).
 
 
+% obj_unify_int(+Class_Id, +Fields, +Weak, +Term, ?Values, +Ctx)
 
+obj_unify_int(Class_Id, Fields, Weak, Term, Values, Ctx) :-
 
-% Now the evaluation order can't be defined during class creation
-% because of rebasing
+   nonvar(Fields), % it protects from wrong results
 
-% TODO move this discovery to class creation time
-% Eval time must statically calls aready asserted function
-% Thus, they should be asserted in the proper order
+   % unify noneval first (they can change result for evals)
+   obj_unify_int(Fields, [], Fields1, Class_Id, false,
+                 Term, Values, [], Values1),
 
-find_eval_pred(_, _, 0, _, _) :- fail. % no evals on object_base_v
+   % Fields1 are the fields not found by the prev call
+   obj_unify_int(Fields1, [], Fields2, Class_Id, true,
+                 Term, Values1, [], _),
 
-find_eval_pred(Field, Object, Class_Id, Eval_Pred, Value) :-
+   (   Fields2 = [] -> true % all fields are used
+   ;   [Error_Field|_] = Fields2, % for the first field only
+                                  % (actual for throw case)
+       obj_field_int_error(Weak, Error_Field, Term, Ctx)
+   ).
 
-  class_id(Class_Id, Class),
-  atom_concat(Class, '?', Name),
-  Eval_Term =.. [Name, Object, Field, Value],
-  Body = Eval_Module:Eval_Term,
-  (
-     objects:clause(field(Class_Id, Field, Object, Value, _, _, true),
-                    Body)
-  *->
-     % found it (and leave a choice point)
-     Eval_Pred = Eval_Module:Name
-  ;
-     parent(Class_Id, Parent_Id),
-     find_eval_pred(Field, Object, Parent_Id, Eval_Pred, Value)
-  ).
+obj_unify_int([], AF, AF, _, _, _, [], VF, VF).
 
+obj_unify_int([Field|FT], AF0, AF, Class_Id, Eval, Term,
+              [Value|VT], VF0, VF) :-
 
-% obj_unify_int(+Class_Id, +Fields, +Weak, +Term, ?Value, +Ctx)
+   obj_unify_one(Field, AF0, AF1, Class_Id, Eval, Term,
+                 Value, VF0, VF1),
+   obj_unify_int(FT, AF1, AF, Class_Id, Eval, Term, VT, VF1, VF).
 
-obj_unify_int(_, [], _, _, [], _) :- !.
+obj_unify_one(Field, AF0, AF, Class_Id, Eval, Term, Value,
+              VF0, VF) :-
 
-obj_unify_int(Class_Id, [Field|FT], Weak, Term, [Value|VT], Ctx)
-:-
+   (   nonvar(Field) -> Det = t ; Det = f ),
 
-   obj_field_int(Class_Id, Field, Weak, Term, Value, _, Ctx),
-   obj_unify_int(Class_Id, FT, Weak, Term, VT, Ctx).
+   (   objects:field_info(Class_Id, Field, _, _, Eval)
+   *-> obj_field_int_part(Eval, Class_Id, Field, Term, Value),
+       AF = AF0, VF = VF0
+   ;   AF = [Field|AF0], VF = [Value|VF0]
+   ),
+
+   (   Det = t -> ! ; true ).
+
 
 % same_or_descendant(+Parent_Id, +No_Rebased, ?Desc_Id)
 
@@ -430,7 +428,7 @@ same_or_descendant(Parent_Id, No_Rebased, Desc_Id) :-
    (  No_Rebased == true
    -> \+ is_rebased_class(Parent_Id)
    ;  true ),
-   objects:parent(Id, Parent_Id),
+   objects:parent_(Id, Parent_Id),
    same_or_descendant(Id, No_Rebased, Desc_Id).
 
 
@@ -461,8 +459,8 @@ unbounded_fields(Obj, Field_Names) :-
 
    obj_class_id(Obj, Class_Id),
    findall(Field,
-           (objects:field(Class_Id, Field, Obj, Value, _, _,
-                          false),
+           (objects:field_info(Class_Id, Field, _, _, false),
+            objects:field(Class_Id, Field, Obj, Value),
             var(Value)
            ),
            Field_Names
