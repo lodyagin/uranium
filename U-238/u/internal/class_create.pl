@@ -36,6 +36,7 @@
 :- use_module(u(internal/objects)).
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/check_arg)).
+:- use_module(u(internal/ur_debug)).
 
 
 check_class_create(Class, Parent, Fields, Ctx) :-
@@ -268,11 +269,6 @@ assert_eval_batch([Field_Pred|T], Native) :-
    %(  objects:field_info(Class_Id, Field, _, 
    assertz_pred(classes, objects:Field_Pred),
    assert_eval_batch(T, Native).
-
-assertz_pred(classes, Pred) :-
-
-   assertz(Pred),
-   debug(classes, 'assertz(~p)', [Pred]).
 
 assert_new_key(_, []) :- !.
 
