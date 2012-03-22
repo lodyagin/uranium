@@ -226,9 +226,9 @@ gen_class_id(Class, Class_Id) :-
 
 gen_new_class_id(Class_Id) :-
 
-   findall(Id, class_id(Id, _), Ids),
-   max_list(Ids, Class_Id1),
-   Class_Id is Class_Id1 + 1.
+   retract(next_class_id(Class_Id)),
+   succ(Class_Id, New_Id),
+   assertz(next_class_id(New_Id)).
 
 
 %

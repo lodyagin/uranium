@@ -31,6 +31,7 @@
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/class_create)).
 :- use_module(u(internal/db_vocab)).
+:- use_module(u(internal/ur_debug)).
 
 % module_class_def(+Main_Class, -Class) :-
 % find all class definitions
@@ -248,6 +249,8 @@ reload_all_classes :-
    objects:assertz(rebased_class(object_base_v, [], 0)),
    debug(classes, 'objects:assertz(rebased_class(object_base_v, [], 0))', []),
 
+   assertz_pred(classes, objects:next_class_id(1)),
+   
    % Load all class modules
    (  find_class_module(Module_Path),
       consult(Module_Path),

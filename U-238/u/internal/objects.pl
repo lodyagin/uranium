@@ -42,6 +42,7 @@
            module/2,        % Class_Name, Module_Path
            
            module_class_def/3,  % Class, Parent, Main_Module_Class
+           next_class_id/1,     % Class_Id
            parent_/2,           % Class_Id, Parent_Class_Id
            pretty_print/4,
 
@@ -64,6 +65,7 @@
            key/3,
            module/2,
            module_class_def/3,
+           next_class_id/1,
            parent_/2,
            pretty_print/4,
            rebased_class/3,
@@ -82,6 +84,7 @@ retractall_objects :-
    retractall(key(_, _, _)),
    retractall(module(_, _)),
    retractall(module_class_def(_, _, _)),
+   retractall(next_class_id(_)),
    retractall(parent_(_, _)),
    retractall(pretty_print(_, _, _, _)),
    retractall(rebased_class(_, _, _)),
