@@ -27,9 +27,8 @@
           [class_create_cmn/6, % +Class, +Parent, +Fields,
                                % ?New_Key, -Class_Id, +Ctx
            
-           class_rebase_int/4, % +Parents, -New_Parents, -Rebased,
+           class_rebase_int/4  % +Parents, -New_Parents, -Rebased,
                                % +Ctx
-           assert_eval_fields/1   % + Class_Id
           ]).
 
 :- use_module(library(error)).
@@ -57,8 +56,6 @@ check_class_create(Class, Parent, Fields, Ctx) :-
 % class_create_cmn(+Class, +Parent, +Fields, ?New_Key,
 %                  -Class_Id, +Ctx)
 %
-% <NB> It doesn't call assert_eval_fields !
-%      assert_eval_fields must be called in the upper pred
 
 class_create_cmn(Class, Parent, Fields, New_Key, Class_Id, Ctx) :-
 
@@ -84,7 +81,8 @@ class_create_cmn(Class, Parent, Fields, New_Key, Class_Id, Ctx) :-
       assert_new_key(Class_Id, New_Key_Set)
    ;  assert_parent_key(Class_Id, Parent_Id)
    ),
-   assert_copy(Class_Id, Parent_Id).
+   assert_copy(Class_Id, Parent_Id),
+   assert_eval_fields(Class_Id).
 
 assert_new_class(Class, Parent_Id, Fields0, Ctx) :-
 

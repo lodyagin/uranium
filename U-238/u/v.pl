@@ -108,8 +108,7 @@
 class_create(Class, Parent, Fields) :-
 
    Ctx = context(class_create/3, _),
-   class_create_cmn(Class, Parent, Fields, _, Class_Id, Ctx),
-   assert_eval_fields(Class_Id).
+   class_create_cmn(Class, Parent, Fields, _, _, Ctx).
 
 %
 % class_create(+Class, +Parent, +Add_Fields, +Key)
@@ -121,9 +120,7 @@ class_create(Class, Parent, Fields) :-
 class_create(Class, Parent, Fields, New_Key) :-
 
    Ctx = context(class_create/4, _),
-   class_create_cmn(Class, Parent, Fields, New_Key, Class_Id,
-                    Ctx),
-   assert_eval_fields(Class_Id).
+   class_create_cmn(Class, Parent, Fields, New_Key, _, Ctx).
 
 
 class_exists(Class) :-

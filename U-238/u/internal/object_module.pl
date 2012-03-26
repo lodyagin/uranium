@@ -291,14 +291,8 @@ reload_all_classes :-
       % <<
       
       fail ; true
-   ),
-
-   % Add eval fields
-   (  member(new_class(Class, _, _, _), Class_Defs),
-      class_primary_id(Class, Class_Id),
-      assert_eval_fields(Class_Id),
-      fail ; true
    ).
+
 
 class_module_file(Start, Path) :-
 
