@@ -26,7 +26,10 @@
 % post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 % _____________________________________________________________
 
-:- module(tarjan, [tarjan/7]).
+:- module(tarjan,
+          [tarjan/7,
+           vertex_path/3  % +Vertex, +Field_Name, -Name_Path
+           ]).
 
 :- use_module(library(debug)).
 :- use_module(library(error)).
@@ -37,6 +40,7 @@
 
 :- meta_predicate tarjan(+, +, +, 2, 2, +, -).
 
+% TODO Vertex_Functor is unnecessary
 
 tarjan(DB,
        Vertex_Functor, Vertex_Id_Fld,
@@ -126,13 +130,13 @@ scc_down(DB,
          Stack0, Stack, Index0, Index, Scc_L0, Scc_L) :-
 
    obj_field(V0, tarjan_lowlink, V0_Lowlink),
+   obj_field(V0, Vertex_Id_Fld, V0_Id),
 
-   (  named_args_unify(DB, Vertex_Functor, 
-                   [Vertex_Id_Fld], [W_Id], W0)
+   (  named_args_unify(DB, _, [Vertex_Id_Fld], [W_Id], W0)
    ->
       % Dst_Page is loaded already
       W = W0,
-      (   
+      (
           memberchk(W_Id, Stack0)
       ->
           % successor is in the current SCC
@@ -155,6 +159,7 @@ scc_down(DB,
       % The vertex W0 has not yet been visited
       once(call(Load_Vertex, W_Id, W0)),
       debug(tarjan, 'New vertex ~p is loaded', [W_Id]),
+      obj_field(W0, prev_vertex_id, V0_Id), % link to parent
       scc(DB,
           Vertex_Functor, Vertex_Id_Fld,
           Load_Vertex, Resolve_Destinations,
@@ -182,4 +187,32 @@ scc_up([W|Stack], Stack, Scc, [W|Scc], W) :- !.
 scc_up([W|Stack0], Stack, Scc0, [W|Scc], V) :-
 
    scc_up(Stack0, Stack, Scc0, Scc, V).
+
+
+% vertex_path(+Vertex, +Field_Name, -Name_Path)
+%
+% Backtrace from Vertex to the start vertex and
+% return the sequence of Field_Name values in the Name_Path
+
+vertex_path(Vertex, Field_Name, Name_Path) :-
+
+   vertex_path(Vertex, Field_Name, [], Name_Path).
+
+vertex_path(Vertex, Field_Name, Name_Path0, Name_Path) :-
+
+   obj_field(Vertex, prev_vertex_db_ref, Prev_Vertex),
+   vertex_path(Prev_Vertex, Vertex, Field_Name,
+               Name_Path0, Name_Path).
+
+vertex_path(Prev_Vertex, Vertex, Field_Name,
+            Name_Path0, [Field_Value|Name_Path0]) :-
+
+   var(Prev_Vertex), !,  % the first vertex
+   obj_field(Vertex, Field_Name, Field_Value).
+
+%vertex_path(Prev_Vertex, Vertex, Field_Name,
+%            Name_Path0, Name_Path1) :-
+
+   
+   
 

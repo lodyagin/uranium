@@ -25,7 +25,20 @@ test(tarjan1,
           tarjan_test_vertex_v, vertex_id,
           load_vertex, resolve_destinations(test_graph1),
           Start, SCC0),
-   sort(SCC0, SCC).
+   msort(SCC0, SCC).
+
+test(tarjan_deadlock_bug, [SCC == [[1, 3], [2]]]) :-
+
+   obj_construct(tarjan_test3_vertex_v,
+                 [vertex_id], [1], Start0),
+   obj_rebase((object_v -> tarjan_vertex_v), Start0, Start),
+   
+   db_clear(tarjan_test),
+   tarjan(tarjan_test,
+          tarjan_test3_vertex_v, vertex_id,
+          load_vertex2, resolve_destinations(test_graph2),
+          Start, SCC0),
+   msort(SCC0, SCC).
 
 test_graph1(Graph) :-
 
@@ -47,10 +60,27 @@ test_graph1(Graph) :-
             16 - []
            ].
 
+test_graph2(Graph) :-
+% it contains repeated deadlocks
+
+   Graph = [1  - [1, 2, 3],
+            2  - [],
+            3  - [1, 2, 3]
+           ].
+
 load_vertex(Id, Obj) :-
 
    obj_construct(tarjan_test_vertex_v,
                  [vertex_id], [Id], Obj0),
+   obj_rebase((object_v -> tarjan_vertex_v), Obj0, Obj).
+
+load_vertex2(Id, Obj) :-
+
+   (  Id =:= 2
+   -> Class = tarjan_test2_vertex_v
+   ;  Class = tarjan_test3_vertex_v
+   ),
+   obj_construct(Class, [vertex_id], [Id], Obj0),
    obj_rebase((object_v -> tarjan_vertex_v), Obj0, Obj).
 
 resolve_destinations(Pred, V, W_Ids) :-

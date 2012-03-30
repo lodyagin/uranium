@@ -32,4 +32,4 @@
 :- module(tarjan_vertex_v, []).
 
 new_class(tarjan_vertex_v, object_v,
-          [tarjan_index, tarjan_lowlink]).
+          [tarjan_index, tarjan_lowlink, prev_vertex_id]).
