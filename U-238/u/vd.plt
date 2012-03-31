@@ -341,6 +341,14 @@ test(db_select_list3,
                   [class, sex, name, surname, weight, country],
                   _).
 
+test(filter_on_db,
+     [setup(model_db),
+      List = [['Adam'], ['Vladimir']]
+     ]) :-
+
+   filter_on_db(people, [sex], [man]),
+   db_select_list(people, _, [name], List).
+
 
 test(named_args_unify1, [setup(model_db)]) :-
 

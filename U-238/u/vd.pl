@@ -79,9 +79,9 @@
            db_select_list/5, % +DB_Key, ?Functor, ?Weak, +Fields,
                              % -List
            
-           dump_db/1,  % +DB_Key
-           dump_db/2,   % +Options, +DB_Key
-%           filter_on_db/3,
+           dump_db/1,        % +DB_Key
+           dump_db/2,        % +Options, +DB_Key
+           filter_on_db/3,   % +DB_Key, +Field_Names, +Field_Values
 
            named_args_unify/5, % +DB_Key, ?Functor, +Field_Names,
                               % ?Values, -Term
@@ -488,25 +488,27 @@ db_recorded(DB_Key, Object) :-
 % Leave only matched objects from DB by a search criteria
 % Do not unify unbounded fields in DB (which are matched).
 %
-% filter_on_db(+DB_Key, ?Field_Names, ?Field_Values) :-
+% filter_on_db(+DB_Key, +Field_Names, +Field_Values) :-
 %
-/*
-filter_on_db(_, [], []) :- !.
-
 filter_on_db(DB_Key, Field_Names, Field_Values) :-
 
-  ground(DB_Key),
+   Ctx = context(filter_on_db/3, _),
+   check_inst(Field_Names, Ctx),
+   check_inst(Field_Values, Ctx),
+   check_db_key(DB_Key, Ctx),
+   check_fields_arg(Field_Names, Ctx),
+   check_values_arg(Field_Names, Field_Values, Ctx),
+   must_be(list(nonvar), Field_Values),
 
-  findall(Obj_Ref,
-          named_args_unify(DB_Key, _, Field_Names, Field_Values,
-                           w(Obj_Ref, _)),
-          Found_Obj_Ref_List),
-
-  findall(Obj_Ref, db_recorded(DB_Key, _, Obj_Ref), All_Obj_Ref_List),
-
-  subtract(All_Obj_Ref_List, Found_Obj_Ref_List, To_Delete_List),
-  maplist(db_erase, To_Delete_List).
-*/
+   (   db_recorded_int(DB_Key, Obj),
+       arg(1, Obj, Class_Id),
+       \+ obj_unify_int(Class_Id, Field_Names, fail, Obj, Field_Values,
+                        Ctx),
+       db_erase_int(DB_Key, Obj),
+       fail
+   ;
+       true
+   ).
 
 % db_search(+DB_In, +DB_Out, :Pred)
 %
@@ -514,14 +516,19 @@ filter_on_db(DB_Key, Field_Names, Field_Values) :-
 %
 db_search(DB_In, DB_Out, Pred) :-
 
-  (   db_recorded(DB_In, Term),
-      once(call(Pred, Term)),
-      obj_reset_fields([db_ref, db_key], Term, Term1),
-      db_put_object(DB_Out, Term1),
-      fail
-  ;
-      true
-  ).
+   Ctx = context(db_search/3, _),
+   check_db_key(DB_In, Ctx),
+   check_db_key(DB_Out, Ctx),
+   must_be(callable, Pred),
+   
+   (   db_recorded(DB_In, Term),
+       once(call(Pred, Term)),
+       obj_reset_fields([db_ref, db_key], Term, Term1),
+       db_put_object(DB_Out, Term1),
+       fail
+   ;
+       true
+   ).
 
 dump_db(DB_Key) :- dump_db([logger(dump_db)], DB_Key).
 
