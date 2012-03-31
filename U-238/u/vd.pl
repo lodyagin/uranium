@@ -34,8 +34,8 @@
 %           db_bind_obj/3, % +DB_Key, +Object0, -Object
 %           db_change/4,   % +DB_Key, +Fields, +Vals, +Query
            db_clear/1,
-           db_construct/4, % +DB_Key, +Fields, +Values
-           db_construct/5, % +DB_Key, +Fields, +Values, -Object
+           db_construct/4, % +DB_Key, +Class, +Fields, +Values
+           db_construct/5, % +DB_Key, +Class, +Fields, +Values, -Object
            db_copy/2,
            db_erase/1,
            db_iterate/3,  % +DB_Key, +Query, -Object
@@ -70,8 +70,8 @@
 %           db_rewrite/5,     % +DB_Key, ?Functor, +Fields,
                              % @Old_Vals, +New_Vals
            
-           %db_reset/3,    % +DB_Key, +Fields, +Query
-           %db_search/3,
+           %db_reset/3,       % +DB_Key, +Fields, +Query
+           db_search/3,      % +DB_In, +DB_Out, :Pred
            db_size/2,        % +DB_Key, ?Size
            db_to_list/3,     % +DB_Key, ?Functor, -List
            db_select/3,      % +DB_Key, +Fields, ?Row
@@ -100,13 +100,12 @@
 :- use_module(u(ur_lists)).
 :- use_module(u(ur_terms)).
 
-%:- module_transparent db_search/3.
-
-:- meta_predicate db_put_objects(+, 1, +).
 :- meta_predicate db_iterate(+, +, 1, -).
 :- meta_predicate db_iterate_replace(+, 3, +).
 :- meta_predicate db_iterate_replace(+, 3, +, 1).
 :- meta_predicate db_iterate_replace(+, 3, +, 1, +).
+:- meta_predicate db_search(+, +, 1).
+:- meta_predicate db_put_objects(+, 1, +).
 
 db_clear(DB_Key) :-
 
@@ -114,7 +113,7 @@ db_clear(DB_Key) :-
    check_db_key(DB_Key, Ctx),
    db_clear_int(DB_Key).
 
-% db_construct(+DB_Key, +Fields, +Values)
+% db_construct(+DB_Key, +Class, +Fields, +Values)
 %
 % Construct the object directly in the DB
 db_construct(DB_Key, Class, Fields, Values) :-
@@ -122,7 +121,7 @@ db_construct(DB_Key, Class, Fields, Values) :-
    Ctx = context(db_construct/4, _),
    db_construct2(DB_Key, Class, Fields, Values, _, Ctx).
 
-% db_construct(+DB_Key, +Fields, +Values, -Obj)
+% db_construct(+DB_Key, +Class, +Fields, +Values, -Obj)
 %
 % This form returns the object (a db_object_v descendant)
 db_construct(DB_Key, Class, Fields, Values, Obj) :-
@@ -508,17 +507,21 @@ filter_on_db(DB_Key, Field_Names, Field_Values) :-
   subtract(All_Obj_Ref_List, Found_Obj_Ref_List, To_Delete_List),
   maplist(db_erase, To_Delete_List).
 */
+
+% db_search(+DB_In, +DB_Out, :Pred)
+%
 % Copy from DB_In to DB_Out all filtered by Pred
-/*
+%
 db_search(DB_In, DB_Out, Pred) :-
 
-  db_recorded(DB_In, Term),
-  once(call(Pred, Term)),
-  db_recordz(DB_Out, Term),
-  fail
+  (   db_recorded(DB_In, Term),
+      once(call(Pred, Term)),
+      obj_reset_fields([db_ref, db_key], Term, Term1),
+      db_put_object(DB_Out, Term1),
+      fail
   ;
-  true.
-*/
+      true
+  ).
 
 dump_db(DB_Key) :- dump_db([logger(dump_db)], DB_Key).
 

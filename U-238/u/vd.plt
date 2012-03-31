@@ -266,6 +266,19 @@ test(db_recorded5, [setup(db_clear(people))]) :-
 %               [weight, surname], _, [66, 'Kasperski']),
 %    db_select_list(people, _, [name, surname, weight], List).
 
+test(db_search,
+     [setup(model_db),
+      List == [['Adam'], ['Vladimir']]
+     ]) :-
+
+   db_search(people, people2, db_search_pred),
+   db_select_list(people2, _, [name], List).
+
+db_search_pred(Man) :-
+
+  obj_field(Man, sex, Sex),
+  Sex == man.
+
 test(db_select1,
      [setup(model_db),
       List =@= [[man_v, man, 'Adam', _, 73, _],
