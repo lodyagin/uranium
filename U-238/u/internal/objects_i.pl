@@ -226,9 +226,9 @@ gen_class_id(Class, Class_Id) :-
 
 gen_new_class_id(Class_Id) :-
 
-   retract(next_class_id(Class_Id)),
+   retract(objects:next_class_id(Class_Id)),
    succ(Class_Id, New_Id),
-   assertz(next_class_id(New_Id)).
+   assertz(objects:next_class_id(New_Id)).
 
 
 %
