@@ -18,12 +18,22 @@
                                         % inst-
            
            check_object_arg/3,         % not inc. inst
-           check_rebase_rule/2
+           check_rebase_rule/2,
+
+           error:has_type/2
            ]).
 
 :- use_module(library(error)).
 :- use_module(objects_i).
 :- use_module(db_i).
+
+:- multifile error:has_type/2.
+
+error:has_type(Functor/Arity, X) :-
+
+  atom(Functor),
+  has_type(nonneg, Arity),
+  functor(X, Functor, Arity).
 
 check_inst(Arg, Ctx) :-
 
