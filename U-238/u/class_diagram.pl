@@ -42,7 +42,7 @@ class_diagram :-
    (  member(Parent, Order),
       format('~a ->\t', Parent),
       class_primary_id(Parent, Parent_Id),
-      (  parent(Class_Id, Parent_Id),
+      (  objects:parent_(Class_Id, Parent_Id),
          class_primary_id(Class, Class_Id),
          class_new_fields(Class_Id, New_Fields),
          format('~a (+~w)\t', [Class, New_Fields]),
@@ -55,7 +55,7 @@ class_graph(Class_Graph) :-
 
    findall(Parent - Class,
 
-           (parent(Class_Id, Parent_Id),
+           (objects:parent_(Class_Id, Parent_Id),
             nonvar(Parent_Id),
             class_primary_id(Class, Class_Id),
             class_primary_id(Parent, Parent_Id)),
