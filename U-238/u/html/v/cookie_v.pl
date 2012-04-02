@@ -27,7 +27,13 @@
 :- use_module(u(v)).
 :- use_module(u(vd)).
 
-:- module_transparent unify_cookie/4.
+new_class(cookie_v, object_v,
+          [name, value, domain, path, expires, secure, httponly],
+          [domain, path, name]).
+
+new_class(exact_domain_cookie_v, cookie_v, []).
+
+new_class(subdomains_cookie_v, cookie_v, []).
 
 %
 % Retrieve cookies from db by domain and path
@@ -44,9 +50,7 @@ unify_cookie(DB_Key, Domain, Path, Cookie) :-
                   [domain, path], [Cookie_Domain, Cookie_Path],
                   Cookie),
   
-  (  ( Class = subdomains_cookie_v
-     ; class_descendant(subdomains_cookie_v, Class)
-     )
+  (  class_same_or_descendant(subdomains_cookie_v, Class)
   ->
      % apply to subdomains also
      (   atom_concat('.', Top_Domain, Cookie_Domain) % '.' is optional
@@ -68,13 +72,4 @@ unify_cookie(DB_Key, Domain, Path, Cookie) :-
   ;  atom_concat(Cookie_Path, '/', CP)
   ),
   atom_concat(CP, _, Path).
-
-new_class(cookie_v, object_v,
-          [name, value, domain, path, expires, secure, httponly],
-          [domain, path, name]).
-
-% FIXME must use 4 args to be loaded after cookie_v
-new_class(exact_domain_cookie_v, cookie_v, [], []).
-
-new_class(subdomains_cookie_v, cookie_v, [], []).
 
