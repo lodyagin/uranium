@@ -68,6 +68,33 @@ test(class_create_feature1) :-
    obj_key(CCTO, Key),
    assertion(Key == []).
 
+test(class_descendant1,
+     [List == [callup_v, citizen_v, class_create_test_v]]
+    ) :-
+
+  findall(X, class_descendant(man_v, X), List0),
+  msort(List0, List).
+
+test(class_descendant2,
+     [List == []]
+    ) :-
+
+  findall(X, class_descendant(callup_v, X), List0),
+  msort(List0, List).
+
+test(class_same_or_descendant1,
+     [List == [callup_v, citizen_v, class_create_test_v, man_v]]
+    ) :-
+
+  findall(X, class_same_or_descendant(man_v, X), List0),
+  msort(List0, List).
+
+test(class_same_or_descendant2,
+     [List == [callup_v]]
+    ) :-
+
+  findall(X, class_same_or_descendant(callup_v, X), List).
+
 test(obj_construct_with_evals1) :-
 
     obj_construct(citizen_v,
@@ -411,5 +438,16 @@ test(eval_fields1, [Class == callup_v]) :-
 
    obj_construct(citizen_v, [sex, birthday], [man, 1994], C), 
    obj_field(C, class, Class).
+
+
+test(cleanup_obj_rebase, [N1 =:= N2]) :-
+
+   aggregate(count, A^B^C^(objects:class_id(A, B, C)), N1),
+   catch((obj_construct(numeric_id_v, [], [], Obj1),
+          obj_rebase((object_v -> citizen_v), Obj1, _)),
+         E, true),
+   E = error(EX, _), functor(EX, duplicate_field, _),
+   aggregate(count, A^B^C^(objects:class_id(A, B, C)), N2).
+
 
 :- end_tests(v).

@@ -25,9 +25,10 @@
 
 :- module(v,
           [
-           class_create/3,    % +Class, +Parent, +Add_Fields
-           class_create/4,    % +Class, +Parent, +Add_Fields, +Key
-           class_descendant/2,
+           class_create/3,     % +Class, +Parent, +Add_Fields
+           class_create/4,     % +Class, +Parent, +Add_Fields, +Key
+           class_descendant/2, % +Class, -Descendant
+           class_same_or_descendant/2, % +Class, -Descendant
            class_exists/1,
            class_fields_new/2,
            class_fields/2,    % +Class, -Fields (ordset)
@@ -624,6 +625,13 @@ class_descendant(Class, Descendant) :-
       class_id(Descendant_Id, Descendant)
    ).
 
+% class_same_or_descendant(+Class, ?Descendant)
+
+class_same_or_descendant(Class, Class).
+
+class_same_or_descendant(Class, Descendant) :-
+
+   class_descendant(Class, Descendant).
 
 % class_name(?Class)
 %
