@@ -45,8 +45,9 @@ find(SAT, Actor, Object_Type, Prop_List, DB_Key) :-
   filter_on_db(DB_Key, Field_Names, Field_Values),
 
   write_log('find iteration 1:', [logger(dump_db), lf(1)]),
-  dump_db(DB_Key), % logging
-  
+  dump_db(DB_Key). % logging
+
+/*
   atom_concat('fill_full_data_', Object_Type, Fill_Data_Pred),
   Fill_Data_Pred_Arity = 4,
   (
@@ -81,7 +82,7 @@ find(SAT, Actor, Object_Type, Prop_List, DB_Key) :-
   
   write_log('find, after final filter:', [logger(dump_db), lf(1)]),
   dump_db(DB_Key).
-  
+*/  
 
 %
 % find(+SAT, +Actor, +Object_Type, +Prop_List, ?Found_Objects)

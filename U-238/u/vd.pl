@@ -943,19 +943,25 @@ check_record(\/(Expr1, Expr2), Record) :-
 /*
 db_merge(DB1_Key, DB2_Key) :-
 
-  db_merge(DB1_Key, DB2_Key, default).
-
+   Ctx = context(db_merge/3, _),
+   db_merge_cmn(DB1_Key, DB2_Key, default, Ctx).
 
 % Merge by Key fields
 
 db_merge(DB1_Key, DB2_Key, Key) :-
 
-   atom(DB1_Key), atom(DB2_Key),
+   Ctx = context(db_merge/3, _),
+   db_merge_cmn(DB1_Key, DB2_Key, Key, Ctx).
+
+db_merge_cmn(DB1_Key, DB2_Key, Key, Ctx) :-
+
+   check_db_key(DB1_Key, Ctx),
+   check_db_key(DB2_Key, Ctx),
    atom_concat(DB1_Key, '.db_merge', DB_Tmp),
    write_log(['Start db_merge ', DB1_Key, ' and ', DB2_Key],
              [logger(db_merge), lf(1, before), lf(1)]),
    (
-   db_recorded(DB1_Key, Object1),
+   db_recorded_int(DB1_Key, Object1),
    write_log(['Found', Object1, 'in the first DB'],
              [logger(db_merge), lf(1, before), lf(1)]),
    functor(Object1, Class1, _),
@@ -963,23 +969,24 @@ db_merge(DB1_Key, DB2_Key, Key) :-
    -> get_key(Class1, Key1)
    ;  Key1 = Key
    ),
-   named_args_unify(Object1, Key1, Key1_Value),
+   arg(1, Object1, Class1_Id),
+   obj_unify_int(Class1_Id, Key1, throw, Object1, Key1_Value, Ctx),
    (
     ground(Key1_Value),
     write_log(['Got the key value', Key1_Value],
               [logger(db_merge), lf(1)]),
-    named_args_unify(DB2_Key, Class2, Key1, Key1_Value,
-                     w(Object2_Ref, Object2))
+    named_args_unify(DB2_Key, Class2, Key1, Key1_Value, Object2)
     -> %NB use only the first key-unified object from DB2
 
     write_log(['Found', Object2, 'in the second DB'],
               [logger(db_merge), lf(1)]),
-    most_narrowed(Class1, Class2, New_Class),
-    obj_downcast(Object1, New_Class, Final_Obj1),
-    obj_downcast(Object2, New_Class, Final_Obj2),
+    most_narrowed(Class1, Class2, New_Class), - need check with rebasing
+    arg1(1, Object2, Class2_Id),
+    obj_downcast_int(Object1, New_Class, Final_Obj1),
+    obj_downcast_int(Object2, New_Class, Final_Obj2),
 
     Final_Obj1 = Final_Obj2,
-    db_erase(Object2_Ref),
+    db_erase(Object2),
 
     db_recordz(DB_Tmp, Final_Obj2),
     write_log([Final_Obj2, 'is written into the first DB'],
