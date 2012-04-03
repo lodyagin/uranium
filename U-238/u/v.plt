@@ -138,6 +138,22 @@ test(obj_construct_bug1) :-
 
    assertion(Field_Names == Field_Names2).
 
+test(obj_diff1,
+     [Diff == [diff(name, 'Sergei', 'Artemiy')]]) :-
+
+   obj_construct(man_v, [name, surname], ['Sergei', 'Lodyagin'], M1),
+   obj_construct(man_v, [name, surname], ['Artemiy', 'Lodyagin'], M2),
+   obj_diff(M1, M2, Diff).
+
+test(obj_diff2,
+     [Diff == [diff(name, 'Sergei', 'Artemiy')]]) :-
+
+   obj_construct(man_v, [name, surname], ['Sergei', 'Lodyagin'], M1_0),
+   obj_rebase((object_v -> db_object_v), M1_0, M1),
+   obj_construct(man_v, [name, surname], ['Artemiy', 'Lodyagin'], M2),
+   obj_diff(M1, M2, Diff).
+  
+
 % After some time it will always fails (because it depends
 % on the current year).
 test(obj_downcast1,

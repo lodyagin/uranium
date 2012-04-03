@@ -856,19 +856,19 @@ obj_diff(Obj1, Obj2, Diff_List) :-
 
    ord_union(Fields1, Fields2, Fields_For_Diff),
 
-   build_diff_list(Obj1, Obj2, Fields_For_Diff, [], Diff_List).
+   build_diff_list(Fields_For_Diff, Obj1, Obj2, [], Diff_List).
 
 
-build_diff_list(_, _, [], Diff, Diff) :- !.
+build_diff_list([], _, _, Diff, Diff) :- !.
 
-build_diff_list(Obj1, Obj2, [Field|Tail], Diff_In, Diff_Out) :-
+build_diff_list([Field|Tail], Obj1, Obj2, Diff_In, Diff_Out) :-
 
-  (obj_field(Obj1, Field, V1) -> true ; V1 = _),
-  (obj_field(Obj2, Field, V2) -> true ; V2 = _),
+  (obj_field(Obj1, fail, Field, V1) -> true ; V1 = _),
+  (obj_field(Obj2, fail, Field, V2) -> true ; V2 = _),
   (V1 =@= V2 -> Diff_In = Diff2
    ; selectchk(diff(Field, V1, V2), Diff2, Diff_In)
    ),
-  build_diff_list(Obj1, Obj2, Tail, Diff2, Diff_Out).
+  build_diff_list(Tail, Obj1, Obj2, Diff2, Diff_Out).
 
 
 %
