@@ -24,16 +24,14 @@
           [canonicalize_host/2, % +Host, -Host_Can
            domain_match/2,      % +Subject_Domain, +Match_To_Domain
            path_match/2,        % +Subject_Path, +Match_To_Path
-           set_cookie_obj/4,    % +Set_Cookie, +Request_Host, +Uri_Path,
+           set_cookie_obj/4     % +Set_Cookie, +Request_Host, +Uri_Path,
                                 % -Obj
-           prolog:message//1
           ]).
 
 :- use_module(u(v)).
 :- use_module(u(parser/general/dcg_entities)).
 :- use_module(u(internal/check_arg)).
-
-:- multifile prolog:message//1.
+:- use_module(u(ur_messages)).
 
 new_class(cookie_v, object_v,
           [%request_host,
@@ -194,9 +192,5 @@ check_path(Path) :-
    atom_concat('/', _, Path). 
 
 
-prolog:message(ignore_cookie_attribute(Attr, Val, Obj)) :-
-
-   ['The cookie attribute ~a=~a is ignored for ~p' -
-   [Attr, Val, Obj]].
 
 
