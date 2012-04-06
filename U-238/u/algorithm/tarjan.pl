@@ -28,7 +28,7 @@
 
 :- module(tarjan,
           [tarjan/7,
-           vertex_path/3  % +Vertex, +Field_Name, -Name_Path
+           vertex_path/4  % +DB_Key, +Vertex, +Id_Field, -Path
            ]).
 
 :- use_module(library(debug)).
@@ -189,30 +189,35 @@ scc_up([W|Stack0], Stack, Scc0, [W|Scc], V) :-
    scc_up(Stack0, Stack, Scc0, Scc, V).
 
 
-% vertex_path(+Vertex, +Field_Name, -Name_Path)
+% vertex_path(+DB_Key, +Vertex, +Id_Field, -Path)
 %
 % Backtrace from Vertex to the start vertex and
-% return the sequence of Field_Name values in the Name_Path
+% return the sequence of Id_Field values in the Path
 
-vertex_path(Vertex, Field_Name, Name_Path) :-
+vertex_path(DB_Key, Vertex, Id_Field, Path) :-
 
-   vertex_path(Vertex, Field_Name, [], Name_Path).
+   vertex_path(DB_Key, Vertex, Id_Field, [], Path).
 
-vertex_path(Vertex, Field_Name, Name_Path0, Name_Path) :-
+vertex_path(DB_Key, Vertex, Id_Field, Path0, Path) :-
 
-   obj_field(Vertex, prev_vertex_db_ref, Prev_Vertex),
-   vertex_path(Prev_Vertex, Vertex, Field_Name,
-               Name_Path0, Name_Path).
+   obj_field(Vertex, prev_vertex_id, Prev_Vertex_Id),
+   vertex_path(Prev_Vertex_Id, DB_Key, Vertex, Id_Field,
+               Path0, Path).
 
-vertex_path(Prev_Vertex, Vertex, Field_Name,
-            Name_Path0, [Field_Value|Name_Path0]) :-
+vertex_path(Prev_Vertex_Id, DB_Key, Vertex, Id_Field,
+            Path0, [Vertex_Id|Path0]) :-
 
-   var(Prev_Vertex), !,  % the first vertex
-   obj_field(Vertex, Field_Name, Field_Value).
+   var(Prev_Vertex_Id), !,  % the first vertex
+   obj_field(DB_Key, Vertex, Id_Field, Vertex_Id).
 
-%vertex_path(Prev_Vertex, Vertex, Field_Name,
-%            Name_Path0, Name_Path1) :-
+vertex_path(Prev_Vertex_Id, DB_Key, Vertex, Id_Field,
+            Path0, Path) :-
 
-   
+   obj_field(Vertex, Id_Field, Vertex_Id),
+   named_args_unify(DB_Key, _, [Id_Field], [Prev_Vertex_Id],
+                    Prev_Vertex),
+   vertex_path(DB_Key, Prev_Vertex, Id_Field,
+               [Vertex_Id|Path0], Path).
+
    
 
