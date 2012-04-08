@@ -92,9 +92,9 @@ http_post_html(Options, Cookies_DB, Post_Data, URL, DOM) :-
     write_log(['http_post URL:', URL, ', options:', Options2],
               [logger(http_ops), lf(1, before), lf(1)]),
 
-    http_post(URL, Post_Data, DOM, Options2),
+    http_post(URL, Post_Data, Data, Options2),
         
-    write_log(DOM,
+    write_log(Data,
               [logger(http_ops), lf(1, before), lf(1)]),
     write_log(['reply headers:', Reply_Headers],
               [logger(http_ops), lf(1, before), lf(1)]),
@@ -103,8 +103,16 @@ http_post_html(Options, Cookies_DB, Post_Data, URL, DOM) :-
     ->  url_host_path(URL, Host, Path),
         store_cookies(Cookies_DB, Reply_Headers, Host, Path)
     ;   true
-    ).
+    ),
 
+    (   Data = redirect(Redirect),
+        nonvar(Redirect)
+    ->  write_log(['redirect to', Redirect],
+                  [logger(http_ops), lf(1, before), lf(1)]),
+        parse_url(Redirect, URL, New_URL),
+        http_get_html(Options, Cookies_DB, New_URL, DOM)
+    ;   DOM = Data
+    ).
 
 get_cookies_headers(Cookies_DB_Key, URL, Headers) :-
 

@@ -3,7 +3,7 @@
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
 %
-%  Copyright (C) 2009-2012, Kogorta OOO Ltd.
+%  Copyright (C) 2012, Kogorta OOO Ltd.
 %
 %  This library is free software; you can redistribute it and/or
 %  modify it under the terms of the GNU Lesser General Public

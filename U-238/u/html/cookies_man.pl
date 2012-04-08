@@ -74,11 +74,10 @@ store_cookie(DB_Key, Domain, Path, Set_Cookie) :-
 
    (   set_cookie_obj(Set_Cookie, Domain, Path, Cookie_Obj0)
    ->
-       store_cookie(DB_Key, Cookie_Obj0, Cookie_Obj),
-       write_log(['New cookie in', DB_Key, ':', Cookie_Obj],
-                 [logger(cookies), lf(1, before), lf(1)])
+       store_cookie(DB_Key, Cookie_Obj0, _)
    ;
-       true
+       write_log([DB_Key, ': ignore ', Set_Cookie],
+                 [logger(cookies), lf(1, before), lf(1)])
    ).
 
 % rfc 6265, 5.3
@@ -104,9 +103,19 @@ store_cookie(DB_Key, Cookie_Obj0, Cookie_Obj) :-
    ->
        obj_rewrite(Cookie_Obj0, [creation_time], _, [Creation_Time],
                    Cookie_Obj1),
-       db_erase(Old_Cookie_Obj)
+       db_erase(Old_Cookie_Obj),
+       % TODO only in a case of logging:
+       obj_rebase((db_object_v -> object_v),
+                  Old_Cookie_Obj, Old_Cookie_Obj1),
+       obj_diff(Old_Cookie_Obj1, Cookie_Obj1, Diff_List),
+       obj_field(Cookie_Obj1, name, Cookie_Name1),
+       write_log([DB_Key, ': u  ', Cookie_Name1, Diff_List],
+                 [logger(cookies), lf(1, before), lf(1)])
    ;
-       Cookie_Obj1 = Cookie_Obj0
+       Cookie_Obj1 = Cookie_Obj0,
+       obj_field(Cookie_Obj1, set_cookie, Set_Cookie1),
+       write_log([DB_Key, ': <- ', Set_Cookie1],
+                 [logger(cookies), lf(1, before), lf(1)])
    ),
    
    % p.11.4
@@ -137,8 +146,10 @@ load_cookie(DB_Key, Request_Host, Uri_Path, Set_Cookie) :-
        domain_match(Host_Can, Domain)
    ),
 
-   path_match(Uri_Path, Path).
+   path_match(Uri_Path, Path),
 
+   write_log([DB_Key, ': -> ', Set_Cookie],
+             [logger(cookies), lf(1, before), lf(1)]).
    % securiy_only flag : TODO
    % http_only flag : TODO
        
@@ -155,15 +166,15 @@ load_cookie(DB_Key, Request_Host, Uri_Path, Set_Cookie) :-
 retrieve_cookies_headers(DB_Key, Domain, Path, Headers) :-
 
   atom(DB_Key),
+
+  write_log(['Extract cookies from', DB_Key, 'for',
+             Domain, '/', Path],
+            [logger(cookies), lf(1, before), lf(1)]),
+             
   findall(Set_Cookie,
           load_cookie(DB_Key, Domain, Path, Set_Cookie),
           Cookies),
 
-  write_log(['Extract cookies from', DB_Key, 'for',
-             Domain, '/', Path, ':',
-             Cookies],
-            [logger(cookies), lf(1, before), lf(1)]),
-             
   cookies_headers(Cookies, Headers).
   
 

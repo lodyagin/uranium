@@ -1,24 +1,27 @@
-%% This file is a part of Uranium, a general-purpose functional test platform.
-%% Copyright (C) 2011  Sergei Lodyagin
-%%
-%% This library is free software; you can redistribute it and/or
-%% modify it under the terms of the GNU Lesser General Public
-%% License as published by the Free Software Foundation; either
-%% version 2.1 of the License, or (at your option) any later version.
-%%
-%% This library is distributed in the hope that it will be useful,
-%% but WITHOUT ANY WARRANTY; without even the implied warranty of
-%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-%% Lesser General Public License for more details.
-
-%% You should have received a copy of the GNU Lesser General Public
-%% License along with this library; if not, write to the Free Software
-%% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-%%
-%% e-mail: lodyagin@gmail.com
-%% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
-%% -------------------------------------------------------------------------------
-%%
+%  This file is a part of Uranium, a general-purpose functional
+%  test platform.
+%
+%  Copyright (C) 2012, Kogorta OOO Ltd
+%
+%  This library is free software; you can redistribute it and/or
+%  modify it under the terms of the GNU Lesser General Public
+%  License as published by the Free Software Foundation; either
+%  version 2.1 of the License, or (at your option) any later
+%  version.
+%
+%  This library is distributed in the hope that it will be
+%  useful, but WITHOUT ANY WARRANTY; without even the implied
+%  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+%  PURPOSE.  See the GNU Lesser General Public License for more
+%  details.
+%
+%  You should have received a copy of the GNU Lesser General
+%  Public License along with this library; if not, write to the
+%  Free Software Foundation, Inc., 51 Franklin Street, Fifth
+%  Floor, Boston, MA 02110-1301 USA
+%
+%  e-mail: lodyagin@gmail.com
+%  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(cookie_v,
           [canonicalize_host/2, % +Host, -Host_Can
@@ -34,8 +37,7 @@
 :- use_module(u(ur_messages)).
 
 new_class(cookie_v, object_v,
-          [%request_host,
-	   set_cookie,
+          [set_cookie,
            name, value, domain, path, expires, secure_only, http_only,
            creation_time, last_access_time, persistent, host_only],
           [domain, path, name]).
@@ -54,7 +56,7 @@ set_cookie_obj(Set_Cookie, Request_Host, Uri_Path, Obj) :-
    must_be(atom, Request_Host),
    must_be(atom, Uri_Path),
 
-   Set_Cookie = set_cookie(_, _, List),
+   Set_Cookie = set_cookie(Name, Value, List),
 
    canonicalize_host(Request_Host, Request_Host_Can),
    uri_default_path(Uri_Path, Default_Path),
@@ -64,7 +66,8 @@ set_cookie_obj(Set_Cookie, Request_Host, Uri_Path, Obj) :-
    % Set default values
    % <NB> do not set the default path (rfc 6265, 5.1.4)
    obj_construct(cookie_v,
-                 [%request_host,
+                 [name,
+                  value,
 		  set_cookie,
                   persistent,
                   domain,
@@ -75,7 +78,8 @@ set_cookie_obj(Set_Cookie, Request_Host, Uri_Path, Obj) :-
                   creation_time,
                   last_access_time
                  ],
-                 [%Request_Host_Can,
+                 [Name,
+                  Value,
                   Set_Cookie,
                   false,   % rfc 6265, 5.3, 3
                   Request_Host_Can,  % 5.3, 6
@@ -98,13 +102,13 @@ parse_attr_list([Attr0=Val|Tail], Obj0, Obj) :-
    parse_attr(Attr, Val, Obj0, Obj1),
    parse_attr_list(Tail, Obj1, Obj).
 
-%parse_attr(expires, Date_Str, Obj0, Obj) :- !,
+parse_attr(expires, _, Obj, Obj) :- !. % TODO
 
 %   parse_date(Date_Str, Date), % can fail, see rfc 6265, 5.2.1
 %   obj_rewrite(Obj0, [expires], _, [Date]. Obj).
 %   ! check rfc 6265, 5.3, 3 also
 
-%parse_attr('max_age', Delta_Seconds_Str, Obj0, Obj) :- !,
+parse_attr('max_age', _, Obj, Obj) :- !. % TODO
 %   ! check rfc 6265, 5.3, 3 also
 
 parse_attr(domain, Domain0, Obj0, Obj) :- !,

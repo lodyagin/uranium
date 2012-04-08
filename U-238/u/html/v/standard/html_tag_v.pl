@@ -48,7 +48,7 @@ downcast(html_tag_v, html_tag_label_v, From, To) :-
 unify_html_attrs(_, [], Rest, Rest) :- !. 
 unify_html_attrs(Obj, [Id = Val|T], Rest0, Rest) :-
    atom_concat('.', Id, Field),
-   (  obj_field(Obj, weak, Field, Val)
+   (  obj_field(Obj, fail, Field, Val)
    -> Rest1 = Rest0
    ;  Rest1 = [Id = Val|Rest0] ),
    unify_html_attrs(Obj, T, Rest1, Rest).

@@ -44,7 +44,8 @@ prompt(Msg, Args, Keys_LOL, Result) :-
    must_be(list(list(atom)), Keys_LOL),
 
    format(Msg, Args),
-   prompt2(Keys_LOL, Result, Ctx).
+   prompt2(Keys_LOL, Result, Ctx),
+   format('~a~n', [Result]).
 
 prompt2(Keys_LOL, Result, Ctx) :-
   

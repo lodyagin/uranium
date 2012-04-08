@@ -1,7 +1,7 @@
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
 %
-%  Copyright (C) 2011  Sergei Lodyagin
+%  Copyright (C) 2012, Kogorta OOO Ltd
 %
 %  This library is free software; you can redistribute it and/or
 %  modify it under the terms of the GNU Lesser General Public
@@ -48,7 +48,7 @@
            %obj_copy/2,       % +From, -To
            %obj_copy/3,       % +Field_List, +From, -To
            obj_is_descendant/2,
-           obj_diff/3,
+           obj_diff/3,        % +Obj1, +Obj2, -Diff_List
            obj_diff_print/1,
            obj_diff_print/2,
            obj_downcast/2,   % +Parent, -Descendant

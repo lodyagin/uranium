@@ -77,8 +77,9 @@ new_class(html_tag_input_text_v, html_tag_input_v,
 
 'html_tag_input_v?'(Obj, class, Class) :-
 
-   obj_field(Obj, '.type', Type),
-   (  atom(Type)
+   obj_field(Obj, '.type', Type0),
+   (  atom(Type0),
+      ( Type0 = txt -> Type = text ; Type = Type0 )
    -> concat_atom(['html_tag_input_', Type, '_v'], '', Class),
       class_exists(Class)
    ;  functor(Obj, Class, _)
