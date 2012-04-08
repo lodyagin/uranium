@@ -38,26 +38,49 @@
 % if you want log in file.
 
 :- module(logging, 
-          [logged/1,  %:Goal (fail on exception)
-           logged/2,  %:Goal, -?Exception (not fail)
-           write_log/1, write_log/2,
+          [logged/1,        % :Goal (fail on exception)
+           logged/2,        % :Goal, -?Exception (not fail)
+           write_log/1,     % +Message
+           write_log/2,     % +Message, +Options
            write_log_map/3,
-           open_log/1,   % +Options
-           log_piece/2,  % +Message, +Options
-           close_log/1,  % +Options
+           open_log/1,      % +Options
+           log_piece/2,     % +Message, +Options
+           close_log/1,     % +Options
            check_logger/1,  %+Options  true if to log (logger is enabled)
            change_indent/3,
-           exclude_lf/2
-          
-]).
+           exclude_lf/2,
+           log/1,           % +Logger_Name
+           nolog/1          % +Logger_Name
+          ]).
 
+:- use_module(library(error)).
 :- use_module(u(ur_lists)).
 
-:- module_transparent write_log/1, write_log/2, logged/1, logged/2.
+:- meta_predicate logged(0).
+:- meta_predicate logged(0, -).
 
 :- dynamic logger/2.
 % logger(Name, State).
 % State ::= enabled | disabled
+
+% log(+Logger_Name)
+%
+% Enable the logger Logger_Name
+%
+log(Logger_Name) :-
+
+  must_be(atom, Logger_Name),
+  retractall(logger(Logger_Name, _)),
+  assertz(logger(Logger_Name, enabled)).
+
+% nolog(+Logger_Name)
+%
+% Disable the logger Logger_Name
+%
+nolog(Logger_Name) :-
+
+  must_be(atom, Logger_Name),
+  retractall(logger(Logger_Name, _)).
 
 exclude_lf(Oin, Oout) :-
 
