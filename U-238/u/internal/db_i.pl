@@ -49,6 +49,8 @@
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/db_vocab)).
 :- use_module(u(v)).
+:- use_module(u(internal/ur_debug)).
+:- use_module(u(util/lambda)).
 
 :- multifile prolog:message/3.
 :- multifile db_recorded_int/2, db_erase_int/2, db_record_int/4.
@@ -82,7 +84,7 @@ db_functor_des(DB_Key, Functor, Des, Ctx) :-
    ;  throw(error(bad_db(DB_Key, 'Bad class name: ~w', [Functor]),
                   Ctx))
    ).
-   
+
 
 % db_key_policy(+DB_Key, -Old, ?New)
 % is det
@@ -128,7 +130,7 @@ db_erase_int(DB_Key, Object) :-
 
    atom(DB_Key), !,
    Ctx = context(db_erase_int/2, _),
-   
+
    arg(1, Object, Local_Id),
    class_all_fields(Local_Id, All_Fields),
    ord_del_element(All_Fields, db_ref, Reset_Fields),
@@ -159,11 +161,13 @@ db_add_class(DB_Key, Local_Id, DB_Id, Des) :-
    class_all_fields(Local_Id, Fields),
    get_key(Local_Id, Key),
    class_id(Local_Id, Class),
-   list_inheritance(Local_Id, Parents),
-   assertz(db_class_des(DB_Key, DB_Id, DB_Parent_Id, Class, Arity,
-                        Fields, Key, Parents)),
+   class_parents_as_db_ids(DB_Key, Local_Id, DB_Parents),
+   assertz_pred(vd,
+                db_class_des(DB_Key, DB_Id, DB_Parent_Id, Class,
+                             Arity, Fields, Key, DB_Parents)
+               ),
    Des = db_class_des(DB_Id, DB_Parent_Id, Class, Arity, Fields,
-                      Key, Parents),
+                      Key, DB_Parents),
    dynamic(Class/Arity),
 
    % Parents are added before children.
@@ -174,6 +178,21 @@ db_add_class(DB_Key, Local_Id, DB_Id, Des) :-
    ;
       true   % in hope the parent already added it
    ).
+
+
+class_parents_as_db_ids(DB_Key, Local_Class_Id, DB_Parents) :-
+
+   list_inheritance(Local_Class_Id, [_|Local_Parents0]),
+                                % skip object_base_v
+
+   append(Local_Parents, [_], Local_Parents0), !,
+                                % skip the Local_Id itself
+
+   maplist(\C_Local_Id^C_DB_Id^
+          db_conv_local_db(DB_Key, C_Local_Id, C_DB_Id, _),
+          Local_Parents, DB_Parents
+          ).
+
 
 % class_db_local_id(+DB_Key, ?Local_Id, ?DB_Id, -Des)
 % Convert local <-> db id for the class
@@ -195,6 +214,7 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
 
 %db_conv_local_db(+DB_Key, ?(+)Local_Class_Id, ?(-)DB_Class_Id,
 %                 -Des)
+% local -> db
 db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
 
    var(DB_Class_Id), integer(Local_Class_Id), !,
@@ -210,7 +230,8 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
                         DB_Fields, A3, DB_Parents)
        ->  % a descriptor of this class is already in db
 
-           list_inheritance(Local_Class_Id, Local_Parents),
+           class_parents_as_db_ids(DB_Key, Local_Class_Id,
+                                   Local_Parents),
            (   Local_Parents == DB_Parents
            ->  true
            ;
@@ -222,7 +243,7 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
            class_all_fields(Local_Class_Id, Local_Fields),
            (   Local_Fields == DB_Fields
 	   ->  true
-	   ;   
+	   ;
 	       throw(error(class_fields_mismatch(
 	          DB_Key, Class, Local_Fields, DB_Fields)))
 	   ),
@@ -235,6 +256,7 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
    ),
    db_vocab_local_db_add(DB_Key, Local_Class_Id, DB_Class_Id).
 
+% db -> local
 db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
 
    var(Local_Class_Id), integer(DB_Class_Id), !,
@@ -254,10 +276,11 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
 					   DB_Class_Id)))
        ),
 
-       class_id(Local_Class_Id, Class), % try next class id
+       class_id(Local_Class_Id0, Class), % try next class id
 
        % check class compatibility (can BT to next local id)
-       list_inheritance(Local_Class_Id, Local_Parents),
+       class_parents_as_db_ids(DB_Key, Local_Class_Id0,
+                               Local_Parents),
        (   Local_Parents == DB_Parents
        ->  true
        ;
@@ -296,10 +319,14 @@ db_rebase([Parent|LPT], [Parent|DBPT]) :- !,
 
    db_rebase(LPT, DBPT).
 
+db_rebase(Local_Parents, DB_Parents) :-
+
+   debug(vd, 'fail on ~p',
+         [db_rebase(Local_Parents, DB_Parents)]),
+   fail.
 
 
-   
-   
+
 
 db_clear_int(DB_Key) :-
 
@@ -315,6 +342,8 @@ db_clear_int(DB_Key) :-
    retractall(db_next_class_id_(DB_Key, _)),
    retractall(db_keymaster(DB_Key, _)),
    retractall(db_class_des(DB_Key, _, _, _, _, _, _, _)),
+   debug(vd, '~p',
+         retractall(db_class_des(DB_Key, _, _, _, _, _, _, _))),
    db_vocab_clear(DB_Key).
 
 %db_object_class_int(+DB_Key, -Local_Class_Id)
@@ -342,7 +371,7 @@ db_recorded_int(DB_Key, L_Object) :-
 
     obj_rewrite_int(Local_Class_Id, L_Object,
                     [db_key], _, [DB_Key], L_Object1, Ctx),
-    
+
     object_local_db(DB_Key, L_Object1, DB_Object),
 
     % find the matched record
@@ -425,7 +454,7 @@ db_record_int(DB_Key, Order, Object0, Ctx) :-
     ->  assertz(Object)
     ;   asserta(Object)
     ).
-    
+
 
 next_db_ref(Ref) :-
 
@@ -439,7 +468,7 @@ object_local_db(DB_Key, Local_Object, DB_Object) :-
 
     % TODO: db_key and db_ref can not be included
     % in a db object
-   
+
     % it is from Local to DB case
     nonvar(Local_Object), var(DB_Object), !,
     Ctx = context(object_local_db/3, _),
@@ -545,7 +574,7 @@ erase_conflicts(DB_Key, Class_Id, Object) :-
   ).
 
 % key_conflict(+DB_Key, +Class_Id, @Object, -Conflicting)
-% nondet 
+% nondet
 %
 % Return the conflicting objects.
 % Using of ground(Key_Value) ensures Object is not changed
@@ -563,7 +592,7 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
    copy_term_nat(Key_Value, Test_Value),
    named_args_unify_int(DB_Key, throw, Des, Key, Test_Value,
                         Conflicting).
-   
+
 
 
 named_args_unify_int(DB_Key, Option, Des, Field_Names, Values,
@@ -577,7 +606,7 @@ named_args_unify_int(DB_Key, Option, Des, Field_Names, Values,
    %               Values0, Values1),
    % Field_Names = [db_key|Field_Names1],
    % Values = [DB_Key|Values1],
-   
+
    obj_construct_int(Local_Class_Id, Field_Names, Option, Values,
                      Term0),
    obj_rebase((object_v -> db_object_v), Term0, Term), % ?
@@ -593,7 +622,7 @@ named_args_unify_int(DB_Key, Option, Des, Field_Names, Values,
 
 %    exclude_field(Field, Ft0, Ft, Vt0, Vt).
 
-                     
+
 prolog:message(db_system_bad_state(Format, Args)) -->
 
    ['The Uranium DB system may be corrupted: '],
@@ -622,15 +651,9 @@ prolog:message(class_fields_mismatch(DB_Key, Class, Local, DB))
 prolog:message(class_parents_mismatch(DB_Key, Class, Local, DB))
 -->
 
-   {
-     maplist(class_id, Local, Local_Names),
-     maplist(class_id, DB, DB_Names)
-   },
-   
    ['The DB ~a has another parents for the class ~a~n'
     - [DB_Key, Class]],
-   ['our parents: ~w ~ndb  parents: ~w'
-   - [Local_Names, DB_Names]].
+   ['our parents: ~w ~ndb  parents: ~w' - [Local, DB]].
 
 prolog:message(invalid_db_class_id(DB_Key, DB_Class_Id)) -->
 

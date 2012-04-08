@@ -80,7 +80,7 @@ test(db_key_policy, [setup(setup)]) :-
    assertion(New3 == throw).   
    
 
-test(db_recorded_int,
+test(db_recorded_int1,
      [setup(setup),
       error(domain_error(db_object_v_descendant, Obj0))]
     ) :-
@@ -89,10 +89,25 @@ test(db_recorded_int,
    db_put_object(db_i_test, Obj0, _),
    db_recorded_int(db_i_test, Obj0).
 
-test(db_recorded_int, [setup(setup)]) :-
+test(db_recorded_int2, [setup(setup)]) :-
 
    obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),
    db_put_object(db_i_test, Obj0, Obj),
+   db_recorded(db_i_test, Obj).
+
+test(db_recorded_int3, [setup(setup)]) :-
+
+   obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),
+   obj_rebase((object_v -> db_object_v), Obj0, Obj1),
+   db_put_object(db_i_test, Obj1, Obj),
+   db_recorded(db_i_test, Obj).
+
+test(db_recorded_int4, [setup(setup)]) :-
+
+   obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),
+   obj_rebase((object_v -> db_object_v), Obj0, Obj1),
+   obj_rebase((object_v -> tarjan_vertex_v), Obj1, Obj2),
+   db_put_object(db_i_test, Obj2, Obj),
    db_recorded(db_i_test, Obj).
 
 test(key_conflict, [setup(model_db(Slod1))]) :-

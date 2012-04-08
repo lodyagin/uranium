@@ -73,6 +73,12 @@ class_create_cmn(Class, Parent, Fields, New_Key, Class_Id, Ctx) :-
       )
    ;  true
    ),
+   class_create_int(Class, Parent, Fields, New_Key_Set, Class_Id,
+                    Ctx).
+
+class_create_int(Class, Parent, Fields, New_Key_Set, Class_Id,
+                  Ctx) :-
+
    class_primary_id(Parent, Parent_Id),
    assert_new_class(Class, Parent_Id, Fields, Ctx),
    class_primary_id(Class, Class_Id),
