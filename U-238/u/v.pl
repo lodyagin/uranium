@@ -601,8 +601,9 @@ obj_set_field(Object, Field, Value) :-
 %	eval_obj_expr(Sub_Expr, Object),
 %	named_arg(Object, Field, Value), !.
 
-eval_obj_expr(Object / Field, Value) :-
-    obj_field(Object, Field, Value), !.
+eval_obj_expr(Object0 / Field, Value) :- !,
+    eval_obj_expr(Object0, Object),
+    obj_field(Object, Field, Value).
 
 eval_obj_expr(Value, Value).
 

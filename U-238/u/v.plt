@@ -104,6 +104,19 @@ test(class_same_or_descendant3, [List == [callup_v]]) :-
   obj_rebase((object_v -> callup_v), V, _),
   findall(X, class_same_or_descendant(callup_v, X), List).
 
+test(eval_obj_expr,
+     [[E1, E2, E3] =@= [HTTP_Result, WWW_Addr, Url]]
+     ) :-
+
+   Url = 'http://kogorta.dp.ua',
+   obj_construct(www_address_v,
+                 [http_request_url], [Url], WWW_Addr),
+   obj_construct(http_result_v,
+                 [www_address], [WWW_Addr], HTTP_Result),
+   eval_obj_expr(HTTP_Result, E1),
+   eval_obj_expr(HTTP_Result/www_address, E2),
+   eval_obj_expr(HTTP_Result/www_address/http_request_url, E3).
+
 test(obj_construct_with_evals1) :-
 
     obj_construct(citizen_v,
