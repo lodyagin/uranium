@@ -109,14 +109,13 @@ new_class(http_response_headers_v, http_headers_v,
 % request/response headers or miss required fields
 new_class(http_invalid_headers_v, http_headers_v, []).
 
-% TODO add http_invalid_miss_headers_v on missed fields
+% TODO add http_invalid_miss_headers_v on missed required fields
 
 new_class(http_invalid_mixed_headers_v,
           http_invalid_headers_v, []).
 
-% <NB> it is http_invalid_mixed_headers_v descendant
 new_class(http_invalid_bulk_headers_v,
-          http_invalid_mixed_headers_v,
+          http_invalid_headers_v,
           [
            '@bulk'  % unparsed (invalid) headers live here
                     % in the form of Header = Value list
@@ -150,7 +149,7 @@ http_headers_list_obj(List, Obj) :-
                          Obj0, Obj1, [], Bulk, Ctx),
    (  Bulk == [],
       \+ obj_same_or_descendant(Obj1,
-                     http_invalid_bulk_headers_v, _), !
+                     http_invalid_bulk_headers_v), !
    ;
       Bulk \= [],
       obj_field(Obj1, '@bulk', Bulk)
@@ -202,7 +201,7 @@ downcast_headers(Header, Value, Class_Fields,
    ->
       obj_rebase((http_headers_v -> Class), Obj0, Obj),
       obj_field(Obj, Header, Value),
-      Bulk = Bulk0, Bulk = []
+      Bulk = Bulk0
    ;
       (  obj_same_or_descendant(Obj0,
                      http_invalid_bulk_headers_v)
@@ -220,8 +219,8 @@ mix_case(Obj0, Obj) :-
    functor(Obj0, Class0, _),
    obj_parents(Obj0, Parents0),
    list_to_ord_set([Class0|Parents0], Parents1),
-   (  ord_memberchk(http_request_headers, Parents1),
-      ord_memberchk(http_response_headers, Parents1)
+   (  ord_memberchk(http_request_headers_v, Parents1),
+      ord_memberchk(http_response_headers_v, Parents1)
    ->
       obj_rebase((http_headers_v ->
                   http_invalid_mixed_headers_v),
