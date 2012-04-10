@@ -458,7 +458,7 @@ test(obj_rewrite_weak1,
                  ['Luda', 1.40, 99], Luda1),
    obj_rewrite(Luda1,
                [height, weight, name, country],
-               _
+               _,
                [1.44, 69, _, 'UK'],
                _).
 
