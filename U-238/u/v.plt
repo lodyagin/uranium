@@ -276,6 +276,23 @@ test(obj_key2) :-
    obj_key_value(Man2, Key_Value2),
    assertion(Key_Value2 =@= [_]).
 
+
+test(obj_option_list1,
+     [List =@= [country = ['Soviet Union'],
+                sex = man,
+                surname = 'Mayakovsky']]
+     ) :-
+
+   obj_construct(citizen_v, 
+                 [sex, surname, country], 
+                 [man, 'Mayakovsky', ['Soviet Union']],
+                 Man),
+   obj_option_list(Man, List).
+ 
+test(obj_option_list2, [List =@= []]) :-
+
+   obj_construct(citizen_v, [], [], Man),
+   obj_option_list(Man, List).
  
 test(obj_rebase_bug1) :-
 
