@@ -17,7 +17,7 @@
                                         % +Value_List, +Ctx
                                         % inst-
            
-           check_object_arg/3,         % not inc. inst
+           check_object_arg/3,         % +Obj, +Ctx, -Class_Id inst-
            check_rebase_rule/2,
 
            error:has_type/2

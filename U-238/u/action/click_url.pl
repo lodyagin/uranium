@@ -36,50 +36,41 @@
                       %+URL_Expr, -Page nondet
                       click_with_all_redirects/4,
                       %+URL_Expr, +User0, -User, -Page nondet
-                      click_with_all_redirects/5
-                      %+URL_Expr, @Proxy, +User0, -User, -Page nondet
+                      click_with_all_redirects/5,
+                      %+URL_Expr, @Proxy, +User0, -User, -Page
+                      %nondet
+                      
+                      send_form/6 % +URL_Expr, +Form, @Proxy,
+                                  % +User0, -User, -Page
                       ]).
 
 :- use_module(u(html/http_ops)).
 :- use_module(u(v)).
-:- use_module(u(html/http_page)). 
+:- use_module(u(html/http_page)).
+:- use_module(u(internal/check_arg)).
 
 % click_url(+URL_Expr, -Page)
 
 click_url(URL_Expr, Page) :-
 
-   click_url(URL_Expr, _, Page).
+   Ctx = context(click_url/2, _),
+   url_cmn(get, URL_Expr, _, _, _, _, Page, Ctx).
 
 
 % click_url(+URL_Expr, @Proxy, -Page)
 
 click_url(URL_Expr, Proxy, Page) :-
 
-  click_url_with_cookies(URL_Expr, Proxy, _, Page).
+   Ctx = context(click_url/3, _),
+   url_cmn(get, URL_Expr, _, Proxy, _, _, Page, Ctx).
 
 
 % click_url(+URL_Expr, @Proxy, +User0, -User, -Page)
 
 click_url(URL_Expr, Proxy, User0, User, Page) :-
 
-  obj_field(User0, cookie_db_key, Cookies_DB),
-  click_url_with_cookies(URL_Expr, Proxy, Cookies_DB, Page),
-  obj_field(Page, http_request_url, Page_Url),
-  obj_rewrite(User0, [current_url], _, [Page_Url], User).
-
-
-click_url_with_cookies(URL_Expr, Proxy, Cookies_DB, Page) :-
-
-  Options1 = [],
-  eval_obj_expr(URL_Expr, URL),
-  (  nonvar(Proxy)
-  -> obj_field(Proxy, ip, Proxy_IP),
-     obj_field(Proxy, port, Proxy_Port),
-     selectchk(proxy(Proxy_IP, Proxy_Port), Options, Options1)
-  ;  Options = Options1
-  ),
-  http_page(http_ops:http_get_html(Options, Cookies_DB), URL,
-            Page).
+   Ctx = context(click_url/5, _),
+   url_cmn(get, URL_Expr, _, Proxy, User0, User, Page, Ctx).
 
 
 % click_with_all_redirects(+URL_Expr, @Proxy, +User0, -User, -Page)
@@ -124,3 +115,50 @@ perform_redirects(Page1, Page2) :-
 
   click_with_all_redirects(Page1 / url_to, Page2).
 
+
+% send_form(+URL_Expr, +Form, @Proxy, +User0, -User, -Page)
+% The same as click_url/5 but POST the Form
+send_form(URL_Expr, Form, Proxy, User0, User, Page) :-
+
+   Ctx = context(send_form/6, _),
+   url_cmn(post, URL_Expr, Form, Proxy, User0, User, Page, Ctx).
+
+url_cmn(Method, URL_Expr, Form, Proxy, User0, User, Page, Ctx) :-
+
+   eval_obj_expr(URL_Expr, Url),
+   % TODO check Url
+   
+   % TODO Check URL_Expr syntax
+   (  var(Proxy) -> true
+   ;  check_object_arg(Proxy, Ctx, _)
+   ),
+   (  var(User0) -> true
+   ;  check_object_arg(User0, Ctx, _)
+   ),
+
+   (  var(User0) -> true
+   ;  obj_field(User0, cookie_db_key, Cookies_DB),
+      obj_field(User0, current_url, Referer)
+   ),
+
+   (  nonvar(Referer)
+   -> Options1 = [request_header(referer = Referer)]
+   ;  Options1 = []
+   ),
+
+   (  nonvar(Proxy)
+   -> obj_field(Proxy, ip, Proxy_IP),
+      obj_field(Proxy, port, Proxy_Port),
+      selectchk(proxy(Proxy_IP, Proxy_Port), Options2, Options1)
+   ;  Options2 = Options1
+   ),
+
+   http_page(http_do(Method, Options2, Cookies_DB), Url, Form, 
+             Page),
+
+   % Store the new page location in the User object
+   obj_field(Page, http_request_url, Page_Url),
+   obj_rewrite(User0, [current_url], _, [Page_Url], User).
+
+
+   

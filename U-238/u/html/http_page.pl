@@ -24,10 +24,17 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 
-:- module(http_page, [http_page/3]).
+:- module(http_page,
+          [http_page/3,  % :Pred, +URL, -Page
+           http_page/4   % :Pred, +URL, @Form, -Page
+          ]).
 
 :- use_module(u(v)).
+:- use_module(library(error)).
 :- use_module(library(url)).
+
+:- meta_predicate http_page(3, +, -).
+:- meta_predicate http_page(3, +, +, -).
 
 % Get an http response as a html_piece_v descendant
 %
@@ -36,7 +43,18 @@
 
 http_page(Pred, URL, Page) :-
 
-  call(Pred, URL, DOM),
+   Ctx = context(http_page/3, _),
+   http_page_cmn(Pred, URL, _, Page, Ctx).
+
+http_page(Pred, URL, Form, Page) :-
+
+   Ctx = context(http_page/4, _),
+   http_page_cmn(Pred, URL, Form, Page, Ctx).
+
+http_page_cmn(Pred, URL, Form, Page, _) :-
+
+  must_be(callable, Pred),
+  call(Pred, URL, Form, DOM),
   get_time(Timestamp),
 
   (atom(URL) -> URL2 = URL;  parse_url(URL2, URL)),
