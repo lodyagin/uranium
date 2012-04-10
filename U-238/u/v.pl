@@ -66,6 +66,8 @@
            obj_reinterpret/2,  % +From, -To
            obj_rewrite/5,      % +Object0, +Fields, ?Old_Vals,
                                % +New_Vals, -Object
+           obj_rewrite/6,      % +Object0, +Weak, +Fields, ?Old_Vals,
+                               % +New_Vals, -Object
 
            obj_set_field/3,    % +Object, +Field, +Value
            
@@ -101,6 +103,12 @@
 
 :- reexport(u(internal/object_module),
             [ reload_all_classes/0]).
+
+% This is standard Weak arg values used in this module
+std_weak_arg_values([[throw, throws, strict, s],
+                     [unbound, weak, w],
+                     [fail, false, f]
+                    ]).
 
 %
 % class_create(+Class, +Parent, +Add_Fields)
@@ -157,10 +165,8 @@ obj_field(Obj, Weak, Field_Name, Value) :-
    Ctx = context(obj_field/4, _),
 
    check_inst(Obj, Ctx),
-   decode_arg([[throw, throws, strict, s],
-               [unbound, weak, w],
-               [fail, false, f]
-              ], Weak, Weak1, Ctx),
+   std_weak_arg_values(LOL),
+   decode_arg(LOL, Weak, Weak1, Ctx),
    check_object_arg(Obj, Ctx, Class_Id),
    (  var(Field_Name) -> true
    ;  check_field_name(Field_Name, Ctx)
@@ -217,10 +223,8 @@ named_args_unify2(Term, Field_List, Value_List, Weak, Ctx) :-
    ),
    check_object_arg(Term, Ctx, Class_Id),
 
-   decode_arg([[throw, throws, strict, s],
-               [unbound, weak, w],
-               [fail, false, f]
-              ], Weak, Weak1, Ctx),
+   std_weak_arg_values(LOL),
+   decode_arg(LOL, Weak, Weak1, Ctx),
 
    obj_unify_int(Class_Id, Field_List, Weak1, Term, Value_List,
                  Ctx).
@@ -289,7 +293,7 @@ obj_reset_fields2(Fields_List, Object0, Object, Weak, Ctx) :-
    check_inst(Object0, Ctx),
    check_list_fast_arg(Fields_List, Ctx),
    check_object_arg(Object0, Ctx, Class_Id),
-   decode_arg([[weak], [strict]], Weak, Weak1, Ctx),
+   decode_arg([[weak], [fail, strict]], Weak, Weak1, Ctx),
 
    obj_reset_fields_int(Class_Id, Fields_List, Object0, Object,
                         Weak1, Ctx).
@@ -570,19 +574,37 @@ obj_reinterpret(From, To) :-
 
 obj_rewrite(Object0, Fields, Old_Vals, New_Vals, Object) :-
 
-   Ctx = context(obj_rewrite/4, _),
+   Ctx = context(obj_rewrite/5, _),
+   obj_rewrite_cmn(Object0, throw, Fields, Old_Vals, New_Vals,
+                   Object, Ctx).
+
+% obj_rewrite(+Object0, +Weak, +Fields, ?Old_Vals, +New_Vals,
+%             -Object)
+
+obj_rewrite(Object0, Weak, Fields, Old_Vals, New_Vals, Object) :-
+
+   Ctx = context(obj_rewrite/6, _),
+   obj_rewrite_cmn(Object0, Weak, Fields, Old_Vals, New_Vals,
+                   Object, Ctx).
+
+obj_rewrite_cmn(Object0, Weak, Fields, Old_Vals, New_Vals,
+                Object, Ctx) :-
+
    check_inst(Object0, Ctx),
    check_inst(Fields, Ctx),
    check_inst(New_Vals, Ctx),
    check_object_arg(Object0, Ctx, Class_Id),
+   std_weak_arg_values(LOL),
+   decode_arg(LOL, Weak, Weak1, Ctx),
    check_fields_arg(Fields, Ctx),
    (  var(Old_Vals) -> true
    ;  check_values_arg(Fields, Old_Vals, Ctx)
    ),
    check_values_arg(Fields, New_Vals, Ctx),
 
-   obj_rewrite_int(Class_Id, Object0, Fields, Old_Vals, New_Vals,
-                   Object, Ctx).
+   obj_rewrite_int(Class_Id, Object0, Weak1, Fields, Old_Vals,
+                   New_Vals, Object, Ctx).
+
 
 % obj_set(+Object, +Field, +Value)
 %

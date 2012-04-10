@@ -1,7 +1,9 @@
+% -*- fill-column: 65; -*- 
+%
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
 %
-%  Copyright (C) 2011  Sergei Lodyagin
+%  Copyright (C) 2012, Kogorta OOO Ltd
 %
 %  This library is free software; you can redistribute it and/or
 %  modify it under the terms of the GNU Lesser General Public
@@ -48,7 +50,7 @@
            obj_construct_int/5,
            obj_field_int/7,
            obj_reset_fields_int/6,
-           obj_rewrite_int/7,   % +Class_Id, +Object0, +Fields,
+           obj_rewrite_int/8,   % +Class_Id, +Object0, +Weak, +Fields,
                                 % ?Old_Vals, +New_Vals, -Object,
                                 % +Ctx
 
@@ -349,7 +351,7 @@ obj_reset_fields_int(Class_Id, Fields_List, Object0, Object,
    class_all_fields(Class_Id, All_Fields_Set),
 
    % check the 'strict' condition
-   (  Weak = strict
+   (  Weak = fail
    -> % must not be nonexisting fields
       ord_subtract(Reset_Set, All_Fields_Set, [])
    ;  true ),
@@ -359,16 +361,16 @@ obj_reset_fields_int(Class_Id, Fields_List, Object0, Object,
    obj_unify_int(Class_Id, Copy_Set, Weak, Object0, Values, Ctx),
    obj_construct_int(Class_Id, Copy_Set, Weak, Values, Object).
 
-% obj_rewrite_int(+Class_Id, +Object0, +Fields, ?Old_Vals,
+% obj_rewrite_int(+Class_Id, +Object0, +Weak, +Fields, ?Old_Vals,
 %                 +New_Vals, -Object, +Ctx)
 
-obj_rewrite_int(Class_Id, Object0, Fields, Old_Vals, New_Vals,
+obj_rewrite_int(Class_Id, Object0, Weak, Fields, Old_Vals, New_Vals,
                 Object, Ctx) :-
 
-   obj_unify_int(Class_Id, Fields, throw, Object0, Old_Vals, Ctx),
-   obj_reset_fields_int(Class_Id, Fields, Object0, Object, throw,
+   obj_unify_int(Class_Id, Fields, Weak, Object0, Old_Vals, Ctx),
+   obj_reset_fields_int(Class_Id, Fields, Object0, Object, Weak,
                         Ctx),
-   obj_unify_int(Class_Id, Fields, throw, Object, New_Vals, Ctx).
+   obj_unify_int(Class_Id, Fields, Weak, Object, New_Vals, Ctx).
 
 
 % obj_unify_int(+Class_Id, +Fields, +Weak, +Term, ?Values, +Ctx)

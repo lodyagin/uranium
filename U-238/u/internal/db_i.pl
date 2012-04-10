@@ -369,7 +369,7 @@ db_recorded_int(DB_Key, L_Object) :-
                    Ctx))
     ),
 
-    obj_rewrite_int(Local_Class_Id, L_Object,
+    obj_rewrite_int(Local_Class_Id, L_Object, throw,
                     [db_key], _, [DB_Key], L_Object1, Ctx),
 
     object_local_db(DB_Key, L_Object1, DB_Object),

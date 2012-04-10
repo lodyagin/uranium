@@ -148,7 +148,7 @@ db_copy(DB_In, DB_Out) :-
    (   db_recorded_int(DB_In, Obj0),
        arg(1, Obj0, Class_Id),
        
-       obj_rewrite_int(Class_Id, Obj0,
+       obj_rewrite_int(Class_Id, Obj0, throw,
                        [db_key, db_ref], _,
                        [_, _], Obj1, Ctx),
        
@@ -330,7 +330,7 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
       Class_Id = Class_Id0, % already has a db_object_v ancestor
 
       % Check the replace case
-      obj_rewrite_int(Class_Id, Object0,
+      obj_rewrite_int(Class_Id, Object0, throw,
                       [db_key, db_ref],
                       [Old_DB_Key, Old_DB_Ref], [DB_Key, _],
                       Object, Ctx),
