@@ -1,4 +1,4 @@
-% -*- fill-column: 65; -*- 
+% -*- fill-column: 65; -*-
 %
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
@@ -62,6 +62,7 @@
            obj_key/2,          % +Object, -Key
            obj_key_value/2,    % +Object, -Key_Value
            obj_option_list/2,  % +Object, -List
+           obj_parents/2,      % +Object, -Class_Names_List
            obj_rebase/3,       % ?Rebase_Rule, @Object0, -Object
            obj_reinterpret/2,  % +From, -To
            obj_rewrite/5,      % +Object0, +Fields, ?Old_Vals,
@@ -70,7 +71,7 @@
                                % +New_Vals, -Object
 
            obj_set_field/3,    % +Object, +Field, +Value
-           
+
            obj_reset_fields/3, % +[Field|...], +Obj_In, -Obj_Out
            obj_reset_fields/4, % +[Field|...], +Obj_In, -Obj_Out, Is_Succ
            obj_reset_fields_weak/3, % +[Field|...], +Obj_In, -Obj_Out
@@ -478,15 +479,10 @@ reinterpret_fill_values(Parent_Class_Id, Desc_Class_Id, Parent,
 obj_rebase(Rebase_Rule, Object0, Object) :-
 
    Ctx = context(obj_rebase/3, _),
-   check_rebase_rule(Rebase_Rule, Ctx),
-   (  Rebase_Rule = '->'(Old_Base, New_Base)
-   -> true
-   ;  throw(error(type_error((->)/2, Rebase_Rule), Ctx))
-   ),
-   (  var(Object0)
-   -> throw(error(instantiation_error, Ctx))
-   ;  check_object_arg(Object0, Ctx, Orig_Id)
-   ),
+   check_inst(Object0, Ctx),
+   check_rebase_rule(Rebase_Rule, Ctx, Old_Base, New_Base),
+   
+   check_object_arg(Object0, Ctx, Orig_Id),
 
    % Check the Old_Base and New_Base
    % convert it to the rebased base id if needed
@@ -664,9 +660,9 @@ class_same_or_descendant(Class, Descendant) :-
 %
 
 class_name(Class) :-
-   
+
    objects:class_id(_, true, Class).
-           
+
 
 % class_parent(?Class, ?Parent)
 %
@@ -891,6 +887,25 @@ obj_option_list2([Field|Tail], Object, List0, List) :-
    ;  List1 = List0
    ),
    obj_option_list2(Tail, Object, List1, List).
+
+%
+% obj_parents(+Object, -Class_Names_List)
+%
+% Get the parents of Object in the looking-up order,
+% i.e. Object = man_v ->
+% Class_Names_List = [object_v, object_base_v]
+%
+
+obj_parents(Object, Class_Names_List) :-
+
+   Ctx = context(obj_parents/2),
+   check_inst(Object, Ctx),
+   check_object_arg(Object, Ctx, Class_Id),
+
+   list_inheritance(Class_Id, Id_List_Rev),
+   reverse(Id_List_Rev, [Class_Id|Id_List]),
+   maplist(class_id, Id_List, Class_Names_List).
+
 
 %
 % obj_diff(+Obj1, +Obj2, -Diff_List)

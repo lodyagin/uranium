@@ -293,7 +293,30 @@ test(obj_option_list2, [List =@= []]) :-
 
    obj_construct(citizen_v, [], [], Man),
    obj_option_list(Man, List).
- 
+
+test(obj_parents1,
+     [P = [man_v, object_v, object_base_v]]) :-
+
+   obj_construct(citizen_v, [], [], V),
+   obj_parents(V, P).
+
+test(obj_rebase1) :-
+
+   obj_construct(http_request_headers_v, [], [], V1),
+   obj_parents(V1, P1),
+   assertion(P1 == [http_headers_v,object_v,object_base_v]),
+   obj_rebase((http_headers_v -> http_response_headers_v),
+              V1, V2),
+   obj_parents(V2, P2),
+   assertion(P2 == [http_response_headers_v,http_headers_v,
+                    object_v,object_base_v]),
+   obj_rebase((http_request_headers_v ->
+               http_invalid_mixed_headers_v), V2, V3),
+   obj_parents(V3, P3),
+   assertion(P3 == [http_invalid_headers_v,
+                    http_headers_v,
+                    object_v,object_base_v]).
+
 test(obj_rebase_bug1) :-
 
    obj_construct(man_v, [sex, name], [man, 'Adam'], Obj1_0),

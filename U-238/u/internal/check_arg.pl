@@ -18,7 +18,8 @@
                                         % inst-
            
            check_object_arg/3,         % +Obj, +Ctx, -Class_Id inst-
-           check_rebase_rule/2,
+           check_rebase_rule/4,  % +Rule, +Ctx, -Old_Base, -New_Base
+                                 % -inst+
 
            error:has_type/2
            ]).
@@ -138,7 +139,7 @@ check_object_arg(Object, Err_Context, Class_Id) :-
    ).
 
 
-check_rebase_rule(Rebase_Rule, Ctx) :-
+check_rebase_rule(Rebase_Rule, Ctx, Old_Base, New_Base) :-
 
    (  var(Rebase_Rule)
    -> throw(error(instantiation_error, Ctx))
@@ -149,7 +150,7 @@ check_rebase_rule(Rebase_Rule, Ctx) :-
    (  (var(Old_Base); var(New_Base))
    -> throw(error(instantiation_error, Ctx))
    ;  true ),
-   check_class_arg(Old_Base, Ctx),
-   check_class_arg(New_Base, Ctx).
+   check_existing_class_arg(Old_Base, Ctx),
+   check_existing_class_arg(New_Base, Ctx).
 
 
