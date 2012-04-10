@@ -323,11 +323,9 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
 
    % Rebase if needed
 
-   % Find db_object_v class id
-   class_primary_id(db_object_v, DB_Object_V_Id),
-
    % this block already binds Object and Replaced
-   (  same_or_descendant(DB_Object_V_Id, _, Class_Id0)
+   (  class_id(DB_Object_V_Id, db_object_v),
+      same_or_descendant(DB_Object_V_Id, _, Class_Id0)
    ->
       Class_Id = Class_Id0, % already has a db_object_v ancestor
 

@@ -3,7 +3,7 @@
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
 
-%  Copyright (C) 2011  Sergei Lodyagin
+%  Copyright (C) 2012, Kogorta OOO Ltd
 %
 %  This library is free software; you can redistribute it and/or
 %  modify it under the terms of the GNU Lesser General Public
@@ -362,8 +362,8 @@ db_recorded_int(DB_Key, L_Object) :-
 
     % check whether L_Object is a db_object_v descendant
     arg(1, L_Object, Local_Class_Id),
-    class_primary_id(db_object_v, DB_Object_V_Id),
-    (  same_or_descendant(DB_Object_V_Id, _, Local_Class_Id)
+    (  class_id(DB_Object_V_Id, db_object_v),
+       same_or_descendant(DB_Object_V_Id, _, Local_Class_Id)
     -> true
     ;  throw(error(domain_error(db_object_v_descendant, L_Object),
                    Ctx))

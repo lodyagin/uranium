@@ -1,3 +1,5 @@
+% -*- fill-column: 65; -*- 
+%
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
 %
@@ -23,18 +25,19 @@
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
+
 :- module(v,
           [
            class_create/3,     % +Class, +Parent, +Add_Fields
            class_create/4,     % +Class, +Parent, +Add_Fields, +Key
-           class_descendant/2, % +Class, -Descendant
-           class_same_or_descendant/2, % +Class, -Descendant
-           class_exists/1,
+           class_descendant/2, % +Class, ?Descendant
+           class_exists/1,     % ?Class
            class_fields_new/2,
-           class_fields/2,    % +Class, -Fields (ordset)
+           class_fields/2,     % +Class, -Fields (ordset)
            %class_field_type/3,
-           class_name/1,      % ?Class
+           class_name/1,       % ?Class
            class_parent/2,
+           class_same_or_descendant/2, % +Class, ?Descendant
            eval_obj_expr/2,
 
            named_arg/3,
@@ -45,20 +48,21 @@
 
            obj_construct/4,
            obj_construct_weak/4,
-           %obj_copy/2,       % +From, -To
-           %obj_copy/3,       % +Field_List, +From, -To
-           obj_is_descendant/2,
-           obj_diff/3,        % +Obj1, +Obj2, -Diff_List
+           %obj_copy/2,         % +From, -To
+           %obj_copy/3,         % +Field_List, +From, -To
+           obj_is_descendant/2, % +Descendant, ?Class
+           obj_same_or_descendant/2, % +Descendant, ?Class
+           obj_diff/3,          % +Obj1, +Obj2, -Diff_List
            obj_diff_print/1,
            obj_diff_print/2,
-           obj_downcast/2,   % +Parent, -Descendant
-           obj_downcast/3,   % +Parent, +Class_To, -Descendant
-           obj_field/3,      % +Obj, ?Field, ?Value
-           obj_field/4,      % +Obj, +Weak, ?Field, ?Value
-           obj_key/2,    % +Object, -Key
+           obj_downcast/2,     % +Parent, -Descendant
+           obj_downcast/3,     % +Parent, +Class_To, -Descendant
+           obj_field/3,        % +Obj, ?Field, ?Value
+           obj_field/4,        % +Obj, +Weak, ?Field, ?Value
+           obj_key/2,          % +Object, -Key
            obj_key_value/2,    % +Object, -Key_Value
-           obj_rebase/3,     % ?Rebase_Rule, @Object0, -Object
-           obj_reinterpret/2, % +From, -To
+           obj_rebase/3,       % ?Rebase_Rule, @Object0, -Object
+           obj_reinterpret/2,  % +From, -To
            obj_rewrite/5,      % +Object0, +Fields, ?Old_Vals,
                                % +New_Vals, -Object
 
@@ -72,7 +76,6 @@
            obj_pretty_print/1,
            obj_pretty_print/2,
            obj_unify/3,
-           most_narrowed/3, %+Class1, +Class2, -Most_Narrowed_Class
 
            prolog:message/3
            ]).
@@ -684,13 +687,31 @@ class_parent(Class, Parent) :-
 
 obj_is_descendant(Descendant, Class) :-
 
-  Ctx = context(obj_is_descendant/2, _),
-  check_inst(Descendant, Ctx),
-  check_object_arg(Descendant, Ctx, Desc_Class_Id),
+   Ctx = context(obj_is_descendant/2, _),
+   obj_same_or_descendant_cmn(Descendant, Class, Desc_Class_Id, Ctx),
+   class_id(Desc_Class_Id, Desc_Class),
+   Desc_Class \= Class.
 
-  class_primary_id(Class, Class_Id),
-  Desc_Class_Id =\= Class_Id,
-  same_or_descendant(Class_Id, _, Desc_Class_Id).
+% obj_same_or_descendant(+Descendant, ?Class)
+
+obj_same_or_descendant(Descendant, Class) :-
+
+   Ctx = context(obj_same_or_descendant/2, _),
+   obj_same_or_descendant_cmn(Descendant, Class, _, Ctx).
+
+obj_same_or_descendant_cmn(Descendant, Class, Desc_Class_Id, Ctx) :-
+
+   check_inst(Descendant, Ctx),
+   check_object_arg(Descendant, Ctx, Desc_Class_Id),
+   (  var(Class)
+   -> Det = f
+   ;  check_existing_class_arg(Class, Ctx, Class_Id),
+      Det = t
+   ),
+
+   same_or_descendant(Class_Id, _, Desc_Class_Id),
+   class_id(Class_Id, Class),
+   (  Det = t -> ! ; true ).
 
 
 % class_new_fields(+Class, -Field_Names)
@@ -799,21 +820,6 @@ obj_merge(A, B, Class, C) :-
    A1 = B1,
    C = B1.
 
-
-%
-% If Class1 and Class2 has descending relation choose
-% the most narrowed one.
-%
-
-most_narrowed(Class1, Class2, Most_Narrowed_Class) :-
-
-  Class1 = Class2, Most_Narrowed_Class = Class1, !
-  ;
-  class_descendant(Class1, Class2),
-  Most_Narrowed_Class = Class2, !
-  ;
-  class_descendant(Class2, Class1),
-  Most_Narrowed_Class = Class1, !.
 
 %
 % obj_key(+Object, -Key)

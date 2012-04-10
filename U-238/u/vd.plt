@@ -168,6 +168,17 @@ test(db_put_object8,
    db_put_object(people2, _, Man, _, replaced).
    % does not replace because of not db_object_v descendant
 
+test(db_put_object9,
+     [blocked(rebase_collision), setup(model_db),
+      List == [['Adam'], ['Eva'], ['Moses'], ['Vladimir']]
+      ]) :-
+
+   obj_construct(man_v, [name], ['Moses'], Man0),
+   obj_rebase((object_v -> db_object_v), Man0, Man1),
+   obj_rebase((object_v -> tarjan_vertex_v), Man1, Man),
+   db_put_object(people, Man),
+   db_select_list(people, _, [name], List).
+
 test(db_recorda1,
      [setup(model_db),
       List == [['Moses'], ['Adam'], ['Eva'], ['Vladimir']]
@@ -575,7 +586,7 @@ test(db_singleton_v3_fail_ignore, [setup(db_clear(people))]) :-
    assertion(List1 =@= [['Sergei', 'Lodyagin', _]]).
 
 
-test(rebase_collision_bug1, [blocked(till_future_version)]) :-
+test(rebase_collision_bug1, [blocked(rebase_collision)]) :-
 
    obj_construct(man_v, [], [], O0),
    obj_rebase((object_v -> tarjan_vertex_v), O0, O),

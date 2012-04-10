@@ -75,12 +75,15 @@ test(class_descendant1,
   findall(X, class_descendant(man_v, X), List0),
   msort(List0, List).
 
-test(class_descendant2,
-     [List == []]
-    ) :-
+test(class_descendant2, [List == []]) :-
 
-  findall(X, class_descendant(callup_v, X), List0),
-  msort(List0, List).
+  findall(X, class_descendant(callup_v, X), List).
+
+test(class_descendant3, [List == []]) :-
+
+  obj_construct(tarjan_vertex_v, [], [], V),
+  obj_rebase((object_v -> callup_v), V, _),
+  findall(X, class_descendant(callup_v, X), List).
 
 test(class_same_or_descendant1,
      [List == [callup_v, citizen_v, class_create_test_v, man_v]]
@@ -93,6 +96,12 @@ test(class_same_or_descendant2,
      [List == [callup_v]]
     ) :-
 
+  findall(X, class_same_or_descendant(callup_v, X), List).
+
+test(class_same_or_descendant3, [List == [callup_v]]) :-
+
+  obj_construct(tarjan_vertex_v, [], [], V),
+  obj_rebase((object_v -> callup_v), V, _),
   findall(X, class_same_or_descendant(callup_v, X), List).
 
 test(obj_construct_with_evals1) :-
@@ -190,6 +199,19 @@ test(obj_field_bug1, [fail]) :-
 
    obj_construct(citizen_v, [sex], [woman], Obj),
    obj_field(Obj, sex, man).
+
+test(obj_is_descendant1, [List == [object_base_v, object_v]]) :-
+
+   obj_construct(man_v, [], [], Man),
+   findall(X, obj_is_descendant(Man, X), List0),
+   msort(List0, List).
+
+test(obj_is_descendant2) :-
+
+   obj_construct(man_v, [], [], Man),
+   \+ obj_is_descendant(Man, db_object_v),
+   obj_rebase((object_v -> db_object_v), Man, Man2),
+   obj_is_descendant(Man2, db_object_v).
 
 test(obj_set_field1, [Surname =@= _]) :-
 
@@ -456,7 +478,7 @@ test(eval_fields1, [Class == callup_v]) :-
    obj_field(C, class, Class).
 
 
-test(cleanup_obj_rebase, [N1 =:= N2]) :-
+test(cleanup_obj_rebase, [blocked(transaction_bug), N1 =:= N2]) :-
 
    aggregate(count, A^B^C^(objects:class_id(A, B, C)), N1),
    catch((obj_construct(numeric_id_v, [], [], Obj1),
