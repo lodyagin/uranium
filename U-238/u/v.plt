@@ -450,6 +450,43 @@ test(obj_rewrite) :-
    named_args_unify(Luda3, [height, weight, name], Luda3_Pars),
    assertion(Luda3_Pars =@= [1.45, 64, _]).
 
+test(obj_rewrite_weak1,
+     [throws(error(no_object_field(Luda1, country), _))]) :-
+
+   obj_construct(man_v,
+                 [name, height, weight],
+                 ['Luda', 1.40, 99], Luda1),
+   obj_rewrite(Luda1,
+               [height, weight, name, country],
+               _
+               [1.44, 69, _, 'UK'],
+               _).
+
+test(obj_rewrite_weak2,
+     [[Old_Height, Old_Weight, Name, Old_Country]
+     =@= [1.40, 99, 'Luda', _]]
+     ) :-
+
+   obj_construct(man_v,
+                 [name, height, weight],
+                 ['Luda', 1.40, 99], Luda1),
+   obj_rewrite(Luda1, weak,
+               [height, weight, name, country],
+               [Old_Height, Old_Weight, Name, Old_Country],
+               [1.44, 69, Name, 'UK'],
+               _).
+
+test(obj_rewrite_weak3, [fail]) :-
+
+   obj_construct(man_v,
+                 [name, height, weight],
+                 ['Luda', 1.40, 99], Luda1),
+   obj_rewrite(Luda1, fail,
+               [height, weight, name, country],
+               _,
+               [1.44, 69, _, 'UK'],
+               _).
+
 test(obj_rewrite_with_evals1, [X == callup_v]) :-
 
    obj_construct(citizen_v, [sex, birthday], [man, 1994], O),
