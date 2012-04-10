@@ -4,7 +4,7 @@
 % This file is a part of Uranium, a general-purpose functional
 % test platform.
 %
-% Copyright (C) 2011  Sergei Lodyagin
+% Copyright (C) 2012, Kogorta OOO Ltd
 %
 % This library is free software; you can redistribute it and/or
 % modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@
 % _____________________________________________________________
 
 :- module(tarjan,
-          [tarjan/7,
+          [tarjan/8,
            vertex_path/4  % +DB_Key, +Vertex, +Id_Field, -Path
            ]).
 
@@ -38,7 +38,7 @@
 :- use_module(u(v)).
 :- use_module(u(vd)).
 
-:- meta_predicate tarjan(+, +, +, 2, 2, +, -).
+:- meta_predicate tarjan(+, +, +, 4, 2, +, -).
 
 % TODO Vertex_Functor is unnecessary
 
@@ -46,6 +46,7 @@ tarjan(DB,
        Vertex_Functor, Vertex_Id_Fld,
        Load_Vertex, Resolve_Destinations,
        Start_Vertex,
+       Vertex_Ctx_Arg,
        Scc) :-
 
    Ctx = context(tarjan/7, _),
@@ -64,12 +65,14 @@ tarjan(DB,
        Vertex_Functor, Vertex_Id_Fld,
        Load_Vertex, Resolve_Destinations,
        Start_Vertex, _,
+       Vertex_Ctx_Arg,
        [], _, 0, _, [], Scc).
 
 scc(DB,
     Vertex_Functor, Vertex_Id_Fld,
     Load_Vertex, Resolve_Destinations,
     V0, V,
+    Vertex_Ctx_Arg,
     Stack0, Stack, Index0, Index, Scc_L0, Scc_L) :-
 
    must_be(nonneg, Index0),
@@ -99,6 +102,7 @@ scc(DB,
             Vertex_Functor, Vertex_Id_Fld,
             Load_Vertex, Resolve_Destinations,
             V1, V, W_Id_Lst,
+            Vertex_Ctx_Arg,
             Stack1, Stack2, Index1, Index,
             Scc_L0, Scc_L1),
 
@@ -120,6 +124,7 @@ scc(DB,
 
 
 scc_down(_, _, _, _, _, V, V, [],
+         _, 
          Stack, Stack, Index, Index, Scc_L, Scc_L) :-
    !.
 
@@ -127,6 +132,7 @@ scc_down(DB,
          Vertex_Functor, Vertex_Id_Fld,
          Load_Vertex, Resolve_Destinations,
          V0, V, [W_Id|W_Id_T],
+         Vertex_Ctx_Arg0,
          Stack0, Stack, Index0, Index, Scc_L0, Scc_L) :-
 
    obj_field(V0, tarjan_lowlink, V0_Lowlink),
@@ -157,13 +163,15 @@ scc_down(DB,
       Stack1 = Stack0, Index1 = Index0, Scc_L1 = Scc_L0
    ;  
       % The vertex W0 has not yet been visited
-      once(call(Load_Vertex, W_Id, W0)),
+      once(call(Load_Vertex, W_Id,
+                Vertex_Ctx_Arg0, Vertex_Ctx_Arg1, W0)),
       debug(tarjan, 'New vertex ~p is loaded', [W_Id]),
       obj_field(W0, prev_vertex_id, V0_Id), % link to parent
       scc(DB,
           Vertex_Functor, Vertex_Id_Fld,
           Load_Vertex, Resolve_Destinations,
           W0, W, 
+          Vertex_Ctx_Arg1,
           Stack0, Stack1, Index0, Index1, Scc_L0, Scc_L1),
 
       obj_field(W, tarjan_lowlink, W_Lowlink),
@@ -180,6 +188,7 @@ scc_down(DB,
             Vertex_Functor, Vertex_Id_Fld,
             Load_Vertex, Resolve_Destinations,
             V2, V, W_Id_T,
+            Vertex_Ctx_Arg0,
             Stack1, Stack, Index1, Index, Scc_L1, Scc_L).
 
 scc_up([W|Stack], Stack, Scc, [W|Scc], W) :- !.
