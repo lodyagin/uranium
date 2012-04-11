@@ -44,7 +44,7 @@
                                   % +User0, -User, -Page
                       ]).
 
-:- use_module(u(html/http_ops)).
+:- use_module(u(http/http_ops)).
 :- use_module(u(v)).
 :- use_module(u(html/http_page)).
 :- use_module(u(internal/check_arg)).

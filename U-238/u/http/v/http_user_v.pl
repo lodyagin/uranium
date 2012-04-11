@@ -24,26 +24,26 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 
-:- module(html_user_v, [new_html_user/1]).
+:- module(http_user_v, [new_http_user/1]).
 
 :- use_module(u(v)).
 :- use_module(u(vd)).
-:- use_module(u(html/cookies_man)).
+:- use_module(u(http/cookies_man)).
 
 
 % it is a 'free' internet user
-new_class(html_user_v, object_v,
-          [cookie_db_key : cookies_db,
+new_class(http_user_v, object_v,
+          [cookies_db_key : cookies_db,
            current_url
           ]).
 
-copy(html_user_v, From, To) :-
+copy(http_user_v, From, To) :-
 
    obj_reset_fields([cookie_db_key], From, To),
 
    obj_field(From, cookie_db_key, Old_DB_Key),
    (   ground(Old_DB_Key)
-   ->  use_module(u(html/cookies_man)),
+   ->  use_module(u(http/cookies_man)),
        new_cookie_db_key(New_DB_Key),
        use_module(u(vd)),
        db_copy(Old_DB_Key, New_DB_Key),
@@ -52,10 +52,10 @@ copy(html_user_v, From, To) :-
    ).
 
 
-new_html_user(User) :-
+new_http_user(User) :-
 
   new_cookie_db_key(Cookies_DB),
-  obj_construct(html_user_v, [cookie_db_key], [Cookies_DB], User).
+  obj_construct(http_user_v, [cookie_db_key], [Cookies_DB], User).
 
 
 typedef(cookies_db, [pretty_print - cookies_db_pretty_print]).
