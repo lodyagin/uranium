@@ -5,7 +5,7 @@ test(remove_options1,
      [List == [b(2), a(2, x), 3]]
      ) :-
 
-   remove_options([z = 3, b(2), a(2, x), 3, a= 1, z=_],
+   remove_options([z = 3, b(2), a(2, x), 3, a= 1, a(2), z=_],
                   [z, a(_)],
                   List).
 

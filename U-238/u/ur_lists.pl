@@ -222,7 +222,8 @@ remove_options(List0, [Option0|Remove], List) :-
 
 select_option_req(Option, List0, List) :-
 
-   (  select_option(Option, List0, List1)
+   copy_term(Option, Option1),
+   (  select_option(Option1, List0, List1)
    -> select_option_req(Option, List1, List)
    ;  List = List0
    ).
