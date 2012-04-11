@@ -300,7 +300,7 @@ test(obj_parents1_1,
    obj_construct(citizen_v, [], [], V),
    obj_parents(V, P).
 
-test(obj_parents1_2) :-
+test(obj_parents2_1) :-
 
    obj_construct(citizen_v, 
                  [sex, surname, country], 
@@ -579,7 +579,9 @@ test(obj_sort_parents1,
                          tarjan_vertex_v,
                          db_object_v,
                          object_v, object_base_v], V4),
-   obj_parents(V4, P4).
+   obj_parents(V4, P4),
+   functor(V4, F4, _),
+   assertion(F4 == http_invalid_mixed_headers_v).
 
 test(obj_sort_parents2,
      [throws(error(insufficient_class_order(Order,

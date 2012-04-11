@@ -34,7 +34,7 @@
            % @Pattern, +Class_Id, ?Native, ?Eval, ?Fields
            class_fields/5,
 
-           class_id/2,
+           class_id/2,          % ?Class_Id, ?Class_Name
            class_new_fields/2,  % +Class_Id, -Fields
            class_primary_id/2,
            common_parent/3,

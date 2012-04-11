@@ -616,7 +616,7 @@ obj_set_field(Object, Field, Value) :-
 % obj_sort_parents(+Obj0, +Class_Order, -Obj)
 %
 % Resort Obj0 parents according in th Class_Order
-% (looking-up order)
+% (looking-up order), also removes duplicates.
 
 obj_sort_parents(Obj0, Class_Order, Obj) :-
 
