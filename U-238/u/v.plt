@@ -555,6 +555,56 @@ test(obj_rewrite_with_evals4) :-
    obj_construct(citizen_v, [sex, birthday], [man, 1994], O),
    obj_rewrite(O, [class], [_], [_], _).
 
+test(obj_sort_parents1,
+     [P4 == [http_invalid_mixed_headers_v,
+             http_invalid_headers_v,
+             http_request_headers_v,
+             http_response_headers_v,
+             http_headers_v,
+             object_v, object_base_v]]
+     ) :-
+
+   obj_construct(http_request_headers_v, [], [], V1),
+   obj_rebase((http_headers_v -> http_response_headers_v),
+              V1, V2),
+   obj_rebase((http_headers_v -> http_invalid_mixed_headers_v),
+              V2, V3),
+
+   obj_sort_parents(V3, [http_invalid_bulk_headers_v,
+                         http_invalid_mixed_headers_v,
+                         http_invalid_headers_v,
+                         http_request_headers_v,
+                         http_response_headers_v,
+                         http_headers_v,
+                         tarjan_vertex_v,
+                         db_object_v,
+                         object_v, object_base_v], V4),
+   obj_parents(V4, P4).
+
+test(obj_sort_parents2,
+     [throws(error(insufficient_class_order(Order,
+                                            Orig_Order), _))]
+     ) :-
+
+   Order = [http_invalid_bulk_headers_v,
+            http_invalid_mixed_headers_v,
+            http_request_headers_v,
+            http_response_headers_v,
+            http_headers_v,
+            tarjan_vertex_v,
+            db_object_v,
+            object_v, object_base_v],
+   
+   obj_construct(http_request_headers_v, [], [], V1),
+   obj_rebase((http_headers_v -> http_response_headers_v),
+              V1, V2),
+   obj_rebase((http_headers_v -> http_invalid_mixed_headers_v),
+              V2, V3),
+
+   obj_parents(V3, Orig_Order),
+   obj_sort_parents(V3, Order, _).
+
+
 test(class_fields) :-
 
    class_fields(object_base_v, Object_Base_V_Fields),

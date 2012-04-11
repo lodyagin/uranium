@@ -72,7 +72,7 @@
                                % +New_Vals, -Object
 
            obj_set_field/3,    % +Object, +Field, +Value
-
+           obj_sort_parents/3, % +Obj0, +Class_Order, -Obj
            obj_reset_fields/3, % +[Field|...], +Obj_In, -Obj_Out
            obj_reset_fields/4, % +[Field|...], +Obj_In, -Obj_Out, Is_Succ
            obj_reset_fields_weak/3, % +[Field|...], +Obj_In, -Obj_Out
@@ -613,8 +613,33 @@ obj_set_field(Object, Field, Value) :-
    copy_term_nat(Value, Value1),
    obj_field(Object, Field, Value1).
 
+% obj_sort_parents(+Obj0, +Class_Order, -Obj)
 %
-% Вычисление выражений в операторной форме
+% Resort Obj0 parents according in th Class_Order
+% (looking-up order)
+
+obj_sort_parents(Obj0, Class_Order, Obj) :-
+
+   Ctx = context(obj_sort_parents/3, _),
+   check_inst(Obj0, Ctx),
+   check_object_arg(Obj0, Ctx, Class_Id),
+   check_existing_class_list_arg(Class_Order, Ctx, _),
+   
+   obj_parents_int(Class_Id, Orig_Order),
+   list_to_ord_set(Orig_Order, Orig_Order_Set),
+   list_to_ord_set(Class_Order, Class_Order_Set),
+
+   (  ord_subset(Orig_Order_Set, Class_Order_Set) -> true
+   ;  throw(error(insufficient_class_order(Class_Order,
+                                           Orig_Order), Ctx))
+   ),
+   ord_subtract(Class_Order_Set, Orig_Order_Set, Ignored_Set),
+   subtract(Class_Order, Ignored_Set, New_Order),
+
+   obj_parents_cmn(Obj0, New_Order, Obj, Ctx).
+
+%
+% Calculate expressions in an operator form
 %
 
 %eval_obj_expr(Sub_Expr ? Field, Value) :-
@@ -904,6 +929,10 @@ obj_parents(Object, Class_Names_List) :-
    check_inst(Object, Ctx),
    check_object_arg(Object, Ctx, Class_Id),
 
+   obj_parents_int(Class_Id, Class_Names_List).
+
+obj_parents_int(Class_Id, Class_Names_List) :-
+
    list_inheritance(Class_Id, Id_List_Rev),
    reverse(Id_List_Rev, Id_List),
    maplist(class_id, Id_List, Class_Names_List).
@@ -920,6 +949,10 @@ obj_parents(Obj0, Class_Names_List, Obj) :-
    Ctx = context(obj_parents/3, _),
    check_inst(Obj0, Ctx),
    check_object_arg(Obj0, Ctx, _),
+   obj_parents_cmn(Obj0, Class_Names_List, Obj, Ctx).
+
+obj_parents_cmn(Obj0, Class_Names_List, Obj, Ctx) :-
+
    check_existing_class_list_arg(Class_Names_List, Ctx,
                                  Class_Ids_List),
    % TODO always check [..|object_v, object_base_v] ?
@@ -1030,5 +1063,11 @@ prolog:message(old_base_is_invalid(Old_Base, Orig_Id)) -->
 prolog:message(cant_rebase_to_object_base_v) -->
 
    ['Can\'t rebase to object_base_v'].
+
+prolog:message(insufficient_class_order(Order, Orig_Order)) -->
+
+   ['The defined class order ~p is insufficient ' - [Order]],
+   ['for ordering a class with the parents ~p' - [Orig_Order]].
+
 
 :- initialization clear_decode_arg.
