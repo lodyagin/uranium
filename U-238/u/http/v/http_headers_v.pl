@@ -197,10 +197,15 @@ http_headers_list_obj(_, _) :-
 http_headers_list_obj([], _,
                       Obj, Obj, Bulk, Bulk, _) :- !.
 
-http_headers_list_obj([Header = Value|Tail], Class_Fields,
+http_headers_list_obj([Option|Tail], Class_Fields,
                       Obj0, Obj, Bulk0, Bulk, Ctx) :-
 
+   nonvar(Option),
+   (  Option = (Header = Value)
+   ;  functor(Option, Header, 1), arg(1, Option, Value)
+   ),
    !,
+
    must_be(atom, Header),
    (  obj_field(Obj0, fail, Header, Value)
    -> Obj1 = Obj0, Bulk1 = Bulk0

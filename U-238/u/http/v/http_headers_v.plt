@@ -13,6 +13,20 @@ test(list_to_http_headers_v) :-
    http_headers_list_obj(Headers2, Obj),
    assertion(Headers2 == Headers).
 
+test(list_to_http_headers_v_functor_form) :-
+
+   Headers = [date('Tue, 03 Apr 2012 19:32:50 GMT'),
+              transfer_encoding(chunked)],
+   Ref_Headers = [date = 'Tue, 03 Apr 2012 19:32:50 GMT',
+                  transfer_encoding = chunked],
+   http_headers_list_obj(Headers, Obj),
+   obj_parents(Obj, Parents),
+   assertion(Parents ==
+            [http_general_headers_v, http_headers_v,
+             object_v, object_base_v]),
+   http_headers_list_obj(Headers2, Obj),
+   assertion(Headers2 == Ref_Headers).
+
 test(list_to_http_request_headers_v1) :-
 
    Headers = [date = 'Tue, 03 Apr 2012 19:32:50 GMT',
