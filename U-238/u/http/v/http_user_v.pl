@@ -33,7 +33,7 @@
 
 % it is a 'free' internet user
 new_class(http_user_v, object_v,
-          [cookies_db_key : cookies_db,
+          [cookie_db_key : cookies_db,
            current_url
           ]).
 

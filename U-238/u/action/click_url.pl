@@ -80,10 +80,10 @@ click_url(URL_Expr, Proxy, User0, User, Page) :-
 
 click_with_all_redirects(URL_Expr, Proxy, User0, User, Page) :-
 
-  click_url(URL_Expr, Proxy, User0, User1, Page1),
-  obj_reinterpret(Page1, Page2),
-  % <NB> redirect does not change current_url in User
-  perform_redirects(Proxy, User1, Page2, User, Page).
+   click_url(URL_Expr, Proxy, User0, User1, Page1),
+   obj_reinterpret(Page1, Page2),
+   % <NB> redirect does not change current_url in User
+   perform_redirects(Proxy, User1, Page2, User, Page).
 
 click_with_all_redirects(URL_Expr, User0, User, Page) :-
 
@@ -91,9 +91,9 @@ click_with_all_redirects(URL_Expr, User0, User, Page) :-
 
 click_with_all_redirects(URL_Expr, Page) :-
 
-  click_url(URL_Expr, Page1),
-  obj_reinterpret(Page1, Page2),
-  perform_redirects(Page2, Page).
+   click_url(URL_Expr, Page1),
+   obj_reinterpret(Page1, Page2),
+   perform_redirects(Page2, Page).
 
 
 % A redirect of a not redirect page is the same page
@@ -113,7 +113,7 @@ perform_redirects(Page, Page) :-
 
 perform_redirects(Page1, Page2) :-
 
-  click_with_all_redirects(Page1 / url_to, Page2).
+   click_with_all_redirects(Page1 / url_to, Page2).
 
 
 % send_form(+URL_Expr, +Form, @Proxy, +User0, -User, -Page)
@@ -141,23 +141,20 @@ url_cmn(Method, URL_Expr, Form, Proxy, User0, User, Page, Ctx) :-
       obj_field(User0, current_url, Referer)
    ),
 
-   (  nonvar(Referer)
-   -> Options1 = [request_header(referer = Referer)]
-   ;  Options1 = []
-   ),
-
    (  nonvar(Proxy)
    -> obj_field(Proxy, ip, Proxy_IP),
       obj_field(Proxy, port, Proxy_Port),
-      selectchk(proxy(Proxy_IP, Proxy_Port), Options2, Options1)
-   ;  Options2 = Options1
+      Options = [proxy(Proxy_IP, Proxy_Port)]
+   ;  Options = []
    ),
 
-   http_page(http_do(Method, Options2, Cookies_DB), Url, Form, 
-             Page),
+   obj_construct(http_request_headers_v,
+                 [referer], [Referer], Headers),
+   http_page(http_do(Method, Options, Headers, Cookies_DB),
+             Url, Form, Page),
 
    % Store the new page location in the User object
-   obj_field(Page, http_request_url, Page_Url),
+   eval_obj_expr(Page / www_address / http_response_url, Page_Url),
    obj_rewrite(User0, [current_url], _, [Page_Url], User).
 
 

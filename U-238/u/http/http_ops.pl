@@ -86,7 +86,7 @@ http_do(Method, Options, Headers, Cookies_DB, URL, Post_Data, DOM,
 http_do_cmn(Method, Options, Headers, Cookies_DB, URL, Post_Data,
             DOM, Redirect_Steps, Ctx) :-
 
-   check_inst(URL, Ctx),
+   must_be(atom, URL),
    decode_arg([[post], [get]], Method, Method1, Ctx),
    must_be(list, Options),
    (  var(Headers)

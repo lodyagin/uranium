@@ -55,10 +55,7 @@ http_page(Pred, URL, Form, Page) :-
 http_page_cmn(Pred, URL, Form, Page, _) :-
 
    must_be(callable, Pred),
-
-   (atom(URL) -> URL2 = URL;  parse_url(URL2, URL)),
-
-   call(Pred, URL2, Form, DOM, Redirect_Steps),
+   call(Pred, URL, Form, DOM, Redirect_Steps),
 
    Redirect_Steps = [First_Step|_],
    last(Redirect_Steps, Last_Step),
