@@ -294,26 +294,50 @@ test(obj_option_list2, [List =@= []]) :-
    obj_construct(citizen_v, [], [], Man),
    obj_option_list(Man, List).
 
-test(obj_parents1,
-     [P = [man_v, object_v, object_base_v]]) :-
+test(obj_parents1_1,
+     [P = [citizen_v, man_v, object_v, object_base_v]]) :-
 
    obj_construct(citizen_v, [], [], V),
    obj_parents(V, P).
+
+test(obj_parents1_2) :-
+
+   obj_construct(citizen_v, 
+                 [sex, surname, country], 
+                 [man, 'Mayakovsky', ['Soviet Union']],
+                 Man1),
+   New_Parents_Order = [man_v, citizen_v, object_v, object_base_v],
+   obj_parents(Man1, New_Parents_Order, Man2),
+   obj_parents(Man1, P1),
+   assertion(P1 == [citizen_v, man_v, object_v, object_base_v]),
+   obj_parents(Man2, P2),
+   assertion(P2 == New_Parents_Order),
+   obj_option_list(Man1, L1),
+   obj_option_list(Man2, L2),
+   assertion(L1 == L2),
+   obj_field(Man1, class, C1),
+   obj_field(Man2, class, C2),
+   obj_field(Man1, functor, F1),
+   obj_field(Man2, functor, F2),
+   assertion([F1, F2, C1, C2] == [citizen_v, man_v, callup_v, callup_v]).
 
 test(obj_rebase1) :-
 
    obj_construct(http_request_headers_v, [], [], V1),
    obj_parents(V1, P1),
-   assertion(P1 == [http_headers_v,object_v,object_base_v]),
+   assertion(P1 == [http_request_headers_v, http_headers_v,
+                    object_v,object_base_v]),
    obj_rebase((http_headers_v -> http_response_headers_v),
               V1, V2),
    obj_parents(V2, P2),
-   assertion(P2 == [http_response_headers_v,http_headers_v,
+   assertion(P2 == [http_request_headers_v,
+                    http_response_headers_v,http_headers_v,
                     object_v,object_base_v]),
    obj_rebase((http_request_headers_v ->
                http_invalid_mixed_headers_v), V2, V3),
    obj_parents(V3, P3),
-   assertion(P3 == [http_invalid_headers_v,
+   assertion(P3 == [http_invalid_mixed_headers_v,
+                    http_invalid_headers_v,
                     http_headers_v,
                     object_v,object_base_v]).
 

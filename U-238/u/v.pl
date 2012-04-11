@@ -63,6 +63,7 @@
            obj_key_value/2,    % +Object, -Key_Value
            obj_option_list/2,  % +Object, -List
            obj_parents/2,      % +Object, -Class_Names_List
+           obj_parents/3,      % +Obj0, +Class_Names_List, -Obj
            obj_rebase/3,       % ?Rebase_Rule, @Object0, -Object
            obj_reinterpret/2,  % +From, -To
            obj_rewrite/5,      % +Object0, +Fields, ?Old_Vals,
@@ -891,21 +892,43 @@ obj_option_list2([Field|Tail], Object, List0, List) :-
 %
 % obj_parents(+Object, -Class_Names_List)
 %
-% Get the parents of Object in the looking-up order,
+% Get the parents of Object in the looking-up order including
+% the Object class.
 % i.e. Object = man_v ->
-% Class_Names_List = [object_v, object_base_v]
+% Class_Names_List = [man_v, object_v, object_base_v]
 %
 
 obj_parents(Object, Class_Names_List) :-
 
-   Ctx = context(obj_parents/2),
+   Ctx = context(obj_parents/2, _),
    check_inst(Object, Ctx),
    check_object_arg(Object, Ctx, Class_Id),
 
    list_inheritance(Class_Id, Id_List_Rev),
-   reverse(Id_List_Rev, [Class_Id|Id_List]),
+   reverse(Id_List_Rev, Id_List),
    maplist(class_id, Id_List, Class_Names_List).
 
+
+%
+% obj_parents(+Obj0, +Class_Names_List, -Obj)
+%
+% Class_Names_List is in looking-up order including the Obj0
+% class.
+
+obj_parents(Obj0, Class_Names_List, Obj) :-
+
+   Ctx = context(obj_parents/3, _),
+   check_inst(Obj0, Ctx),
+   check_object_arg(Obj0, Ctx, _),
+   check_existing_class_list_arg(Class_Names_List, Ctx,
+                                 Class_Ids_List),
+   % TODO always check [..|object_v, object_base_v] ?
+
+   class_rebase_int(Class_Ids_List, [New_Class_Id|_], _, Ctx),
+   Class_Names_List = [New_Functor|_],
+
+   Obj0 =.. [_, _|Obj0_T],
+   Obj =.. [New_Functor, New_Class_Id|Obj0_T].
 
 %
 % obj_diff(+Obj1, +Obj2, -Diff_List)

@@ -5,6 +5,9 @@
            check_existing_class_arg/2, % inst-
            check_existing_class_arg/3, % +Class, +Ctx, -Class_Id
                                        % inst-
+
+           check_existing_class_list_arg/3, % +Class_List, +Ctx,
+                                            % -Class_Id_List inst+
            
            check_field_name/2,         % inst+
            check_fields_arg/2,         % not inc. inst (inst-)
@@ -63,6 +66,20 @@ check_existing_class_arg(Class, Ctx, Class_Id) :-
    (  class_primary_id(Class, Class_Id) -> true
    ;  throw(error(existence_error(uranium_class, Class), Ctx))
    ).
+
+check_existing_class_list_arg(Class_List, Ctx, Class_Id_List) :-
+
+   check_inst(Class_List, Ctx),
+   check_existing_class_list_arg2(Class_List, Ctx,
+                                  Class_Id_List).
+
+check_existing_class_list_arg2([], _, []) :- !.
+
+check_existing_class_list_arg2([Class|CT], Ctx, [Class_Id|CIT]) :-
+
+   check_existing_class_arg(Class, Ctx, Class_Id),
+   check_existing_class_list_arg2(CT, Ctx, CIT).
+
 
 check_db_key(DB_Key, Ctx) :-
 
