@@ -154,7 +154,19 @@ http_headers_list_obj(List, Obj) :-
       Bulk \= [],
       obj_field(Obj1, '@bulk', Bulk)
    ),
-   mix_case(Obj1, Obj).
+   mix_case(Obj1, Obj2),
+
+   Normal_Parents_Order = [http_invalid_bulk_headers_v,
+                           http_invalid_mixed_headers_v,
+                           http_invalid_headers_v,
+                           http_entity_headers_v,
+                           http_response_headers_v,
+                           http_request_headers_v,
+                           http_general_headers_v,
+                           http_headers_v,
+                           object_v, object_base_v],
+   
+   obj_sort_parents(Obj2, Normal_Parents_Order, Obj).
 
 % http_headers_list_obj(-List, +Obj)
 
@@ -216,9 +228,8 @@ downcast_headers(Header, Value, Class_Fields,
 % rebase to http_invalid_mixed_headers_v if there is a mix
 mix_case(Obj0, Obj) :-
 
-   functor(Obj0, Class0, _),
    obj_parents(Obj0, Parents0),
-   list_to_ord_set([Class0|Parents0], Parents1),
+   list_to_ord_set(Parents0, Parents1),
    (  ord_memberchk(http_request_headers_v, Parents1),
       ord_memberchk(http_response_headers_v, Parents1)
    ->
