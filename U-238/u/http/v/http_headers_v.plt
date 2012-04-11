@@ -285,6 +285,39 @@ test(list_to_http_invalid_bulk_headers_v7) :-
              bulk4 = 4, bulk5 = 5
             ]).
 
-% TODO repeated headers
+test(repeated_headers1) :-
+
+   Headers = [accept_language = en,
+              accept_language = ru
+              ],
+   http_headers_list_obj(Headers, Obj),
+   obj_parents(Obj, Parents),
+   assertion(Parents ==
+            [http_request_headers_v, http_headers_v,
+             object_v, object_base_v]),
+   http_headers_list_obj(Headers2, Obj),
+   assertion(Headers2 == Headers).
+
+test(repeated_headers2) :-
+
+   Headers = [accept_language = 'en, ru'],
+   http_headers_list_obj(Headers, Obj),
+   obj_parents(Obj, Parents),
+   assertion(Parents ==
+            [http_request_headers_v, http_headers_v,
+             object_v, object_base_v]),
+   http_headers_list_obj(Headers2, Obj),
+   assertion(Headers2 == Headers).
+
+test(repeated_headers3) :-
+
+   Headers = [accept_language = [en, ru]],
+   http_headers_list_obj(Headers, Obj),
+   obj_parents(Obj, Parents),
+   assertion(Parents ==
+            [http_request_headers_v, http_headers_v,
+             object_v, object_base_v]),
+   http_headers_list_obj(Headers2, Obj),
+   assertion(Headers2 == Headers).
 
 :- end_tests(http_headers_v).

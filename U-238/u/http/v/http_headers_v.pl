@@ -27,6 +27,15 @@
 %
 % This object store HTTP/1.1 headers
 
+% TODO X-Headers and other headers
+
+% For reference, X-headers are also referred to as x-token
+% in the BNF of RFC 2045, as user-defined ("X-") in
+% section 5 of RFC 2047 and as Experimental headers in
+% section 4.2.2.1 of the News Article Format draft.
+% Deprecating Use of the "X-" Prefix in Application
+% Protocols (draft 02; October 24, 2011):
+
 :- module(http_headers_v,
           [http_headers_list_obj/2   % ?List, ?Obj
            ]).
