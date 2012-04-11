@@ -21,18 +21,18 @@
 %%
 
 :- module(cookies_man, 
-          [ store_cookies/4,  %+DB_Key, +Headers, +Domain,
-                              %+Path
+          [ store_cookies/5,  % +DB_Key, +Domain, %+Path,
+                              % +Headers0, -Headers
+            
             retrieve_cookies_headers/4,
             new_cookie_db_key/1,
-            extract_cookies/2,
             cookies_headers/2
           ]).
 
 :- use_module(library(error)).
 :- use_module(u(v)).
 :- use_module(u(vd)).
-:- use_module(u(html/v/cookie_v)).
+:- use_module(u(http/v/cookie_v)).
 :- use_module(u(logging)).
 :- use_module(u(internal/check_arg)).
 
@@ -56,13 +56,18 @@ new_cookie_db_key(New_DB_Key) :-
 % store_cookies(+DB_Key, +Headers, +Domain, +Path)
 %
 % It is like in-browser cookies storing
+% Extract all set_cookie/1 preds
 %
 
-store_cookies(DB_Key, Headers, Domain, Path) :-
+store_cookies(DB_Key, Domain, Path, Headers0, Headers) :-
 
-   must_be(nonvar, Headers),
+   Ctx = context(store_cookies/5, _),
+   check_db_key(DB_Key, Ctx),
+   must_be(atom, Domain),
+   must_be(atom, Path),
+   must_be(nonvar, Headers0),
    
-   extract_cookies(Headers, Cookies),
+   extract_cookies(Headers0, Headers, Cookies),
    maplist(store_cookie(DB_Key, Domain, Path), Cookies).
 
 % store_cookie(+DB_Key, +Domain, +Path, +Set_Cookie)
@@ -179,11 +184,26 @@ retrieve_cookies_headers(DB_Key, Domain, Path, Headers) :-
   
 
 %
-% Get http response headers and return all cookies
+% Get http response headers and extract all cookies
 %
-% extract_cookies(+Headers, -Cookies)
+% extract_cookies(+Headers0, -Headers, -Cookies)
 %
 
+extract_cookies(Headers0, Headers, Cookies) :-
+
+   extract_cookies(Headers0, Headers, [], Cookies).
+
+extract_cookies([], [], Cookies, Cookies) :- !.
+
+extract_cookies([set_cookie(Cookie)|T0], T,
+                Cookies0, [Cookie|Cookies]) :-
+
+   !, extract_cookies(T0, T, Cookies0, Cookies).
+
+extract_cookies([H0|T0], [H0|T], Cookies0, Cookies) :-
+
+   extract_cookies(T0, T, Cookies0, Cookies).
+   
 extract_cookies(Headers, Cookies) :-
 
     %%! _Params is not checked (e.g., domain)
