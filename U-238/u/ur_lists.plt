@@ -1,12 +1,20 @@
 :- begin_tests(ur_lists).
 :- use_module(u(ur_lists)).
 
-test(remove_options,
+test(remove_options1,
      [List == [b(2), a(2, x), 3]]
      ) :-
 
    remove_options([z = 3, b(2), a(2, x), 3, a= 1, z=_],
                   [z, a(_)],
+                  List).
+
+test(remove_options2,
+     [List == [b(2), 3]]
+     ) :-
+
+   remove_options([z = 3, b(2), a(2, x), 3, a= 1, z=_],
+                  [z, a(_), a(_, _)],
                   List).
 
 test(select_value1, [fail]) :-
