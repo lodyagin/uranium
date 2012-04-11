@@ -41,8 +41,8 @@ url_normalize(Url0, Url) :-
 
 url_normalize(Url0, Base_Url, Url) :-
 
-   uri_normalized(Url0, Base_Url, Url1),
-   eat_tail_slashes(Url1, Url).
+   uri_normalized(Url0, Base_Url, Url).
+   %eat_tail_slashes(Url1, Url).
 
 eat_tail_slashes(Url0, Url) :-
 
