@@ -4,13 +4,13 @@
 %  test platform.
 %
 %  Copyright (C) 2009, 2011  Sergei Lodyagin
-% 
+%
 %  This library is free software; you can redistribute it and/or
 %  modify it under the terms of the GNU Lesser General Public
 %  License as published by the Free Software Foundation; either
 %  version 2.1 of the License, or (at your option) any later
 %  version.
-%  
+%
 %  This library is distributed in the hope that it will be
 %  useful, but WITHOUT ANY WARRANTY; without even the implied
 %  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
@@ -21,7 +21,7 @@
 %  Public License along with this library; if not, write to the
 %  Free Software Foundation, Inc., 51 Franklin Street, Fifth
 %  Floor, Boston, MA 02110-1301 USA
-% 
+%
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 %  ---------------------------------------------------------------
@@ -44,14 +44,16 @@
            index_list/4,
            extract_by_key_order/3,
            pairs_replace_functor/3,
-           
+
+           remove_options/3, % +List0, +Remove, -List
+
            select_value/4, % +Selector, +Selectors,
                            % ?Values, ?Value (det)
-           
+
            select_value/6, % ?Selector, +Selectors,
                            % -Selectors_Rest, ?Values,
                            % ?Values_Rest, ?Value (nondet)
-           
+
            sort_linked/2,
            swap_keyed_list/2,
            switch_by_value/4,
@@ -61,12 +63,13 @@
            trim_list/4,
            decode_prop_list/3,
            convert_prop_list/3, % +Prop_List, +Functor, -List2
-           prop_list_replace/4, % +In, -Out, +From, +To 
+           prop_list_replace/4, % +In, -Out, +From, +To
            weak_maplist/3,
            write_delimited/3     % +Write_Pred, +Delimiter, +List
 ]).
 
 :- use_module(library(error)).
+:- use_module(library(option)).
 :- use_module(u(logging)).
 
 :- module_transparent switch_by_value/4, weak_maplist/3.
@@ -80,8 +83,8 @@ common_head(List1, List2, Head) :-
 common_head_rev(List1, List2, Head) :-
    common_head(List1, List2, [], Head).
 
-common_head([], _, L, L) :- !. 
-common_head(_, [], L, L) :- !. 
+common_head([], _, L, L) :- !.
+common_head(_, [], L, L) :- !.
 common_head([A|AT], [A|BT], L0, L) :- !,
    common_head(AT, BT, [A|L0], L).
 common_head(_, _, L, L).
@@ -117,7 +120,7 @@ gen_memberchk(Op, Member, [El|T]) :-
    ;  gen_memberchk(Op, Member, T)
    ).
 
-   
+
 
 transpose_list_matrix([], []) :- !.
 
@@ -137,7 +140,7 @@ list_head2(_, 0, [], M, M) :- !.
 
 list_head2([], N, [], M, M) :- N >= 0, !.
 
-list_head2([El|List], N, [El|Head], M, M_In) :- 
+list_head2([El|List], N, [El|Head], M, M_In) :-
 	N > 0,
 	succ(N1, N),
 	succ(M_In, M_In1),
@@ -196,11 +199,34 @@ index_list([A | Tail], [Start - A | I_Tail], Start, Succ_Pred) :-
     call(Succ_Pred, Start, I1),
     index_list(Tail, I_Tail, I1, Succ_Pred).
 
-%  
+%
 swap_keyed_list([], []) :- !.
 
 swap_keyed_list([A - B | T1], [B - A | T2]) :-
     swap_keyed_list(T1, T2).
+
+
+% remove_options(+List0, +Remove, -List)
+%
+
+remove_options(List, [], List) :- !.
+
+remove_options(List0, [Option0|Remove], List) :-
+
+   (  atom(Option0)
+   -> functor(Option, Option0, 1)
+   ;  Option = Option0
+   ),
+   select_option_req(Option, List0, List1),
+   remove_options(List1, Remove, List).
+
+select_option_req(Option, List0, List) :-
+
+   (  select_option(Option, List0, List1)
+   -> select_option_req(Option, List1, List)
+   ;  List = List0
+   ).
+
 
 % select_value(+Selector, +Selector_List, +Value_List, -Value) :-
 % det
@@ -222,7 +248,7 @@ select_value(Selector, Selector_List, Value_List, Value) :-
 % Always complete Values argument if it is var or a partial list
 %
 
-   
+
 select_value(_, [],  _, _, _, _) :- fail.
 
 select_value(Selector, [Selector|SR], SR,
@@ -241,7 +267,7 @@ select_value(Selector, [SH|ST], [SH|SR],
 % Оператор case (switch)
 %
 switch_by_value(Selector, Selector_List, Goal_List, Default_Goal) :-
-    nth1(Index, Selector_List, Selector) 
+    nth1(Index, Selector_List, Selector)
     ->
     nth1(Index, Goal_List, Goal),
     logged(Goal)
@@ -308,7 +334,7 @@ convert_prop_list(Prop_List, Functor, New_List) :-
 
 prop_list_replace([], [], _, _) :- !.
 
-    
+
 prop_list_replace([Prop_In|Tail_In],
                   [Prop_Out|Tail_Out],
                   From, To)
@@ -321,7 +347,7 @@ prop_list_replace([Prop_In|Tail_In],
         ;  Prop_In = Prop_Out
         ),
         prop_list_replace(Tail_In, Tail_Out, From, To).
-    
+
 
 %
 % weak_maplist(:Pred, ?List1, ?List2)
@@ -337,7 +363,7 @@ weak_maplist(Pred, [Head1|Tail1], [Head2|Tail2]) :-
   ignore(call(Pred, Head1, Head2)),
   weak_maplist(Pred, Tail1, Tail2).
 
-  
+
 write_delimited(Write_Pred, Delimiter, List) :-
 
   List = [Head|Tail] ->
@@ -363,4 +389,4 @@ sort_linked(LU, LS) :-
    keysort(Keyed_LU_Tr, Keyed_LS_Tr),
    findall([H|T], member(H-T, Keyed_LS_Tr), LS_Tr),
    transpose_list_matrix(LS_Tr, LS).
-   
+
