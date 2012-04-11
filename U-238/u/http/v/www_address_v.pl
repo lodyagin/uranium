@@ -24,8 +24,30 @@
 % e-mail: lodyagin@gmail.com
 % post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 %
-% This object represents any entity returned by http
+% This module defines an abstraction of an address in WWW.
 
-:- module(http_result_v, []).
+:- module(www_address_v, []).
 
-new_class(http_result_v, object_v, [www_address], [www_address]).
+new_class(www_address_v, object_v,
+          [http_request_url,  % original URL of the request
+           http_response_url, % != http_request_url if
+                              % it is a redirected page
+           cookies_db,
+           cookies_id,
+
+           http_request_headers,
+           http_response_headers,  % Usualy contains timestamp
+           http_proxy
+           ],
+
+          [http_request_url,
+           http_response_url,
+           http_request_headers,
+           http_response_headers,
+           http_proxy
+           ]
+         ).
+
+% TODO invalid_www_address -> www_address (must contain required fields)
+
+

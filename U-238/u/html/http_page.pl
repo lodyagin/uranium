@@ -1,7 +1,7 @@
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
 %
-%  Copyright (C) 2011  Sergei Lodyagin
+%  Copyright (C) 2012, Kogorta OOO Ltd
 %
 %  This library is free software; you can redistribute it and/or
 %  modify it under the terms of the GNU Lesser General Public
@@ -31,10 +31,11 @@
 
 :- use_module(u(v)).
 :- use_module(library(error)).
+:- use_module(library(lists)).
 :- use_module(library(url)).
 
-:- meta_predicate http_page(3, +, -).
-:- meta_predicate http_page(3, +, +, -).
+:- meta_predicate http_page(4, +, -).
+:- meta_predicate http_page(4, +, +, -).
 
 % Get an http response as a html_piece_v descendant
 %
@@ -53,17 +54,24 @@ http_page(Pred, URL, Form, Page) :-
 
 http_page_cmn(Pred, URL, Form, Page, _) :-
 
-  must_be(callable, Pred),
-  call(Pred, URL, Form, DOM),
-  get_time(Timestamp),
+   must_be(callable, Pred),
 
-  (atom(URL) -> URL2 = URL;  parse_url(URL2, URL)),
+   (atom(URL) -> URL2 = URL;  parse_url(URL2, URL)),
 
-  (  DOM = [DOM2] -> true ; DOM = DOM2 ),
-  
-  obj_construct(html_piece_v,
-                [http_request_url, timestamp, dom],
-                [URL2, Timestamp, DOM2],
-                Obj),
-  obj_downcast(Obj, Page).
-  
+   call(Pred, URL2, Form, DOM, Redirect_Steps),
+
+   Redirect_Steps = [First_Step|_],
+   last(Redirect_Steps, Last_Step),
+
+   Fields = [http_request_url, http_request_headers],
+   named_args_unify(First_Step, Fields, Values),
+
+   obj_rewrite(Last_Step, Fields, _, Values, WWW_Address),
+   
+   (  DOM = [DOM2] -> true ; DOM = DOM2 ),
+   
+   obj_construct(html_piece_v,
+                 [www_address, dom],
+                 [WWW_Address, DOM2],
+                 Obj),
+   obj_downcast(Obj, Page).
