@@ -184,7 +184,7 @@ http_headers_list_obj(List, Obj) :-
    nonvar(Obj), !,
    obj_rewrite(Obj, weak, ['@bulk'], [Bulk], [_], Obj1),
    ignore(Bulk = []),
-   obj_option_list(Obj1, List1),
+   obj_list(Obj1, List1),
    append(List1, Bulk, List).
 
 http_headers_list_obj(_, _) :-

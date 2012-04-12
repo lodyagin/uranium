@@ -277,7 +277,7 @@ test(obj_key2) :-
    assertion(Key_Value2 =@= [_]).
 
 
-test(obj_option_list1,
+test(obj_list1,
      [List =@= [country = ['Soviet Union'],
                 sex = man,
                 surname = 'Mayakovsky']]
@@ -287,12 +287,12 @@ test(obj_option_list1,
                  [sex, surname, country], 
                  [man, 'Mayakovsky', ['Soviet Union']],
                  Man),
-   obj_option_list(Man, List).
+   obj_list(Man, List).
  
-test(obj_option_list2, [List =@= []]) :-
+test(obj_list2, [List =@= []]) :-
 
    obj_construct(citizen_v, [], [], Man),
-   obj_option_list(Man, List).
+   obj_list(Man, List).
 
 test(obj_parents1_1,
      [P = [citizen_v, man_v, object_v, object_base_v]]) :-
@@ -312,8 +312,8 @@ test(obj_parents2_1) :-
    assertion(P1 == [citizen_v, man_v, object_v, object_base_v]),
    obj_parents(Man2, P2),
    assertion(P2 == New_Parents_Order),
-   obj_option_list(Man1, L1),
-   obj_option_list(Man2, L2),
+   obj_list(Man1, L1),
+   obj_list(Man2, L2),
    assertion(L1 == L2),
    obj_field(Man1, class, C1),
    obj_field(Man2, class, C2),

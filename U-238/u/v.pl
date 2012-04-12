@@ -61,7 +61,7 @@
            obj_field/4,        % +Obj, +Weak, ?Field, ?Value
            obj_key/2,          % +Object, -Key
            obj_key_value/2,    % +Object, -Key_Value
-           obj_option_list/2,  % +Object, -List
+           obj_list/2,  % +Object, -List
            obj_parents/2,      % +Object, -Class_Names_List
            obj_parents/3,      % +Obj0, +Class_Names_List, -Obj
            obj_rebase/3,       % ?Rebase_Rule, @Object0, -Object
@@ -890,29 +890,29 @@ obj_key_value(Object, Key_Value) :-
   obj_unify_int(Class_Id, Key, throw, Object, Key_Value, Ctx).
 
 %
-% obj_option_list(+Object, -List)
+% obj_list(+Object, -List)
 % Convert Object to the List [Field = Value, ...]
 %
 
-obj_option_list(Object, List) :-
+obj_list(Object, List) :-
 
    nonvar(Object), !,
-   Ctx = context(obj_option_list/2, _),
+   Ctx = context(obj_list/2, _),
    check_object_arg(Object, Ctx, Class_Id),
    class_all_fields(Class_Id, Fields),
    reverse(Fields, Fields_Rev),
-   obj_option_list2(Fields_Rev, Object, [], List).
+   obj_list2(Fields_Rev, Object, [], List).
 
-obj_option_list2([], _, List, List) :- !.
+obj_list2([], _, List, List) :- !.
 
-obj_option_list2([Field|Tail], Object, List0, List) :-
+obj_list2([Field|Tail], Object, List0, List) :-
 
    obj_field(Object, Field, Value),
    (  nonvar(Value)
    -> List1 = [Field = Value|List0]
    ;  List1 = List0
    ),
-   obj_option_list2(Tail, Object, List1, List).
+   obj_list2(Tail, Object, List1, List).
 
 %
 % obj_parents(+Object, -Class_Names_List)
