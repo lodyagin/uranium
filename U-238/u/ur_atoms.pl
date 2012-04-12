@@ -1,34 +1,54 @@
-%% This file is a part of Uranium, a general-purpose functional test platform.
-%% Copyright (C) 2011  Sergei Lodyagin
-%%
-%% This library is free software; you can redistribute it and/or
-%% modify it under the terms of the GNU Lesser General Public
-%% License as published by the Free Software Foundation; either
-%% version 2.1 of the License, or (at your option) any later version.
-%% 
-%% This library is distributed in the hope that it will be useful,
-%% but WITHOUT ANY WARRANTY; without even the implied warranty of
-%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-%% Lesser General Public License for more details.
-
-%% You should have received a copy of the GNU Lesser General Public
-%% License along with this library; if not, write to the Free Software
-%% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-%%
-%% e-mail: lodyagin@gmail.com
-%% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
-%% -------------------------------------------------------------------------------
-%%
+% -*- fill-column: 65; -*-
+%
+% This file is a part of Uranium, a general-purpose
+% functional test platform.
+%
+% Copyright (C) 2011, Sergei Lodyagin
+% Copyright (C) 2012, Kogorta OOO Ltd
+%
+% This library is free software; you can redistribute it
+% and/or modify it under the terms of the GNU Lesser
+% General Public License as published by the Free Software
+% Foundation; either version 2.1 of the License, or (at
+% your option) any later version.
+%
+% This library is distributed in the hope that it will be
+% useful, but WITHOUT ANY WARRANTY; without even the
+% implied warranty of MERCHANTABILITY or FITNESS FOR A
+% PARTICULAR PURPOSE.  See the GNU Lesser General Public
+% License for more details.
+%
+% You should have received a copy of the GNU Lesser
+% General Public License along with this library; if not,
+% write to the Free Software Foundation, Inc., 51 Franklin
+% Street, Fifth Floor, Boston, MA 02110-1301 USA
+%
+% e-mail: lodyagin@gmail.com
+% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
+%
 
 :- module(ur_atoms,
-          [tolower/2,
+          [capitalize_atom/2,
+           tolower/2,
            trim_string/4,
            remove_quotes/2,
            replace_char/4,
            replace_chars/4
 ]).
 
-:- use_module(ur_lists).
+:- use_module(library(error)).
+:- use_module(u(ur_lists)).
+
+capitalize_atom('', '') :- !.
+
+capitalize_atom(From, To) :-
+
+   must_be(atom, From),
+
+   atom_codes(From, [From_First|Tail]),
+   code_type(To_First, to_upper(From_First)),
+   atom_codes(To, [To_First|Tail]).
+
 
 tolower(From, To) :-
     (
@@ -77,4 +97,4 @@ replace_character_code(C1, _, Code1, Code1) :-
 
   C1 \= Code1.
 
- 
+
