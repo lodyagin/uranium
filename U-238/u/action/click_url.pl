@@ -1,4 +1,4 @@
-% -*- fill-column: 65; -*- 
+% -*- fill-column: 65; -*-
 %
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
@@ -28,19 +28,19 @@
 %  This module emulates browser clicks.
 
 :- module(click_url, [click_url/2,  % +URL_Expr, -Page
-                      click_url/3,  % +URL_Expr, @Proxy, -Page
-                      click_url/5,  % +URL_Expr, @Proxy, +User0,
+                      click_url/3,  % +URL_Expr, ?Browser, -Page
+                      click_url/5,  % +URL_Expr, ?Browser, +User0,
                                     % -User, -Page
-                      
+
                       click_with_all_redirects/2,
                       %+URL_Expr, -Page nondet
                       click_with_all_redirects/4,
                       %+URL_Expr, +User0, -User, -Page nondet
                       click_with_all_redirects/5,
-                      %+URL_Expr, @Proxy, +User0, -User, -Page
+                      %+URL_Expr, ?Browser, +User0, -User, -Page
                       %nondet
-                      
-                      send_form/6 % +URL_Expr, +Form, @Proxy,
+
+                      send_form/6 % +URL_Expr, +Form, ?Browser,
                                   % +User0, -User, -Page
                       ]).
 
@@ -57,33 +57,33 @@ click_url(URL_Expr, Page) :-
    url_cmn(get, URL_Expr, _, _, _, _, Page, Ctx).
 
 
-% click_url(+URL_Expr, @Proxy, -Page)
+% click_url(+URL_Expr, ?Browser, -Page)
 
-click_url(URL_Expr, Proxy, Page) :-
+click_url(URL_Expr, Browser, Page) :-
 
    Ctx = context(click_url/3, _),
-   url_cmn(get, URL_Expr, _, Proxy, _, _, Page, Ctx).
+   url_cmn(get, URL_Expr, _, Browser, _, _, Page, Ctx).
 
 
-% click_url(+URL_Expr, @Proxy, +User0, -User, -Page)
+% click_url(+URL_Expr, ?Browser, +User0, -User, -Page)
 
-click_url(URL_Expr, Proxy, User0, User, Page) :-
+click_url(URL_Expr, Browser, User0, User, Page) :-
 
    Ctx = context(click_url/5, _),
-   url_cmn(get, URL_Expr, _, Proxy, User0, User, Page, Ctx).
+   url_cmn(get, URL_Expr, _, Browser, User0, User, Page, Ctx).
 
 
-% click_with_all_redirects(+URL_Expr, @Proxy, +User0, -User, -Page)
+% click_with_all_redirects(+URL_Expr, ?Browser, +User0, -User, -Page)
 % is nondet
 %
 % Perform all redirects. Try all Page interpretations
 
-click_with_all_redirects(URL_Expr, Proxy, User0, User, Page) :-
+click_with_all_redirects(URL_Expr, Browser, User0, User, Page) :-
 
-   click_url(URL_Expr, Proxy, User0, User1, Page1),
+   click_url(URL_Expr, Browser, User0, User1, Page1),
    obj_reinterpret(Page1, Page2),
    % <NB> redirect does not change current_url in User
-   perform_redirects(Proxy, User1, Page2, User, Page).
+   perform_redirects(Browser, User1, Page2, User, Page).
 
 click_with_all_redirects(URL_Expr, User0, User, Page) :-
 
@@ -101,9 +101,9 @@ perform_redirects(_, User, Page, User, Page) :-
 
    \+ obj_same_or_descendant(Page, redirect_page_v), !.
 
-perform_redirects(User, Page1, Proxy, Page2) :-
+perform_redirects(Browser, User0, Page1, User, Page2) :-
 
-  click_with_all_redirects(User, Page1 / url_to, Proxy, Page2).
+  click_with_all_redirects(Page1 / url_to, Browser, User0, User, Page2).
 
 
 % A redirect of a not redirect page is the same page
@@ -116,21 +116,22 @@ perform_redirects(Page1, Page2) :-
    click_with_all_redirects(Page1 / url_to, Page2).
 
 
-% send_form(+URL_Expr, +Form, @Proxy, +User0, -User, -Page)
+% send_form(+URL_Expr, +Form, ?Browser, +User0, -User, -Page)
 % The same as click_url/5 but POST the Form
-send_form(URL_Expr, Form, Proxy, User0, User, Page) :-
+send_form(URL_Expr, Form, Browser, User0, User, Page) :-
 
    Ctx = context(send_form/6, _),
-   url_cmn(post, URL_Expr, Form, Proxy, User0, User, Page, Ctx).
+   url_cmn(post, URL_Expr, Form, Browser, User0, User, Page, Ctx).
 
-url_cmn(Method, URL_Expr, Form, Proxy, User0, User, Page, Ctx) :-
+url_cmn(Method, URL_Expr, Form, Browser, User0, User, Page, Ctx) :-
 
    eval_obj_expr(URL_Expr, Url),
    % TODO check Url
-   
+
    % TODO Check URL_Expr syntax
-   (  var(Proxy) -> true
-   ;  check_object_arg(Proxy, Ctx, _)
+   (  var(Browser)
+   -> obj_construct(browser_v, [], [], Browser)
+   ;  check_object_arg(Browser, Ctx, _)
    ),
    (  var(User0) -> true
    ;  check_object_arg(User0, Ctx, _)
@@ -141,6 +142,7 @@ url_cmn(Method, URL_Expr, Form, Proxy, User0, User, Page, Ctx) :-
       obj_field(User0, current_url, Referer)
    ),
 
+   obj_field(Browser, proxy_settings, Proxy),
    (  nonvar(Proxy)
    -> obj_field(Proxy, ip, Proxy_IP),
       obj_field(Proxy, port, Proxy_Port),
@@ -148,14 +150,15 @@ url_cmn(Method, URL_Expr, Form, Proxy, User0, User, Page, Ctx) :-
    ;  Options = []
    ),
 
-   obj_construct(http_request_headers_v,
-                 [referer], [Referer], Headers),
+   obj_field(Browser, headers, Headers),
+   obj_field(Headers, referer, Referer), % TODO obj_set_field
+
    http_page(http_do(Method, Options, Headers, Cookies_DB),
              Url, Form, Page),
-
+   
    % Store the new page location in the User object
    eval_obj_expr(Page / www_address / http_response_url, Page_Url),
    obj_rewrite(User0, [current_url], _, [Page_Url], User).
 
 
-   
+
