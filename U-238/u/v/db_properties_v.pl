@@ -24,18 +24,11 @@
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
-%  This module describes db_singleton_v - the object which
-%  always constraints itself to a single instance inside
-%  DB.
+%  This module describes db_properties_v - the object
+%  which can turns various properties of an uranium db.
 
-:- module(db_singleton_v, []).
+:- module(db_properties_v, []).
 
-new_class(db_singleton_v, db_object_v,
-          [],
-          [db_singleton] % eval field as a key
-         ).
+new_class(db_properties_v, db_singleton_v,
+          [key_policy]).
 
-% always return t
-'db_singleton_v?'(_, db_singleton, t).
-
-                  

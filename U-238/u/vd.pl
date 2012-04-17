@@ -381,7 +381,7 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
    ->
       % ... it always has key, hide under key-checking
       % for performance
-      db_singleton_hook(DB_Key, Class_Id, Object),
+      db_properties_hook(DB_Key, Class_Id, Object),
                          
       (  % Check the existence of an object with the same key
          key_conflict(DB_Key, Class_Id, Object, Conflicting)
@@ -405,10 +405,10 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
       db_record_int(DB_Key, Order, Object, Ctx)
    ).
 
-db_singleton_hook(DB_Key, Class_Id, DB_Singleton) :-
+db_properties_hook(DB_Key, Class_Id, DB_Properties) :-
 
-   functor(DB_Singleton, db_singleton_v, _), !,
-   obj_field_int(Class_Id, key_policy, throw, DB_Singleton,
+   functor(DB_Properties, db_properties_v, _), !,
+   obj_field_int(Class_Id, key_policy, throw, DB_Properties,
                  Key_Policy, _, _),
    (  var(Key_Policy) -> Key_Policy = throw
    ; true
@@ -416,7 +416,7 @@ db_singleton_hook(DB_Key, Class_Id, DB_Singleton) :-
    db_key_policy(DB_Key, _, Key_Policy).
    
 
-db_singleton_hook(_, _, _).  % a hook should always succeed
+db_properties_hook(_, _, _).  % a hook should always succeed
 
 %
 % Record all solutions of the Pred.
