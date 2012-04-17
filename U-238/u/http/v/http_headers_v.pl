@@ -1,4 +1,4 @@
-% -*- fill-column: 58; -*-
+% -*- fill-column: 65; -*-
 %
 % This file is a part of Uranium, a general-purpose
 % functional test platform.
@@ -42,6 +42,7 @@
 
 :- use_module(library(error)).
 :- use_module(library(ordsets)).
+:- use_module(u(ur_atoms)).
 :- use_module(u(v)).
 
 new_class(http_headers_v, object_v, []).
@@ -114,6 +115,9 @@ new_class(http_response_headers_v, http_headers_v,
            www_authenticate
           ]).
 
+new_class(http_experimental_1_0_request_headers_v, http_request_headers_v,
+          [keep_alive]).
+
 % It contains not empty @bulk or contains mixed
 % request/response headers or miss required fields
 new_class(http_invalid_headers_v, http_headers_v, []).
@@ -147,7 +151,8 @@ http_headers_list_obj(List, Obj) :-
    obj_construct(http_headers_v, [], [], Obj0),
    findall(fields(Class, Fields),
            (  member(Type,
-                     [general, entity, request, response]
+                     [general, entity, request, response,
+                      experimental_1_0_request]
                     ),
               concat_atom([http, Type, headers_v], '_',
                           Class),
@@ -170,11 +175,12 @@ http_headers_list_obj(List, Obj) :-
                            http_invalid_headers_v,
                            http_entity_headers_v,
                            http_response_headers_v,
+                           http_experimental_1_0_request_headers_v,
                            http_request_headers_v,
                            http_general_headers_v,
                            http_headers_v,
                            object_v, object_base_v],
-   
+
    obj_sort_parents(Obj2, Normal_Parents_Order, Obj).
 
 % http_headers_list_obj(-List, +Obj)
@@ -185,7 +191,8 @@ http_headers_list_obj(List, Obj) :-
    obj_rewrite(Obj, weak, ['@bulk'], [Bulk], [_], Obj1),
    ignore(Bulk = []),
    obj_list(Obj1, List1),
-   append(List1, Bulk, List).
+   append(List1, Bulk, List2),
+   maplist(header_prolog_http, List2, List).
 
 http_headers_list_obj(_, _) :-
 
@@ -253,3 +260,16 @@ mix_case(Obj0, Obj) :-
    ;
       Obj = Obj0
    ).
+
+% Translate between prolog and http header formats (names)
+
+header_prolog_http(PHeader=Value, HHeader=Value) :-
+
+   nonvar(PHeader), !,
+   (  concat_atom(PTokens, '_', PHeader)
+   -> maplist(capitalize_atom, PTokens, HTokens),
+      concat_atom(HTokens, '-', HHeader)
+   ;  capitalize_atom(PHeader, HHeader)
+   ).
+
+
