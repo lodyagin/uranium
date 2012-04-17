@@ -39,6 +39,7 @@
           ]).
 
 :- use_module(library(error)).
+:- use_module(library(lists)).
 :- use_module(library(option)).
 :- use_module(library(http/http_client)).
 :- use_module(library(http/http_open)).
@@ -107,24 +108,32 @@ http_do_cmn(Method, Options, Headers, Cookies_DB, URL, Post_Data,
 http_do_int(Method, Options, Headers, Cookies_DB, URL, Post_Data,
             DOM, Redirect_Steps0, Redirect_Steps, Ctx) :-
 
-   http_headers_list_obj(Request_Headers, Headers),
+   % Some headers should have a special syntax for http_get/post
+   obj_rewrite(Headers, weak,
+               [user_agent], [User_Agent], [_], Headers1),
+   (  nonvar(User_Agent)
+   -> selectchk(user_agent(User_Agent), Options1, Options)
+   ;  Options1 = Options
+   ),
+
+   http_headers_list_obj(Request_Headers, Headers1),
    get_cookies_headers(Cookies_DB, URL, Cookies_Headers),
 
-   append(Options,
+   append(Options1,
           [reply_header(Reply_Headers0) | Cookies_Headers],
-          Options1),
+          Options2),
    findall(request_header(H),
            member(H, Request_Headers),
            RH_Options),
-   append(Options1, RH_Options, Options2),
+   append(Options2, RH_Options, Options3),
 
    write_log(['http_do(', Method, ', ..., ', URL, '), options:',
-              Options2],
+              Options3],
              [logger(http_ops), lf(1, before), lf(1)]),
 
    (  Method = get
-   -> http_get(URL, Data, Options2)
-   ;  http_post(URL, Post_Data, Data, Options2)
+   -> http_get(URL, Data, Options3)
+   ;  http_post(URL, Post_Data, Data, Options3)
    ),
 
    % The option which is not headers/cookies, see
