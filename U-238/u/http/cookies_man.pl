@@ -25,8 +25,7 @@
                               % +Headers0, -Headers
             
             retrieve_cookies_headers/4,
-            new_cookie_db_key/1,
-            cookies_headers/2
+            new_cookie_db_key/1
           ]).
 
 :- use_module(library(error)).
@@ -170,17 +169,22 @@ load_cookie(DB_Key, Request_Host, Uri_Path, Set_Cookie) :-
 
 retrieve_cookies_headers(DB_Key, Domain, Path, Headers) :-
 
-  atom(DB_Key),
+   atom(DB_Key),
 
-  write_log(['Extract cookies from', DB_Key, 'for',
-             Domain, '/', Path],
-            [logger(cookies), lf(1, before), lf(1)]),
-             
-  findall(Set_Cookie,
-          load_cookie(DB_Key, Domain, Path, Set_Cookie),
-          Cookies),
+   write_log(['Extract cookies from', DB_Key, 'for',
+              Domain, '/', Path],
+             [logger(cookies), lf(1, before), lf(1)]),
+   
+   findall(Set_Cookie,
+           load_cookie(DB_Key, Domain, Path, Set_Cookie),
+           Cookies),
 
-  cookies_headers(Cookies, Headers).
+   (  Cookies = []
+   -> Headers = []
+   ;  phrase(cookies_headers(Cookies), Value_Codes, []),
+      atom_codes(Value, Value_Codes),
+      Headers = [request_header('Cookie' = Value)]
+   ).
   
 
 %
@@ -211,17 +215,23 @@ extract_cookies(Headers, Cookies) :-
             member(set_cookie(Cookie), Headers),
             Cookies).
 
-%% Return request headers with stored cookies
-%%! Site is not checked
-%
-% cookies_headers(+Cookies, -Headers)
-%
+cookies_headers([]) -->
 
-cookies_headers(Cookies, Headers) :-
-    findall(request_header('Cookie' = Hdr),
-            (member(set_cookie(Name, Value, _), Cookies),
-             format(atom(Hdr), '~a=~a', [Name, Value])
-              ),
-             Headers
-             ).
+   [], !.
 
+cookies_headers([Cookie]) -->
+
+   !, cookies_header(Cookie).
+   
+cookies_headers([Cookie|Tail]) -->
+
+   cookies_header(Cookie),
+   "; ",
+   cookies_headers(Tail).
+
+cookies_header(set_cookie(Name, Value, _)) -->
+
+   {  atom_codes(Name, Name_Codes),
+      atom_codes(Value, Value_Codes)
+   },
+   Name_Codes, "=", Value_Codes.
