@@ -1,3 +1,5 @@
+% -*- fill-column: 65; -*-
+%
 %  This file is a part of Uranium, a general-purpose
 %  functional test platform.
 %
@@ -30,12 +32,33 @@
 
 :- module(db_singleton_v, []).
 
+/** <module> db_singleton_v
+
+  Objects of this class and its descendants (which are not
+  overriding the key) can be present in any DB only once.
+
+  ---+++ Parent
+  db_object_v.pl
+
+  ---+++ New static fields
+  None.
+  
+  ---+++ New evaluated fields
+    $ db_singleton : always evaluated to the object functor
+
+  ---+++ Key
+  =|[db_singleton]|=
+*/
+
 new_class(db_singleton_v, db_object_v,
           [],
           [db_singleton] % eval field as a key
          ).
 
-% always return t
-'db_singleton_v?'(_, db_singleton, t).
+% always return functor
+'db_singleton_v?'(Obj, db_singleton, Functor) :-
+
+   functor(Obj, Functor, _).
+
 
                   
