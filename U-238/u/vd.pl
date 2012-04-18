@@ -2,8 +2,9 @@
 %
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
-
-%  Copyright (C) 2011  Sergei Lodyagin
+%
+%  Copyright (C) 2011, Sergei Lodyagin
+%  Copyright (C) 2012, Kogorta OOO Ltd
 %
 %  This library is free software; you can redistribute it and/or
 %  modify it under the terms of the GNU Lesser General Public
@@ -16,7 +17,7 @@
 %  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 %  PURPOSE.  See the GNU Lesser General Public License for more
 %  details.
-
+%
 %  You should have received a copy of the GNU Lesser General
 %  Public License along with this library; if not, write to the
 %  Free Software Foundation, Inc., 51 Franklin Street, Fifth
@@ -26,14 +27,12 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 %  --------------------------------------------------------------
 
-% This is an object database
-% The internal prolog DB implementation.
 
 :- module(vd,
           [
 %           db_bind_obj/3, % +DB_Key, +Object0, -Object
 %           db_change/4,   % +DB_Key, +Fields, +Vals, +Query
-           db_clear/1,
+           db_clear/1,     % +DB_Key
            db_construct/4, % +DB_Key, +Class, +Fields, +Values
            db_construct/5, % +DB_Key, +Class, +Fields, +Values, -Object
            db_copy/2,
@@ -44,7 +43,7 @@
            db_iterate_replace/4,  % +DB_Key, +Pred, +Query, +Filter
            db_iterate_replace/5,  % +DB_Key, +Pred, +Query,
                                   % +Filter_Pred, +Count
-           
+
            %db_merge/2,  % by key
            %db_merge/3,  % by custom values
            db_move_all_data/2,
@@ -56,20 +55,20 @@
            db_put_object/4,  % +DB_Key,+Options,+Object0,-Object
            db_put_object/5,  % +DB_Key,+Options,+Object0,-Object,
                              % -Replaced
-           
+
            db_recorda/2,     % +DB_Key, +Object
            db_recorda/3,     % +DB_Key, +Object0, -Object
            db_recorda/4,     % +DB_Key,+Options,+Object0,-Object
            db_recorda/5,     % +DB_Key,+Options,+Object0,-Object,
                              % -Replaced
-           
+
            db_put_objects/3, % +DB_Key, :Pred, +Options
 
 	   db_recorded/2,    % +DB_Key, ?Object
                              % -Object
 %           db_rewrite/5,     % +DB_Key, ?Functor, +Fields,
                              % @Old_Vals, +New_Vals
-           
+
            %db_reset/3,       % +DB_Key, +Fields, +Query
            db_search/3,      % +DB_In, +DB_Out, :Pred
            db_size/2,        % +DB_Key, ?Size
@@ -78,7 +77,7 @@
            db_select_list/4, % +DB_Key, ?Functor, +Fields, -List
            db_select_list/5, % +DB_Key, ?Functor, ?Weak, +Fields,
                              % -List
-           
+
            dump_db/1,        % +DB_Key
            dump_db/2,        % +Options, +DB_Key
            filter_on_db/3,   % +DB_Key, +Field_Names, +Field_Values
@@ -88,6 +87,87 @@
 
            prolog:message//1
            ]).
+
+/** <module> Uranium object database
+
+  An object database is a special database for storing uranium
+  objects (see v.pl).
+
+  An underlying implementation can be based on any mechanism -
+  standard Prolog DB of terms (assertz/1, retract/1), PostgreSQL
+  DB etc. Some DBs are _temporary_ (like Prolog DB), others are
+  _persistent_ (like PostgreSQL). All temporary DBs are destroyed
+  when the program terminates.
+
+  Each database is identified by DB_Key, it is a mandatory
+  parameter of any predicate from this module (and usually it is
+  the first parameter).
+
+  A database is firstly created when a user puts objects (with
+  predicates db_construct/4, db_construct/5, db_copy/2,
+  db_move_all_data/2, db_put_object/2, db_put_object/3,
+  db_put_object/4, db_put_object/5, db_put_objects/3,
+  db_recorda/2, db_recorda/3, db_recorda/4, db_recorda/5) and no
+  DB with such DB_Key exists.
+
+  DB_Key can be an atom or a compound term. In the case of atom
+  DB_Key a Prolog DB will be used otherwise the used underlying
+  module is determined by the DB_Key functor.
+
+  ---++ Storing of class information in every database
+
+  Every Uranium database store information for reconstructing
+  stored classes even if the program does not contain definitions
+  of stored classes or the program contains different definition
+  or the stored classes where rebased some way (see
+  obj_rebase/3). It always contains classes for actually stored
+  objects as well as they parents (as returned by obj_parents/2,
+  i.e., with rebasing).
+
+  ---++ Key conflicts
+
+  When put an object into Uranium database it always performs
+  checking on key conflicts. A key conflict is defined as
+  follows:
+
+   1. The class of new object has a non-empty key.
+
+   1. The class of new object is same or descendant of some
+   _keymaster_ class definition already stored in the database.
+
+   1. All key fields of new object can be unified with some object
+   from DB which is same or descendant of the same _keymaster_
+   class.
+
+  ---++ Key conflicts resolution policy
+
+  When the system finds a key conflict it always resolve it
+  according to _|key conflicts resolution policy|_. There are 3
+  possible mechanisms by which the policy can be defined:
+
+   1. A default policy for newly created DB. It is always *throw*.
+
+   1. A per-DB policy defined by v/db_properties_v.pl, see.
+
+   1. A per-predicate policy, see db_put_object/4.
+
+  All possible key resolution policies are:
+
+   * overwrite
+   Remove the conflicting objects from DB before put new one.
+
+   * ignore
+   Ignore the new object.
+
+   * fail
+   Fail the predicate, do not put new object.
+
+   * throw
+   Throw =|error(db_key_exists(DB_Key, DB_Object, New_Object), _)|=
+
+*/
+
+% Also contains the implementation based on a standard prolog DB
 
 :- use_module(library(lists)).
 :- use_module(library(error)).
@@ -106,6 +186,10 @@
 :- meta_predicate db_iterate_replace(+, 3, +, 1, +).
 :- meta_predicate db_search(+, +, 1).
 :- meta_predicate db_put_objects(+, 1, +).
+
+%% db_clear(+DB_Key) is det.
+%
+% Clear the DB identified by DB_Key if the DB exists.
 
 db_clear(DB_Key) :-
 
@@ -141,17 +225,21 @@ db_construct2(DB_Key, Class, Fields, Values, Obj, Ctx) :-
    db_put_object_int(DB_Key, Class_Id, _, recordz, Tmp, Obj,
                      false, Ctx).
 
+%% db_copy(+DB_In, +DB_Out) is det.
+%
+% Copy all objects from DB with the key DB_In to DB with the key
+% DB_Out. Do nothing if DB_In is empty or not exists.
 
 db_copy(DB_In, DB_Out) :-
 
    Ctx = context(db_copy/2, _),
    (   db_recorded_int(DB_In, Obj0),
        arg(1, Obj0, Class_Id),
-       
+
        obj_rewrite_int(Class_Id, Obj0, throw,
                        [db_key, db_ref], _,
                        [_, _], Obj1, Ctx),
-       
+
        db_put_object_int(DB_Out, Class_Id, _, recordz, Obj1, _,
                          false, Ctx),
        fail
@@ -159,6 +247,20 @@ db_copy(DB_In, DB_Out) :-
        true
    ).
 
+%% db_erase(?Obj) is semidet.
+%
+% Erase the object Obj from DB. Obj should be Uranium object with
+% ground _db_key_ and _db_ref_ fields (usually a _db_object_v_
+% descendant, see db_object_v.pl), i.e., these fields idenitify
+% the database and object to be erased.
+%
+% Fail if Obj is absent in DB.
+%
+% Bound free Obj fields with the values of the actual DB object
+% before erasing.
+%
+% @error domain_error(bound_db_key, Obj) db_key should be ground
+% @error domain_error(bound_db_ref, Obj) db_ref should be ground
 
 db_erase(Obj) :-
 
@@ -169,47 +271,36 @@ db_erase(Obj) :-
                  [db_key, db_ref], throw, Obj,
                  [DB_Key, DB_Ref], Ctx),
 
-    (   nonvar(DB_Key) -> true
+    (   ground(DB_Key) -> true
     ;   throw(error(domain_error(bound_db_key, Obj), Ctx))
     ),
-    (   nonvar(DB_Ref) -> true
+    (   ground(DB_Ref) -> true
     ;   throw(error(domain_error(bound_db_ref, Obj),Ctx))
     ),
 
-   db_erase_int(DB_Key, Obj).
+   db_erase_int(DB_Key, Obj), !.
 
-/*
-db_bind_obj(DB_Key, w(Ref0, Object0), w(Ref, Object)) :- !,
-
-   % It is det if Ref0 is bound
-   (nonvar(Ref0) -> Is_Det = true ; Is_Det = false),
-
-   duplicate_term(Object0, Object),
-
-   (  db_recorded(DB_Key, Object, Ref0)
-
-      % in the case Ref0 is ground get exactly the same record
-   -> (Is_Det == true -> ! ; true),
-      db_erase(Ref0),
-      db_put_object(DB_Key, w(Ref, Object))
-   ).
-*/
-
-% db_put_object(+DB_Key, +Object)
+%% db_put_object(+DB_Key, ?Object) is semidet.
 %
-% Записывает объект в базу, не допуская повторения ключей
-% Если ключ содержит свободные поля, они вносят дополнительные
-% ограничения, как если бы могли содержать любое значение.
+% Put Object into DB DB_Key. The order of objects is
+% not guaranteed. For ordered put use recorda or recordz.
 %
+% Usually it is det but can fail if the DB key policy is fail and
+% a key conflict occures.
 
 db_put_object(DB_Key, Object) :-
 
    Ctx = context(db_put_object/2, _),
    db_put_object_cmn(DB_Key, _, _, Object, _, false, Ctx).
 
-% db_put_object(+DB_Key, +Object0, -Object)
+%% db_put_object(+DB_Key, ?Object0, -Object) is semidet.
 %
-% This version return the object unified with DB
+% Like db_put_object/2 but also return the object unified with DB
+% (it will be always db_object_v descendant with ground =db_key=
+% and =db_ref= fields (see db_object_v.pl)).
+%
+% In the case of =ignore= key policy Object is unified with the
+% first conflicting object from DB.
 
 db_put_object(DB_Key, Object0, Object) :-
 
@@ -217,14 +308,11 @@ db_put_object(DB_Key, Object0, Object) :-
    db_put_object_cmn(DB_Key, _, _, Object0, Object, false, Ctx).
 
 
-% db_put_object(+DB_Key, +Option, +Object0, -Object)
+%% db_put_object(+DB_Key, +Option, ?Object0, -Object) is semidet.
 %
-% Option: overwrite - удаляет старые объекты по этому
-% значению ключа (но только, если все значения ключа связаны)
-%          ignore - не добавлять объект, если есть
-%          fail - fail predicate on key dup
-%          throw - throw exception
-
+% Like db_put_object/3 but use per-predicate key conflict
+% resolution depending on Option (see above).
+%
 
 db_put_object(DB_Key, Option, Object0, Object) :-
 
@@ -293,7 +381,7 @@ db_put_object_cmn(DB_Key, Option, Order, Object0, Object,
    decode_arg([[recordz, _, z],
                [recorda, a]],
               Order, Order1, Ctx),
-   
+
    db_put_object_int(DB_Key, Class_Id, Option1, Order1, Object0,
                      Object, Replaced, Ctx).
 
@@ -302,9 +390,9 @@ handle_key_dup(Option, DB_Key, Class_Id, DB_Object, New_Object) :-
 
    var(Option), !,
 
-   db_key_policy(DB_Key, Option, _), 
+   db_key_policy(DB_Key, Option, _),
    % Options is always bound after the call
-   
+
    handle_key_dup(Option, DB_Key, Class_Id, DB_Object,
                   New_Object).
 
@@ -333,7 +421,7 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
       obj_rewrite_int(Class_Id, Object0, throw,
                       [db_key, db_ref],
                       [Old_DB_Key, Old_DB_Ref], [DB_Key, _],
-                      Object, Ctx),
+                      Object1, Ctx),
       (  ground(Old_DB_Ref),
          Old_DB_Key = DB_Key
       ->
@@ -344,7 +432,7 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
          ;  throw(error(db_obj_replace_protector(DB_Key,
                   Replaced, Object0), Ctx))
          )
-         
+
       ;  ground(Old_DB_Ref)
       -> throw(error(domain_error(unbound_db_ref, Old_DB_Ref),
                      Ctx))
@@ -357,16 +445,16 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
          ;  throw(error(db_obj_replace_protector(
                   DB_Key, Replaced, Object0), Ctx))
          ),
-         Object = Object0
+         Object1 = Object0
       )
-      
+
    ;
       (  Replaced = false -> true
       ;  throw(error(db_obj_replace_protector(
                DB_Key, Replaced, Object0), Ctx))
       ),
-      obj_rebase((object_v -> db_object_v), Object0, Object),
-      arg(1, Object, Class_Id)
+      obj_rebase((object_v -> db_object_v), Object0, Object1),
+      arg(1, Object1, Class_Id)
    ),
 
    % Remove the old object first (before the key conflicts check)
@@ -374,29 +462,32 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
    -> db_erase_int(DB_Key, Object0)
    ;  true
    ),
-   
+
    % Check the key if any
    get_key(Class_Id, Key),
    (  Key \== []
    ->
       % ... it always has key, hide under key-checking
       % for performance
-      db_properties_hook(DB_Key, Class_Id, Object),
-                         
+      db_properties_hook(DB_Key, Class_Id, Object1),
+
       (  % Check the existence of an object with the same key
-         key_conflict(DB_Key, Class_Id, Object, Conflicting)
+         key_conflict(DB_Key, Class_Id, Object1, Conflicting)
       ->
          % Make an action which is depended on Option
          handle_key_dup(Option, DB_Key, Class_Id,
-                        Conflicting, Object),
+                        Conflicting, Object1),
          (  Option == overwrite
-         -> Continue = true
-         ;  Continue = fail)
+         -> Continue = true, Object = Object1
+         ;  Option == ignore
+         -> Continue = fail, Object = Conflicting
+         ;  Continue = fail
+         )
       ;
-         Continue = true
+         Continue = true, Object = Object1
       )
    ;
-      Continue = true
+      Continue = true, Object = Object1
    ),
 
    % Put in db
@@ -414,7 +505,7 @@ db_properties_hook(DB_Key, Class_Id, DB_Properties) :-
    ; true
    ),
    db_key_policy(DB_Key, _, Key_Policy).
-   
+
 
 db_properties_hook(_, _, _).  % a hook should always succeed
 
@@ -465,21 +556,21 @@ db_recorded(DB_Key, Object) :-
 
 % db_rewrite_int(DB_Key, Functor, Fields, Old_Vals, New_Vals,
 %                Ctx) :-
-   
+
 %    db_functor_des(DB_Key, Functor, Des, Ctx),
-   
+
 %    (   named_args_unify_int(DB_Key, throw, Des, Fields, Old_Vals,
 %                             Obj0),
 %        arg(1, Obj0, Class_Id),
-       
+
 %        obj_rewrite_int(Class_Id, Obj0, Fields, Old_Vals, New_Vals,
 %                        Obj1, Ctx),
 %        db_put_object_int(DB_Key, Class_Id, _, recordz, Obj1, _,
 %                          replaced, Ctx),
 %        fail ; true
 %    ).
-  
-  
+
+
 
 
 %
@@ -518,7 +609,7 @@ db_search(DB_In, DB_Out, Pred) :-
    check_db_key(DB_In, Ctx),
    check_db_key(DB_Out, Ctx),
    must_be(callable, Pred),
-   
+
    (   db_recorded(DB_In, Term),
        once(call(Pred, Term)),
        obj_reset_fields([db_ref, db_key], Term, Term1),
@@ -565,9 +656,15 @@ db_to_list(DB_Key, Functor, List) :-
          List
         ).
 
-% db_select(+DB_Key, +Fields, ?Row)
+%% db_select(+DB_Key, +Fields, ?Row) is nondet.
 %
-% BT on all matched rows
+% BT on all matched rows in DB.
+%
+% @param Fields list of field names; use _weak_ matching (see v.pl).
+% @param Row list field values
+%
+% @see db_select_list/4
+% @see db_select_list/5
 
 db_select(DB_Key, Fields, Row) :-
 
@@ -590,12 +687,20 @@ db_select_int(DB_Key, Functor, Weak, Fields, Row, Ctx) :-
 
    db_functor_des(DB_Key, Functor, Des, Ctx),
    named_args_unify_int(DB_Key, Weak, Des, Fields, Row, _).
-       
 
 
-% db_select_list(+DB_Key, ?Functor, +Fields, -List)
+
+%% db_select_list(+DB_Key, ?Functor, +Fields, -List) is det.
 %
-% Generate list of lists of selected fields
+%  It is like db_select/3 but return all rows by one call as a
+%  list of lists.
+%
+%  @param Functor if bound then must be a class name; in this
+%  case return result only for objects with Functor; return
+%  result for all objects in DB in other case.
+%
+%  @see db_select/3
+%  @see db_select_list/5
 
 db_select_list(DB_Key, Functor, Fields, List) :-
 
@@ -603,29 +708,42 @@ db_select_list(DB_Key, Functor, Fields, List) :-
    % <NB> weak is default
    % (to mix class with all descendants in a request)
    db_select_list_cmn(DB_Key, Functor, weak, Fields, List,
-                         Ctx). 
+                         Ctx).
 
-% db_select_list(+DB_Key, ?Functor, ?Weak, +Fields, -List)
+%% db_select_list(+DB_Key, ?Functor, ?Weak, +Fields, -List) is semidet.
 %
+% The same as db_select_list/4 but use defined field matching
+% rule (see v.pl)
+%
+% @param Weak
+%  * throw, throws, strict, s
+%  In a case of absent Field throw an exception
+%  * weak, _, unbound, w
+%  Leave unbound
+%  * fail, false, f
+%  Fail the whole predicate
+%
+% @see db_select/3
+% @see db_select_list/4
 
 db_select_list(DB_Key, Functor, Weak, Fields, List) :-
 
    Ctx = context(db_select_list/5, _),
    db_select_list_cmn(DB_Key, Functor, Weak, Fields, List,
-                         Ctx). 
+                         Ctx).
 
 db_select_list_cmn(DB_Key, Functor, Weak, Fields, List,
                       Ctx):-
 
    check_inst(Fields, Ctx),
    check_db_key(DB_Key, Ctx),
-   
+
    decode_arg([[throw, throws, strict, s],
                [weak, _, unbound, w],
                [fail, false, f]],
               Weak, Weak1,
               Ctx),
-   
+
    (   var(Functor) -> true
    ;   check_class_arg(Functor, Ctx)
    ),
@@ -677,7 +795,7 @@ db_iterate(DB_Key, Query, Filter_Pred, Object) :-
    ).
 
 db_iterate2(DB_Key, Query, Object) :-
-   
+
    % BT 1
    parse_db_query(DB_Key, Query, Des, Fields, Values),
 
@@ -754,21 +872,21 @@ parse_db_query(DB_Key, Expr, Des, [Field], [Value]) :-
 
    functor(Expr, Field, 1), !,
    arg(1, Expr, Value),
-   
+
    %Des = db_class_des(_, _, _, _, DB_Fields, _, _),
    db_des(DB_Key, Des).
 
    % only those classes which contain Field
    % <NB> no evaluated fields
 %   ord_memberchk(Field, DB_Fields).
-   
+
 
 db_move_all_data(From_DB, To_DB) :-
 
    Ctx = context(db_move_all_data/2, _),
    check_db_key(From_DB, Ctx),
    check_db_key(To_DB, Ctx),
-   
+
    (   db_recorded_int(From_DB, Record),
        arg(1, Record, Class_Id),
        db_put_object_int(To_DB, Class_Id, _, recordz, Record, _,
@@ -782,9 +900,11 @@ db_move_all_data(From_DB, To_DB) :-
    ).
 
 
-% db_name(?DB_Key)
+%% db_name(?DB_Key) is nondet.
 %
-% Iterate on over all DBs
+% When DB_Key is bound this predicate checks whether DB
+% exists. In other case it iterates through all databases used by
+% the program (of any type).
 
 db_name(DB_Key) :-
 
@@ -1006,11 +1126,12 @@ db_merge_cmn(DB1_Key, DB2_Key, Key, Ctx) :-
 
 
 
-% named_args_unify(+DB_Key, ?Functor, +Field_Names, ?Values, -Term)
+%% named_args_unify(+DB_Key, ?Functor, +Field_Names, ?Values,
+%% -Obj) is nondet.
 %
-% Унификация с расширенной базой данных пролога по полю Field_Name
-% и значению Value для тех фактов, которые созданы как классы
-%
+%  Unify Obj with all matched objects from DB_Key with Functor
+%  and Field_Names (list) unified with Values (list of the same
+%  size). If Functor is unbound bound it with the functor of Obj.
 
 % this is a version for +Functor
 named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-

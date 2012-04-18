@@ -565,7 +565,7 @@ test(db_properties_v2_throw,
 test(db_properties_v3_fail_ignore, [setup(db_clear(people))]) :-
 
    db_construct(people, man_v,
-                [name, surname], ['Sergei', 'Lodyagin']),
+                [name, surname], ['Sergei', 'Lodyagin'], Obj1),
    db_construct(people, db_properties_v,
                 [key_policy], [fail]),
    \+ db_construct(people, man_v, [surname], ['Lodyagin']),
@@ -576,14 +576,47 @@ test(db_properties_v3_fail_ignore, [setup(db_clear(people))]) :-
    
    db_construct(people, man_v,
                 [name, surname, height], ['Sergei', 'Lodyagin',
-                1.74]),
+                1.74], Obj2),
 
    findall([Name, Surname, Height],
            named_args_unify(people, _,
                             [name, surname, height],
                             [Name, Surname, Height], _),
            List1),
-   assertion(List1 =@= [['Sergei', 'Lodyagin', _]]).
+   assertion(List1 =@= [['Sergei', 'Lodyagin', _]]),
+   assertion(Obj1 =@= Obj2).
+
+test(db_properties_v4_fail_ignore2, [setup(db_clear(people))]) :-
+
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Lodyagin'], Obj1),
+   db_construct(people, db_properties_v,
+                [key_policy], [fail]),
+   \+ db_construct(people, man_v, [surname], ['Lodyagin']),
+
+   obj_construct(db_properties_v, [key_policy], [ignore], Singl2),
+   db_put_object(people, overwrite, Singl2, _),
+   
+   db_construct(people, man_v,
+                [name, surname, height], ['Sergei', 'Lodyagin',
+                1.74], Obj2),
+
+   findall([Name, Surname, Height],
+           named_args_unify(people, _,
+                            [name, surname, height],
+                            [Name, Surname, Height], _),
+           List1),
+   assertion(List1 =@= [['Sergei', 'Lodyagin', _]]),
+   assertion(Obj1 =@= Obj2).
+
+test(db_properties_v5_invalid_policy,
+     [setup(db_clear(people))]) :-
+
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Lodyagin']),
+   db_construct(people, db_properties_v,
+                [key_policy], [throws]),
+   db_construct(people, man_v, [surname], ['Lodyagin']).
 
 
 test(rebase_collision_bug1, [blocked(rebase_collision)]) :-
