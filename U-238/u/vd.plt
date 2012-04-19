@@ -383,6 +383,12 @@ test(named_args_unify2, [setup(model_db)]) :-
            named_args_unify(people, _, [sex, sex], [man, man], _),
            ['.', '.']).
 
+test(named_args_unify3_eval, [setup(model_db)]) :-
+
+   findall('.',
+           named_args_unify(people, _, [sex, age], [_, _], _),
+           ['.']).
+
 test(named_args_unify_bug1, [setup(model_db)]) :-
 
    findall('.',

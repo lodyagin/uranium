@@ -1157,17 +1157,12 @@ named_args_unify(DB_Key, Functor, Field_Names, Values, Term) :-
    ;   check_class_arg(Functor, Ctx)
    ),
 
-   list_to_ord_set(Field_Names, Req_Fields),
-   (   % BT on all DB Functor values (if it is unbound)
-       db_functor_des(DB_Key, Functor, Des, Ctx),
+   % BT on all DB Functor values (if it is unbound)
+   db_functor_des(DB_Key, Functor, Des, Ctx),
 
-       % check fields compatibility
-       Des = db_class_des(_, _, _, _, DB_Fields, _, _),
-       ord_subset(Req_Fields, DB_Fields),
+   named_args_unify_int(DB_Key, fail, Des, Field_Names,
+                        Values, Term).
 
-       named_args_unify_int(DB_Key, throw, Des, Field_Names,
-                            Values, Term)
-   ).
 
 db_object_class(DB_Key, Class) :-
 
