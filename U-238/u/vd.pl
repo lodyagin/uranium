@@ -412,8 +412,7 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
    % Rebase if needed
 
    % this block already binds Object and Replaced
-   (  class_id(DB_Object_V_Id, db_object_v),
-      same_or_descendant(DB_Object_V_Id, _, Class_Id0)
+   (  same_or_descendant(Class_Id0, _, db_object_v)
    ->
       Class_Id = Class_Id0, % already has a db_object_v ancestor
 
@@ -652,7 +651,7 @@ db_to_list(DB_Key, Functor, List) :-
    ),
 
    bagof(O,
-         Functor^db_iterate2(people, functor(Functor), O),
+         Functor^db_iterate2(people, functor(Functor), O, Ctx),
          List
         ).
 
@@ -779,7 +778,7 @@ db_iterate(DB_Key, Query, Object) :-
    check_inst(Query, Ctx),
    check_db_key(DB_Key, Ctx),
 
-   db_iterate2(DB_Key, Query, Object).
+   db_iterate2(DB_Key, Query, Object, Ctx).
 
 db_iterate(DB_Key, Query, Filter_Pred, Object) :-
 
@@ -788,16 +787,16 @@ db_iterate(DB_Key, Query, Filter_Pred, Object) :-
    check_db_key(DB_Key, Ctx),
    must_be(callable, Filter_Pred),
 
-   db_iterate2(DB_Key, Query, Object),
+   db_iterate2(DB_Key, Query, Object, Ctx),
    ( Filter_Pred = _:true
    -> true
    ; once(call(Filter_Pred, Object))
    ).
 
-db_iterate2(DB_Key, Query, Object) :-
+db_iterate2(DB_Key, Query, Object, Ctx) :-
 
    % BT 1
-   parse_db_query(DB_Key, Query, Des, Fields, Values),
+   parse_db_query(DB_Key, Query, Des, Fields, Values, Ctx),
 
    % BT 2
    named_args_unify_int(DB_Key, fail, Des, Fields, Values,
@@ -858,17 +857,32 @@ db_iterate_replace2(DB_Key, Pred, Query, Filter_Pred) :-
    ;
    true.
 
-parse_db_query(DB_Key, true, Des, [], []) :- !,
+parse_db_query(DB_Key, true, Des, [], [], _) :- !,
 
    db_des(DB_Key, Des).
 
-%parse_db_query(DB_Key, functor(Class), Des, [], []) :- !,
+parse_db_query(DB_Key, functor(Functor), Des, [], [], Ctx) :- !,
 
-   % check_class_arg
-%   Des = db_class_des(_, _, Class, _, _, _, _),
-%   db_des(DB_Key, Des).
+   (  var(Functor) -> true
+   ;  check_class_arg(Functor, Ctx)
+   ),
+   db_functor_des(DB_Key, Functor, Des, Ctx).
 
-parse_db_query(DB_Key, Expr, Des, [Field], [Value]) :-
+parse_db_query(DB_Key, same_or_descendant(Class), Des, [], [], Ctx) :- !,
+
+   check_inst(Class, Ctx),
+   check_existing_class_arg(Class, Ctx),
+   db_des(DB_Key, Des),
+   Des = db_class_des(DB_Class_Id, _, _, _, _, _, _),
+   % Des = db_class_des(DB_Class_Id, _, Functor, _, _, _, _),
+   % Functor \= Class, % exclude the "same" case
+   db_conv_local_db(DB_Key, Desc_Id, DB_Class_Id, Des),
+   same_or_descendant(Desc_Id, _, Class). % filter descendants
+                                          % (inc. rebased)
+
+%parse_db_query(DB_Key, Expr1 \/ Expr2, Des, 
+
+parse_db_query(DB_Key, Expr, Des, [Field], [Value], _) :-
 
    functor(Expr, Field, 1), !,
    arg(1, Expr, Value),
