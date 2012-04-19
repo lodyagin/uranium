@@ -29,6 +29,38 @@
 
 :- module(db_properties_v, []).
 
+/** <module> db_properties_v
+
+  It is an object with special meaning when put into Uranium
+  DB. It is used for change per-DB key resolution policy.
+
+  ---+++ Parent
+  db_singleton_v.pl
+
+  ---+++ New static fields
+   * key_policy
+   For possible key policy values see ../vd.pl.
+
+  --
+  
+  The example of usage (change the per-DB policy to ignore)
+
+  ==
+  % Define DB key policy by the first time
+  db_construct(my_db, db_properties_v, [key_policy], [ignore]).
+  ==
+
+  To change the policy you need use, for example, db_put_object/4
+  with per-predicate overwrite policy because db_properties_v is
+  a db_singleton_v descendant:
+
+  ==
+  % Change the existing DB key policy
+  obj_construct(db_properties_v, [key_policy], [throw], Obj),
+  db_put_object(my_db, overwrite, Obj, _).
+  ==
+*/
+
 new_class(db_properties_v, db_singleton_v,
           [key_policy]).
 
