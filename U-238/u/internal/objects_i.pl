@@ -1,4 +1,4 @@
-% -*- fill-column: 65; -*- 
+% -*- fill-column: 65; -*-
 %
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
@@ -43,7 +43,8 @@
            gen_new_class_id/1,
            get_key/2,
            get_keymaster/2,
-           is_rebased_class/1,
+           is_rebased_class/1,  % +Class_Id
+           no_rebased_class/2,  % ?Class_Id, ?No_Rebased
            list_inheritance/2,
            list_inheritance/3,
            obj_class_id/2,
@@ -58,12 +59,19 @@
                                 % +Term, ?Value, +Ctx
 
            parent/2,            % ?Id, ?Parent_Id
-           same_or_descendant/3,%+Parent_Id, +No_Rebased, ?Desc_Id
+           descendant_class/3,  %+Parent_Id, ?No_Rebased, ?Desc_Id
+           same_class/3,        %+Class1_Id, ?No_Rebased, ?Class2_Id
+           same_or_descendant/3,%+Parent_Id, ?No_Rebased, ?Desc_Id
            u_class/1,
            u_object/1,
-           unbounded_fields/2, % +Obj, -Field_Names
-           prolog:message/3
+           unbounded_fields/2  % +Obj, -Field_Names
            ]).
+
+/** <module> Internal operations with objects.
+
+  This module should not be used in user programs, only by
+  Uranium itself.
+*/
 
 :- use_module(u(internal/objects)).
 :- use_module(library(lists)).
@@ -71,8 +79,6 @@
 :- use_module(library(pairs)).
 :- use_module(u(ur_lists)).
 :- use_module(u(internal/decode_arg)).
-
-:- multifile prolog:message/3.
 
 class_all_fields(Class_Id, Fields) :-
 
@@ -135,14 +141,21 @@ compare_obj_fields(Delta, E1-_, E2-_) :-
 
    compare(Delta, E1, E2).
 
+%% class_id(?Class_Id, ?Class_Name) is nondet.
+%
+%  It is the most general case of a Class_Id <-> Class_Name
+%  conversion (which includes all existing rebasing cases). The
+%  predicate is semidet if Class_Id is ground (because Class_Id
+%  -> Class_Name is a functional relation). Do not use it for get
+%  a single id for a not rebased class.
+%
+%  @see class_primary_id/2
+
 class_id(Class_Id, Class) :-
 
    nonvar(Class_Id), !,
    objects:class_id(Class_Id, _, Class), !. % ensure no BT
 
-% Nondet!
-% Use it only for get all Class_Ids (primary + rebased)
-% In the case you need a single id see class_primary_id
 class_id(Class_Id, Class) :-
 
    objects:class_id(Class_Id, _, Class).
@@ -152,9 +165,15 @@ class_new_fields(Class_Id, Fields) :-
 
    class_fields(_, Class_Id, true, false, Fields).
 
-% det
+%% class_primary_id(+Class, ?Class_Id) is semidet.
+%
+%  Found a primary class id by a class name.
+%
+%  @see class_id/2
+
 class_primary_id(Class, Class_Id) :-
 
+   must_be(atom, Class),
    objects:class_id(Class_Id, true, Class), !.
 
 
@@ -252,11 +271,30 @@ get_keymaster(Class_Id, Keymaster_Id) :-
   objects:key(Class_Id, Keymaster_Id, _).
 
 
+%% is_rebased_class(+Class_Id)
+%
+%  True if Class_Id is a rebased class.
+%
+%  @see no_rebased_class/2
+
 is_rebased_class(Class_Id) :-
 
-   nonvar(Class_Id),
-   objects:class_id(Class_Id, false, _).
+   must_be(nonneg, Class_Id),
+   no_rebased_class(Class_Id, false).
 
+
+%% no_rebased_class(?Class_Id, ?No_Rebased)
+%
+%  @param No_Rebased allowed values are =true= or =false=. If it
+%  is =true= then Class_Id is not rebased class. If it is unbound
+%  unify with =true= or =false=.
+%
+%  @see is_rebased_class/1
+
+no_rebased_class(Class_Id, No_Rebased) :-
+
+   objects:class_id(Class_Id, No_Rebased, _),
+   must_be(boolean, No_Rebased).
 
 obj_class_id(Object, Class_Id) :-
 
@@ -416,23 +454,123 @@ obj_unify_one(Field, AF0, AF, Class_Id, Eval, Term, Value,
    (   Det = t -> ! ; true ).
 
 
-% same_or_descendant(+Parent_Id, +No_Rebased, ?Desc_Id)
+%% same_class(+Class1, ?No_Rebased, ?Class2_Id) is nondet.
+%
+%  True if Class1_Id and Class2_Id refer to the same class
+%  name. Unify Class2_Id with all possible solutions.
+%
+%  @param No_Rebased allowed values are =true= or =false=. If it
+%  is =true= then exclude the case when Class1_Id or Class2_Id is
+%  a rebased class. If it is =false= then exclude the case when
+%  Class1_Id and Class2_Id are not rebased classes. If it is not
+%  bound then unify it with =true= or =false=.
+%
+%  This predicate is semidet in the case of =|No_Rebased == true or
+%  nonvar(Class2_Id)|=
+%
+%  @see descendant_class/3
+%  @see same_or_descendant/3
 
-same_or_descendant(Id, No_Rebased, Id) :-
+same_class(Class1_Id, No_Rebased, Class2_Id) :-
 
-   (  No_Rebased == true
-   -> \+ is_rebased_class(Id)
-   ;  true ).
+   must_be(nonneg, Class1_Id),
+   (  var(No_Rebased) -> true
+   ;  must_be(boolean, No_Rebased)
+   ),
 
+   (  (No_Rebased == true ; nonvar(Class2_Id)) -> true ; Det = f ),
+   
+   same_class_int(Class1_Id, No_Rebased, Class2_Id),
+
+   (  Det = t -> ! ; true ).
+
+same_class_int(Id, No_Rebased, Id) :-
+
+   no_rebased_class(Id, No_Rebased).
+
+same_class_int(Class1_Id, false, Class2_Id) :-
+
+   class_id(Class1_Id, Class_Name),
+   class_id(Class2_Id, Class_Name),
+   Class1_Id \= Class2_Id.
+   
+
+%% descendant_class(+Class_Id, ?No_Rebased, ?Desc_Id) is nondet.
+%
+%  True if there is Parent_Id: =|same_class(Class_Id, No_Rebased,
+%  Parent_Id)|= and Desc_Id is a descendant of Parent_Id.
+%
+%  @param No_Rebased allowed values are =true= or =false=. If it
+%  is =true= then exclude the case when Desc_Id is a rebased
+%  class. If it is =false= then exclude the case when Desc_Id is
+%  a not rebased class. If it is not bound then unify it with
+%  =true= or =false=.
+%
+%  This predicate is semidet in the case of =|nonvar(Desc_Id)|=
+%
+%  @see same_class/3
+%  @see same_or_descendant/3
+
+descendant_class(Class_Id, No_Rebased, Desc_Id) :-
+
+   must_be(nonneg, Class_Id),
+   (  var(No_Rebased) -> true
+   ;  must_be(boolean, No_Rebased)
+   ),
+
+   (  nonvar(Desc_Id) -> true ; Det = f ),
+   
+   descendant_class_int(Class_Id, No_Rebased, No_Rebased,
+                        Desc_Id),
+
+   (  Det = t -> ! ; true ).
+   
+   
+descendant_class_int(Class_Id, NR0, NR, Desc_Id) :-
+
+   (  NR0 == true
+   -> NR1 = true, NR2 = true
+   ; true ),
+   
+   same_class(Class_Id, NR1, Parent_Id),
+   objects:parent_(Id, Parent_Id),
+   (   same_class(Id, NR2, Desc_Id)
+   *-> true
+   ;   descendant_class2(Class_Id, NR0, NR3, Parent_Id)
+   ),
+
+   (  NR1 = true, NR2 = true, NR3 = true
+   -> NR = true
+   ;  NR = false
+   ).
+   
+%% same_or_descendant(+Parent_Id, ?No_Rebased, ?Desc_Id) is nondet.
+%
+%  True if =|(same_class(Parent_Id, No_Rebased, Desc_Id) or
+%  descendant_class(Parent_Id, No_Rebased, Desc_Id))|=. 
+%
+%  This predicate is semidet in the case of =|nonvar(Desc_Id)|=
+%
+%  @see descendant_class/3
+%  @see same_class/3
+
+% it is the det case
 same_or_descendant(Parent_Id, No_Rebased, Desc_Id) :-
 
-   Parent_Id \== Desc_Id,
-   (  No_Rebased == true
-   -> \+ is_rebased_class(Parent_Id)
-   ;  true ),
-   objects:parent_(Id, Parent_Id),
-   same_or_descendant(Id, No_Rebased, Desc_Id).
+   must_be(nonneg, Parent_Id),
+   (  var(No_Rebased) -> true
+   ;  must_be(boolean, No_Rebased)
+   ),
 
+   (  nonvar(Desc_Id) -> true ; Det = f ),
+   
+   (  same_class_int(Parent_Id, No_Rebased, Desc_Id)
+   ;  descendant_class_int(Parent_Id, No_Rebased, No_Rebased,
+                           Desc_Id)
+   ),
+
+   (  Det = t -> ! ; true ).
+   
 
 %% u_class(@Class)
 %  True if Class is a valid name for an uranium class
@@ -467,66 +605,5 @@ unbounded_fields(Obj, Field_Names) :-
            ),
            Field_Names
           ).
-
-% Error messages for the Uranium object system
-
-prolog:message(class_system_bad_state(Details)) -->
-
-   ['The Uranium class system may be corrupted: '],
-   [ nl ],
-   [Details].
-
-prolog:message(implementation_error(Format, Args)) -->
-
-   ['Internal Uranium error: ', nl],
-   [Format - Args].
-
-prolog:message(class_exists(Class)) -->
-
-   ['The class ~a is defined already' - [Class]].
-
-prolog:message(class_inheritance_cycle(Graph)) -->
-
-   ['There is a cycle in class inheritance: ~w'
-    - Graph].
-
-prolog:message(type_redefined(Type, Orig_Class)) -->
-
-   ['Type ~a is already defined in class ~a'
-    - [Type, Orig_Class]],
-   [nl, 'The new definition was ignored.'].
-
-prolog:message(invalid_object(Object, Details)) -->
-
-   ['Invalid object passed: ~p ' - [Object]],
-   [ '(', Details, ')' ].
-
-prolog:message(no_object_field(Object, Field_Name)) -->
-
-   ['There is no such field `~a'' in the object ~p'
-    - [Field_Name, Object]].
-
-prolog:message(undef_operation(Op_Name, Class_Id)) -->
-
-   ['The operation `~a'' is not defined for class id ~d'
-   - [Op_Name, Class_Id]].
-
-prolog:message(bad_eval_result(Object, Field)) -->
-
-   ['User-defined field `~a'' evaluation failed for ~p'
-   - [Field, Object]].
-
-prolog:message(bad_downcast_impl(Mode, Object, Class_From,
-                                 Class_To, Result)) -->
-
-   ['User-defined ~a implementation is bad:' - [Mode]],
-   [ nl ],
-   ['~a -> ~a transforms ~p to ~p'
-   - [Class_From, Class_To, Object, Result]].
-
-prolog:message(not_downcast(From_Class, To_Class)) -->
-
-   ['~a -> ~a is not downcast' - [From_Class, To_Class]].
-
 
 :- initialization clear_decode_arg.
