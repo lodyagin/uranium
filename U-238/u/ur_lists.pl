@@ -3,7 +3,8 @@
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
 %
-%  Copyright (C) 2009, 2011  Sergei Lodyagin
+%  Copyright (C) 2009-2011, Sergei Lodyagin
+%  Copyright (C) 2012, Kogorta OOO Ltd
 %
 %  This library is free software; you can redistribute it and/or
 %  modify it under the terms of the GNU Lesser General Public
@@ -34,10 +35,10 @@
 %
 
 :- module(ur_lists,
-	  [common_head/3, % +List1, +List2, -Head
-           common_head_rev/3, % +List1, +List2, -Head
-           corteging/4,  %+Functor, ?List1, ?List2, ?List3
-           gen_memberchk/3, % +Op, ?Member, ?List
+	  [common_head/3,     % +List1, +List2, ?Head
+           common_head_rev/3, % +List1, +List2, ?Head
+           corteging/4,       % ?Functor, ?List1, ?List2, ?List3
+           gen_memberchk/3,   % +Op, ?Member, +List
            list_head/4,
            mapkeys/3,
            num_diff_list/2,
@@ -68,13 +69,21 @@
            write_delimited/3     % +Write_Pred, +Delimiter, +List
 ]).
 
+/** <module> Auxiliary list operations
+*/
+
 :- use_module(library(error)).
 :- use_module(library(option)).
 :- use_module(u(logging)).
 
+:- meta_predicate gen_memberchk(2, ?, ?).
+
 :- module_transparent switch_by_value/4, weak_maplist/3.
 
-% common_head(+List1, +List2, -Head)
+
+%% common_head(+List1, +List2, ?Head)
+%
+%  True if Head is a common prefix of List1 and List2.
 
 common_head(List1, List2, Head) :-
    common_head(List1, List2, [], Head1),
@@ -89,6 +98,19 @@ common_head([A|AT], [A|BT], L0, L) :- !,
    common_head(AT, BT, [A|L0], L).
 common_head(_, _, L, L).
 
+
+%% corteging(?Functor, ?List1, ?List2, ?Cortege)
+%
+%  Cortege is a list of terms with functor Functor, List1
+%  elements as the first args and List2 as the second. For
+%  example:
+%
+%  ==
+%  corteging(+, [1, 5], [4, 9], X).
+%
+%  X = [1+4, 5+9]
+%  ==
+
 corteging(_, [], [], []) :- !.
 
 corteging(Functor, [A1|T1], [A2|T2], [Res|T_Res]) :-
@@ -96,24 +118,22 @@ corteging(Functor, [A1|T1], [A2|T2], [Res|T_Res]) :-
   Res =.. [Functor, A1, A2],
   corteging(Functor, T1, T2, T_Res).
 
-% [v, b, c, u], [_, _, 4, 2], [a, b, c, d] ->
-% [c(v, _G5407563, a), c(b, _G5407671, b), c(c, 4, c), c(u, 2,
-%  d)]
-%corteging(Functor, LL, Res_List) :-
 
-%  findall(H, member([H|_], LL), HL),
+%% gen_memberchk(:Op, ?Member, +List)
+%
+%  It is like memberchk but use a user defined Op/2 for compare
+%  or unify Member with elements of List.
 
-%  (   HL = []
-%  ->  Res_List = []
-%  ;   findall(T, member([_|T], LL), TL),
-%      Res =.. [Functor|HL],
-%      corteging(Functor, TL, T_Res),
-%      Res_List = [Res|T_Res]
-%  ).
+gen_memberchk(Op, Member, List) :-
 
-gen_memberchk(_, _, []) :- fail.
+   must_be(nonvar, List),
+   must_be(callable, Op),
 
-gen_memberchk(Op, Member, [El|T]) :-
+   gen_memberchk_int(Op, Member, List).
+
+gen_memberchk_int(_, _, []) :- fail.
+
+gen_memberchk_int(Op, Member, [El|T]) :-
 
    (  call(Op, Member, El)
    -> true
