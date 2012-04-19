@@ -28,7 +28,7 @@
 :- module(objects,
           [
            arity/2,         % Class_Id, Arity
-           class_id/3,      % Class_Id, Id_Primary, Class
+           class_id/3,      % Class_Id, Is_Primary, Class
            copy/4,          % Class_Id, Class_Name, From, To
            downcast/4,
            eval_field/5,    % Class, Field_Name, Obj, Value,
