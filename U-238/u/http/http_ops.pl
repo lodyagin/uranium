@@ -29,10 +29,12 @@
 
 
 :- module(http_ops,
-          [http_do/7, % +Method, +Options, ?Headers, @Cookies_DB, +URL,
+          [http_do/7, % +Method, +Options, ?Headers,
+                      % @Cookies_DB, +URL,
                       % @Post_Data, -DOM
 
-           http_do/8, % +Method, +Options, ?Headers, @Cookies_DB, +URL,
+           http_do/8, % +Method, +Options, ?Headers,
+                      % @Cookies_DB, +URL,
                       % @Post_Data, -DOM, -Redirect_Steps
 
            url_host_path/3  % +URL, -Host, -Path
