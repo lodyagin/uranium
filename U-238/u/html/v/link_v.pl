@@ -1,4 +1,4 @@
-% -*- fill-column: 65; -*- 
+% -*- fill-column: 65; -*-
 % _____________________________________________________________
 %
 % This file is a part of Uranium, a general-purpose functional
@@ -11,7 +11,7 @@
 % License as published by the Free Software Foundation; either
 % version 2.1 of the License, or (at your option) any later
 % version.
-% 
+%
 % This library is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -33,7 +33,7 @@
 :- use_module(u(ur_url)).
 
 new_class(link_v, http_result_v, [link_url, text],
-          [http_request_url, link_url]).
+          [www_address, link_url]).
 
 new_class(local_link_v, link_v, []).
 
@@ -47,14 +47,15 @@ new_class(global_link_v, link_v, []).
    ->
       Class = local_link_v
    ;
-      obj_field(Link, http_request_url, Base_Url),
+      eval_obj_expr(Link / www_address / http_request_url,
+                    Base_Url),
       atom(Base_Url),
       uri_resolve(Url, Base_Url, Global_Url),
       uri_components(Base_Url, Base_Url_Comps),
       uri_components(Global_Url, Global_Url_Comps),
       uri_data(authority, Base_Url_Comps, Base_Domain),
       uri_data(authority, Global_Url_Comps, Link_Domain),
-      
+
       (   Base_Domain == Link_Domain
       ->  Class = local_link_v
       ;   Class = global_link_v
@@ -65,23 +66,27 @@ downcast(link_v, local_link_v, From, To) :-
 
    obj_field(From, link_url, Orig_Link_Url),
    atom(Orig_Link_Url),
-   obj_field(From, http_request_url, Base_Url0),
+   obj_field(From, www_address, WWW_Address),
+   atom(WWW_Address),
+   obj_field(WWW_Address, http_request_url, Base_Url0),
    atom(Base_Url0),
    url_normalize(Base_Url0, Base_Url),
    url_normalize(Orig_Link_Url, Base_Url, Link_Url),
    obj_field(To, link_url, Link_Url),
-   obj_field(To, http_request_url, Base_Url).
+   obj_field(To, www_address, WWW_Address).
 
 downcast(link_v, global_link_v, From, To) :-
 
    obj_field(From, link_url, Orig_Link_Url),
    atom(Orig_Link_Url),
-   obj_field(From, http_request_url, Base_Url0),
+   obj_field(From, www_address, WWW_Address),
+   atom(WWW_Address),
+   obj_field(WWW_Address, http_request_url, Base_Url0),
    atom(Base_Url0),
-   url_normalize(Base_Url0, Base_Url),
+   url_normalize(Base_Url0, _), %Base_Url),
    url_normalize(Orig_Link_Url, Link_Url),
    obj_field(To, link_url, Link_Url),
-   obj_field(To, http_request_url, Base_Url).
+   obj_field(To, www_address, WWW_Address).
 
-   
-   
+
+
