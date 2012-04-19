@@ -69,9 +69,19 @@ test(db_iterate4, [setup(model_db), N =:= 2]) :-
    findall(O, db_iterate(people, functor(man_v), O), L),
    length(L, N).
 
-test(db_iterate4, [setup(model_db), N =:= 3]) :-
+test(db_iterate5, [setup(model_db), N =:= 3]) :-
 
    findall(O, db_iterate(people, functor(_), O), L),
+   length(L, N).
+
+test(db_iterate6, [setup(model_db), N =:= 3]) :-
+
+   findall(O, db_iterate(people, same_or_descendant(man_v), O), L),
+   length(L, N).
+
+test(db_iterate7, [setup(model_db), N =:= 1]) :-
+
+   findall(O, db_iterate(people, same_or_descendant(citizen_v), O), L),
    length(L, N).
 
 test(db_to_list, [setup(model_db)]) :-
