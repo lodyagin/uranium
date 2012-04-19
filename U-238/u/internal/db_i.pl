@@ -55,11 +55,11 @@
 :- multifile prolog:message/3.
 :- multifile db_recorded_int/2, db_erase_int/2, db_record_int/4.
 
-:- dynamic db_class_des/8,     % DB_Class_Id, DB_Parent_Class_Id,
+:- dynamic db_class_des/8,     % DB_Key, DB_Class_Id, DB_Parent_Class_Id,
                                % Name, Arity, Fields, Key, Parents
            db_key_policy/2,
            db_next_class_id_/2,
-           db_keymaster/2.     % DB_Key, DB_Class_Id
+           db_keymaster/2.     % DB_Key, Class_Name
 
 db_des(DB_Key, Des) :-
 
@@ -174,7 +174,8 @@ db_add_class(DB_Key, Local_Id, DB_Id, Des) :-
    % Thus, need check keymaster only once - for parents
    (  get_keymaster(Local_Id, Local_Id)
    -> % the new key is introduced
-      assertz(db_keymaster(DB_Key, DB_Id))
+      class_id(Local_Id, Class_Name),
+      assertz(db_keymaster(DB_Key, Class_Name))
    ;
       true   % in hope the parent already added it
    ).
@@ -362,8 +363,7 @@ db_recorded_int(DB_Key, L_Object) :-
 
     % check whether L_Object is a db_object_v descendant
     arg(1, L_Object, Local_Class_Id),
-    (  class_id(DB_Object_V_Id, db_object_v),
-       same_or_descendant(DB_Object_V_Id, _, Local_Class_Id)
+    (  same_or_descendant(Local_Class_Id, _, db_object_v)
     -> true
     ;  throw(error(domain_error(db_object_v_descendant, L_Object),
                    Ctx))
@@ -582,12 +582,11 @@ erase_conflicts(DB_Key, Class_Id, Object) :-
 key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
 
    Ctx = context(key_conflict/4, _),
-   db_keymaster(DB_Key, DB_Key_Class_Id),
-   db_conv_local_db(DB_Key, Key_Class_Id, DB_Key_Class_Id, Des),
-   same_or_descendant(Key_Class_Id, false, Class_Id),
-   % false means test all rebased classes as well
+   db_keymaster(DB_Key, Key_Class_Name),
+   same_or_descendant(Class_Id, _, Key_Class_Name),
 
-   Des = db_class_des(_, _, _, _, _, Key, _),
+   Des = db_class_des(_, _, Key_Class_Name, _, _, Key, _),
+   db_des(DB_Key, Des),
    obj_unify_int(Class_Id, Key, throw, Object, Key_Value, Ctx),
    copy_term_nat(Key_Value, Test_Value),
    named_args_unify_int(DB_Key, throw, Des, Key, Test_Value,

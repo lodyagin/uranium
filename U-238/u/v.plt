@@ -68,41 +68,41 @@ test(class_create_feature1) :-
    obj_key(CCTO, Key),
    assertion(Key == []).
 
-test(class_descendant1,
-     [List == [callup_v, citizen_v, class_create_test_v]]
-    ) :-
+% test(class_descendant1,
+%      [List == [callup_v, citizen_v, class_create_test_v]]
+%     ) :-
 
-  findall(X, class_descendant(man_v, X), List0),
-  msort(List0, List).
+%   findall(X, class_descendant(man_v, X), List0),
+%   msort(List0, List).
 
-test(class_descendant2, [List == []]) :-
+% test(class_descendant2, [List == []]) :-
 
-  findall(X, class_descendant(callup_v, X), List).
+%   findall(X, class_descendant(callup_v, X), List).
 
-test(class_descendant3, [List == []]) :-
+% test(class_descendant3, [List == []]) :-
 
-  obj_construct(tarjan_vertex_v, [], [], V),
-  obj_rebase((object_v -> callup_v), V, _),
-  findall(X, class_descendant(callup_v, X), List).
+%   obj_construct(tarjan_vertex_v, [], [], V),
+%   obj_rebase((object_v -> callup_v), V, _),
+%   findall(X, class_descendant(callup_v, X), List).
 
-test(class_same_or_descendant1,
-     [List == [callup_v, citizen_v, class_create_test_v, man_v]]
-    ) :-
+% test(class_same_or_descendant1,
+%      [List == [callup_v, citizen_v, class_create_test_v, man_v]]
+%     ) :-
 
-  findall(X, class_same_or_descendant(man_v, X), List0),
-  msort(List0, List).
+%   findall(X, class_same_or_descendant(man_v, X), List0),
+%   msort(List0, List).
 
-test(class_same_or_descendant2,
-     [List == [callup_v]]
-    ) :-
+% test(class_same_or_descendant2,
+%      [List == [callup_v]]
+%     ) :-
 
-  findall(X, class_same_or_descendant(callup_v, X), List).
+%   findall(X, class_same_or_descendant(callup_v, X), List).
 
-test(class_same_or_descendant3, [List == [callup_v]]) :-
+% test(class_same_or_descendant3, [List == [callup_v]]) :-
 
-  obj_construct(tarjan_vertex_v, [], [], V),
-  obj_rebase((object_v -> callup_v), V, _),
-  findall(X, class_same_or_descendant(callup_v, X), List).
+%   obj_construct(tarjan_vertex_v, [], [], V),
+%   obj_rebase((object_v -> callup_v), V, _),
+%   findall(X, class_same_or_descendant(callup_v, X), List).
 
 test(eval_obj_expr,
      [[E1, E2, E3] =@= [HTTP_Result, WWW_Addr, Url]]

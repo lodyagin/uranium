@@ -42,7 +42,7 @@
            gen_class_id/2,
            gen_new_class_id/1,
            get_key/2,
-           get_keymaster/2,
+           get_keymaster/2,     % +Class_Id, -Keymaster_Id
            is_rebased_class/1,  % +Class_Id
            no_rebased_class/2,  % ?Class_Id, ?No_Rebased
            list_inheritance/2,
@@ -262,13 +262,16 @@ get_key(Class_Id, Key) :-
   (objects:key(Class_Id, _, Key) -> true ; Key = []).
 
 
+%% get_keymaster(+Class_Id, -Keymaster_Id) is semidet
 %
-% get_keymaster(+Class_Id, -Keymaster_Id)
+%  Return ID of the keymaster for Class Id.
 %
+%  It is det if Class_Id is id of an existing class.
 
 get_keymaster(Class_Id, Keymaster_Id) :-
 
-  objects:key(Class_Id, Keymaster_Id, _).
+   must_be(nonneg, Class_Id),
+   objects:key(Class_Id, Keymaster_Id, _).
 
 
 %% is_rebased_class(+Class_Id)
@@ -454,51 +457,39 @@ obj_unify_one(Field, AF0, AF, Class_Id, Eval, Term, Value,
    (   Det = t -> ! ; true ).
 
 
-%% same_class(+Class1, ?No_Rebased, ?Class2_Id) is nondet.
+%% same_class(+Class_Id, ?No_Rebased, ?Class_Name) is semidet.
 %
-%  True if Class1_Id and Class2_Id refer to the same class
-%  name. Unify Class2_Id with all possible solutions.
+%  True if the name of Class_Id is Class_Name.
 %
 %  @param No_Rebased allowed values are =true= or =false=. If it
-%  is =true= then exclude the case when Class1_Id or Class2_Id is
-%  a rebased class. If it is =false= then exclude the case when
-%  Class1_Id and Class2_Id are not rebased classes. If it is not
-%  bound then unify it with =true= or =false=.
-%
-%  This predicate is semidet in the case of =|No_Rebased == true or
-%  nonvar(Class2_Id)|=
+%  is =true= then exclude the case when Class_Id is a rebased
+%  class. If it is =false= then exclude the case when Class_Id is
+%  not rebased class. If it is not bound then unify it with
+%  =true= or =false=.
 %
 %  @see descendant_class/3
 %  @see same_or_descendant/3
 
-same_class(Class1_Id, No_Rebased, Class2_Id) :-
+same_class(Class_Id, No_Rebased, Class_Name) :-
 
-   must_be(nonneg, Class1_Id),
+   must_be(nonneg, Class_Id),
    (  var(No_Rebased) -> true
    ;  must_be(boolean, No_Rebased)
    ),
 
-   (  (No_Rebased == true ; nonvar(Class2_Id)) -> true ; Det = f ),
-   
-   same_class_int(Class1_Id, No_Rebased, Class2_Id),
+   same_class_int(Class_Id, No_Rebased, Class_Name).
 
-   (  Det = t -> ! ; true ).
+same_class_int(Class_Id, No_Rebased, Class_Name) :-
 
-same_class_int(Id, No_Rebased, Id) :-
+   objects:class_id(Class_Id, No_Rebased, Class_Name), !.
 
-   no_rebased_class(Id, No_Rebased).
-
-same_class_int(Class1_Id, false, Class2_Id) :-
-
-   class_id(Class1_Id, Class_Name),
-   class_id(Class2_Id, Class_Name),
-   Class1_Id \= Class2_Id.
    
 
-%% descendant_class(+Class_Id, ?No_Rebased, ?Desc_Id) is nondet.
+%% descendant_class(+Desc_Id, ?No_Rebased, ?Ancestor_Name) is nondet.
 %
-%  True if there is Parent_Id: =|same_class(Class_Id, No_Rebased,
-%  Parent_Id)|= and Desc_Id is a descendant of Parent_Id.
+%  True if there is an ancestor of Desc_Id with the name Ancestor_Name.
+%
+%  This predicate is semidet in the case of =|nonvar(Ancestor_Name)|=
 %
 %  @param No_Rebased allowed values are =true= or =false=. If it
 %  is =true= then exclude the case when Desc_Id is a rebased
@@ -506,67 +497,56 @@ same_class_int(Class1_Id, false, Class2_Id) :-
 %  a not rebased class. If it is not bound then unify it with
 %  =true= or =false=.
 %
-%  This predicate is semidet in the case of =|nonvar(Desc_Id)|=
-%
 %  @see same_class/3
 %  @see same_or_descendant/3
 
-descendant_class(Class_Id, No_Rebased, Desc_Id) :-
+descendant_class(Desc_Id, No_Rebased, Ancestor_Name) :-
 
-   must_be(nonneg, Class_Id),
+   must_be(nonneg, Desc_Id),
    (  var(No_Rebased) -> true
    ;  must_be(boolean, No_Rebased)
    ),
 
-   (  nonvar(Desc_Id) -> true ; Det = f ),
-   
-   descendant_class_int(Class_Id, No_Rebased, No_Rebased,
-                        Desc_Id),
+   no_rebased_class(Desc_Id, No_Rebased),
+
+   (  nonvar(Ancestor_Name) -> true ; Det = f ),
+
+   descendant_class_int(Desc_Id, Ancestor_Name),
 
    (  Det = t -> ! ; true ).
    
    
-descendant_class_int(Class_Id, NR0, NR, Desc_Id) :-
+descendant_class_int(Desc_Id, Ancestor_Name) :-
 
-   (  NR0 == true
-   -> NR1 = true, NR2 = true
-   ; true ),
-   
-   same_class(Class_Id, NR1, Parent_Id),
-   objects:parent_(Id, Parent_Id),
-   (   same_class(Id, NR2, Desc_Id)
-   *-> true
-   ;   descendant_class2(Class_Id, NR0, NR3, Parent_Id)
-   ),
-
-   (  NR1 = true, NR2 = true, NR3 = true
-   -> NR = true
-   ;  NR = false
+   objects:parent_(Desc_Id, Parent_Id),
+   class_id(Parent_Id, Parent_Name),
+   (  Ancestor_Name = Parent_Name
+   ;  descendant_class_int(Parent_Id, Ancestor_Name)
    ).
    
-%% same_or_descendant(+Parent_Id, ?No_Rebased, ?Desc_Id) is nondet.
+%% same_or_descendant(+Desc_Id, ?No_Rebased, ?Class_Name) is nondet.
 %
-%  True if =|(same_class(Parent_Id, No_Rebased, Desc_Id) or
-%  descendant_class(Parent_Id, No_Rebased, Desc_Id))|=. 
+%  True if =|(same_class(Desc_Id, No_Rebased, Class_Name) or
+%  descendant_class(Desc_Id, No_Rebased, Class_Name))|=. 
 %
-%  This predicate is semidet in the case of =|nonvar(Desc_Id)|=
+%  This predicate is semidet in the case of =|nonvar(Class_Name)|=
 %
 %  @see descendant_class/3
 %  @see same_class/3
 
 % it is the det case
-same_or_descendant(Parent_Id, No_Rebased, Desc_Id) :-
+same_or_descendant(Desc_Id, No_Rebased, Class_Name) :-
 
-   must_be(nonneg, Parent_Id),
+   must_be(nonneg, Desc_Id),
    (  var(No_Rebased) -> true
    ;  must_be(boolean, No_Rebased)
    ),
 
-   (  nonvar(Desc_Id) -> true ; Det = f ),
+   (  nonvar(Class_Name) -> true ; Det = f ),
    
-   (  same_class_int(Parent_Id, No_Rebased, Desc_Id)
-   ;  descendant_class_int(Parent_Id, No_Rebased, No_Rebased,
-                           Desc_Id)
+   (  same_class_int(Desc_Id, No_Rebased, Class_Name)
+   ;  no_rebased_class(Desc_Id, No_Rebased),
+      descendant_class_int(Desc_Id, Class_Name)
    ),
 
    (  Det = t -> ! ; true ).

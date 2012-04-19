@@ -3,6 +3,7 @@
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
 %
+%  Copyright (C) 2009-2011, Sergei Lodyagin
 %  Copyright (C) 2012, Kogorta OOO Ltd
 %
 %  This library is free software; you can redistribute it and/or
@@ -30,14 +31,14 @@
           [
            class_create/3,     % +Class, +Parent, +Add_Fields
            class_create/4,     % +Class, +Parent, +Add_Fields, +Key
-           class_descendant/2, % +Class, ?Descendant
+           %class_descendant/2, % +Class, ?Descendant
            class_exists/1,     % ?Class
            class_fields_new/2,
            class_fields/2,     % +Class, -Fields (ordset)
            %class_field_type/3,
            class_name/1,       % ?Class
            class_parent/2,
-           class_same_or_descendant/2, % +Class, ?Descendant
+           %class_same_or_descendant/2, % +Class, ?Descendant
            eval_obj_expr/2,
 
            named_arg/3,
@@ -61,7 +62,7 @@
            obj_field/4,        % +Obj, +Weak, ?Field, ?Value
            obj_key/2,          % +Object, -Key
            obj_key_value/2,    % +Object, -Key_Value
-           obj_list/2,  % +Object, -List
+           obj_list/2,         % +Object, -List
            obj_parents/2,      % +Object, -Class_Names_List
            obj_parents/3,      % +Obj0, +Class_Names_List, -Obj
            obj_rebase/3,       % ?Rebase_Rule, @Object0, -Object
@@ -80,10 +81,25 @@
            obj_merge/4,
            obj_pretty_print/1,
            obj_pretty_print/2,
-           obj_unify/3,
-
-           prolog:message/3
+           obj_unify/3
            ]).
+
+/** <module> Uranium object system.
+
+  Uranium object is a compound term. See *|Uranium Book|* for the
+  usage.
+
+  ---++ Declaring objects
+  @tbd
+
+  ---+++ Keymaster
+  _Keymaster_ is a class which introduces new key.
+  @tbd
+
+  ---++ weak, fail, throw matching of fields
+  @tbd
+  
+*/
 
 :- multifile prolog:message/3.
 
@@ -410,10 +426,10 @@ obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To,
    From_Class_Id \== To_Class_Id,
 
    %  Check the downcast condition
-   (  same_or_descendant(From_Class_Id, true, To_Class_Id)
+   class_id(From_Class_Id, From_Class),
+   (  same_or_descendant(To_Class_Id, true, From_Class)
    -> true
-   ;  class_id(From_Class_Id, From_Class),
-      class_id(To_Class_Id, To_Class),
+   ;  class_id(To_Class_Id, To_Class),
       throw(not_downcast(From_Class, To_Class))
    ),
 
@@ -503,7 +519,7 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
 
    % In some cases we do not need rebase
    (  New_Base_Is_Ancestor == true,
-      same_or_descendant(Old_Base_Id, any, New_Base_Id)
+      same_or_descendant(New_Base_Id, _, Old_Base)
    ->
       true, % no need rebasing at all
       Object = Object0
@@ -652,35 +668,37 @@ eval_obj_expr(Object0 / Field, Value) :- !,
 
 eval_obj_expr(Value, Value).
 
-% class_descendant(+Class, ?Descendant)
+%% class_descendant(+Class, ?Descendant) is nondet.
 %
-% Does not count rebased classes
+%  True if Descendant is a strict descendant of Class.
+%  Does not count rebased classes
+%
+%  It is semidet if Descendant is bound.
 
-class_descendant(Class, Descendant) :-
+% class_descendant(Class, Descendant) :-
 
-   Ctx = context(class_descendant/2, _),
-   check_inst(Class, Ctx),
-   check_existing_class_arg(Class, Ctx),
-   class_primary_id(Class, Class_Id),
-   (  nonvar(Descendant)
-   ->
-      check_existing_class_arg(Descendant, Ctx),
-      Class \== Descendant,
-      class_primary_id(Descendant, Descendant_Id),
-      same_or_descendant(Class_Id, true, Descendant_Id)
-   ;
-      same_or_descendant(Class_Id, true, Descendant_Id),
-      Class_Id =\= Descendant_Id,
-      class_id(Descendant_Id, Descendant)
-   ).
+%    Ctx = context(class_descendant/2, _),
+%    check_inst(Class, Ctx),
+%    check_existing_class_arg(Class, Ctx, Class_Id),
 
-% class_same_or_descendant(+Class, ?Descendant)
+%    descendant_class(Class_Id, true, Descendant).
 
-class_same_or_descendant(Class, Class).
 
-class_same_or_descendant(Class, Descendant) :-
+%% class_same_or_descendant(+Class, ?Descendant) is nondet.
+%
+%  True if Descendant = Class or it is a descendant of Class.
+%  Does not count rebased classes
+%
+%  It is semidet if Descendant is bound.
 
-   class_descendant(Class, Descendant).
+% same_or_descendant(Class, Descendant) :-
+
+%    Ctx = context(same_or_descendant/2, _),
+%    check_inst(Class, Ctx),
+%    check_existing_class_arg(Class, Ctx, Class_Id),
+
+%    objects_i:same_or_descendant(Class_Id, true, Descendant).
+
 
 % class_name(?Class)
 %
@@ -729,35 +747,34 @@ class_parent(Class, Parent) :-
    class_id(Parent_Id, Parent).
 
 
-% obj_is_descendant(+Descendant, ?Class)
+%% obj_is_descendant(+Descendant, ?Class) is nondet.
+%
+%  True if Descendant is a strict descendant of Class.
+%  Count rebased classes.
+%
+%  It is semidet if Class is bound.
 
 obj_is_descendant(Descendant, Class) :-
 
    Ctx = context(obj_is_descendant/2, _),
-   obj_same_or_descendant_cmn(Descendant, Class, Desc_Class_Id, Ctx),
-   class_id(Desc_Class_Id, Desc_Class),
-   Desc_Class \= Class.
+   check_inst(Descendant, Ctx),
+   check_object_arg(Descendant, Ctx, Desc_Class_Id),
+   descendant_class(Desc_Class_Id, _, Class).
 
-% obj_same_or_descendant(+Descendant, ?Class)
+
+% obj_same_or_descendant(+Descendant, ?Class) is nondet.
+%
+%  True if Descendant = Class or it is a descendant of Class.
+%  Count rebased classes.
+%
+%  It is semidet if Class is bound.
 
 obj_same_or_descendant(Descendant, Class) :-
 
    Ctx = context(obj_same_or_descendant/2, _),
-   obj_same_or_descendant_cmn(Descendant, Class, _, Ctx).
-
-obj_same_or_descendant_cmn(Descendant, Class, Desc_Class_Id, Ctx) :-
-
    check_inst(Descendant, Ctx),
    check_object_arg(Descendant, Ctx, Desc_Class_Id),
-   (  var(Class)
-   -> Det = f
-   ;  check_existing_class_arg(Class, Ctx, Class_Id),
-      Det = t
-   ),
-
-   same_or_descendant(Class_Id, _, Desc_Class_Id),
-   class_id(Class_Id, Class),
-   (  Det = t -> ! ; true ).
+   same_or_descendant(Desc_Class_Id, _, Class).
 
 
 % class_new_fields(+Class, -Field_Names)
@@ -1053,21 +1070,6 @@ obj_copy_int(Class_Id, From, To) :-
 %   objects:current_predicate(Type_Functor, Type_Term),
 %   objects:Type_Term,
 %   arg(Arg_Num, Type_Term, Type), !.
-
-
-prolog:message(old_base_is_invalid(Old_Base, Orig_Id)) -->
-
-   ['~a is not a base for the class with id ~d'
-   - [Old_Base, Orig_Id]].
-
-prolog:message(cant_rebase_to_object_base_v) -->
-
-   ['Can\'t rebase to object_base_v'].
-
-prolog:message(insufficient_class_order(Order, Orig_Order)) -->
-
-   ['The defined class order ~p is insufficient ' - [Order]],
-   ['for ordering a class with the parents ~p' - [Orig_Order]].
 
 
 :- initialization clear_decode_arg.
