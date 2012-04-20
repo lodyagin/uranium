@@ -1,6 +1,7 @@
 :- begin_tests(v).
 :- use_module(u(v)).
 :- use_module(u(internal/objects_i)).
+:- use_module(u(http/v/http_user_v)).
 
 test(class_create1) :-
    % test class_create/3 version
@@ -622,6 +623,24 @@ test(obj_sort_parents2,
    obj_parents(V3, Orig_Order),
    obj_sort_parents(V3, Order, _).
 
+
+test(obj_sort_parents_bug1) :-
+
+   new_http_user(HTTP_User),
+   obj_rebase((object_v -> citizen_v),
+              HTTP_User, U1),
+
+   class_parents(http_user_v, HTTP_User_Parents),
+   append([citizen_v, man_v], HTTP_User_Parents,
+          Parents_Order),
+
+   obj_sort_parents(U1, Parents_Order, HTTP_Citizen),
+   % citizen_v -> man_v -> http_user_v -> ...object_base_v
+
+   obj_copy(HTTP_Citizen, HTTP_Citizen_Copy),
+   obj_field(HTTP_Citizen, cookie_db_key, Key1),
+   obj_field(HTTP_Citizen_Copy, cookie_db_key, Key2),
+   assertion(Key1 \= Key2).
 
 test(class_fields) :-
 
