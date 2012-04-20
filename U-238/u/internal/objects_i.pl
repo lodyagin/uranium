@@ -187,16 +187,26 @@ common_parent(Class1_Id, Class2_Id, Cmn_Parent_Id) :-
    list_inheritance(Class2_Id, List2),
    common_head_rev(List1, List2, [Cmn_Parent_Id|_]).
 
+
+%% list_inheritance(+Class_Id, -List)
 %
-% list_inheritance(+Class_Id, -List)
-%
-% represent inheritance as [class_id|...]
+% Represent inheritance as [class_id|...]
 % e.g. list_inheritance(1, [0, 1]).
+%
+% @see list_inheritance/3
 
 list_inheritance(Class_Id, List) :-
 
    list_inheritance(0, Class_Id, [], List).
 
+
+%% list_inheritance(+From_Id, +To_Id, -List)
+%
+%  It is like list_inheritance/2 but return only [From_Id
+%  .. To_Id] part. I.e. list_inheritance(Class_Id, List)
+%  === list_inheritance(0, Class_Id, List).
+%
+% @see list_inheritance/2
 
 list_inheritance(From_Id, To_Id, List) :-
 
