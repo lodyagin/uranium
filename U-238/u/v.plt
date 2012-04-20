@@ -104,6 +104,22 @@ test(class_create_feature1) :-
 %   obj_rebase((object_v -> callup_v), V, _),
 %   findall(X, class_same_or_descendant(callup_v, X), List).
 
+test(class_parent1, [Parent == man_v]) :-
+
+   class_parent(citizen_v, Parent).
+
+test(class_parent2,
+     [L == [callup_v, class_create_test_v]]) :-
+
+   findall(Desc, class_parent(Desc, citizen_v), LU),
+   msort(LU, L).
+
+test(class_parent3) :-
+
+   findall(p(A, B), class_parent(A, B), L),
+   length(L, N),
+   assertion(N > 10).
+
 test(eval_obj_expr,
      [[E1, E2, E3] =@= [HTTP_Result, WWW_Addr, Url]]
      ) :-
