@@ -38,6 +38,7 @@
            %class_field_type/3,
            class_name/1,       % ?Class
            class_parent/2,
+           class_parents/2,
            %class_same_or_descendant/2, % +Class, ?Descendant
            eval_obj_expr/2,
 
@@ -700,15 +701,18 @@ eval_obj_expr(Value, Value).
 %    objects_i:same_or_descendant(Class_Id, true, Descendant).
 
 
-% class_name(?Class)
+%% class_name(?Class) is nondet.
 %
+% Class is a name of existing class.
+% The primary usage is BT on classes.
+% See u_class/1 for semidet check.
 
 class_name(Class) :-
 
    objects:class_id(_, true, Class).
 
 
-% class_parent(?Class, ?Parent)
+%% class_parent(?Class, ?Parent) is nondet.
 %
 % Ignore rebased classes.
 
@@ -745,6 +749,27 @@ class_parent(Class, Parent) :-
    parent(Class_Id, Parent_Id),
    class_id(Class_Id, Class),
    class_id(Parent_Id, Parent).
+
+
+%% class_parents(+Class, -Parents) is det.
+%
+% Return the normal (not rebased) parents list started
+% with Class, for example
+%
+% ==
+% ?- class_parents(citizen_v, P).
+% P = [citizen_v, man_v, object_v, object_base_v].
+% ==
+
+class_parents(Class, Parents) :-
+
+   Ctx = context(class_parents/2, _),
+   check_inst(Class, Ctx),
+   check_existing_class_arg(Class, Ctx, Class_Id),
+
+   list_inheritance(Class_Id, Id_List_Rev),
+   reverse(Id_List_Rev, Id_List),
+   maplist(class_id, Id_List, Parents).
 
 
 %% obj_is_descendant(+Descendant, ?Class) is nondet.
