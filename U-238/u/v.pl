@@ -99,7 +99,7 @@
 
   ---++ weak, fail, throw matching of fields
   @tbd
-  
+
 */
 
 :- multifile prolog:message/3.
@@ -499,7 +499,7 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
    Ctx = context(obj_rebase/3, _),
    check_inst(Object0, Ctx),
    check_rebase_rule(Rebase_Rule, Ctx, Old_Base, New_Base),
-   
+
    check_object_arg(Object0, Ctx, Orig_Id),
 
    % Check the Old_Base and New_Base
@@ -637,7 +637,7 @@ obj_sort_parents(Obj0, Class_Order, Obj) :-
    check_inst(Obj0, Ctx),
    check_object_arg(Obj0, Ctx, Class_Id),
    check_existing_class_list_arg(Class_Order, Ctx, _),
-   
+
    obj_parents_int(Class_Id, Orig_Order),
    list_to_ord_set(Orig_Order, Orig_Order_Set),
    list_to_ord_set(Class_Order, Class_Order_Set),
@@ -829,23 +829,27 @@ class_fields(Class, Field_Names) :-
 
 obj_pretty_print(Object) :-
 
-  obj_pretty_print([lf(1)], Object).
+   Ctx = context(obj_pretty_print/1, _),
+   obj_pretty_print_cmn([lf(1)], Object, Ctx).
 
 obj_pretty_print(Options, Object) :-
 
-   (  var(Object)
-   -> throw(error(instantiation_error,
-                  context(obj_pretty_print/2, _)))
-   ;  check_object_arg(Object,
-                       context(obj_pretty_print/2, _),
-                       Class_Id)
-   ),
-   class_all_fields(Class_Id, Fields),
-   class_id(Class_Id, Class),
+   Ctx = context(obj_pretty_print/2, _),
+   obj_pretty_print_cmn(Options, Object, Ctx).
+
+obj_pretty_print_cmn(Options, Object, Ctx) :-
+
+   check_inst(Object, Ctx),
+   check_object_arg(Object, Ctx, _),
+   must_be(list(nonvar), Options),
+
+   functor(Object, Class, _),
    %open_log([lf(2, before)]),
    log_piece([Class, '('], Options),
    change_indent(Options, O2, 2),
-   maplist(field_pretty_print(O2, Object), Fields),
+   forall(obj_field(Object, Field, _),
+          field_pretty_print(O2, Object, Field)
+         ),
    log_piece([')'], Options).
    %close_log([lf(2, after)]).
 
@@ -1046,7 +1050,7 @@ build_diff_list([Field|Tail], Obj1, Obj2, Diff_In, Diff_Out) :-
 %% obj_copy(+From, -To) is det.
 %
 % Copy objects by class rules (see above, "Declaring
-% objects"). 
+% objects").
 
 obj_copy(From, To) :-
 
