@@ -81,6 +81,7 @@
            dump_db/1,        % +DB_Key
            dump_db/2,        % +Options, +DB_Key
            filter_on_db/3,   % +DB_Key, +Field_Names, +Field_Values
+           filter_on_db/4,   % +DB_Key, +Weak, +Field_Names, +Field_Values
 
            named_args_unify/5, % +DB_Key, ?Functor, +Field_Names,
                               % ?Values, -Term
@@ -572,15 +573,38 @@ db_recorded(DB_Key, Object) :-
 
 
 
+%% filter_on_db(+DB_Key, +Field_Names, @Field_Values) is
+%% det. 
 %
-% Leave only matched objects from DB by a search criteria
-% Do not unify unbounded fields in DB (which are matched).
+% Leave only matched objects from DB by the search
+% criteria Do not unify unbounded fields in DB (which are
+% matched).
 %
-% filter_on_db(+DB_Key, +Field_Names, +Field_Values) :-
-%
+% @see filter_on_db/4
+
 filter_on_db(DB_Key, Field_Names, Field_Values) :-
 
    Ctx = context(filter_on_db/3, _),
+   filter_on_db_cmn(DB_Key, fail, Field_Names,
+                    Field_Values, Ctx).
+   
+%% filter_on_db(+DB_Key, +Weak, +Field_Names,
+%% @Field_Values) is det.
+%
+% It is like filter_on_db/3 but use the Weak option for
+% unmatched fields.
+%
+% @see filter_on_db/3
+
+filter_on_db(DB_Key, Weak, Field_Names, Field_Values) :-
+
+   Ctx = context(filter_on_db/4, _),
+   filter_on_db_cmn(DB_Key, Weak, Field_Names,
+                    Field_Values, Ctx).
+   
+filter_on_db_cmn(DB_Key, Weak, Field_Names, Field_Values,
+                 Ctx) :-
+
    check_inst(Field_Names, Ctx),
    check_inst(Field_Values, Ctx),
    check_db_key(DB_Key, Ctx),
@@ -590,8 +614,8 @@ filter_on_db(DB_Key, Field_Names, Field_Values) :-
 
    (   db_recorded_int(DB_Key, Obj),
        arg(1, Obj, Class_Id),
-       \+ obj_unify_int(Class_Id, Field_Names, fail, Obj, Field_Values,
-                        Ctx),
+       \+ obj_unify_int(Class_Id, Field_Names, Weak, Obj,
+                        Field_Values, Ctx),
        db_erase_int(DB_Key, Obj),
        fail
    ;
@@ -651,7 +675,7 @@ db_to_list(DB_Key, Functor, List) :-
    ),
 
    bagof(O,
-         Functor^db_iterate2(people, functor(Functor), O, Ctx),
+         Functor^db_iterate2(DB_Key, functor(Functor), O, Ctx),
          List
         ).
 
@@ -880,7 +904,7 @@ parse_db_query(DB_Key, same_or_descendant(Class), Des, [], [], Ctx) :- !,
    same_or_descendant(Desc_Id, _, Class). % filter descendants
                                           % (inc. rebased)
 
-%parse_db_query(DB_Key, Expr1 \/ Expr2, Des, 
+%parse_db_query(DB_Key, Expr1 \/ Expr2, Des,
 
 parse_db_query(DB_Key, Expr, Des, [Field], [Value], _) :-
 
