@@ -353,6 +353,11 @@ test(obj_parents2_1) :-
    obj_field(Man2, functor, F2),
    assertion([F1, F2, C1, C2] == [citizen_v, man_v, callup_v, callup_v]).
 
+test(obj_parents2_bug1, [error(use_rebase_to_insert_parents)]) :-
+
+   obj_construct(man_v, [], [], M),
+   obj_parents(M, [man_v, db_object_v, object_v, object_base_v], _).
+
 test(obj_rebase1) :-
 
    obj_construct(http_request_headers_v, [], [], V1),
@@ -381,6 +386,13 @@ test(obj_rebase2_transitivity) :-
    obj_parents(M3, P3),
    assertion(P3 == [citizen_v, tarjan_vertex_v, db_object_v,
                     object_v, object_base_v]).
+
+test(obj_rebase3_transitivity2) :-
+
+   obj_construct(citizen_v, [], [], M1),
+   obj_rebase((object_v -> db_object_v), M1, M2),
+   obj_rebase((man_v -> tarjan_vertex_v), M2, M3),
+   foreach(obj_field(M3, _, _), true).
 
 test(obj_rebase_bug1) :-
 
