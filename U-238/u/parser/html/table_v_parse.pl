@@ -1,10 +1,10 @@
 % -*- fill-column: 65; -*- 
-% _____________________________________________________________
 %
 % This file is a part of Uranium, a general-purpose functional
 % test platform.
 %
-% Copyright (C) 2011  Sergei Lodyagin
+% Copyright (C) 2011, Sergei Lodyagin
+% Copyright (C) 2012, Kogorta OOO Ltd
 %
 % This library is free software; you can redistribute it and/or
 % modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,6 @@
 %
 % e-mail: lodyagin@gmail.com
 % post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
-% _____________________________________________________________
 
 :- module(table_v_parse,
           [table_v_parse/2,
@@ -32,12 +31,16 @@
            normalize_row_name/2
            ]).
 
+/** <module> Parse tables
+  */
+
 :- use_module(u(ur_atoms)).
 :- use_module(u(ur_terms)).
 :- use_module(u(ur_lists)).
 :- use_module(u(v)).
 :- use_module(u(vd)).
 :- use_module(u(logging)).
+:- use_module(u(internal/check_arg)).
 :- use_module(library(xpath)).
 :- use_module(library(lists)).
 
@@ -127,34 +130,56 @@ parse_cell(TD, TD2) :-
     parse_cell(TDX, TD2).
 
 
+%% table_v_cast(+DB_Key, +Table, +Class_To, +Col_Specs,
+%% +Obj_Fields, +Common_Field_Names, +Common_Field_Values).
 %
-% Cast table to a business objects and save them into db
+% Cast table to a business objects and put them into db
 %
-% table_v_cast(+DB_Key, +Table, +Class_To, +Col_Specs, +Obj_Fields,
-%              +Common_Field_Names, +Common_Field_Values).
+% @param Table table_v or its descendant (see
+% ../../html/v/table_v.pl)
 %
-% Col_Specs:
-% value(<value>) - an implicit value
-% <atom> - table column name (single text)
-% <integer> - column number (1-based)
-% onclick(Col_Spec) - single onclick component
-% piece(Col_Spec, Pattern) - the first match only
-% then(Spec1, Spec2) - Spec1, if fail - Spec2
+% @param Class_To class of bussiness objects (attention: it will
+% further downcast it before put in DB)
 %
-% ! It downcasts after casting to Class_To
+% @param Col_Specs is a list of elements:
+%  $ value(<value>) : an implicit value
+%  $ <atom> : table column name (single text)
+%  $ <integer> : column number (1-based)
+%  $ href(Col_Spec) : single href component
+%  $ onclick(Col_Spec) : single onclick component
+%  $ piece(Col_Spec, Pattern) : the first match only
+%  $ then(Spec1, Spec2) : Spec1, if fail - Spec2
+%
+% @param Obj_Fields list of Class_To fields to put values
+% evaluated by Col_Specs
+%
+% @param Common_Field_Names - names of object fields with the
+% same values defined by Common_Field_Values
+%
+% @param Common_Field_Values - values for Common_Field_Names
 
 table_v_cast(DB_Key, Table, Class_To, Col_Specs, Obj_Fields,
-             Common_Field_Names, Common_Field_Values)
-         :-
+             Common_Field_Names, Common_Field_Values) :-
 
-   atom(DB_Key),
-   atom(Class_To),
-   ground(Table),
-   ground(Col_Specs),
-   ground(Obj_Fields),
-   ground(Common_Field_Names),
-   ground(Common_Field_Values),
-                 
+   Ctx = context(table_v_cast/7, _),
+   check_db_key(DB_Key, Ctx),
+   check_inst(Table, Ctx),
+   check_inst(Class_To, Ctx),
+   check_inst(Col_Specs, Ctx),
+   check_inst(Obj_Fields, Ctx),
+   check_inst(Common_Field_Names, Ctx),
+   check_inst(Common_Field_Values, Ctx),
+   check_object_arg(Table, Ctx, _),
+   check_existing_class_arg(Class_To, Ctx),
+   
+   check_fields_arg(Obj_Fields, Ctx),
+   check_values_arg(Obj_Fields, Col_Specs, Ctx),
+   must_be(list(ground), Col_Specs),
+   
+   check_fields_arg(Common_Field_Names, Ctx),
+   check_values_arg(Common_Field_Names, Common_Field_Values, Ctx),
+
+   
    obj_field(Table, header, Header),
    obj_field(Table, rows, Rows),
    
@@ -205,6 +230,12 @@ extract_value(Cell, onclick(Spec), Value) :-
 
    member(onclick(Content), Cell),
    count_el(Cell, onclick(_), 1), !, % single
+   extract_value([Content], Spec, Value), !.
+
+extract_value(Cell, href(Spec), Value) :-
+
+   member(href(Content), Cell),
+   count_el(Cell, href(_), 1), !, % single
    extract_value([Content], Spec, Value), !.
 
 extract_value(Cell, piece(Spec, Pattern), Value) :-
@@ -270,13 +301,14 @@ spec_to_table_col_nums(Table_Header, Col_Spec, Col_Num) :-
 
    extract_column_def(Col_Spec, Col_Def),
    (
-    integer(Col_Def), Col_Def > 0,
-    functor(Table_Header, _, N_Cols),
-    Col_Def =< N_Cols,
-    Col_Num = Col_Def, !;
-
-    atom(Col_Def),
-    arg(Col_Num, Table_Header, Col_Def)
+      integer(Col_Def), Col_Def > 0
+   ->
+      functor(Table_Header, _, N_Cols),
+      Col_Def =< N_Cols,
+      Col_Num = Col_Def
+   ;
+      atom(Col_Def),
+      arg(Col_Num, Table_Header, Col_Def)
    ).
 
 extract_column_def(Atom, Atom) :- atom(Atom), !.
@@ -284,6 +316,10 @@ extract_column_def(Atom, Atom) :- atom(Atom), !.
 extract_column_def(Integer, Integer) :- integer(Integer), !.
 
 extract_column_def(onclick(Col_Spec), Col_Def) :-
+
+   extract_column_def(Col_Spec, Col_Def), !.
+
+extract_column_def(href(Col_Spec), Col_Def) :-
 
    extract_column_def(Col_Spec, Col_Def), !.
 
@@ -300,3 +336,9 @@ extract_column_def(then(Col_Spec1, _), Col_Def) :-
    extract_column_def(Col_Spec1, Col_Def), !.
 
 extract_column_def(value(_), 1) :- !.
+
+extract_column_def(X, _) :-
+
+   Ctx = context(extract_column_def/2, _),
+   throw(error(domain_error(table_v_column_specification, X),
+               Ctx)).
