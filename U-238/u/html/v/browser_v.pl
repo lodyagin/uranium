@@ -25,18 +25,21 @@
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 %
-%  Class to hold all browser-dependent properties.
-%  <NB> It contains only static part of the interaction
-%  For a dynamic part (like cookies etc.) see http_user_v
-%
-
 :- module(browser_v, []).
+
+/** <module>  Class to hold all browser-dependent properties
+  
+  <NB> It contains only static part of the interaction
+  For a dynamic part (like cookies etc.) see ../../http/v/http_user_v.pl
+*/
 
 new_class(browser_v, object_v,
           [browser, version, proxy_settings],
           [browser, version]).
 
 new_class(firefox_browser_v, browser_v, []).
+
+new_class(firefox_browser_swipl_v, firefox_browser_v, []).
 
 'browser_v?'(Obj, class, Class) :-
 
@@ -69,4 +72,21 @@ new_class(firefox_browser_v, browser_v, []).
                   115
                   ], Headers).
 
+'firefox_browser_swipl_v?'(_, headers, Headers) :-
+
+   obj_construct(http_experimental_1_0_request_headers_v,
+                 [user_agent,
+                  accept,
+                  accept_language,
+                  accept_encoding,
+                  accept_charset,
+                  keep_alive
+                 ],
+                 ['Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120202 Iceweasel/3.6.26 (like Firefox/3.6.26)',
+		  'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                  'en-us,en;q=0.5',
+                  'deflate',
+                  'ISO-8859-1,utf-8;q=0.7,*;q=0.7',
+                  115
+                  ], Headers).
 
