@@ -373,6 +373,15 @@ test(obj_rebase1) :-
                     http_headers_v,
                     object_v,object_base_v]).
 
+test(obj_rebase2_transitivity) :-
+
+   obj_construct(citizen_v, [], [], M1),
+   obj_rebase((object_v -> db_object_v), M1, M2),
+   obj_rebase((man_v -> tarjan_vertex_v), M2, M3),
+   obj_parents(M3, P3),
+   assertion(P3 == [citizen_v, tarjan_vertex_v, db_object_v,
+                    object_v, object_base_v]).
+
 test(obj_rebase_bug1) :-
 
    obj_construct(man_v, [sex, name], [man, 'Adam'], Obj1_0),
