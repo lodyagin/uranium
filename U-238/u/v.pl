@@ -50,7 +50,7 @@
 
            obj_construct/4,
            obj_construct_weak/4,
-           %obj_copy/2,         % +From, -To
+           obj_copy/2,         % +From, -To
            %obj_copy/3,         % +Field_List, +From, -To
            obj_is_descendant/2, % +Descendant, ?Class
            obj_same_or_descendant/2, % +Descendant, ?Class
@@ -1047,22 +1047,20 @@ build_diff_list([Field|Tail], Obj1, Obj2, Diff_In, Diff_Out) :-
   build_diff_list(Tail, Obj1, Obj2, Diff2, Diff_Out).
 
 
+%% obj_copy(+From, -To) is det.
 %
-% Copy objects by class rules
-%
-% obj_copy(+From, -To)
-%
-/*
+% Copy objects by class rules (see above, "Declaring
+% objects"). 
+
 obj_copy(From, To) :-
 
-   Ctx = context(obj_copy/2, _),
-   (  var(From)
-   -> throw(error(instantiation_error, Ctx))
-   ;  true ),
-   check_object_arg(From, Ctx, Class_Id),
+  Ctx = context(obj_copy/2, _),
+  check_inst(From, Ctx),
+  check_object_arg(From, Ctx, Class_Id),
 
-   obj_copy_int(Class_Id, From, To).
+  obj_copy_int(Class_Id, From, To).
 
+/*
 %
 % Copy objects by class rules, reset all fields
 % not specified in Field_List
@@ -1085,7 +1083,7 @@ obj_copy(Field_List, From, To) :-
    obj_reset_fields(Reset_List, From, Raw_Copy),
 
    obj_copy_int(Class_Id, Raw_Copy, To).
-
+*/
 
 obj_copy_int(Class_Id, From, To) :-
 
@@ -1094,7 +1092,6 @@ obj_copy_int(Class_Id, From, To) :-
    -> true
    ;  print_message(warning, undef_operation(copy, Class_Id))
    ).
-*/
 
 
 %class_field_type(Class, Field, Type) :-

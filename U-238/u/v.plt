@@ -177,6 +177,21 @@ test(obj_construct_bug1) :-
 
    assertion(Field_Names == Field_Names2).
 
+test(obj_copy1) :-
+
+   obj_construct(man_v, [], [], M1),
+   obj_copy(M1, M2),
+   obj_field(M1, name, 'Masha'),
+   obj_field(M2, name, 'Vitya').
+
+test(obj_copy2) :-
+
+   new_http_user(U1),
+   obj_copy(U1, U2),
+   obj_field(U1, cookie_db_key, Key1),
+   obj_field(U2, cookie_db_key, Key2),
+   assertion(Key1 \= Key2).
+
 test(obj_diff1,
      [Diff == [diff(name, 'Sergei', 'Artemiy')]]) :-
 

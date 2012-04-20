@@ -115,3 +115,9 @@ prolog:message(ignore_cookie_attribute(Attr, Val, Obj)) -->
 
    { obj_field(Obj, set_cookie, Set_Cookie) },
    ['Ignore [~a=~a] for ~p' - [Attr, Val, Set_Cookie]].
+
+
+prolog:message(class_definition_error(Module, Term)) -->
+
+   ['Invalid term in the class definition module ~a: ~p'
+   - [Module, Term]].

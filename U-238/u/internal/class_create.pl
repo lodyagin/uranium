@@ -293,22 +293,49 @@ assert_parent_key(Class_Id, Parent_Id) :-
   ;  true ).
 
 
+% assert_copy(+Class_Id, +Parent_Id)
 %
 % Inherit copy from parent if not defined for Class
-%
 
 assert_copy(Class_Id, Parent_Id) :-
 
    class_id(Class_Id, Class),
-   (   objects:clause(copy(Parent_Id, Class, From, To), Body)
-   ->  objects:assertz(
+   class_primary_id(Class, Primary_Id),
+   
+   (   objects:clause(copy(Class_Id, Class, From, To),
+                      Body)
+   ->
+       true % it is already asserted (e.g. by
+            % object_module)
+   ;
+       Class_Id \= Primary_Id,
+       objects:clause(copy(Primary_Id, Class, From, To),
+                      Body)
+   ->
+       % Get the copy from a primary definition
+       objects:assertz(
          (copy(Class_Id, Class, From, To) :- Body)
        ),
        debug(classes, '~p',
           objects:assertz(
              (copy(Class_Id, Class, From, To) :- Body)))
-   ;  true
+   ;
+       % Inherit a copy from parent
+       objects:clause(copy(Parent_Id, _, From, To),
+                      Body)
+   ->
+       objects:assertz(
+         (copy(Class_Id, Class, From, To) :- Body)
+       ),
+       debug(classes, '~p',
+          objects:assertz(
+             (copy(Class_Id, Class, From, To) :- Body)))
+   ;
+       print_message(error,
+                     class_definition_error(class_create,
+                       assert_copy(Class_Id, Parent_Id)))
    ).
+
 
 
 % class_rebase_int(+Parents, -New_Parents, -Rebased, +Ctx)
@@ -351,6 +378,7 @@ class_rebase_int([Class_Orig_Id|Parents0], [Class_New_Id|Parents],
 
          get_key(Class_Orig_Id, Orig_Key),
          assert_new_key(Class_New_Id, Orig_Key),
+         assert_copy(Class_New_Id, Parent_Id),
          assert_eval_fields(Class_New_Id)
 
       ;  % the same class is sufficient

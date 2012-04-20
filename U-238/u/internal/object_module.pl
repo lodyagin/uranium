@@ -133,8 +133,14 @@ process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
 
     % assert copy/4
    (call(Module:current_predicate(copy, Term)),
-    Term = copy(Class, Copy_From, Copy_To),
+    Term = copy(Copy_Class, Copy_From, Copy_To),
     call(Module:clause(Term, _)),
+    (  u_class(Copy_Class)
+    -> Copy_Class = Class
+    ;  print_message(error,
+                     class_definition_error(Module, Term)),
+       fail
+    ),
     objects:assertz(
                     copy(Class_Id, Class, Copy_From, Copy_To) :-
                    Module:Term
