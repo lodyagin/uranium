@@ -534,12 +534,8 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
       append(New_Parents1, New_Parents2, New_Parents_R),
       reverse(New_Parents_R, New_Parents3),
 
-      class_rebase_int(New_Parents3, New_Parents, Rebase, Ctx),
+      class_rebase_int(New_Parents3, New_Parents, _, Ctx),
       New_Parents = [Rebased_Id|_],
-      (  Rebase == rebase -> true
-      ;  throw(error(implementation_error(
-          'Not rebasing case', []), Ctx))
-      ),
 
       % find the fields to through out
       class_all_fields(Old_Base_Id, Old_Base_List),

@@ -48,6 +48,8 @@
 
            rebased_class/3,     % Name, Parents, Id
                                 % it is used as a cache
+                                % for both rebased and not
+                                % rebased classes
            
            reinterpret/4,
            typedef_flag/2,

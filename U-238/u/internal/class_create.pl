@@ -300,7 +300,7 @@ assert_parent_key(Class_Id, Parent_Id) :-
 assert_copy(Class_Id, Parent_Id) :-
 
    class_id(Class_Id, Class),
-   class_primary_id(Class, Primary_Id),
+   %class_primary_id(Class, Primary_Id),
    
    (   objects:clause(copy(Class_Id, Class, From, To),
                       Body)
@@ -308,18 +308,18 @@ assert_copy(Class_Id, Parent_Id) :-
        true % it is already asserted (e.g. by
             % object_module)
    ;
-       Class_Id \= Primary_Id,
-       objects:clause(copy(Primary_Id, Class, From, To),
-                      Body)
-   ->
-       % Get the copy from a primary definition
-       objects:assertz(
-         (copy(Class_Id, Class, From, To) :- Body)
-       ),
-       debug(classes, '~p',
-          objects:assertz(
-             (copy(Class_Id, Class, From, To) :- Body)))
-   ;
+   %     Class_Id \= Primary_Id,
+   %     objects:clause(copy(Primary_Id, Class, From, To),
+   %                    Body)
+   % ->
+   %     % Get the copy from a primary definition
+   %     objects:assertz(
+   %       (copy(Class_Id, Class, From, To) :- Body)
+   %     ),
+   %     debug(classes, '~p',
+   %        objects:assertz(
+   %           (copy(Class_Id, Class, From, To) :- Body)))
+   % ;
        % Inherit a copy from parent
        objects:clause(copy(Parent_Id, _, From, To),
                       Body)
@@ -338,15 +338,19 @@ assert_copy(Class_Id, Parent_Id) :-
 
 
 
-% class_rebase_int(+Parents, -New_Parents, -Rebased, +Ctx)
+%% class_rebase_int(+Parents, -New_Parents, -Rebase, +Ctx)
 %
-% Parents - a list of new parents ids for this class (it is
-% started from nearest and ended with object_base_v (id = 0)
+% Parents - a list of new parents ids for this class (it
+% is started from the nearest and ended with object_base_v
+% (id = 0)
 %
+% @param Rebase will be unified with true if new Class_Id
+% is created and false in other case
 
 class_rebase_int([0], [0], false, _) :- !.
 
-class_rebase_int([Class_Orig_Id|Parents0], [Class_New_Id|Parents],
+class_rebase_int([Class_Orig_Id|Parents0],
+                 [Class_New_Id|Parents],
                  Rebase, _) :-
 
    % The recursion into parents
@@ -355,9 +359,14 @@ class_rebase_int([Class_Orig_Id|Parents0], [Class_New_Id|Parents],
 
    % Check the rebased classes cache (by the class name)
    class_id(Class_Orig_Id, Class_Name), % get Class_Name
-   (  objects:rebased_class(Class_Name, Parents, Class_New_Id)
+   (  objects:rebased_class(Class_Name, Parents,
+                            Class_New_Id)
    ->
-      Rebase = rebase
+      (  % check whether Class_New_Id is really rebased
+         objects:class_id(Class_New_Id, true, _)
+      -> true
+      ;  Rebase = rebase
+      )
    ;
       % check whether do rebase
       (  Rebase1 \== rebase
@@ -414,7 +423,8 @@ assert_new_class_id(Class_Id, Class_Name, Parent_Id, New_Fields,
    % any class is rebase of itself
    list_inheritance(Class_Id, Parents_List0),
    reverse(Parents_List0, [_|Parents_List]),
-   (  objects:rebased_class(Class_Name, Parents_List, Class_Id)
+   (  objects:rebased_class(Class_Name, Parents_List,
+                            Class_Id)
    -> true
    ;  assertz(objects:rebased_class(Class_Name, Parents_List,
                                     Class_Id)),
