@@ -704,4 +704,35 @@ test(cleanup_obj_rebase, [blocked(transaction_bug), N1 =:= N2]) :-
    aggregate(count, A^B^C^(objects:class_id(A, B, C)), N2).
 
 
+test(eval_fields1) :-
+
+   % man_v doesn't define class eval, so in this example
+   % the eval from citizen_v is always used.
+   
+   obj_construct(citizen_v,
+                 [sex, birthday], [man, 1994], C1),
+   obj_field(C1, class, Cl1),
+   obj_parents(C1,
+               [man_v, citizen_v, object_v, object_base_v],
+               C2),
+   obj_field(C2, class, Cl2),
+   assertion(Cl1 == callup_v),
+   assertion(Cl2 == callup_v).
+
+test(eval_fields2) :-
+
+   obj_construct(callup_v,
+                 [sex, birthday], [man, 1994], C1),
+   obj_field(C1, class, Cl1),
+   obj_rebase((citizen_v -> man_v), C1, C2),
+   obj_parents(C2, P2),
+
+   % for sure, citizen_v is not present
+   assertion(P2 ==
+            [callup_v, man_v, object_v, object_base_v]),
+
+   obj_field(C2, class, Cl2),
+   assertion(Cl1 == callup_v),
+   assertion(Cl2 == man_v).
+
 :- end_tests(v).
