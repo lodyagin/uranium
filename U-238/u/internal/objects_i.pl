@@ -304,10 +304,22 @@ obj_class_id(Object, Class_Id) :-
    arg(1, Object, Class_Id).
 
 
+%% parent(?Id, ?Parent_Id) is nondet.
+%
+%  True if Parent_Id is the class id of a parent of a
+%  class with the id Id.
+%
+%  It is semidet if Id is bound.
+
 parent(Id, Parent_Id) :-
 
-   objects:parent_(Id, Parent_Id), !,
-   Id =\= 0.
+   nonvar(Id), !,
+   is_of_type(positive_integer, Id),
+   objects:parent_(Id, Parent_Id).
+
+parent(Id, Parent_Id) :-
+
+   objects:parent_(Id, Parent_Id).
 
 obj_construct_int(Class_Id, Field_Names, Weak, Field_Values,
                   Object) :-
