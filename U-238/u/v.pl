@@ -906,10 +906,11 @@ obj_key_value(Object, Key_Value) :-
   get_key(Class_Id, Key),
   obj_unify_int(Class_Id, Key, throw, Object, Key_Value, Ctx).
 
+
+%% obj_list(+Object, -List) is semidet.
 %
-% obj_list(+Object, -List)
 % Convert Object to the List [Field = Value, ...]
-%
+% It fails if Object is a free variable.
 
 obj_list(Object, List) :-
 
@@ -931,14 +932,12 @@ obj_list2([Field|Tail], Object, List0, List) :-
    ),
    obj_list2(Tail, Object, List1, List).
 
+
+%% obj_parents(+Object, -Class_Names_List) is det.
 %
-% obj_parents(+Object, -Class_Names_List)
-%
-% Get the parents of Object in the looking-up order including
-% the Object class.
-% i.e. Object = man_v ->
+% Get the parents of Object in the looking-up order
+% including the Object class.  i.e. Object = man_v ->
 % Class_Names_List = [man_v, object_v, object_base_v]
-%
 
 obj_parents(Object, Class_Names_List) :-
 
@@ -955,11 +954,21 @@ obj_parents_int(Class_Id, Class_Names_List) :-
    maplist(class_id, Id_List, Class_Names_List).
 
 
+%% obj_parents(+Obj0, +Class_Names_List, -Obj)
 %
-% obj_parents(+Obj0, +Class_Names_List, -Obj)
+% Rebase Obj0 such way that Class_Names_List is the new
+% list of parents in Obj, for example:
 %
-% Class_Names_List is in looking-up order including the Obj0
-% class.
+% ==
+% obj_construct(citizen_v, [], [], Man1),
+% obj_parents(Man1, Parents1),
+% obj_parents(Man1, [man_v, citizen_v, object_v,
+%                    object_base_v], Man2),
+% obj_parents(Man2, Parents2).
+%
+% Parents1 = [citizen_v, man_v, object_v, object_base_v],
+% Parents2 = [man_v, citizen_v, object_v, object_base_v].
+% ==
 
 obj_parents(Obj0, Class_Names_List, Obj) :-
 
