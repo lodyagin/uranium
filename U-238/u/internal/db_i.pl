@@ -334,7 +334,7 @@ db_clear_int(DB_Key) :-
    atom(DB_Key), !,
    (  db_des(DB_Key, db_class_des(DB_Id, _, _, _, _, _, _)),
       db_conv_local_db(DB_Key, Local_Id, DB_Id, _),
-      obj_construct_int(Local_Id, [], throw, [], Obj0),
+      obj_construct_int(Local_Id, [db_key], throw, [DB_Key], Obj0),
       object_local_db(DB_Key, Obj0, Obj),
       retractall(Obj),
       fail ; true
