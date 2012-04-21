@@ -86,3 +86,4 @@ element_type_tag(form_v, form, form_v).
 element_type_tag(link_v, a, link_v).
 element_type_tag(local_link_v, a, link_v).
 element_type_tag(global_link_v, a, link_v).
+element_type_tag(list_v, ul, list_v).
