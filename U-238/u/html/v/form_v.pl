@@ -35,20 +35,33 @@
   obj_field(Object, type, Type),
   concat_atom(['form_', Type, '_field_v'], Value).
 
-new_class(form_v, http_result_v, [input_field_list]).
+new_class(form_v, http_result_v,
+          [tag_id, tag_class,
+           input_field_list]).
 
 new_class(form_input_field_v, object_v,
           [type, name, default_value, current_value]).
 
-new_class(form_hidden_field_v, form_input_field_v, []).
-
-new_class(form_text_field_v, form_input_field_v, [size]).
-
-new_class(form_password_field_v, form_text_field_v, []).
+new_class(form_button_field_v, form_input_field_v, []).
 
 new_class(form_checkbox_field_v, form_input_field_v, []).
 
+new_class(form_file_field_v, form_input_field_v, []).
+
+new_class(form_hidden_field_v, form_input_field_v, []).
+
+new_class(form_image_field_v, form_input_field_v, []).
+
+new_class(form_password_field_v, form_text_field_v, []).
+
+new_class(form_radio_field_v, form_input_field_v, [size]).
+
+new_class(form_reset_field_v, form_input_field_v, [size]).
+
 new_class(form_submit_field_v, form_input_field_v, []).
+
+new_class(form_text_field_v, form_input_field_v, [size]).
+
 
 
 

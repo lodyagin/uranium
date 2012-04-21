@@ -1,4 +1,4 @@
-% -*- fill-column: 65; -*- 
+% -*- fill-column: 65; -*-
 % _____________________________________________________________
 %
 % This file is a part of Uranium, a general-purpose functional
@@ -11,7 +11,7 @@
 % License as published by the Free Software Foundation; either
 % version 2.1 of the License, or (at your option) any later
 % version.
-% 
+%
 % This library is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -38,12 +38,16 @@ form_v_parse(DOM, Object) :-
   findall(Input_Field,
           parse_form_input_field(DOM, Input_Field),
           Input_Field_List),
-  obj_construct(form_v, [input_field_list], [Input_Field_List],
+  ignore(xpath(DOM, /form(@id), Tag_Id)),
+  ignore(xpath(DOM, /form(@class), Tag_Class)),
+  obj_construct(form_v,
+                [input_field_list, tag_id, tag_class],
+                [Input_Field_List, Tag_Id, Tag_Class],
                 Object).
 
-                                
+
 % Return all input fields on bt
-  
+
 parse_form_input_field(DOM, Input_Field_Object) :-
 
   xpath(DOM, //input, element(input, Attr_List, _)),
@@ -52,7 +56,7 @@ parse_form_input_field(DOM, Input_Field_Object) :-
   ;  AL3 = Attr_List
   ),
   corteging(=, Field_Names, Field_Values, AL3),
-  obj_construct(form_input_field_v, Field_Names, Field_Values,
-                Object1, weak),
+  obj_construct_weak(form_input_field_v, Field_Names, Field_Values,
+		     Object1),
   obj_downcast(Object1, Input_Field_Object).
 
