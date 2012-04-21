@@ -55,7 +55,12 @@ parse_form_input_field(DOM, Input_Field_Object) :-
   -> select(default_value = Value_Attr, AL3, AL2)
   ;  AL3 = Attr_List
   ),
-  corteging(=, Field_Names, Field_Values, AL3),
+  
+  (  selectchk(class = _, AL3, AL4) -> true
+  ;  AL4 = AL3
+  ),
+        
+  corteging(=, Field_Names, Field_Values, AL4),
   obj_construct_weak(form_input_field_v, Field_Names, Field_Values,
 		     Object1),
   obj_downcast(Object1, Input_Field_Object).

@@ -37,7 +37,7 @@
 
 new_class(form_v, http_result_v,
           [tag_id, tag_class,
-           input_field_list]).
+           input_field_list], []).
 
 new_class(form_input_field_v, object_v,
           [type, name, default_value, current_value]).
