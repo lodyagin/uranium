@@ -27,8 +27,7 @@
 
 :- module(table_v_parse,
           [table_v_parse/2,
-           table_v_cast/7,
-           normalize_row_name/2
+           table_v_cast/7
            ]).
 
 /** <module> Parse tables
@@ -62,16 +61,9 @@ get_table_header(DOM, Header) :-
              xpath(TR, th(normalize_space), Cell)),
             List
             ),
-    maplist(normalize_row_name, List, Row_Names),
+    maplist(normalize_name, List, Row_Names),
     Header =.. [table_header|Row_Names].
 
-normalize_row_name(Orig, Normalized) :-
-
-    normalize_space(atom(A1), Orig),
-    (A1 = '' -> Normalized = '-' ;
-    replace_chars(A1, A2, ' ', '_'),
-    downcase_atom(A2, Normalized)).
-    
 get_table_rows(DOM, Table_Data) :-
 
     xpath(DOM, //table, TAB), !, 

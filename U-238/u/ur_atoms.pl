@@ -29,6 +29,7 @@
 
 :- module(ur_atoms,
           [capitalize_atom/2,
+           normalize_name/2,
            tolower/2,
            trim_string/4,
            remove_quotes/2,
@@ -36,8 +37,15 @@
            replace_chars/4
 ]).
 
+/** Operations with atoms
+*/
+
 :- use_module(library(error)).
 :- use_module(u(ur_lists)).
+
+%% capitalize_atom(+From, -To)
+%
+% Uppercase the first letter
 
 capitalize_atom('', '') :- !.
 
@@ -49,6 +57,23 @@ capitalize_atom(From, To) :-
    code_type(To_First, to_upper(From_First)),
    atom_codes(To, [To_First|Tail]).
 
+
+%% normalize_name(+Orig, -Normalized)
+%
+% Convert a string defined as an atom (Orig) to a prolog atom
+% which can be used without quotes.
+%
+% 1. Normalize spaces (library(normalize_space/2))
+% 2. Empty string -> '-'
+% 3. Replaces ' ' with '_'
+% 4. Downcase
+
+normalize_name(Orig, Normalized) :-
+
+    normalize_space(atom(A1), Orig),
+    (A1 = '' -> Normalized = '-' ;
+    replace_chars(A1, A2, ' ', '_'),
+    downcase_atom(A2, Normalized)).
 
 tolower(From, To) :-
     (
@@ -68,7 +93,7 @@ remove_quotes(Q, NQ) :-
   atom_concat(Quote, X, Q), !,
   atom_concat(NQ, Quote, X).
 
-% replace_char(+Atom0, +Pos, +New, -Atom)
+%% replace_char(+Atom0, +Pos, +New, -Atom)
 %
 % Replace char to New at Pos in Atom0
 
