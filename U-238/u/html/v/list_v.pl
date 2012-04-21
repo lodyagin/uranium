@@ -31,48 +31,64 @@
 
   TODO make it general, remove http_result_v parent
 
+  ---++ list_v
+
   ---+++ Parent
   ../../http/v/http_result_v.pl
 
   ---+++ New static fields
-  * type
-  The list type (numbered, unnumbered, definitions)
+   * value_list
 
-  * definition_list
+  ---++ definition_list_v
 
-  * value_list
+  ---+++ Parent
+  list_v
+
+  ---+++ New eval fields
+   * option_list
+   definition = value | definition = [value, ...]
+
+   where definition is the first element of list item, value is
+   second etc.
 */
 
 :- use_module(library(error)).
-:- use_module(u(ur_lists)).
 
 new_class(list_v, http_result_v,
-          [http_result_v,
-           definition_list,
-           value_list
+          [value_list
           ]
          ).
 
-'list_v?'(Obj, option_list, List) :-
+new_class(definition_list_v, list_v, []).
 
-   obj_field(Obj, definition_list, Defs),
+'definition_list_v?'(Obj, option_list, List) :-
+
    obj_field(Obj, value_list, Vals),
 
-   (  var(Defs)
+   (  var(Vals)
    -> true
-   ;  \+ is_of_type(list(atom), Defs)
-   -> print_message(error, type_error(list(atom), Defs))
    ;  \+ is_of_type(list, Vals)
    -> print_message(error, type_error(list, Vals))
    ;
-      length(Defs, Defs_Len),
-      length(Vals, Vals_Len),
-      Defs_Len \= Vals_Len
-   -> print_message(error, domain_error(matched_list_length,
-                                        (Defs, Vals)))
-   ;
-      corteging(=, Defs, Vals, List)
+      lol_options(Vals, [], List)
    ).
 
 
+lol_options([], L, L) :- !.
+
+lol_options([[_]|T2], L0, L) :- !, % skip single values
+
+   lol_options(T2, L0, L).
+
+lol_options([[Def, Val]|T2], L0, [Def = Val|L1]) :-
+
+   lol_options(T2, L0, L1).
+
+lol_options([[Def|T1]|T2], L0, [Def = T1|L1]) :-
+
+   lol_options(T2, L0, L1).
+
+lol_options([_|T2], L0, L) :- !, % skip single values
+
+   lol_options(T2, L0, L).
 
