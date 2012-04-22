@@ -129,8 +129,8 @@ std_weak_arg_values([[throw, throws, strict, s],
                      [fail, false, f]
                     ]).
 
-%
-% class_create(+Class, +Parent, +Add_Fields)
+
+%% class_create(+Class, +Parent, +Add_Fields)
 %
 % Assert the new Class definition into the objects module
 %
@@ -142,8 +142,8 @@ class_create(Class, Parent, Fields) :-
    Ctx = context(class_create/3, _),
    class_create_cmn(Class, Parent, Fields, _, _, Ctx).
 
-%
-% class_create(+Class, +Parent, +Add_Fields, +Key)
+
+%% class_create(+Class, +Parent, +Add_Fields, +Key)
 %
 % Assert the new Class definition into the objects module,
 % set a (compound) key to Key
