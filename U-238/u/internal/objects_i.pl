@@ -249,7 +249,7 @@ gen_class_id(Class, Class_Id) :-
 
    nonvar(Class), var(Class_Id),
    (  class_id(Class_Id, Class)
-   -> throw(class_exists(Class))
+   -> throw(error(class_exists(Class), _))
    ;  true ),
 
    gen_new_class_id(Class_Id).

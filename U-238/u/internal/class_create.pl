@@ -98,7 +98,7 @@ assert_new_class(Class, Parent_Id, Fields0, Ctx) :-
 
   % arity/2 normally only asserted by this module
   (  objects:arity(Class_Id, _)
-  -> throw(class_exists(Class))
+  -> throw(error(class_exists(Class), Ctx))
   ;  true
   ),
 

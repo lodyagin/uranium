@@ -59,7 +59,7 @@ all_classes(All_Classes) :-
         module_new_class_def(Main_Class, Class, Parent),
         (  %class_id(_, Class)
            objects:clause(module_class_def(Class, _, _), _)
-        -> throw(class_exists(Class))
+        -> throw(error(class_exists(Class), _))
         ;  true %gen_class_id(Class, Class_Id)
         ),
         assertz(objects:module_class_def(Class, Parent,
