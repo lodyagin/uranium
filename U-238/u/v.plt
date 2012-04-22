@@ -56,6 +56,19 @@ test(class_create2) :-
    obj_key(CCTO, Key),
    assertion(Key == [a, birthday]).
 
+test(class_create3,
+     [error(class_exists(class_create_test_v))]
+     ) :-
+
+   current_prolog_flag(verbose, Old_Verbose),
+   set_prolog_flag(verbose, silent),
+   reload_all_classes,
+   set_prolog_flag(verbose, Old_Verbose),
+
+   class_create(class_create_test_v, citizen_v, [a, c, b],
+                [birthday, a]),
+   class_create(class_create_test_v, citizen_v, [d, e]).
+
 test(class_create_feature1) :-
    % It is a strange feature
 
