@@ -575,7 +575,7 @@ same_or_descendant(Desc_Id, No_Rebased, Class_Name) :-
    
 
 %% u_class(@Class)
-%  True if Class is a valid name for an uranium class
+%  True if Class is a valid name for uranium class
 
 u_class(Class) :-
 

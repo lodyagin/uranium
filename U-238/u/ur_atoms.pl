@@ -37,7 +37,7 @@
            replace_chars/4
 ]).
 
-/** Operations with atoms
+/** <module> Operations with atoms
 */
 
 :- use_module(library(error)).
