@@ -47,7 +47,7 @@
    * ::
 
   *|Instead of '[' and ']' '(' and ')' should be used.|*
-  
+
   ==
   [1] LocationPath ::=	  RelativeLocationPath
 			| AbsoluteLocationPath
@@ -68,7 +68,7 @@
   ==
 
   TODO
-  
+
   ==
   [5] AxisSpecifier   ::=	AxisName '::'
 			| AbbreviatedAxisSpecifier
@@ -90,7 +90,7 @@
   ==
   [10] AbbreviatedAbsoluteLocationPath ::=
                        '//' RelativeLocationPath
-  
+
   [11] AbbreviatedRelativeLocationPath	   ::=
                        RelativeLocationPath '//' Step
 
@@ -98,14 +98,14 @@
   ==
 
   *|reverse_axis ('..') is not supported|*
-  
+
   ==
   [13] AbbreviatedAxisSpecifier ::= '@'?
   ==
 
   TODO: complete the syntax description
 */
- 
+
 :- use_module(library(lists)).
 :- use_module(u(v)).
 :- use_module(u(internal/check_arg)).
@@ -169,7 +169,7 @@ ixpath(Spec, Options, Dom, Result) :-
 
 
 ixpath2(Spec, Options, LDOM, Result, Ctx) :-
-   
+
    nonvar(LDOM), LDOM = [DOM], !,
    ixpath2(Spec, Options, DOM, Result, Ctx).
 
@@ -392,8 +392,9 @@ preprocess_cond([Num|T], Attrs0, Attrs, Num0, Num) :-
 
 xpath(Spec, Dom, Options, Result) :-
 
-   bagof(pair(Path, Path_R, Result1),
-	 ( xpath(Spec, Dom, [], Path_R, Result1),
+   bagof(pair(Path, Path_R, Result1, Spec1),
+	 ( copy_term(Spec, Spec1),
+	   xpath(Spec1, Dom, [], Path_R, Result1),
 	   reverse(Path_R, Path) ),
 	 Results_Dup_U),
 
@@ -403,7 +404,7 @@ xpath(Spec, Dom, Options, Result) :-
    reverse(Results_R, Results),
 
    % bt
-   member(pair(Path, Path_R, Result1), Results),
+   member(pair(Path, Path_R, Result1, Spec), Results),
    proc_options(Path, Path_R, Options, Result1, Result).
 
 unify_list_pairs([], []) :- !.
