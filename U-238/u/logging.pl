@@ -149,7 +149,7 @@ write_piece(Stream, Options, Piece) :-
 
     memberchk(quoted(no), Options)
     ->
-    format(Stream, "~w ", [Piece])
+    format(Stream, "~p ", [Piece])
     ;
     format(Stream, "~q ", [Piece]).
 
