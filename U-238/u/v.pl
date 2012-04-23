@@ -32,7 +32,6 @@
            class_create/3,     % +Class, +Parent, +Add_Fields
            class_create/4,     % +Class, +Parent, +Add_Fields, +Key
            %class_descendant/2, % +Class, ?Descendant
-           class_exists/1,     % ?Class
            class_fields_new/2,
            class_fields/2,     % +Class, -Fields (ordset)
            %class_field_type/3,
@@ -154,13 +153,6 @@ class_create(Class, Parent, Fields, New_Key) :-
    Ctx = context(class_create/4, _),
    class_create_cmn(Class, Parent, Fields, New_Key, _, Ctx).
 
-
-class_exists(Class) :-
-
-   Ctx = context(class_exists/1, _),
-   check_inst(Class, Ctx),
-   check_class_arg(Class, Ctx),
-   class_primary_id(Class, _).
 
 % obj_field(+Obj, ?Field_Name, ?Value)
 
@@ -699,15 +691,21 @@ eval_obj_expr(Value, Value).
 
 %% class_name(?Class) is nondet.
 %
-% Class is a name of existing class.
-% The primary usage is BT on classes.
-% See u_class/1 for semidet check.
+% True if Class is a name of an existing class.  If Class is
+% bound it is semidet else it BT on all existing classes.
 
 class_name(Class) :-
 
-   objects:class_id(_, true, Class).
+   Ctx = context(class_name/1, _),
+   (  nonvar(Class)
+   -> check_class_arg(Class, Ctx)
+   ;  Det = f
+   ),
+   objects:class_id(_, true, Class),
+   
+   (  Det = t -> ! ; true ). 
 
-
+   
 %% class_parent(?Class, ?Parent) is nondet.
 %
 % Ignore rebased classes.

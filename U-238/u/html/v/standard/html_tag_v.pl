@@ -34,7 +34,7 @@ new_class(html_tag_v, html_piece_v,
    obj_field(Obj, html_tag, Tag),
    (  ground(Tag),
       concat_atom([html_tag_, Tag, '_v'], '', Class),
-      class_exists(Class)
+      class_name(Class)
    -> true
    ;  functor(Obj, Class, _) % leave unchanged
    ).

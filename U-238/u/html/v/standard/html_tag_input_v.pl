@@ -81,7 +81,7 @@ new_class(html_tag_input_text_v, html_tag_input_v,
    (  atom(Type0),
       ( Type0 = txt -> Type = text ; Type = Type0 )
    -> concat_atom(['html_tag_input_', Type, '_v'], '', Class),
-      class_exists(Class)
+      class_name(Class)
    ;  functor(Obj, Class, _)
    ).
 

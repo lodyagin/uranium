@@ -99,6 +99,23 @@ test(class_create_feature1) :-
 %   obj_rebase((object_v -> callup_v), V, _),
 %   findall(X, class_descendant(callup_v, X), List).
 
+test(class_name1) :-
+
+   class_name(man_v).
+
+test(class_name2, [fail]) :-
+
+   class_name(man_man_v).
+
+test(class_name3) :-
+
+   findall(Class, class_name(Class), Names),
+   sort(Names, Names2),
+   length(Names, N1),
+   length(Names2, N2),
+   assertion(N1 =:= N2),
+   assertion(N1 > 10).
+
 % test(class_same_or_descendant1,
 %      [List == [callup_v, citizen_v, class_create_test_v, man_v]]
 %     ) :-
