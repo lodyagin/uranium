@@ -1,24 +1,25 @@
-%  This file is a part of Uranium, a general-purpose functional
-%  test platform.
+%  This file is a part of Uranium, a general-purpose
+%  functional test platform.
 %
-%  Copyright (C) 2011  Sergei Lodyagin
+%  Copyright (C) 2011, Sergei Lodyagin
+%  Copyright (C) 2012, Kogorta OOO Ltd
 %
-%  This library is free software; you can redistribute it and/or
-%  modify it under the terms of the GNU Lesser General Public
-%  License as published by the Free Software Foundation; either
-%  version 2.1 of the License, or (at your option) any later
-%  version.
+%  This library is free software; you can redistribute it
+%  and/or modify it under the terms of the GNU Lesser
+%  General Public License as published by the Free
+%  Software Foundation; either version 2.1 of the License,
+%  or (at your option) any later version.
 %
 %  This library is distributed in the hope that it will be
-%  useful, but WITHOUT ANY WARRANTY; without even the implied
-%  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-%  PURPOSE.  See the GNU Lesser General Public License for more
-%  details.
+%  useful, but WITHOUT ANY WARRANTY; without even the
+%  implied warranty of MERCHANTABILITY or FITNESS FOR A
+%  PARTICULAR PURPOSE.  See the GNU Lesser General Public
+%  License for more details.
 %
-%  You should have received a copy of the GNU Lesser General
-%  Public License along with this library; if not, write to the
-%  Free Software Foundation, Inc., 51 Franklin Street, Fifth
-%  Floor, Boston, MA 02110-1301 USA
+%  You should have received a copy of the GNU Lesser
+%  General Public License along with this library; if not,
+%  write to the Free Software Foundation, Inc., 51
+%  Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 %
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
@@ -31,14 +32,91 @@
                    op(150, xfx, ::)
                    ]).
 
+/** <module> Uranium XPath implementation.
+
+  In the accordance with http://www.w3.org/TR/xpath/ ,
+  version 1.0.
+
+  ---+++ Supported syntax
+
+  Spec is defined as Prolog term with support of
+  following operations:
+   * //
+   * /
+   * @
+   * ::
+
+  *|Instead of '[' and ']' '(' and ')' should be used.|*
+  
+  ==
+  [1] LocationPath ::=	  RelativeLocationPath
+			| AbsoluteLocationPath
+
+  [2] AbsoluteLocationPath ::= '/' RelativeLocationPath?
+                       | AbbreviatedAbsoluteLocationPath
+  ==
+
+  *|The empty RelativeLocationPath is not implemented|*
+
+  ==
+  [3] RelativeLocationPath	   ::=		Step
+			| RelativeLocationPath '/' Step
+			| AbbreviatedRelativeLocationPath
+
+  [4] Step ::=		AxisSpecifier NodeTest Predicate*
+			| AbbreviatedStep
+  ==
+
+  TODO
+  
+  ==
+  [5] AxisSpecifier   ::=	AxisName '::'
+			| AbbreviatedAxisSpecifier
+
+  [6] AxisName	   ::=    'ancestor'
+			| 'ancestor-or-self'
+			| 'attribute'
+			| 'child'
+			| 'descendant'
+			| 'descendant-or-self'
+			| 'parent'
+			| 'self'
+  ==
+
+  *|Defined by the w3c recommendations following,
+  following-sibling, namespace, preceding,
+  preceding-sibling axes are not supported|*
+
+  ==
+  [10] AbbreviatedAbsoluteLocationPath ::=
+                       '//' RelativeLocationPath
+  
+  [11] AbbreviatedRelativeLocationPath	   ::=
+                       RelativeLocationPath '//' Step
+
+  [12] AbbreviatedStep ::= '.' | '..'
+  ==
+
+  *|reverse_axis ('..') is not supported|*
+  
+  ==
+  [13] AbbreviatedAxisSpecifier ::= '@'?
+  ==
+
+  TODO: complete the syntax description
+*/
+ 
 :- use_module(library(lists)).
 :- use_module(u(v)).
 :- use_module(u(internal/check_arg)).
+:- use_module(u(ur_messages)).
 
-:- multifile prolog:message/3.
+:- reexport(u(ur_messages), [prolog:message//1]).
 
 
-% ixpath(+Spec, +Dom, -Result)
+%% ixpath(+Spec, +Dom, -Result)
+%
+% It is like ixpath/4 but with Options = []
 
 ixpath(Spec, Dom, Result) :-
 
@@ -46,7 +124,43 @@ ixpath(Spec, Dom, Result) :-
    ixpath2(Spec, [], Dom, Result, Ctx).
 
 
-% ixpath(+Spec, +Dom, +Options, -Result)
+%% ixpath(+Spec, +Options, +Dom, -Result)
+%
+% Select the node by xpath. The default form of Result is
+% an element/3 term, see http://www.swi-prolog.org/pldoc/doc_for?object=section(0,%270%27,swi(%27/doc/packages/sgml.html%27))
+%
+% @param Spec the specification in the format defined
+% above
+%
+% @param Options
+%  $ v : instead of element/3 unify Result with a
+%  html_piece_v descendant (auto downcasted) with the dom
+%  field unified with the actual element/3 found by xpath.
+%
+%  $ vx : the same but v but also unifies node_path,
+%  node_rpath and xpath fields
+%
+%    $ xpath : is Prolog atom for selected xpath with a
+%    standard (w3c recommendation) syntax. Return an axis
+%    index for elements with defined nesting.
+%
+%    $ node_path : list of nodes. The nodes are
+%    represented as node/2 elements. The first arg is
+%    number of node in the axis (1-based), the second is
+%    element/3 for the node. The list is started from the
+%    Dom node and ended with the Result node.
+%
+%    $ node_rpath : the same as node_path but started from
+%    the result node and ended with the Dom node.
+%
+%  $ vix : the same as vx but Result's xpath is unified
+%  with xpath in the format of this library (the same
+%  syntax as for Spec parameter).
+%
+% @param Dom it can be element/3 term, Uranium object with
+% a `dom' field or a list with single element/3 member
+%
+
 
 ixpath(Spec, Options, Dom, Result) :-
 
@@ -124,14 +238,6 @@ args_to_xpath([Arg|T]) -->
    { atom_codes(Arg, Codes) },
    Codes, ",",
    args_to_xpath(T).
-
-% preprocess_expr(+Expr, +Orig, -Preprocessed_Expr)
-%
-% build
-% 1) unabbreviated
-% 2) easy to calc form
-%
-% Orig is used for error reporting only
 
 % w3c xpath spec:
 %
@@ -240,6 +346,12 @@ w3c_axis_name(parent).
 w3c_axis_name(self).
 
 
+% preprocess_expr(+Expr, -Preprocessed_Expr)
+%
+% build
+% 1) unabbreviated
+% 2) easy to calc form
+%
 % preprocess_expr process Node_Test Predicate in form
 %
 % Node_Name | Node_Name(Test {, Test})
@@ -502,10 +614,6 @@ check_attrs([Attr=Value|TC], Result) :-
    check_attrs(TC, Result).
 
 
-prolog:message(ixpath_not_implemented(What, Expr)) -->
-
-   ['ixpath: ~a is not implemented (the expression is ~w)'
-   - [What, Expr]].
 
 
 

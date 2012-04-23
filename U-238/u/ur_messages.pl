@@ -121,3 +121,10 @@ prolog:message(class_definition_error(Module, Term)) -->
 
    ['Invalid term in the class definition module ~a: ~p'
    - [Module, Term]].
+
+% ixpath
+prolog:message(ixpath_not_implemented(What, Expr)) -->
+
+   ['ixpath: ~a is not implemented (the expression is ~w)'
+   - [What, Expr]].
+
