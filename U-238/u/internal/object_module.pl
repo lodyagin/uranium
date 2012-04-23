@@ -33,6 +33,8 @@
 :- use_module(u(internal/db_vocab)).
 :- use_module(u(internal/ur_debug)).
 
+:- dynamic user:portray/1.
+
 % module_class_def(+Main_Class, -Class) :-
 % find all class definitions
 module_new_class_def(Main_Class, Class, Parent) :-
@@ -297,7 +299,24 @@ reload_all_classes :-
       % <<
       
       fail ; true
+   ),
+
+   install_v_portrays. % TODO it should be defined in _v files
+
+install_v_portrays :-
+
+   (  clause(portray(X), object_module:_) -> true
+   ;  user:assertz(portray(X) :- object_module:v_portray(X))
    ).
+
+% v_portray(Obj) :-
+
+%    u_object(Obj), !,
+%    obj_pretty_print([], Obj).
+
+v_portray(element(_, _, _)) :- !,
+
+   write('<element/3>').
 
 
 class_module_file(Start, Path) :-
