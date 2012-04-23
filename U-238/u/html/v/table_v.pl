@@ -46,5 +46,6 @@
 % rows - [table_data(...)]
 %
 
-new_class(table_v, http_result_v, [header, rows]).
+% TODO html_tag_td_v must be parent
+new_class(table_v, html_tag_v, [header, rows]).
 

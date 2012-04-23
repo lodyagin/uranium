@@ -2,10 +2,19 @@
 
 :- use_module(u(v)).
 :- use_module(u(html/v/standard/html_tag_v)).
+:- use_module(u(logging)).
 
-                     
+
 new_class(html_piece_v, http_result_v,
-          [dom, node_path, node_rpath, xpath]
+          [dom : dom,
+          node_path, node_rpath, xpath,
+           root_node % toplevel html_piece_v or a
+                     % descendant. Leave unbound for
+                     % toplevel object to prevent cyclic
+                     % term.
+           ]
+          %[www_address, xpath]
+          % xpath must be from the root_node
          ).
 
 'html_piece_v?'(Obj, class, Class) :-
@@ -17,6 +26,9 @@ new_class(html_piece_v, http_result_v,
    ;  functor(Obj, Class, _)  % leave unchanged
    ).
 
+% TODO return the real version
+'html_piece_v?'(_, html_version, html_4_01_transitional).
+
 downcast(html_piece_v, html_tag_v, From, To) :-
 
    obj_field(From, dom, DOM),
@@ -25,3 +37,10 @@ downcast(html_piece_v, html_tag_v, From, To) :-
    obj_field(To, html_tag, Tag),
    unify_html_attrs(To, Attrs, [], Bulk),
    obj_field(To, '.@bulk', Bulk).
+
+typedef(dom, [pretty_print - hide_dom]).
+
+hide_dom(_, _, Options) :-
+
+   write_log(Options, '<DOM>').
+

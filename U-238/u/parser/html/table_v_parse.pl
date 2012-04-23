@@ -43,12 +43,13 @@
 :- use_module(library(xpath)).
 :- use_module(library(lists)).
 
-table_v_parse(Data, Object) :-
+table_v_parse(Object0, Object) :-
 
-  get_table_header(Data, Header),
-  get_table_rows(Data, Rows),
-  obj_construct(table_v, [header, rows], [Header, Rows],
-                Object).
+   obj_field(Object0, dom, Data),
+   get_table_header(Data, Header),
+   get_table_rows(Data, Rows),
+   obj_downcast(Object0, table_v, Object),
+   obj_unify(Object, [header, rows], [Header, Rows]).
 
 get_table_header(DOM, Header) :-
 

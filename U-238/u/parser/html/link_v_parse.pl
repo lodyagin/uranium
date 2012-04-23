@@ -36,8 +36,9 @@
 :- use_module(library(xpath)).
 :- use_module(library(uri)).
 
-link_v_parse(A, Object) :-
+link_v_parse(A0, Object) :-
 
+   obj_field(A0, dom, A), 
    xpath(A, /a(@href), Url),
    xpath(A, /a(text), Text),
 

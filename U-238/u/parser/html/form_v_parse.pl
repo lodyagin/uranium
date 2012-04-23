@@ -32,36 +32,34 @@
 
 :- use_module(u(ur_lists)).
 :- use_module(u(v)).
+:- use_module(u(ixpath)).
 
-form_v_parse(DOM, Object) :-
+form_v_parse(Object, Object).
 
-  findall(Input_Field,
-          parse_form_input_field(DOM, Input_Field),
-          Input_Field_List),
-  ignore(xpath(DOM, /form(@id), Tag_Id)),
-  ignore(xpath(DOM, /form(@class), Tag_Class)),
-  obj_construct(form_v,
-                [input_field_list, tag_id, tag_class],
-                [Input_Field_List, Tag_Id, Tag_Class],
-                Object).
+%   findall(Input_Field,
+%           parse_form_input_field(Object0, Input_Field),
+%           Input_Field_List),
+%   obj_downcast(Object0, form_v, Object),
+%   obj_field(Object, input_field_list, Input_Field_List).
 
 
-% Return all input fields on bt
+% % Return all input fields on bt
 
-parse_form_input_field(DOM, Input_Field_Object) :-
+% parse_form_input_field(Form_Obj, Input_Field_Object) :-
 
-  xpath(DOM, //input, element(input, Attr_List, _)),
-  once(  select(value = Value_Attr, Attr_List, AL2)
-  -> select(default_value = Value_Attr, AL3, AL2)
-  ;  AL3 = Attr_List
-  ),
+%   ixpath(//input, [vix], Form_Obj, Input_Obj),
+%   % element(input, Attr_List, _)
+%   once(  select(value = Value_Attr, Attr_List, AL2)
+%   -> select(default_value = Value_Attr, AL3, AL2)
+%   ;  AL3 = Attr_List
+%   ),
   
-  (  selectchk(class = _, AL3, AL4) -> true
-  ;  AL4 = AL3
-  ),
+%   (  selectchk(class = _, AL3, AL4) -> true
+%   ;  AL4 = AL3
+%   ),
         
-  corteging(=, Field_Names, Field_Values, AL4),
-  obj_construct_weak(form_input_field_v, Field_Names, Field_Values,
-		     Object1),
-  obj_downcast(Object1, Input_Field_Object).
+%   corteging(=, Field_Names, Field_Values, AL4),
+%   obj_construct_weak(form_input_field_v, Field_Names, Field_Values,
+% 		     Object1),
+%   obj_downcast(Object1, Input_Field_Object).
 
