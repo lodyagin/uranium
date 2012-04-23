@@ -128,3 +128,8 @@ prolog:message(ixpath_not_implemented(What, Expr)) -->
    ['ixpath: ~a is not implemented (the expression is ~w)'
    - [What, Expr]].
 
+% html parsing
+
+prolog:message(html_invalid_attribute_value(Attr, Val)) -->
+
+   ['invalud value ~p for html attribute ~a' - [Val, Attr]].

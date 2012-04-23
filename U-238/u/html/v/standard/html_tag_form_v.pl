@@ -31,11 +31,11 @@
   ==
   <!ELEMENT FORM - - (%block;|SCRIPT)+ -(FORM) -- interactive form -->
 <!ATTLIST FORM
-  %attrs;                              -- %coreattrs, %i18n, %events --
-  action      %URI;          #REQUIRED -- server-side form handler --
-  method      (GET|POST)     GET       -- HTTP method used to submit the form--
-  enctype     %ContentType;  "application/x-www-form-urlencoded"
-  accept      %ContentTypes; #IMPLIED  -- list of MIME types for file upload --
+  %attrs;                          -- %coreattrs, %i18n, %events --
+  action  %URI;          #REQUIRED -- server-side form handler --
+  method  (GET|POST)     GET       -- HTTP method used to submit the form--
+  enctype %ContentType;  "application/x-www-form-urlencoded"
+  accept  %ContentTypes; #IMPLIED  -- list of MIME types for file upload --
   name        CDATA          #IMPLIED  -- name of form for scripting --
   onsubmit    %Script;       #IMPLIED  -- the form was submitted --
   onreset     %Script;       #IMPLIED  -- the form was reset --
@@ -121,4 +121,47 @@ fill_default_values(From, To) :-
    foreach(
            member(v(Field, Value), Fields),
            ignore(obj_field(To, Field, Value))
+          ),
+
+   % radio buttons
+
+   findall(v(Name1, Default_Value),
+           (  bagof(radio(Value, Checked),
+                    Radio^(ixpath(//input(@type=radio, @value=Value,
+                                          @name=Name),
+                                  [v], From, Radio),
+                           obj_field(Radio, '.checked', Checked)
+                          ),
+                    Radios
+              ),
+
+              (  member(radio(Value, Checked), Radios),
+                 nonvar(Checked),
+                 (  downcase_atom(Checked, checked)
+                 -> true
+                 ;  print_message(warning,
+                                  html_invalid_attribute_value(checked,
+                                                               Checked)),
+                    fail
+                 )
+              ->
+                 Default_Value = Value
+              ;
+                 Radios = [radio(Default_Value, _) | _]
+              ),
+              atom_concat('..', Name, Name1)
+           ),
+           Radio_Fields
+          ),
+
+   foreach(
+           member(v(Field, Value), Radio_Fields),
+           ignore(obj_field(To, Field, Value))
           ).
+
+   % TODO checkboxes
+
+   % writeln(Radio_Fields).
+
+
+
