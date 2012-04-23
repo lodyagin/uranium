@@ -168,8 +168,9 @@ ixpath(Spec, Options, Dom, Result) :-
    ixpath2(Spec, Options, Dom, Result, Ctx).
 
 
-ixpath2(Spec, Options, [DOM], Result, Ctx) :- !,
-
+ixpath2(Spec, Options, LDOM, Result, Ctx) :-
+   
+   nonvar(LDOM), LDOM = [DOM], !,
    ixpath2(Spec, Options, DOM, Result, Ctx).
 
 ixpath2(Spec, Options, Obj, Result, Ctx) :-
