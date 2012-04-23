@@ -105,8 +105,15 @@ form_class_fields(Obj, Fields) :-
       findall(Field_Name,
               ixpath(//input(@name=Field_Name), Obj, _),
               Fields1),
-      sort(Fields1, Fields2),
-      maplist(atom_concat('..'), Fields2, Fields).
+      findall(Field_Name,
+              ixpath(//select(@name=Field_Name), Obj, _),
+              Fields2),
+      findall(Field_Name,
+              ixpath(//textarea(@name=Field_Name), Obj, _),
+              Fields3),
+      append([Fields1, Fields2, Fields3], All_Fields1),
+      sort(All_Fields1, All_Fields2),
+      maplist(atom_concat('..'), All_Fields2, Fields).
 
 fill_default_values(From, To) :-
 
@@ -161,7 +168,7 @@ fill_default_values(From, To) :-
 
    % TODO checkboxes
 
-   % writeln(Radio_Fields).
+   
 
 
 
