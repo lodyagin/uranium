@@ -81,7 +81,8 @@
            obj_merge/4,
            obj_pretty_print/1,
            obj_pretty_print/2,
-           obj_unify/3
+           obj_unify/3,
+           obj_unify/4
            ]).
 
 /** <module> Uranium object system.
@@ -206,7 +207,16 @@ named_arg(Term, Field_Name, Value, Type) :-
 
 obj_unify(Term, Field_List, Value_List) :-
 
-   named_args_unify(Term, Field_List, Value_List).
+   Ctx = context(obj_unify/3, _),
+   named_args_unify2(Term, Field_List, Value_List, strict,
+                     Ctx).
+
+obj_unify(Term, Weak, Field_List, Value_List) :-
+
+   Ctx = context(obj_unify/4, _),
+   named_args_unify2(Term, Field_List, Value_List, Weak,
+                     Ctx).
+
 
 % named_args_unify(+Term, +Field_List, ?Value_List)
 
