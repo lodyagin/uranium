@@ -28,7 +28,7 @@
 :- module(browser_v, []).
 
 /** <module>  Class to hold all browser-dependent properties
-  
+
   <NB> It contains only static part of the interaction
   For a dynamic part (like cookies etc.) see ../../http/v/http_user_v.pl
 */
@@ -39,13 +39,17 @@ new_class(browser_v, object_v,
 
 new_class(firefox_browser_v, browser_v, []).
 
+new_class(chrome_browser_v, browser_v, []).
+
 new_class(firefox_browser_swipl_v, firefox_browser_v, []).
 
 'browser_v?'(Obj, class, Class) :-
 
    obj_field(Obj, browser, Browser),
    (  Browser == firefox
-   -> Class = firefox_browser_v
+   -> Class = firefox_browser_swipl_v
+   ;  Browser == chrome
+   ->  Class = chrome_browser_swipl_v
    ;  Class = browser_v
    ).
 
@@ -71,7 +75,6 @@ new_class(firefox_browser_swipl_v, firefox_browser_v, []).
                   'ISO-8859-1,utf-8;q=0.7,*;q=0.7',
                   115
                   ], Headers).
-
 'firefox_browser_swipl_v?'(_, headers, Headers) :-
 
    obj_construct(http_experimental_1_0_request_headers_v,
@@ -82,7 +85,8 @@ new_class(firefox_browser_swipl_v, firefox_browser_v, []).
                   accept_charset,
                   keep_alive
                  ],
-                 ['Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120202 Iceweasel/3.6.26 (like Firefox/3.6.26)',
+                 ['Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120202 Iceweasel/3.6.26 (like Firefox/3.6.26)'
+		 ,
 		  'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                   'en-us,en;q=0.5',
                   'deflate',
@@ -90,3 +94,38 @@ new_class(firefox_browser_swipl_v, firefox_browser_v, []).
                   115
                   ], Headers).
 
+'chrome_browser_v?'(_, headers, Headers) :-
+
+   obj_construct(http_experimental_1_0_request_headers_v,
+                 [connection,
+		  user_agent,
+                  accept,
+                  accept_language,
+                  accept_encoding,
+                  accept_charset
+                 ],
+                 ['keep-alive',
+		  'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.162 Safari/535.19',
+		  '*/*',
+                  'en-us,en;q=0.8',
+                  'gzip,deflate,sdch',
+                  'ISO-8859-1,utf-8;q=0.7,*;q=0.3'
+                  ], Headers).
+
+'chrome_browser_swipl_v?'(_, headers, Headers) :-
+
+   obj_construct(http_experimental_1_0_request_headers_v,
+                 [connection,
+		  user_agent,
+                  accept,
+                  accept_language,
+                  accept_encoding,
+                  accept_charset
+                 ],
+                 ['keep-alive',
+		  'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.162 Safari/535.19',
+		  '*/*',
+                  'en-us,en;q=0.8',
+                  'deflate',
+                  'ISO-8859-1,utf-8;q=0.7,*;q=0.3'
+                  ], Headers).
