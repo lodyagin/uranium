@@ -56,4 +56,8 @@ test(select_value2_1, [Value == 5]) :-
 
    select_value(a, [a, b, a, d, a], [5, 4, 3, 2, 1], Value).
 
+test(write_delimited1_atom, [A == 'a:b:c']) :-
+
+   write_delimited(atom(A), ':', [a, b, c]).
+
 :- end_tests(ur_lists).

@@ -77,6 +77,7 @@
 :- use_module(u(logging)).
 
 :- meta_predicate gen_memberchk(2, ?, ?).
+:- meta_predicate write_delimited(1, +, +).
 
 :- module_transparent switch_by_value/4, weak_maplist/3.
 
@@ -385,6 +386,11 @@ weak_maplist(Pred, [Head1|Tail1], [Head2|Tail2]) :-
   weak_maplist(Pred, Tail1, Tail2).
 
 
+write_delimited(_:atom(Atom), Delimiter, List) :- !,
+
+   write_delimited_atom(List, Delimiter, _, Codes, []),
+   atom_codes(Atom, Codes).
+
 write_delimited(Write_Pred, Delimiter, List) :-
 
   List = [Head|Tail] ->
@@ -398,6 +404,19 @@ write_delimited2(Write_Pred, Delimiter, El) :-
 
   call(Write_Pred, Delimiter),
   call(Write_Pred, El).
+
+write_delimited_atom([], _, _, T, T) :- !.
+
+write_delimited_atom([Head|Tail], Delimiter, First, Codes, CT) :-
+
+   (  First = first
+   -> Del = ''
+   ;  Del = Delimiter
+   ),
+
+   format(codes(Codes, CT1), '~a~p', [Del, Head]),
+   write_delimited_atom(Tail, Delimiter, tail, CT1, CT).
+   
 
 
 % LU is a list of lists of the same size. Sort the first list and
