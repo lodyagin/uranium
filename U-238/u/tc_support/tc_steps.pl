@@ -41,9 +41,8 @@
           ]).
 
 :- use_module(u(logging)).
-:- use_module(state/state).
 :- use_module(u(v)).
-:- use_module(tc_support/tc_log).
+:- use_module(u(tc_support/tc_log)).
 
 % Выполнение тест-кейса
 %

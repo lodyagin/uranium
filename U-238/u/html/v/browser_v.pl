@@ -33,6 +33,8 @@
   For a dynamic part (like cookies etc.) see ../../http/v/http_user_v.pl
 */
 
+:- use_module(u(v)).
+  
 new_class(browser_v, object_v,
           [browser, version, proxy_settings],
           [browser, version]).
