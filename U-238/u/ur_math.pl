@@ -1,31 +1,44 @@
-%% This file is a part of Uranium, a general-purpose functional test platform.
-%% Copyright (C) 2011  Sergei Lodyagin
-%%
-%% This library is free software; you can redistribute it and/or
-%% modify it under the terms of the GNU Lesser General Public
-%% License as published by the Free Software Foundation; either
-%% version 2.1 of the License, or (at your option) any later version.
-%% 
-%% This library is distributed in the hope that it will be useful,
-%% but WITHOUT ANY WARRANTY; without even the implied warranty of
-%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-%% Lesser General Public License for more details.
+% -*- fill-column: 65; -*-
+%
+%  This file is a part of Uranium, a general-purpose functional
+%  test platform.
+%
+%  Copyright (C) 2009-2011, Sergei Lodyagin
+%  Copyright (C) 2012, Kogorta OOO Ltd
+%
+%  This library is free software; you can redistribute it and/or
+%  modify it under the terms of the GNU Lesser General Public
+%  License as published by the Free Software Foundation; either
+%  version 2.1 of the License, or (at your option) any later
+%  version.
+%
+%  This library is distributed in the hope that it will be
+%  useful, but WITHOUT ANY WARRANTY; without even the implied
+%  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+%  PURPOSE.  See the GNU Lesser General Public License for more
+%  details.
+%
+%  You should have received a copy of the GNU Lesser General
+%  Public License along with this library; if not, write to the
+%  Free Software Foundation, Inc., 51 Franklin Street, Fifth
+%  Floor, Boston, MA 02110-1301 USA
+%
+%  e-mail: lodyagin@gmail.com
+%  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
-%% You should have received a copy of the GNU Lesser General Public
-%% License along with this library; if not, write to the Free Software
-%% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-%%
-%% e-mail: lodyagin@gmail.com
-%% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
-%% -------------------------------------------------------------------------------
-%%
 
 :- module(ur_math,
           [part_fact/3,
            binomial_coeff/3,
            nearest_binomial_coeff/4,
-           random_list/3
+           random_list/3,
+           byte_list/3
            ]).
+
+/** <module> Arithmetic and numeric functions
+*/
+
+:- use_module(library(error)).
 
 binomial_coeff(N, K, C) :-
     integer(N), N >= 0,
@@ -34,6 +47,65 @@ binomial_coeff(N, K, C) :-
     part_fact(N1, N, A),
     part_fact(1, K, B),
     C is A / B.
+
+%% byte_list(+Ending, ?Number, ?Byte_List)
+%
+% Conversion between nonneg integers and byte lists.  If the
+% Byte_List is instantiated to list a of vars of a given size it
+% fills all bytes, if the byte list is var - return only non-zero
+% elements.
+%
+% @param Ending *be* or *le*
+
+byte_list(Ending, Number, Byte_List) :-
+
+   Ctx = context(byte_list/3, _),
+   must_be(oneof([be, le]), Ending),
+
+   (  var(Number), var(Byte_List)
+   -> throw(error(instantiation_error, Ctx))
+   ;  true
+   ),
+
+   (  nonvar(Number)
+   -> must_be(nonneg, Number),
+      (  copy_term(Byte_List, Byte_List1),
+         number_to_bytes_le(Number, Byte_List1, Tail)
+      -> (  nonvar(Tail)
+         -> maplist(=(0), Tail) % the rest is zeros
+         ;  Tail = []
+         )
+      ;  throw(error(domain_error(enough_size_list(var), Byte_List), Ctx))
+      ),
+      (  Ending = le
+      -> Byte_List = Byte_List1
+      ;  reverse(Byte_List1, Byte_List)
+      )
+   ;
+      (  Ending = be
+      -> Byte_List1 = Byte_List
+      ;  reverse(Byte_List, Byte_List1)
+      ),
+      bytes_to_number_le(Byte_List1, 0, Number)
+   ).
+
+
+number_to_bytes_le(0, L, L) :- !.
+
+number_to_bytes_le(Number, [Byte|Tail0], Tail) :-
+
+   Byte is Number /\ 0xFF,
+   Number1 is Number >> 8,
+   number_to_bytes_le(Number1, Tail0, Tail).
+
+bytes_to_number_le([], N, N) :- !.
+
+bytes_to_number_le([Byte|Tail], Number0, Number) :-
+
+   must_be(between(0, 255), Byte),
+   Number1 is Number0 << 8 \/ Byte,
+   bytes_to_number_le(Tail, Number1, Number).
+
 
 % Found mimimal N: C(N, K) > C
 % C1 = C(N, K)
@@ -56,11 +128,11 @@ part_fact(A, B, U, C) :-
     A1 is A + 1,
     U1 is U * A,
     part_fact(A1, B, U1, C).
-    
+
 % random list - return Num random numbers 0..Ceil
 random_list(Num, Ceil, List) :-
     random_list(Num, Ceil, [], List).
-    
+
 random_list(0, _, List, List) :- !.
 
 random_list(Num, Ceil, List, Out) :-
