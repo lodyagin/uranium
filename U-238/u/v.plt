@@ -383,7 +383,10 @@ test(obj_parents2_1) :-
    obj_field(Man2, functor, F2),
    assertion([F1, F2, C1, C2] == [citizen_v, man_v, callup_v, callup_v]).
 
-test(obj_parents2_bug1, [error(use_rebase_to_insert_parents)]) :-
+test(obj_parents2_bug1,
+     [error(use_rebase_to_insert_parents),
+      blocked(rebase_family)
+      ]) :-
 
    obj_construct(man_v, [], [], M),
    obj_parents(M, [man_v, db_object_v, object_v, object_base_v], _).
@@ -408,7 +411,9 @@ test(obj_rebase1) :-
                     http_headers_v,
                     object_v,object_base_v]).
 
-test(obj_rebase2_transitivity) :-
+test(obj_rebase2_transitivity,
+     [blocked(rebase_family)]
+     ) :-
 
    obj_construct(citizen_v, [], [], M1),
    obj_rebase((object_v -> db_object_v), M1, M2),
@@ -417,7 +422,9 @@ test(obj_rebase2_transitivity) :-
    assertion(P3 == [citizen_v, tarjan_vertex_v, db_object_v,
                     object_v, object_base_v]).
 
-test(obj_rebase3_transitivity2) :-
+test(obj_rebase3_transitivity2,
+     [blocked(rebase_family)]
+     ) :-
 
    obj_construct(citizen_v, [], [], M1),
    obj_rebase((object_v -> db_object_v), M1, M2),
@@ -770,7 +777,9 @@ test(eval_fields1) :-
    assertion(Cl1 == callup_v),
    assertion(Cl2 == callup_v).
 
-test(eval_fields2) :-
+test(eval_fields2,
+     [blocked(need_to_see)]
+     ) :-
 
    obj_construct(callup_v,
                  [sex, birthday], [man, 1994], C1),
