@@ -58,6 +58,7 @@ all_classes(All_Classes) :-
               'assertz(objects:module(~a, ~a))',
               [Main_Class, Module_File]
              ),
+        process_module_def(Main_Class),
         module_new_class_def(Main_Class, Class, Parent),
         (  %class_id(_, Class)
            objects:clause(module_class_def(Class, _, _), _)
@@ -100,17 +101,37 @@ all_classes(All_Classes) :-
              All_Classes
             ).
 
+% Class module-wide definitions
+process_module_def(Module) :-
+
+   % reinterpret/4
+   % TODO import only /4
+   dynamic_import(Module, objects, reinterpret).
+
+   %  % assert reinterpret/4
+   % (clause(Module:reinterpret(Class_From, Class_To, Obj_From, Obj_To),
+   %         Term),
+
+   %  Reinterpret_Clause = (reinterpret(Class_From, Class_To,
+   %                                    Obj_From, Obj_To) :-
+   %                       Module:Term
+   %                       ),
+   %  objects:assertz(Reinterpret_Clause),
+   %  debug(classes, 'assertz(~p)', [Reinterpret_Clause]),
+   %  fail ; true ).
+   
+
 process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
 
    Ctx = context(process_class_def/1, _),
-   
+
    % Get the definition module
    objects:module_class_def(Class, Parent, Module), !,
 
    % Generate new Class_Id
    gen_class_id(Class, Class_Id),
    assertz(objects:class_id(Class_Id, true, Class)),
-   debug(classes, 
+   debug(classes,
          'assertz(objects:class_id(~d, true, ~a))',
          [Class_Id, Class]),
 
@@ -150,19 +171,6 @@ process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
     debug(classes,
           'objects:assertz(copy(~d, ~a, ~p, ~p) :- ~a:~p',
           [Class_Id, Class, Copy_From, Copy_To, Module, Term]),
-    fail ; true ),
-
-    % assert reinterpret/4
-   (call(Module:current_predicate(reinterpret, Term)),
-    Term = reinterpret(Class_From, Class_To, Obj_From, Obj_To),
-    call(Module:clause(Term, _)),
-    objects:assertz(
-     reinterpret(Class_From, Class_To, Obj_From, Obj_To) :-
-                   Module:Term
-                   ),
-    debug(classes,
-          'objects:assertz(reinterpret(~a, ~a, ~p, ~p) :- ~a:~p',
-          [Class_From, Class_To, Obj_From, Obj_To, Module, Term]),
     fail ; true ),
 
     % process class module-scoped objects
@@ -238,7 +246,7 @@ dynamic_import(Module_From, Module_To, Functor) :-
 reload_all_classes :-
 
    db_vocab_clear(_), % clear all current db class caches
-   
+
    % clear the db
    retractall_objects,
    retractall(db_pg:pl_pg_type(_, _, _)),
@@ -258,7 +266,7 @@ reload_all_classes :-
    debug(classes, 'objects:assertz(rebased_class(object_base_v, [], 0))', []),
 
    assertz_pred(classes, objects:next_class_id(1)),
-   
+
    % Load all class modules
    (  find_class_module(Module_Path),
       consult(Module_Path),
@@ -272,7 +280,7 @@ reload_all_classes :-
    % + module_class_def/3
 
    (  member(Class_Def, Class_Defs),
-      
+
       process_class_def(Class_Def),
       % + class_id/3
       % + eval_field/5
@@ -297,7 +305,7 @@ reload_all_classes :-
       % + key/3
       % + copy/4 :- ... (for descendants)
       % <<
-      
+
       fail ; true
    ),
 

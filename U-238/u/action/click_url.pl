@@ -44,6 +44,9 @@
                                   % +User0, -User, -Page
                       ]).
 
+/** <module> Emulate browser actions (clicks and send forms).
+  */
+
 :- use_module(u(http/http_ops)).
 :- use_module(u(v)).
 :- use_module(u(html/http_page)).
@@ -81,7 +84,7 @@ click_url(URL_Expr, Browser, User0, User, Page) :-
 click_with_all_redirects(URL_Expr, Browser, User0, User, Page) :-
 
    click_url(URL_Expr, Browser, User0, User1, Page1),
-   obj_reinterpret(Page1, Page2),
+   obj_reinterpret(Page1, _, Page2),
    % <NB> redirect does not change current_url in User
    perform_redirects(Browser, User1, Page2, User, Page).
 
@@ -92,7 +95,7 @@ click_with_all_redirects(URL_Expr, User0, User, Page) :-
 click_with_all_redirects(URL_Expr, Page) :-
 
    click_url(URL_Expr, Page1),
-   obj_reinterpret(Page1, Page2),
+   obj_reinterpret(Page1, _, Page2),
    perform_redirects(Page2, Page).
 
 

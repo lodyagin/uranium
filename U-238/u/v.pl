@@ -66,7 +66,7 @@
            obj_parents/2,      % +Object, -Class_Names_List
            obj_parents/3,      % +Obj0, +Class_Names_List, -Obj
            obj_rebase/3,       % ?Rebase_Rule, @Object0, -Object
-           obj_reinterpret/2,  % +From, -To
+           obj_reinterpret/3,  % +From, ?Class_To, -To
            obj_rewrite/5,      % +Object0, +Fields, ?Old_Vals,
                                % +New_Vals, -Object
            obj_rewrite/6,      % +Object0, +Weak, +Fields, ?Old_Vals,
@@ -432,10 +432,13 @@ obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To,
 
    %  Check the downcast condition
    class_id(From_Class_Id, From_Class),
-   (  same_or_descendant(To_Class_Id, true, From_Class)
-   -> true
-   ;  class_id(To_Class_Id, To_Class),
-      throw(not_downcast(From_Class, To_Class))
+   class_id(To_Class_Id, To_Class),
+   (   Mode == downcast
+   ->  (  same_or_descendant(To_Class_Id, true, From_Class)
+       -> true
+       ;  throw(not_downcast(From_Class, To_Class))
+       )
+   ;   true
    ),
 
    % Construct To object with all fields unbounded
@@ -567,20 +570,27 @@ rebased_base(Id, Base, Base_Id) :-
 
 
 
-% obj_reinterpret(+From, -To) is nondet
+%% obj_reinterpret(+From, ?Class_To, -To) is nondet
+%
+% Use reinterpret/4 rules (see Declaring object) to make various
+% class reinterpretations. If Class_To is bound it is semidet.
 
-obj_reinterpret(From, To) :-
+obj_reinterpret(From, Class_To, To) :-
 
-   Ctx = context(obj_reiterpret/2, _),
+   Ctx = context(obj_reiterpret/3, _),
    check_inst(From, Ctx),
    check_object_arg(From, Ctx, From_Class_Id),
+   (  var(Class_To) -> true
+   ;  check_existing_class_arg(Class_To, Ctx)
+   ),
 
    functor(From, From_Class, _),
-   (  objects:clause(reinterpret(From_Class, To_Class, _, _), _),
+   (  clause(objects:reinterpret(From_Class, To_Class, _, _), _),
       class_primary_id(To_Class, To_Class_Id),
       obj_downcast_int(From_Class_Id, To_Class_Id, reinterpret,
                        From, To, Ctx)
    ;
+      functor(From, Class_To, _),
       To = From
    ).
 
@@ -715,10 +725,10 @@ class_name(Class) :-
    ;  Det = f
    ),
    objects:class_id(_, true, Class),
-   
-   (  Det = t -> ! ; true ). 
 
-   
+   (  Det = t -> ! ; true ).
+
+
 %% class_parent(?Class, ?Parent) is nondet.
 %
 % Ignore rebased classes.
