@@ -6,7 +6,7 @@
 
 
 new_class(html_piece_v, http_result_v,
-          [dom : dom,
+          [dom,
           node_path, node_rpath, xpath,
            root_node % toplevel html_piece_v or a
                      % descendant. Leave unbound for
@@ -38,9 +38,9 @@ downcast(html_piece_v, html_tag_v, From, To) :-
    unify_html_attrs(To, Attrs, [], Bulk),
    obj_field(To, '.@bulk', Bulk).
 
-typedef(dom, [pretty_print - hide_dom]).
+%typedef(dom, [pretty_print - hide_dom]).
 
-hide_dom(_, _, Options) :-
+%hide_dom(_, _, Options) :-
 
-   write_log(Options, '<DOM>').
+%   write_log('<DOM>', Options).
 

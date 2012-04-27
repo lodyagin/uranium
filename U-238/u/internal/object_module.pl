@@ -314,10 +314,25 @@ install_v_portrays :-
 %    u_object(Obj), !,
 %    obj_pretty_print([], Obj).
 
-v_portray(element(_, _, _)) :- !,
+v_portray(El) :-
 
+   compound(El), functor(El, element, _), !,
+   \+ dom_level(El, 0, 4), % Hide DOMs after 4 level
    write('<element/3>').
 
+dom_level(L, _, Max_Level) :-
+
+   is_list(L), !,
+   length(L, N),
+   N =< Max_Level.
+
+dom_level(element(_, _, L), N, Max_Level) :- !,
+
+   N =< Max_Level,
+   N1 is N + 1,
+   dom_level(L, N1, Max_Level).
+
+dom_level(_, _, _).
 
 class_module_file(Start, Path) :-
 
