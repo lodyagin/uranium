@@ -129,13 +129,18 @@ http_do_int(Method, Options, Headers, Cookies_DB, URL, Post_Data,
            RH_Options),
    append(Options2, RH_Options, Options3),
 
-   write_log(['http_do(', Method, ', ..., ', URL, '), options:',
-              Options3],
-             [logger(http_ops), lf(1, before), lf(1)]),
-
    (  Method = get
-   -> http_get(URL, Data, Options3)
-   ;  http_post(URL, Post_Data, Data, Options3)
+   ->
+      write_log(['http_do(', Method, ', ..., ', URL, '), options:',
+		 Options3],
+		[logger(http_ops), lf(1, before), lf(1)]),
+      http_get(URL, Data, Options3)
+   ;
+      write_log(['http_do(', Method, ', ..., ', URL, ', ',
+		 Post_Data, '), options:',
+		 Options3],
+		[logger(http_ops), lf(1, before), lf(1)]),
+      http_post(URL, Post_Data, Data, Options3)
    ),
 
    % The option which is not headers/cookies, see

@@ -34,7 +34,7 @@
 */
 
 :- use_module(u(v)).
-  
+
 new_class(browser_v, object_v,
           [browser, version, proxy_settings],
           [browser, version]).
@@ -42,6 +42,8 @@ new_class(browser_v, object_v,
 new_class(firefox_browser_v, browser_v, []).
 
 new_class(chrome_browser_v, browser_v, []).
+
+new_class(chrome_browser_swipl_v, chrome_browser_v, []).
 
 new_class(firefox_browser_swipl_v, firefox_browser_v, []).
 
@@ -99,14 +101,14 @@ new_class(firefox_browser_swipl_v, firefox_browser_v, []).
 'chrome_browser_v?'(_, headers, Headers) :-
 
    obj_construct(http_experimental_1_0_request_headers_v,
-                 [connection,
+                 [%connection,
 		  user_agent,
                   accept,
                   accept_language,
                   accept_encoding,
                   accept_charset
                  ],
-                 ['keep-alive',
+                 [%'keep-alive',
 		  'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.162 Safari/535.19',
 		  '*/*',
                   'en-us,en;q=0.8',
@@ -117,14 +119,14 @@ new_class(firefox_browser_swipl_v, firefox_browser_v, []).
 'chrome_browser_swipl_v?'(_, headers, Headers) :-
 
    obj_construct(http_experimental_1_0_request_headers_v,
-                 [connection,
+                 [%connection,
 		  user_agent,
                   accept,
                   accept_language,
                   accept_encoding,
                   accept_charset
                  ],
-                 ['keep-alive',
+                 [%'keep-alive',
 		  'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.162 Safari/535.19',
 		  '*/*',
                   'en-us,en;q=0.8',
