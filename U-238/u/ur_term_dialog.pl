@@ -48,11 +48,12 @@ prompt(Msg, Args, Keys_LOL, Result) :-
    format('~a~n', [Result]).
 
 prompt2(Keys_LOL, Result, Ctx) :-
-  
+
+   Self_Ctx = context(prompt2/3, Keys_LOL),
    get_single_char(Code), char_code(Char, Code),
 
    catch(
-         decode_arg(Keys_LOL, Char, Result, Ctx),
+         decode_arg(Keys_LOL, Char, Result, Self_Ctx),
          Error,
          (   Error = error(domain_error(Possible_Vals, _), _)
          ->  format('~nPlease enter one of ~p ', [Possible_Vals]),

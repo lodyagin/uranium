@@ -65,7 +65,6 @@
            db_put_objects/3, % +DB_Key, :Pred, +Options
 
 	   db_recorded/2,    % +DB_Key, ?Object
-                             % -Object
 %           db_rewrite/5,     % +DB_Key, ?Functor, +Fields,
                              % @Old_Vals, +New_Vals
 
@@ -368,6 +367,7 @@ db_recorda(DB_Key, Option, Object0, Object, Replaced) :-
 db_put_object_cmn(DB_Key, Option, Order, Object0, Object,
                   Replaced, Ctx) :-
 
+   Ptx = db_put_object_cmn/7,
    check_db_key(DB_Key, Ctx),
    check_inst(Object0, Ctx),
    check_object_arg(Object0, Ctx, Class_Id),
@@ -377,11 +377,11 @@ db_put_object_cmn(DB_Key, Option, Order, Object0, Object,
                [ignore],
                [fail],
                [throw], [throws]],
-              Option, Option1, Ctx),
+              Option, Option1, context(Ptx, 1)),
 
    decode_arg([[recordz, _, z],
                [recorda, a]],
-              Order, Order1, Ctx),
+              Order, Order1, context(Ptx, 2)),
 
    db_put_object_int(DB_Key, Class_Id, Option1, Order1, Object0,
                      Object, Replaced, Ctx).
@@ -761,11 +761,12 @@ db_select_list_cmn(DB_Key, Functor, Weak, Fields, List,
    check_inst(Fields, Ctx),
    check_db_key(DB_Key, Ctx),
 
+   Self_Ctx = context(db_select_list_cmn/6, _),
    decode_arg([[throw, throws, strict, s],
                [weak, _, unbound, w],
                [fail, false, f]],
               Weak, Weak1,
-              Ctx),
+              Self_Ctx),
 
    (   var(Functor) -> true
    ;   check_class_arg(Functor, Ctx)

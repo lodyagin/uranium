@@ -89,8 +89,9 @@ http_do(Method, Options, Headers, Cookies_DB, URL, Post_Data, DOM,
 http_do_cmn(Method, Options, Headers, Cookies_DB, URL, Post_Data,
             DOM, Redirect_Steps, Ctx) :-
 
+   Dtx = context(http_do_cmn/9, _),
    must_be(atom, URL),
-   decode_arg([[post], [get]], Method, Method1, Ctx),
+   decode_arg([[post], [get]], Method, Method1, Dtx),
    must_be(list, Options),
    (  var(Headers)
    -> obj_construct(http_headers_v, [], [], Headers)

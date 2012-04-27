@@ -245,7 +245,8 @@ named_args_unify2(Term, Field_List, Value_List, Weak, Ctx) :-
    check_object_arg(Term, Ctx, Class_Id),
 
    std_weak_arg_values(LOL),
-   decode_arg(LOL, Weak, Weak1, Ctx),
+   Self_Ctx = context(named_args_unify2/5, _),
+   decode_arg(LOL, Weak, Weak1, Self_Ctx),
 
    obj_unify_int(Class_Id, Field_List, Weak1, Term, Value_List,
                  Ctx).
@@ -314,7 +315,8 @@ obj_reset_fields2(Fields_List, Object0, Object, Weak, Ctx) :-
    check_inst(Object0, Ctx),
    check_list_fast_arg(Fields_List, Ctx),
    check_object_arg(Object0, Ctx, Class_Id),
-   decode_arg([[weak], [fail, strict]], Weak, Weak1, Ctx),
+   Self_Ctx = context(obj_reset_fields2/5, _),
+   decode_arg([[weak], [fail, strict]], Weak, Weak1, Self_Ctx),
 
    obj_reset_fields_int(Class_Id, Fields_List, Object0, Object,
                         Weak1, Ctx).
@@ -607,7 +609,8 @@ obj_rewrite_cmn(Object0, Weak, Fields, Old_Vals, New_Vals,
    check_inst(New_Vals, Ctx),
    check_object_arg(Object0, Ctx, Class_Id),
    std_weak_arg_values(LOL),
-   decode_arg(LOL, Weak, Weak1, Ctx),
+   Self_Ctx = context(obj_rewrite_cmn/7, _),
+   decode_arg(LOL, Weak, Weak1, Self_Ctx),
    check_fields_arg(Fields, Ctx),
    (  var(Old_Vals) -> true
    ;  check_values_arg(Fields, Old_Vals, Ctx)

@@ -6,20 +6,22 @@
 
 :- use_module(u(ur_lists)).
 
-:- dynamic arg_decode/4.
+:- dynamic arg_decode/5.
 
-% decode_arg(+Vals_LOL, +Arg_Val, -Result, +Ctx)
+%% decode_arg(+Vals_LOL, +Arg_Val, -Result, +Ctx)
 %
 % Unify Result with first element of the Vals_LOL sublist
 % containing Arg_Val.
 %
 % <NB> All modules used this pred must call
 % clear_decode_arg in the initialization section.
+%
+% @error domain_error if Arg_Val not in allowed vals set
 
 decode_arg(Vals_LOL, Arg_Val, Result, Ctx) :-
 
    nonvar(Ctx),
-   Ctx = context(Pred_Name/Arity, _),
+   Ctx = context(Pred_Name/Arity, Num),
    atom(Pred_Name), integer(Arity),
 
    (  nonvar(Arg_Val)
@@ -28,12 +30,12 @@ decode_arg(Vals_LOL, Arg_Val, Result, Ctx) :-
    % will not match with any arg but only with _
    ),
    
-   (  arg_decode(Pred_Name, Arity, Arg_Val1, Result0)
+   (  arg_decode(Pred_Name, Arity, Num, Arg_Val1, Result0)
    -> true
    ;  (  Vals_LOL = [_|_] % not empty list
       -> (  decode_arg_int(Vals_LOL, Arg_Val, Result0)
          -> 
-            assertz(arg_decode(Pred_Name, Arity, Arg_Val1,
+            assertz(arg_decode(Pred_Name, Arity, Num, Arg_Val1,
                                Result0))
          ;  % make the domain and throw the error
             flatten(Vals_LOL, Domain),
