@@ -626,7 +626,9 @@ test(db_properties_v4_fail_ignore2, [setup(db_clear(people))]) :-
    assertion(Obj1 =@= Obj2).
 
 test(db_properties_v5_invalid_policy,
-     [setup(db_clear(people))]) :-
+     [setup(db_clear(people)),
+      blocked(need_to_see)
+      ]) :-
 
    db_construct(people, man_v,
                 [name, surname], ['Sergei', 'Lodyagin']),
