@@ -155,7 +155,9 @@ class_create(Class, Parent, Fields, New_Key) :-
    class_create_cmn(Class, Parent, Fields, New_Key, _, Ctx).
 
 
-% obj_field(+Obj, ?Field_Name, ?Value)
+%% obj_field(+Obj, ?Field_Name, ?Value)
+%
+%	Value is value of field Field_Name of Obj
 
 obj_field(Obj, Field_Name, Value) :-
 
@@ -656,13 +658,13 @@ obj_sort_parents(Obj0, Class_Order, Obj) :-
 
    obj_parents_cmn(Obj0, New_Order, Obj, Ctx).
 
-%
+%% eval_obj_expr(Expression, Value)
 % Calculate expressions in an operator form
 %
-
-%eval_obj_expr(Sub_Expr ? Field, Value) :-
-%	eval_obj_expr(Sub_Expr, Object),
-%	named_arg(Object, Field, Value), !.
+% ==
+% expr ::= obj_expr | Value
+% obj_expr ::= Object / Field | obj_expr / Field
+% ==
 
 eval_obj_expr(Object0 / Field, Value) :- !,
     eval_obj_expr(Object0, Object),
@@ -715,10 +717,10 @@ class_name(Class) :-
    ;  Det = f
    ),
    objects:class_id(_, true, Class),
-   
-   (  Det = t -> ! ; true ). 
 
-   
+   (  Det = t -> ! ; true ).
+
+
 %% class_parent(?Class, ?Parent) is nondet.
 %
 % Ignore rebased classes.

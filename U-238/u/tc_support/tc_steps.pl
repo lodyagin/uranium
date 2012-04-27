@@ -5,7 +5,7 @@
 %% modify it under the terms of the GNU Lesser General Public
 %% License as published by the Free Software Foundation; either
 %% version 2.1 of the License, or (at your option) any later version.
-%% 
+%%
 %% This library is distributed in the hope that it will be useful,
 %% but WITHOUT ANY WARRANTY; without even the implied warranty of
 %% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -40,6 +40,7 @@
 %           step_map/3
           ]).
 
+:- use_module(u(action/check_result)).
 :- use_module(u(logging)).
 :- use_module(u(v)).
 :- use_module(u(tc_support/tc_log)).
@@ -123,7 +124,7 @@ step(Num, Exec_List, Check_List) :-
     step(Num, Exec_List, Check_List, []).
 
 step(Num, Exec_List, Check_List, Options) :-
-  
+
     number(Num),
 
     % Реализация паузы.
@@ -165,7 +166,7 @@ step(Num, Exec_List, Check_List, Options) :-
        ;
         action_do(New_Options, Check_List, _)
        )
-    
+
     ->
      % Вывод 'passed'
      write_log([step, S1, passed])
@@ -178,7 +179,7 @@ step(Num, Exec_List, Check_List, Options) :-
      %write_log('', [module(no), lf(2)]),
      %state:dump_session(_, []),
      %write_log('', [module(no)]),
-     
+
      write_log([step, S1, failed], [lf(2)]),
      fail % fail the test case
     ),
@@ -201,7 +202,7 @@ action_do(Options, Goal, Exec_Session) :-
      (
      Goal \= true % экономим на действиях с целью true (=nop)
      ->
-     
+
      % Определяем сессию (на основе первого аргумента
      % всех целей execute*, по соглашению).
      (functor(Goal, F, _), atom_concat(execute, _, F)
@@ -222,7 +223,7 @@ action_do(Options, Goal, Exec_Session) :-
 
      % Запуск
      catch(call_with_options(Options, Goal),
-           true, 
+           true,
            true
           ), !,
 
@@ -233,7 +234,7 @@ action_do(Options, Goal, Exec_Session) :-
      write_log(' |passed|', [module(no), lf(2)])
 
      ;
-      
+
      true  % in case of execute or check part = 'true' - no call, no log
     ).
 
@@ -258,4 +259,4 @@ step_map(Action, Params_List, Options) :-
    ;
    true.
 
-   
+
