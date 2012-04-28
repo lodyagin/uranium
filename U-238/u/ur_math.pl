@@ -28,17 +28,84 @@
 
 
 :- module(ur_math,
-          [part_fact/3,
+          [bit_split/3,
+           byte_list/3,
+           part_fact/3,
            binomial_coeff/3,
            nearest_binomial_coeff/4,
-           random_list/3,
-           byte_list/3
+           random_list/3
            ]).
 
 /** <module> Arithmetic and numeric functions
 */
 
 :- use_module(library(error)).
+:- use_module(u(internal/check_arg)).
+
+%% bit_split(+Intervals, ?Values, ?Number)
+%
+% Intervals defines a list of intervals. One element of the list
+% can be either single bit number (the lowest bit number is 0) or
+% a bit range <lower>-<higher> e.g., =|2-4|=.
+%
+% The number of elements in the Values list is the same as in the
+% Intervals.
+%
+% Number is composed from all Values with gaps filled with zeros
+% or splitted to Values if it is ground. When composing
+% conflicting intervals are ORed.
+
+bit_split(Intervals, Values, Number) :-
+
+   Ctx = context(bit_split/3),
+   check_inst(Intervals, Ctx),
+   (  var(Number)
+   -> bit_split_asm(Intervals, Values, 0, Number)
+   ;  bit_split_disasm(Intervals, Values, Number)
+   ).
+
+
+bit_split_asm([], [], N, N) :- !.
+
+bit_split_asm([From-To|IT], [Val|VT], N0, N) :- !,
+
+   From >= 0,
+   From =< To,
+   Mask is 2 ** (To - From + 1) - 1,
+   Val1 is Val /\ Mask,
+   Val1 =:= Val, % check Val is fit in From-To
+   Val2 is Val << From,
+   N1 is N0 \/ Val2,
+   bit_split_asm(IT, VT, N1, N).
+
+bit_split_asm([Bit|IT], [Val|VT], N0, N) :-
+
+   Bit >= 0,
+   Val1 is Val /\ 1,
+   Val1 =:= Val, % check Val is fit in From-To
+   Val2 is Val << Bit,
+   N1 is N0 \/ Val2,
+   bit_split_asm(IT, VT, N1, N).
+
+
+bit_split_disasm([], [], _) :- !.
+
+bit_split_disasm([From-To|IT], [Val|VT], Number) :- !,
+
+   From >= 0,
+   From =< To,
+   Test is Number >> From,
+   Mask is 2 ** (To - From + 1) - 1,
+   Val is Test /\ Mask,
+   bit_split_disasm(IT, VT, Number).
+
+bit_split_disasm([Bit|IT], [Val|VT], Number) :-
+
+   Bit >= 0,
+   Test is Number >> Bit,
+   Val is Test /\ 1,
+   bit_split_disasm(IT, VT, Number).
+
 
 binomial_coeff(N, K, C) :-
     integer(N), N >= 0,

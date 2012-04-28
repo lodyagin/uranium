@@ -1,6 +1,22 @@
 :- begin_tests(ur_math).
 :- use_module(ur_math).
 
+test(bit_split1, [N==0]) :-
+
+   bit_split([], [], N).
+
+test(bit_split2) :-
+
+   bit_split([], [], 4).
+
+test(bit_split3, [N==0xA3]) :-
+
+   bit_split([7, 4-6, 0-2], [1, 0x02, 0x03], N).
+
+test(bit_split4, [Vals == [1, 0x02, 0x03]]) :-
+
+   bit_split([7, 4-6, 0-2], Vals, 0xA3).
+
 % byte_list: zeros
 
 test(byte_list1, [L == []]) :-
