@@ -36,9 +36,17 @@
 
 load_action_module(Backend, Name, Module_Name) :-
 
-    format(atom(Module_Name), '~a_~a',
-           [Backend, Name]),
-    format(atom(Module_Path), 'action/~a/~a',
-           [Backend, Module_Name]),
-    use_module(Module_Path).
-        
+    member(Place, [tc, u]),
+    file_search_path(Place, Base_Path),
+    concat_atom([Base_Path, '/action/', Backend, '/',
+                 Backend, '_', Name, '.pl'],
+                '', Module_Path),
+    exists_file(Module_Path), !,
+
+    use_module(Module_Path),
+
+    concat_atom(List, '/', Module_Path),
+    last(List, Name_With_Ext),
+    atom_concat(Module_Name, '.pl', Name_With_Ext).
+
+
