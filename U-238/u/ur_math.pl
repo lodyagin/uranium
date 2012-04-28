@@ -120,9 +120,12 @@ binomial_coeff(N, K, C) :-
 % Conversion between nonneg integers and byte lists.  If the
 % Byte_List is instantiated to list a of vars of a given size it
 % fills all bytes, if the byte list is var - return only non-zero
-% elements.
+% elements. If the Byte_List contains less elements than needing
+% for Number representation then the predicate fails.
 %
 % @param Ending *be* or *le*
+%
+% @error instantiation_error if both Number and Byte_List are free.
 
 byte_list(Ending, Number, Byte_List) :-
 
@@ -137,12 +140,11 @@ byte_list(Ending, Number, Byte_List) :-
    (  nonvar(Number)
    -> must_be(nonneg, Number),
       (  copy_term(Byte_List, Byte_List1),
-         number_to_bytes_le(Number, Byte_List1, Tail)
-      -> (  nonvar(Tail)
+         number_to_bytes_le(Number, Byte_List1, Tail),
+         (  nonvar(Tail)
          -> maplist(=(0), Tail) % the rest is zeros
          ;  Tail = []
          )
-      ;  throw(error(domain_error(enough_size_list(var), Byte_List), Ctx))
       ),
       (  Ending = le
       -> Byte_List = Byte_List1

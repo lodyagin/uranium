@@ -17,6 +17,14 @@ test(bit_split4, [Vals == [1, 0x02, 0x03]]) :-
 
    bit_split([7, 4-6, 0-2], Vals, 0xA3).
 
+test(bit_split5, [fail]) :-
+
+   bit_split([0], [2], _).
+
+test(bit_split6, [fail]) :-
+
+   bit_split([0-7], [256], _).
+
 % byte_list: zeros
 
 test(byte_list1, [L == []]) :-
@@ -88,8 +96,7 @@ test(byte_list12, [L == [0, 0, 0, 0, 0, 0, 0, 0, 1]]) :-
    length(L, 9),
    byte_list(le, X, L).
 
-test(byte_list13,
-     [error(domain_error(enough_size_list(var), L))]) :-
+test(byte_list13, [fail]) :-
 
    X is 2^64,
    length(L, 8),
