@@ -37,7 +37,9 @@
 % Protocols (draft 02; October 24, 2011):
 
 :- module(http_headers_v,
-          [http_headers_list_obj/2   % ?List, ?Obj
+          [http_headers_list_obj/2,   % ?List, ?Obj
+           read_headers/2,            % +Stream, -Obj
+           send_headers/2             % +Stream, +Obj
            ]).
 
 :- use_module(library(error)).
@@ -272,4 +274,23 @@ header_prolog_http(PHeader=Value, HHeader=Value) :-
    ;  capitalize_atom(PHeader, HHeader)
    ).
 
+
+send_headers(Stream, Obj) :-
+
+   http_headers_list_obj(List, Obj),
+   out_headers_list(List, Stream).
+
+out_headers_list([], _) :- !.
+
+out_headers_list([Header=Value|T], Stream) :-
+
+   format(Stream, '~a: ~a\r\n', [Header, Value]),
+   out_headers_list(T, Stream).
+
+
+
+read_headers(Stream, Obj) :-
+
+   read_line_to_codes(Stream, Line),
+   true.
 
