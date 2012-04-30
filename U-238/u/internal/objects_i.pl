@@ -388,8 +388,7 @@ obj_field_int_part(false, Class_Id, Field_Name, Obj, Value) :-
 
 obj_field_int_part(true, Class_Id, Field_Name, Obj, Value) :-
 
-   once(objects:field(Class_Id, Field_Name, Obj, Value1)),
-   Value = Value1.
+   once(objects:field(Class_Id, Field_Name, Obj, Value)).
 
 
 
@@ -505,7 +504,7 @@ same_class_int(Class_Id, No_Rebased, Class_Name) :-
 
    objects:class_id(Class_Id, No_Rebased, Class_Name), !.
 
-   
+
 
 %% descendant_class(+Desc_Id, ?No_Rebased, ?Ancestor_Name) is nondet.
 %
@@ -536,8 +535,8 @@ descendant_class(Desc_Id, No_Rebased, Ancestor_Name) :-
    descendant_class_int(Desc_Id, Ancestor_Name),
 
    (  Det = t -> ! ; true ).
-   
-   
+
+
 descendant_class_int(Desc_Id, Ancestor_Name) :-
 
    objects:parent_(Desc_Id, Parent_Id),
@@ -545,11 +544,11 @@ descendant_class_int(Desc_Id, Ancestor_Name) :-
    (  Ancestor_Name = Parent_Name
    ;  descendant_class_int(Parent_Id, Ancestor_Name)
    ).
-   
+
 %% same_or_descendant(+Desc_Id, ?No_Rebased, ?Class_Name) is nondet.
 %
 %  True if =|(same_class(Desc_Id, No_Rebased, Class_Name) or
-%  descendant_class(Desc_Id, No_Rebased, Class_Name))|=. 
+%  descendant_class(Desc_Id, No_Rebased, Class_Name))|=.
 %
 %  This predicate is semidet in the case of =|nonvar(Class_Name)|=
 %
@@ -565,14 +564,14 @@ same_or_descendant(Desc_Id, No_Rebased, Class_Name) :-
    ),
 
    (  nonvar(Class_Name) -> true ; Det = f ),
-   
+
    (  same_class_int(Desc_Id, No_Rebased, Class_Name)
    ;  no_rebased_class(Desc_Id, No_Rebased),
       descendant_class_int(Desc_Id, Class_Name)
    ),
 
    (  Det = t -> ! ; true ).
-   
+
 
 %% u_class(@Class)
 %  True if Class is a valid name for uranium class
