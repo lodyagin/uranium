@@ -33,7 +33,7 @@
 :- use_module(u(internal/db_vocab)).
 :- use_module(u(internal/ur_debug)).
 
-:- dynamic user:portray/1.
+:- dynamic user:portray/1, user:file_search_path/2.
 
 % module_class_def(+Main_Class, -Class) :-
 % find all class definitions
@@ -119,7 +119,7 @@ process_module_def(Module) :-
    %  objects:assertz(Reinterpret_Clause),
    %  debug(classes, 'assertz(~p)', [Reinterpret_Clause]),
    %  fail ; true ).
-   
+
 
 process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
 
@@ -366,7 +366,8 @@ find_class_module(Module_Path) :-
 
   findall(Files,
           (
-             (  file_search_path(u, Dir)
+             (  user:file_search_path(u, Dir)
+             ;  user:file_search_path(tc, Dir)
              ;   working_directory(Dir, Dir)
              ),
              class_module_file(Dir, Mask),
@@ -378,7 +379,16 @@ find_class_module(Module_Path) :-
   member(Module_Path, List),
   \+ ( sub_atom(Module_Path, _, _, _, 'hide/')
      ; sub_atom(Module_Path, _, _, _, 'HIDE/')
-     ).
+     ),
+
+  add_objects_dir(Module_Path).
+
+add_objects_dir(Path) :-
+
+   file_directory_name(Path, Dir),
+   (  user:file_search_path(v, Dir) -> true
+   ;  assertz(user:file_search_path(v, Dir))
+   ).
 
 :- initialization reload_all_classes.
 
