@@ -703,7 +703,7 @@ db_select(DB_Key, Fields, Row) :-
    ->  true
    ;   Fields1 = Fields, Row1 = Row
    ),
-   db_select_int(DB_Key, Functor, weak, Fields1, Row1, Ctx).
+   db_select_int(DB_Key, Functor, unbound, Fields1, Row1, Ctx).
 
 
 db_select_int(DB_Key, Functor, Weak, Fields, Row, Ctx) :-
@@ -763,7 +763,7 @@ db_select_list_cmn(DB_Key, Functor, Weak, Fields, List,
 
    Self_Ctx = context(db_select_list_cmn/6, _),
    decode_arg([[throw, throws, strict, s],
-               [weak, _, unbound, w],
+               [unbound, _, weak, w],
                [fail, false, f]],
               Weak, Weak1,
               Self_Ctx),

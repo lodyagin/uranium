@@ -597,6 +597,7 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
 named_args_unify_int(DB_Key, Option, Des, Field_Names, Values,
                      Term) :-
 
+   Ctx = context(named_args_unify_int/6, _),
    Des = db_class_des(DB_Class_Id, _, _, _, _, _, _),
    db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, _),
    % now the class is definitly loaded
@@ -609,7 +610,9 @@ named_args_unify_int(DB_Key, Option, Des, Field_Names, Values,
    obj_construct_int(Local_Class_Id, Field_Names, Option, Values,
                      Term0),
    obj_rebase((object_v -> db_object_v), Term0, Term), % ?
-   db_recorded_int(DB_Key, Term).
+   db_recorded_int(DB_Key, Term),
+
+   obj_unify_int(Local_Class_Id, Field_Names, Option, Term, Values, Ctx).
 
 % exclude_field(_, [], [], [], []) :- !.
 
