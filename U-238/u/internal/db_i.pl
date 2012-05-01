@@ -625,54 +625,6 @@ named_args_unify_int(DB_Key, Option, Des, Field_Names, Values,
 %    exclude_field(Field, Ft0, Ft, Vt0, Vt).
 
 
-prolog:message(db_system_bad_state(Format, Args)) -->
-
-   ['The Uranium DB system may be corrupted: '],
-   [ nl ],
-   [Format - Args].
-
-prolog:message(bad_db(DB_Key, Format, Args)) -->
-
-   ['Bad DB ~w~n' - [DB_Key]],
-   [Format - Args].
-
-prolog:message(db_key_exists(DB_Key, DB_Object, New_Object)) -->
-
-   ['Duplicate DB key for DB ~a when put ~p'
-   - [DB_Key, New_Object]],
-   [ nl ],
-   [ 'The existing object in DB: ~p' - [DB_Object]].
-
-prolog:message(class_fields_mismatch(DB_Key, Class, Local, DB))
--->
-
-   ['The DB ~a has another fields for the class ~a~n'
-    - [DB_Key, Class]],
-   ['our fields: ~w ~ndb  fields: ~w' - [Local, DB]].
-
-prolog:message(class_parents_mismatch(DB_Key, Class, Local, DB))
--->
-
-   ['The DB ~a has another parents for the class ~a~n'
-    - [DB_Key, Class]],
-   ['our parents: ~w ~ndb  parents: ~w' - [Local, DB]].
-
-prolog:message(invalid_db_class_id(DB_Key, DB_Class_Id)) -->
-
-   ['The db class id ~w is not found in db ~w'
-    - [DB_Class_Id, DB_Key]].
-
-prolog:message(db_obj_replace_protector(DB_Key,
-               Protector, Object)) -->
-
-   ['Replace protector ~a when try add ~p into db ~a~n'
-   - [Protector, Object, DB_Key]].
-
-%prolog:message(db_ungrounded_key(Key, Key_Value, Action)) -->
-
-%   ['When try ~a the ungrounded key ~p = ~p was found'
-%   - [Action, Key, Key_Value]].
-
 
 
 
