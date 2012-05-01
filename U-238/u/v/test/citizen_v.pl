@@ -11,9 +11,12 @@
         obj_field(Term, sex, Sex),
         Sex == man,
         obj_field(Term, age, Age),
+        integer(Age),
         between(18, 25, Age), !.
 
-'citizen_v?'(_, class, citizen_v).
+'citizen_v?'(Term, class, citizen_v) :-
+
+        \+ 'citizen_v?'(Term, class, callup_v).
 
 'citizen_v?'(Term, age, Age) :-
 

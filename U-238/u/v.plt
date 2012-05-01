@@ -365,8 +365,8 @@ test(obj_parents1_1,
 test(obj_parents2_1) :-
 
    obj_construct(citizen_v, 
-                 [sex, surname, country], 
-                 [man, 'Mayakovsky', ['Soviet Union']],
+                 [sex, surname, country, birthday], 
+                 [man, 'Mayakovsky', ['Soviet Union'], 1994],
                  Man1),
    New_Parents_Order = [man_v, citizen_v, object_v, object_base_v],
    obj_parents(Man1, New_Parents_Order, Man2),

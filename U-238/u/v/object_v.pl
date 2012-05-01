@@ -61,13 +61,21 @@
   overrided) is performed as duplicate_term/2.
 */
 
+:- use_module(u(v)).
+
 %
 % the class evaluation can be overrided
 %
 
 'object_v?'(Term, class, Class) :-
 
-  functor(Term, Class, _).
+   var(Class), !,
+   functor(Term, Class, _).
+
+'object_v?'(Term, class, Class) :-
+
+   obj_field(Term, class, Real_Class),
+   Class = Real_Class.
 
 %
 % the functor evalutation should not be overrided
