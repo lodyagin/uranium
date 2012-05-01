@@ -68,7 +68,7 @@
 error:has_type(Functor/Arity, X) :-
 
   atom(Functor),
-  has_type(nonneg, Arity),
+  %has_type(nonneg, Arity),
   functor(X, Functor, Arity).
 
 %% check_inst(@Arg, @Ctx) is det.
