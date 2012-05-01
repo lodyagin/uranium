@@ -46,6 +46,7 @@
 :- use_module(library(ordsets)).
 :- use_module(u(ur_atoms)).
 :- use_module(u(v)).
+:- use_module(u(internet/rfc822)).
 
 new_class(http_headers_v, object_v, []).
 
@@ -210,10 +211,12 @@ http_headers_list_obj([Option|Tail], Class_Fields,
                       Obj0, Obj, Bulk0, Bulk, Ctx) :-
 
    nonvar(Option),
-   (  Option = (Header = Value)
-   ;  functor(Option, Header, 1), arg(1, Option, Value)
+   (  Option = (Header0 = Value)
+   ;  functor(Option, Header0, 1), arg(1, Option, Value)
    ),
    !,
+
+   header_prolog_http(Header=Value, Header0=Value),
 
    must_be(atom, Header),
    (  obj_field(Obj0, fail, Header, Value)
@@ -274,6 +277,14 @@ header_prolog_http(PHeader=Value, HHeader=Value) :-
    ;  capitalize_atom(PHeader, HHeader)
    ).
 
+header_prolog_http(PHeader=Value, HHeader=Value) :-
+
+   nonvar(HHeader), !,
+   (  concat_atom(HTokens, '-', HHeader)
+   -> maplist(downcase_atom, HTokens, PTokens),
+      concat_atom(PTokens, '_', PHeader)
+   ;  downcase_atom(HHeader, PHeader)
+   ).
 
 send_headers(Stream, Obj) :-
 
@@ -289,8 +300,24 @@ out_headers_list([Header=Value|T], Stream) :-
 
 
 
+%% read_headers(+Stream, -Obj)
+%
+% Read all http headers from Stream. Exit after reading 2*CRLF from
+% the stream.
+
 read_headers(Stream, Obj) :-
 
-   read_line_to_codes(Stream, Line),
-   true.
+   read_headers2(Stream, List, [], _, []),
+   http_headers_list_obj(List, Obj).
+
+read_headers2(Stream, List0, List, Str0, Str) :-
+
+   % timeout should be set on the stream as a property before the call
+   read_line_to_codes(Stream, Str0, Str1),
+   (  phrase(field(Name, Value), Str0, Str1)
+   -> List0 = [Name=Value|List],
+      read_headers2(Stream, List0, List, Str1, Str)
+   ;  Str == "\r\n"
+   ).
+
 

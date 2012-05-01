@@ -1,10 +1,24 @@
 :- begin_tests(http_headers_v).
 :- use_module(http_headers_v).
 
-test(list_to_http_headers_v) :-
+test(list_to_http_headers_v1) :-
 
    Headers = [date = 'Tue, 03 Apr 2012 19:32:50 GMT',
               transfer_encoding = chunked],
+   Headers_Ref = ['Date' = 'Tue, 03 Apr 2012 19:32:50 GMT',
+                  'Transfer-Encoding' = chunked],
+   http_headers_list_obj(Headers, Obj),
+   obj_parents(Obj, Parents),
+   assertion(Parents ==
+            [http_general_headers_v, http_headers_v,
+             object_v, object_base_v]),
+   http_headers_list_obj(Headers2, Obj),
+   assertion(Headers2 == Headers_Ref).
+
+test(list_to_http_headers_v2) :-
+
+   Headers = ['DatE' = 'Tue, 03 Apr 2012 19:32:50 GMT',
+              'Transfer-Encoding' = chunked],
    Headers_Ref = ['Date' = 'Tue, 03 Apr 2012 19:32:50 GMT',
                   'Transfer-Encoding' = chunked],
    http_headers_list_obj(Headers, Obj),
@@ -19,6 +33,20 @@ test(list_to_http_headers_v_functor_form) :-
 
    Headers = [date('Tue, 03 Apr 2012 19:32:50 GMT'),
               transfer_encoding(chunked)],
+   Headers_Ref = ['Date' ='Tue, 03 Apr 2012 19:32:50 GMT',
+                  'Transfer-Encoding' = chunked],
+   http_headers_list_obj(Headers, Obj),
+   obj_parents(Obj, Parents),
+   assertion(Parents ==
+            [http_general_headers_v, http_headers_v,
+             object_v, object_base_v]),
+   http_headers_list_obj(Headers2, Obj),
+   assertion(Headers2 == Headers_Ref).
+
+test(list_to_http_headers_v_functor_form2) :-
+
+   Headers = ['DatE'('Tue, 03 Apr 2012 19:32:50 GMT'),
+              'Transfer-Encoding'(chunked)],
    Headers_Ref = ['Date' ='Tue, 03 Apr 2012 19:32:50 GMT',
                   'Transfer-Encoding' = chunked],
    http_headers_list_obj(Headers, Obj),
