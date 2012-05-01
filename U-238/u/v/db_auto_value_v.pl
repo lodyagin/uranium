@@ -81,20 +81,20 @@ new_class(db_auto_value_v, db_object_v,
 'db_auto_value_v?'(Obj, auto_value, New_Value) :-
 
    obj_field(Obj, next_seed_pred, Pred),
-   Ctx1 = context('db_auto_value_v?'/3, 'next_seed_pred field is unbound'),
-   check_inst(Pred, Ctx1),
-   must_be(callable, Pred),
-   obj_field(Obj, auto_value_seed, Old_Value),
-   call(Pred, Old_Value, New_Value),
-
-   (  named_args_weak_unify(Obj, [db_key, db_ref], DB_Addr),
-      ground(DB_Addr)
-   ->
-      DB_Addr = [DB_Key, _],
-      obj_rewrite(Obj, [auto_value_seed], _, [New_Value], Obj1),
-      db_put_object(DB_Key, overwrite, Obj1, _, replaced)
+   (  var(Pred) -> true
    ;
-      true
+      obj_field(Obj, auto_value_seed, Old_Value),
+      call(Pred, Old_Value, New_Value),
+
+      (  named_args_weak_unify(Obj, [db_key, db_ref], DB_Addr),
+         ground(DB_Addr)
+      ->
+         DB_Addr = [DB_Key, _],
+         obj_rewrite(Obj, [auto_value_seed], _, [New_Value], Obj1),
+         db_put_object(DB_Key, overwrite, Obj1, _, replaced)
+      ;
+         true
+      )
    ).
 
 %% db_bind_auto(DB_Key, Obj) is det
@@ -118,10 +118,8 @@ db_bind_auto(DB_Key, Obj) :-
    check_inst(Obj, Ctx),
    check_object_arg(Obj, Ctx, _),
 
-   %findall(Ancestor, obj_same_or_descendant(Obj, Ancestor), Ancestors),
-   
-   foreach(
-           (  %member(Class_Name, Ancestors), % up to hierarchy
+   findall(p(Field, Value),
+           (  % up to hierarchy
               obj_same_or_descendant(Obj, Class_Name),
               named_args_unify(DB_Key, _,
                                [class_name, field_name, auto_value],
@@ -129,6 +127,9 @@ db_bind_auto(DB_Key, Obj) :-
                                AV_Obj),
               obj_same_or_descendant(AV_Obj, db_auto_value_v)
            ),
+           Setters),
+
+   foreach(member(p(Field, Value), Setters),
            ignore(obj_field(Obj, Field, Value))
           ).
 

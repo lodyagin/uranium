@@ -52,8 +52,8 @@ test(auto_value3, [setup(people_db), fail]) :-
 test(db_bind_auto,
      [setup(people_db),
       LOL =@= [[man_v, _, a],
-               [citizen_v, 2, aa],
-               [callup_v, 103, aaa]
+               [citizen_v, 1, aa],
+               [callup_v, 101, aaa]
                ]
      ]) :-
 
