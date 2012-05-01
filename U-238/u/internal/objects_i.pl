@@ -369,7 +369,11 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx) :-
    (   objects:field_info(Class_Id, Field_Name, Type, _, Is_Eval)
    *->
        (   Is_Eval == true
-       ->  once(objects:field(Class_Id, Field_Name, Obj, Value))
+       ->  debug(evals, 'Before the call: ~p',
+                 [field(Class_Id, Field_Name, Obj, Value)]),
+           once(objects:field(Class_Id, Field_Name, Obj, Value)),
+           debug(evals, 'After the call: ~p',
+                 [field(Class_Id, Field_Name, Obj, Value)])
        ;   objects:field(Class_Id, Field_Name, Obj, Value)
        )
    ;
