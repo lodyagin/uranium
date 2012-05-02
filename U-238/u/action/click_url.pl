@@ -141,8 +141,8 @@ url_cmn(Method, URL_Expr, Form, Browser, User0, User, Page, Ctx) :-
    ),
 
    (  var(User0) -> true
-   ;  obj_field(User0, cookie_db_key, Cookies_DB),
-      obj_field(User0, current_url, Referer)
+   ;  eval_obj_expr(User0/www_address/cookies_db, Cookies_DB),
+      eval_obj_expr(User0/www_address/http_response_url, Referer)
    ),
 
    obj_field(Browser, proxy_settings, Proxy),
@@ -160,8 +160,8 @@ url_cmn(Method, URL_Expr, Form, Browser, User0, User, Page, Ctx) :-
              Url, Form, Page),
    
    % Store the new page location in the User object
-   eval_obj_expr(Page / www_address / http_response_url, Page_Url),
-   obj_rewrite(User0, [current_url], _, [Page_Url], User).
+   obj_field(Page, www_address, New_WWW_Address),
+   obj_rewrite(User0, [www_address], _, [New_WWW_Address], User).
 
 
 

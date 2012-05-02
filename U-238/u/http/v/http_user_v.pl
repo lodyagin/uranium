@@ -33,29 +33,21 @@
 
 % it is a 'free' internet user
 new_class(http_user_v, object_v,
-          [cookie_db_key : cookies_db,
-           current_url
+          [www_address
           ]).
 
 copy(http_user_v, From, To) :-
 
-   obj_reset_fields([cookie_db_key], From, To),
-
-   obj_field(From, cookie_db_key, Old_DB_Key),
-   (   ground(Old_DB_Key)
-   ->  use_module(u(http/cookies_man)),
-       new_cookie_db_key(New_DB_Key),
-       use_module(u(vd)),
-       db_copy(Old_DB_Key, New_DB_Key),
-       obj_field(To, cookie_db_key, New_DB_Key)
-   ;   true
-   ).
-
+   % TODO this step must be performed by v module automatically
+   obj_rewrite(From, [www_address], [Old_WWW], [New_WWW], To),
+   obj_copy(Old_WWW, New_WWW).
 
 new_http_user(User) :-
 
-  new_cookie_db_key(Cookies_DB),
-  obj_construct(http_user_v, [cookie_db_key], [Cookies_DB], User).
+   % TODO it's ugly
+   new_cookie_db_key(Cookies_DB),
+   obj_construct(www_address_v, [cookies_db], [Cookies_DB], WWW),
+   obj_construct(http_user_v, [www_address], [WWW], User).
 
 
 typedef(cookies_db, [pretty_print - cookies_db_pretty_print]).
