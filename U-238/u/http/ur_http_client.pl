@@ -38,6 +38,7 @@
 :- use_module(library(socket)).
 :- use_module(library(debug)).
 :- use_module(v(http_headers_v)).
+:- use_module(u(internet/common_internet_data)).
 
 :- predicate_options(http_open/4, 2,
 		     [ http_version(atom), % default is 1.1
@@ -119,9 +120,6 @@ guarded_send_request(Out, Request_URI, Headers_In, Options, Ctx) :-
 force_close(S1, S2) :-
 	close(S1, [force(true)]),
 	close(S2, [force(true)]).
-
-default_port(https, 443) :- !.
-default_port(_,	    80).
 
 host_and_port(Host, DefPort, DefPort, Host) :- !.
 host_and_port(Host, _,       Port,    Host:Port).
