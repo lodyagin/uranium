@@ -26,7 +26,7 @@
 % post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(rfc2616,
-          [response_header//1
+          [response//1
            ]).
 
 /** <module> RFC 2616 - Hypertext Transfer Protocol -- HTTP/1.1
@@ -110,7 +110,7 @@ http_version(version(Major, Minor)) -->
 % derived from http_invalid_headers_v (see field `headers` of Response).
 %
 % It stops after reading crlf (do not read an entity body)
-response_header(Response) -->
+response(Response) -->
 
    status_line(HTTP_Version, Status_Code, Reason_Phrase),
    headers(Headers),
