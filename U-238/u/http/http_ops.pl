@@ -190,7 +190,7 @@ get_cookies_headers(Cookies_DB_Key, URL, Headers) :-
          % prepare cookies
          url_host_path(URL, Host, Path),
          retrieve_cookies_headers(Cookies_DB_Key, Host, Path,
-                                  Headers)
+                                  Headers, [])
         ;
          Headers = [].
 

@@ -30,7 +30,7 @@
           [ store_cookies/5,  % +DB_Key, +Domain, +Path,
                               % +Headers0, -Headers
             
-            retrieve_cookies_headers/4,
+            retrieve_cookies_headers/5,
             new_cookie_db_key/1
           ]).
 
@@ -169,12 +169,11 @@ load_cookie(DB_Key, Request_Host, Uri_Path, Set_Cookie) :-
 
        
   
+%% retrieve_cookies_headers(+DB_Key, ?Domain, ?Path, -Headers0, ?Headers)
 %
-% Get cookies headers before http request
-% 
-% retrieve_cookies_headers(+DB_Key, ?Domain, ?Path, -Headers)
+% Get cookies headers for request to Domain/Path as a difference list
 
-retrieve_cookies_headers(DB_Key, Domain, Path, Headers) :-
+retrieve_cookies_headers(DB_Key, Domain, Path, Headers0, Headers) :-
 
    atom(DB_Key),
 
@@ -187,10 +186,10 @@ retrieve_cookies_headers(DB_Key, Domain, Path, Headers) :-
            Cookies),
 
    (  Cookies = []
-   -> Headers = []
+   -> Headers0 = Headers
    ;  phrase(cookies_headers(Cookies), Value_Codes, []),
       atom_codes(Value, Value_Codes),
-      Headers = [request_header('Cookie' = Value)]
+      Headers0 = [request_header('Cookie' = Value)|Headers]
    ).
   
 
