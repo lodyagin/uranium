@@ -295,7 +295,7 @@ out_headers_list([], _) :- !.
 
 out_headers_list([Header=Value|T], Stream) :-
 
-   format(Stream, '~a: ~a\r\n', [Header, Value]),
+   format(Stream, '~a: ~w\r\n', [Header, Value]),
    out_headers_list(T, Stream).
 
 
