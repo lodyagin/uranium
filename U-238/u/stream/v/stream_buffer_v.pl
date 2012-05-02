@@ -1,4 +1,6 @@
-:- module(stream_buffer_v, []).
+:- module(stream_buffer_v,
+          [get_list_at_position/4
+           ]).
 
 :- use_module(u(v)).
 :- use_module(u(vd)).
@@ -41,43 +43,51 @@ get_list_at_position(Buffer, Packet_Num, List0, List) :-
                      diff_list_head, diff_list_tail],
                     [Stream_Id, Packet_Num,
                      List0, List], New_Packet),
-      store_packet(Packet_DB, Stream_Id, Packet_Num, New_Packet,
-                   List0)
+      store_packet(Packet_DB, New_Packet)
    ).
 
 get_data(Stream, List0, List) :-
 
    (  at_end_of_stream(Stream)
-   -> List0 = [], List = List0
+   -> close(Stream),
+      List0 = [], List = List0
    ;
       wait_for_input([Stream], [Stream], infinite),
       % timeout should be set on the stream itself as a property
 
       (  at_end_of_stream(Stream)
-      -> List0 = [], List = List0
+      -> close(Stream),
+         List0 = [], List = List0
       ;  read_pending_input(Stream, List0, List)
       )
    ).
 
-store_packet(Packet_DB, Stream_Id, Packet_Num, Packet, List) :-
+store_packet(Packet_DB, Packet) :-
 
-   (  Packet_Num > 1
-   ->
-      succ(Pred_Packet_Num, Packet_Num),
-      named_args_unify(Packet_DB, stream_buffer_packet_v,
-                       [stream_id, packet_num],
-                       [Stream_Id, Pred_Packet_Num],
-                       Pred_Packet),
-      obj_field(Pred_Packet, diff_list_tail, List),
-      
-      db_put_object(Packet_DB, throw, Pred_Packet, _, replaced)
-   ;
-      true
-   ),
-
+   obj_unify(Packet,
+             [stream_id, packet_num, diff_list_head],
+             [Stream_Id, Packet_Num, List]),
+   
+   succ(Pred_Packet_Num, Packet_Num),
+   refresh_packets(Packet_DB, Stream_Id, Pred_Packet_Num, List),
    db_put_object(Packet_DB, Packet).
       
 
+refresh_packets(_, _, 0, _) :- !.
+
+refresh_packets(Packet_DB, Stream_Id, Packet_Num, Tail) :-
+
+   % TODO optimize with usage of db_ref instead of packet_num
+   named_args_unify(Packet_DB, stream_buffer_packet_v,
+                    [stream_id, packet_num,
+                     diff_list_head, diff_list_tail],
+                    [Stream_Id, Packet_Num,
+                     List, Tail],
+                    Packet), !,
+   db_put_object(Packet_DB, throw, Packet, _, replaced),
+
+   succ(Pred_Packet_Num, Packet_Num),
+   refresh_packets(Packet_DB, Stream_Id, Pred_Packet_Num, List).
 
 
 

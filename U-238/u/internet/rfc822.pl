@@ -31,6 +31,8 @@
            ]).
 
 /** <module> RFC 822 - ARPA Internet Text Messages
+
+  TODO rfc 2047 (MIME)
 */
 
 /*
@@ -70,7 +72,9 @@ field_name(Name) -->
 
 field_name_char(_) --> ( ctl(_) ; " " ; ":" ), !, { fail }.
 
-field_name_char(C) --> [C].
+field_name_char(C) -->
+
+   char(C).
 
 field_name_chars([C0|C]) -->
 
@@ -205,7 +209,9 @@ text_char(C0) -->
       }
    ).
 
-text_char(C) --> [C].
+text_char(C) -->
+
+   char(C).
 
 text_chars([C0|Str0], Str) -->
 
@@ -281,7 +287,7 @@ qtext_char(_, _) -->
 
 qtext_char([C|Str], Str) -->
 
-   [C].
+   char(C).
 
 qtext_chars(Str0, Str) -->
 
@@ -339,7 +345,7 @@ ctext_char(_, _) -->
 
 ctext_char([C|Str], Str) -->
 
-   [C].
+   char(C).
 
 ctext_chars(Str0, Str) -->
 
