@@ -28,8 +28,7 @@
 
 
 :- module(ur_http_client,
-          [http_open/4,
-	   parse_url_ex/2
+          [http_open/4
            ]).
 
 /** <module> Uranium http low-level client.
@@ -55,26 +54,37 @@ http_open(URL, Options, Headers_In, Stream) :-
    ),
    http_open_parts(Parts, Options, Headers_In, Stream, Ctx).
 
-http_open_parts(Parts, Options, Headers_In, Stream, Ctx) :-
+http_open_parts(Parts, Options, Headers_In0, Stream, Ctx) :-
+
+   parts_request_uri(Parts, Request_URI),
+   parts_host_port(Parts, Host, Port, Host_Port),
+   
+   % it is rec acc to rfc 2616, 14.23
+   add_host_header(Host_Port, Headers_In0, Headers_In),
+   open_socket(Host:Port, In, Out, Options),
+   send_request(In, Out, Request_URI, Headers_In, Options, Ctx),
+   stream_pair(Stream, In, Out).
+
+add_host_header(_, Headers, Headers) :-
+
+   obj_field(Headers, fail, host, Host),
+   nonvar(Host), !.
+
+add_host_header(Host_Port, Headers0, Headers) :-
+
+   format(atom(Host_Port_Atom), '~w', [Host_Port]),
+   http_headers_list_obj(Headers_List, Headers0),
+   http_headers_list_obj([host(Host_Port_Atom)|Headers_List],
+                         Headers).
+
+parts_host_port(Parts, Host, Port, Host_Port) :-
 
    memberchk(host(Host), Parts),
    parts_scheme(Parts, Scheme),
    default_port(Scheme, Default_Port),
    url_part(port(Port), Parts, Default_Port),
-   parts_request_uri(Parts, Request_URI),
-
-   open_socket(Host:Port, In, Out, Options),
-
-   %host_and_port(Host, Default_Port, Port, Host_Port),
-   send_request(In, Out, Request_URI, Headers_In, Options, Ctx),
-   stream_pair(Stream, In, Out).
-
-%	send_headers(+Out, +In, -InStream,
-%                    +Host, +Request_URI, +Parts,
-%                    +Headers, +Options, Ctx) is det.
-%
-%	Send header to Out and process reply.  If there is an error or
-%	failure, close In and Out and return the error or failure.
+   host_and_port(Host, Default_Port, Port, Host_Port).
+   
 
 send_request(In, Out, Request_URI, Headers_In, Options, Ctx) :-
 
@@ -103,8 +113,6 @@ guarded_send_request(Out, Request_URI, Headers_In, Options, Ctx) :-
    send_headers(Out, Headers_In),
    write(Out, '\r\n'),
    flush_output(Out).
-%   read_headers(In, Headers_Out),
-%   do_open(Code, Comment, Lines, Options, Parts, In, Stream).
 
 force_close(S1, S2) :-
 	close(S1, [force(true)]),
@@ -113,8 +121,8 @@ force_close(S1, S2) :-
 default_port(https, 443) :- !.
 default_port(_,	    80).
 
-%host_and_port(Host, DefPort, DefPort, Host) :- !.
-%host_and_port(Host, _,       Port,    Host:Port).
+host_and_port(Host, DefPort, DefPort, Host) :- !.
+host_and_port(Host, _,       Port,    Host:Port).
 
 map_method(get,  'GET').
 map_method(head, 'HEAD').
