@@ -108,8 +108,10 @@ guarded_send_request(Out, Request_URI, Headers_In, Options, Ctx) :-
    -> true
    ;  throw(error(domain_error(http_method, Method), Ctx))
    ),
-   select_option(http_version(HTTP_Version), Options1, _, '1.1'),
-   format(Out, '~a ~a HTTP/~a\r\n', [Method_Name, Request_URI, HTTP_Version]),
+   select_option(http_version(version(Major, Minor)), Options1, _,
+                 version(1, 1)),
+   format(Out, '~a ~a HTTP/~d.~d\r\n',
+          [Method_Name, Request_URI, Major, Minor]),
    send_headers(Out, Headers_In),
    write(Out, '\r\n'),
    flush_output(Out).
