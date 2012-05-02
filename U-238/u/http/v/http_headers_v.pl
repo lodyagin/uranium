@@ -38,6 +38,7 @@
 
 :- module(http_headers_v,
           [http_headers_list_obj/2,   % ?List, ?Obj
+           %http_headers_list_obj/3,   % ?List0, ?List, ?Obj
            read_headers/2,            % +Stream, -Obj
            send_headers/2             % +Stream, +Obj
            ]).
@@ -145,12 +146,26 @@ new_class(http_invalid_bulk_headers_v,
 % list and http_headers_v obj family.  At least one
 % argument must be instantiated
 
-% http_headers_list_obj(+List, -Obj)
-
 http_headers_list_obj(List, Obj) :-
 
-   nonvar(List), !,
    Ctx = context(http_headers_list_obj/2, _),
+   http_headers_list_obj_cmn(List, Obj, Ctx).
+
+% % http_headers_list_obj(?List0, ?List, ?Obj)
+% %
+% % This is a difference list version of http_headers_list_obj/2
+
+% http_headers_list_obj(List0, List, Obj) :-
+
+%    Ctx = context(http_headers_list_obj/3, _),
+%    http_headers_list_obj_cmn(List0, List, Obj, Ctx).
+
+
+% http_headers_list_obj_cmn(+List, -Obj, Ctx)
+
+http_headers_list_obj_cmn(List, Obj, Ctx) :-
+
+   nonvar(List), !,
    obj_construct(http_headers_v, [], [], Obj0),
    findall(fields(Class, Fields),
            (  member(Type,
@@ -186,9 +201,9 @@ http_headers_list_obj(List, Obj) :-
 
    obj_sort_parents(Obj2, Normal_Parents_Order, Obj).
 
-% http_headers_list_obj(-List, +Obj)
+% http_headers_list_obj(-List0, +Obj, +Ctx)
 
-http_headers_list_obj(List, Obj) :-
+http_headers_list_obj_cmn(List, Obj, _) :-
 
    nonvar(Obj), !,
    obj_rewrite(Obj, weak, ['@bulk'], [Bulk], [_], Obj1),
@@ -197,10 +212,9 @@ http_headers_list_obj(List, Obj) :-
    append(List1, Bulk, List2),
    maplist(header_prolog_http, List2, List).
 
-http_headers_list_obj(_, _) :-
+http_headers_list_obj_cmn(_, _, Ctx) :-
 
    % At least one arg should be instantiated
-   Ctx = context(http_headers_list_obj/2, _),
    throw(error(instantiation_error, Ctx)).
 
 
@@ -230,6 +244,20 @@ http_headers_list_obj([Option|Tail], Class_Fields,
 http_headers_list_obj(X, _, _, _, _, _, Ctx) :-
 
    throw(error(type_error(option_list, X), Ctx)).
+
+% %% add_header(+Obj0, +Name, +Value, -Obj)
+% %
+% % Add new header, downcast Obj appropriately
+
+% add_header(Obj0, Name, Value, Obj) :-
+
+%    Ctx = context(add_header/4, _),
+%    check_inst(Obj0, Ctx),
+%    check_ibject_arg(Obj0, Ctx, _),
+%    must_be(atom, Name),
+%    must_be(atom, Value),
+
+
 
 downcast_headers(Header, Value, Class_Fields,
                  Obj0, Obj, Bulk0, Bulk, _) :-
