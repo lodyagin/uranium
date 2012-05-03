@@ -38,6 +38,7 @@
 
 :- use_module(u(v)).
 :- use_module(u(ur_fixed)).
+:- use_module(u(logging)).
 
 % arithmetic evaluations
 

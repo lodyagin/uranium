@@ -187,9 +187,6 @@ step(Num, Exec_List, Check_List, Options) :-
     % Реализация паузы.
     (memberchk(pause(after), Options) -> get_char(_); true).
 
-% Переворачивает аргументы state:clear_state/2
-clear_state_rev(Object, Session) :- clear_state(Session, Object).
-
 %
 % action_do(+Options, :Goal, -Exec_Session)
 %
