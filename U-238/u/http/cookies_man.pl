@@ -30,6 +30,7 @@
           [ store_cookies/5,  % +DB_Key, +Domain, +Path,
                               % +Headers0, -Headers
             
+            retrieve_cookies_headers_/5, % deprecated
             retrieve_cookies_headers/5,
             new_cookie_db_key/1
           ]).
@@ -169,7 +170,33 @@ load_cookie(DB_Key, Request_Host, Uri_Path, Set_Cookie) :-
 
        
   
-%% retrieve_cookies_headers(+DB_Key, ?Domain, ?Path, -Headers0, ?Headers)
+%% retrieve_cookies_headers_(+DB_Key, ?Domain, ?Path, -Headers0, ?Headers)
+%
+% Get cookies headers for request to Domain/Path as a difference list
+%
+% Deprecated
+% @deprecated
+
+retrieve_cookies_headers_(DB_Key, Domain, Path, Headers0, Headers) :-
+
+   atom(DB_Key),
+
+   write_log(['Extract cookies from', DB_Key, 'for',
+              Domain, '/', Path],
+             [logger(cookies), lf(1, before), lf(1)]),
+   
+   findall(Set_Cookie,
+           load_cookie(DB_Key, Domain, Path, Set_Cookie),
+           Cookies),
+
+   (  Cookies = []
+   -> Headers0 = Headers
+   ;  phrase(cookies_headers(Cookies), Value_Codes, []),
+      atom_codes(Value, Value_Codes),
+      Headers0 = [request_header('Cookie' = Value)|Headers]
+   ).
+  
+%% retrieve_cookies_headers_(+DB_Key, ?Domain, ?Path, -Headers0, ?Headers)
 %
 % Get cookies headers for request to Domain/Path as a difference list
 
@@ -189,7 +216,7 @@ retrieve_cookies_headers(DB_Key, Domain, Path, Headers0, Headers) :-
    -> Headers0 = Headers
    ;  phrase(cookies_headers(Cookies), Value_Codes, []),
       atom_codes(Value, Value_Codes),
-      Headers0 = [request_header('Cookie' = Value)|Headers]
+      Headers0 = [cookie(Value)|Headers]
    ).
   
 
