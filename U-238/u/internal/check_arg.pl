@@ -1,4 +1,4 @@
-% -*- fill-column: 65; -*- 
+% -*- fill-column: 65; -*-
 %
 % This file is a part of Uranium, a general-purpose functional
 % test platform.
@@ -11,7 +11,7 @@
 % License as published by the Free Software Foundation; either
 % version 2.1 of the License, or (at your option) any later
 % version.
-% 
+%
 % This library is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -35,18 +35,18 @@
 
            check_existing_class_list_arg/3, % +Class_List, +Ctx,
                                             % -Class_Id_List inst+
-           
+
            check_field_name/2,         % inst+
            check_fields_arg/2,         % not inc. inst (inst-)
            check_inst/2,
            check_list_fast_arg/2,
            check_values_arg/3, % +Field_List, +Value_List, +Ctx
                                % inst-
-           
+
            check_values_partlist_arg/3, % +Field_List,
                                         % +Value_List, +Ctx
                                         % inst-
-           
+
            check_object_arg/3,         % +Obj, +Ctx, -Class_Id inst-
            check_rebase_rule/4,  % +Rule, +Ctx, -Old_Base, -New_Base
                                  % -inst+
@@ -148,6 +148,8 @@ check_existing_class_list_arg2([Class|CT], Ctx, [Class_Id|CIT]) :-
    check_existing_class_list_arg2(CT, Ctx, CIT).
 
 
+%% check_db_key(?DB_Key, +Ctx)
+% Check valid DB_Key. Also check whether it is instantiated.
 check_db_key(DB_Key, Ctx) :-
 
    check_inst(DB_Key, Ctx),

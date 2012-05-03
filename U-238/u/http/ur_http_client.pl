@@ -46,6 +46,24 @@
 		       timeout(number) % default is `ifinite`
 		     ]).
 
+%% http_open(URL, Options, Headers_In, Stream) is semidet.
+%
+%  Sends HTTP request to URL with Headers_In. Return the
+%  streampair. User must read the response.
+%
+%  Guarantee that the socket connection is either (good) open or
+%  closed after the call.
+%
+%  @param Options
+%   * http_version(Major, Minor)
+%   * method - get, head, post (get is the default)
+%   * timeout(Seconds)  possible value is `infinite`
+%
+%  @prarm Headers_In headers. If the `host` header is missing it
+%  will be generated from URL by rfc2616 rules.
+%
+%  @param Stream - the streampair for both input and output.
+
 http_open(URL, Options, Headers_In, Stream) :-
 
    Ctx = context(http_open/4),
