@@ -325,22 +325,25 @@ count_el2([H | T], El, Already_Count, Count) :-
    count_el2(T, El, Count1, Count).
 
 
-trim_list(_, [], [], _) :- !.
+trim_list(_, _, [], []) :- !.
 
-trim_list(left, [H|T], [H|T], Pred) :- \+ call(Pred, H), !.
+trim_list(left, U, [H|T], [H|T]) :-
 
-trim_list(left, [_|T], Trimmed, Pred) :-
-    trim_list(left, T, Trimmed, Pred).
+   \+ memberchk(H, U), !.
 
-trim_list(right, Untrimmed, Trimmed, Pred) :-
+trim_list(left, U, [_|T], Trimmed) :-
+
+   trim_list(left, U, T, Trimmed).
+
+trim_list(right, U, Untrimmed, Trimmed) :-
     nonvar(Untrimmed),
     reverse(Untrimmed, List1),
-    trim_list(left, List1, List2, Pred),
+    trim_list(left, U, List1, List2),
     reverse(List2, Trimmed).
 
-trim_list(both, Untrimmed, Trimmed, Pred) :-
-    trim_list(left, Untrimmed, L, Pred),
-    trim_list(right, L, Trimmed, Pred).
+trim_list(both, U, Untrimmed, Trimmed) :-
+    trim_list(left, U, Untrimmed, L),
+    trim_list(right, U, L, Trimmed).
 
 
 decode_prop_list(Prop_List, Field_Names, Field_Values) :-
@@ -416,7 +419,7 @@ write_delimited_atom([Head|Tail], Delimiter, First, Codes, CT) :-
 
    format(codes(Codes, CT1), '~a~p', [Del, Head]),
    write_delimited_atom(Tail, Delimiter, tail, CT1, CT).
-   
+
 
 
 % LU is a list of lists of the same size. Sort the first list and

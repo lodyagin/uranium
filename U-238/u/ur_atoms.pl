@@ -31,7 +31,8 @@
           [capitalize_atom/2,
            normalize_name/2,
            tolower/2,
-           trim_string/4,
+           trim_atom/4,
+           %trim_string/4,
            remove_quotes/2,
            replace_char/4,
            replace_chars/4
@@ -82,10 +83,16 @@ tolower(From, To) :-
         var(From), atom(To), downcase_atom(To, To), From = To
     ).
 
-trim_string(Side, Untrimmed, Trimmed, Pred) :-
-    string_to_list(Untrimmed, UL1),
-    trim_list(Side, UL1, TL1, Pred),
-    string_to_list(Trimmed, TL1).
+trim_atom(Side, Unwanted_Codes, Atom, Trimmed_Atom) :-
+
+   atom_codes(Atom, Codes),
+   trim_list(Side, Unwanted_Codes, Codes, Trimmed),
+   atom_codes(Trimmed_Atom, Trimmed).
+
+%trim_string(Side, Untrimmed, Trimmed, Pred) :-
+%    string_to_list(Untrimmed, UL1),
+%    trim_list(Side, UL1, TL1, Pred),
+%    string_to_list(Trimmed, TL1).
 
 remove_quotes(Q, NQ) :-
 
