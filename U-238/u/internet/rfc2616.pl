@@ -86,11 +86,30 @@ sp --> " ".
 crlf --> "\r\n".
 
 /*
+  3.1 HTTP Version
+
          HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
 */
 http_version(version(Major, Minor)) -->
 
    "HTTP/", number(Major), ".", number(Minor).
+
+/*
+  4.2 Message Headers
+
+  ... The field-content does not include any leading or trailing LWS:
+   linear white space occurring before the first non-whitespace
+   character of the field-value or after the last non-whitespace
+   character of the field-value. Such leading or trailing LWS MAY be
+   removed without changing the semantics of the field value.
+
+   *TODO*
+   Any LWS that occurs between field-content MAY be replaced with
+   a single SP before interpreting the field value or forwarding
+   the message downstream.
+*/
+
+% It is implemented in http_headers_v
 
 /*
 6 Response
@@ -129,10 +148,28 @@ headers(Headers_Obj) -->
 
 headers_list([Name=Value|Headers0], Headers) -->
 
-   field(Name, Value), !,
+   field(Name, _, Body_Tokens), !,
+   { body_value(Body_Tokens, Value) },
    headers_list(Headers0, Headers).
 
 headers_list(Headers, Headers) --> [].
+
+body_value(Tokens, Value) :-
+
+   body_value(Tokens, _, L2),
+   concat_atom(L2, ' ', Value).
+
+body_value([], _, []) :- !.
+
+body_value([' '], _, []) :- !.
+
+body_value([' '|T], first, T2) :- !,
+
+   body_value(T, t, T2).
+
+body_value([Token|L], _, [Token|L2]) :-
+
+   body_value(L, t, L2).
 
 /*
 6.1 Status-Line

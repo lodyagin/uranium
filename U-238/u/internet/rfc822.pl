@@ -26,7 +26,7 @@
 % post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(rfc822,
-          [field//2
+          [field//3
 	   %email_address//1
            ]).
 
@@ -53,16 +53,16 @@
                     specials tokens, or else consisting of texts>
 */
 
-field(Name, Body) -->
+field(Name, Body, Body_Tokens) -->
 
-   field_name(Name), ":", field2(Body).
+   field_name(Name), ":", field2(Body, Body_Tokens).
 
-field2(Body) -->
+field2(Body, Body_Tokens) -->
 
-   field_body(Str, []), !, crlf(_),
+   field_body(Str, Body_Tokens), !, crlf(_),
    { atom_codes(Body, Str) }.
 
-field2('') --> crlf(_).
+field2('', []) --> crlf(_).
 
 field_name(Name) -->
 
@@ -83,37 +83,41 @@ field_name_chars([C0|C]) -->
 
 field_name_chars([]) --> [].
 
-field_body(Str0, Str) -->
+field_body(Str, Token_List) -->
 
-   field_body_contents(Str0, Str1), !,
-   field_body_continuation(Str1, Str).
+   structured_field_body(Str, [], Token_List, []), !. % 3.1.4
 
-field_body_contents(Str0, Str) -->
+field_body(Str, []) -->
 
-   field_body_contents2_el(Str0, Str1),
-   field_body_contents2(Str1, Str).
+   text(Str, []). % 3.1.3
 
-field_body_contents2_el(Str0, Str) --> atom(Str0, Str), !.
+structured_field_body(Str0, Str, Tokens0, Tokens) -->
 
-field_body_contents2_el(Str0, Str) --> quoted_string(Str0, Str), !.
+   structured_body_el(Str0, Str1, Tokens0, Tokens1), !,
+   structured_field_body(Str1, Str, Tokens1, Tokens).
 
-field_body_contents2_el([C|Str], Str) --> specials(C), !.
+structured_field_body(Str, Str, Tokens, Tokens) -->
 
-field_body_contents2_el(Str0, Str) --> text(Str0, Str).
+   [].
 
-field_body_contents2(Str0, Str) -->
+structured_body_el(Str0, Str, [A|Tokens], Tokens) -->
 
-   field_body_contents2_el(Str0, Str1), !,
-   field_body_contents2(Str1, Str).
+   delimiters(Str0, Str, C), !,
+   { char_code(A, C) }.
 
-field_body_contents2(Str, Str) --> [].
+structured_body_el(Str0, Str, [A|Tokens], Tokens) -->
 
-field_body_continuation([C0|Str0], Str) -->
+   quoted_string(Str0, Str, Full_Str, []), !,
+   { atom_codes(A, Full_Str) }.
 
-   crlf(_), lwsp(C0), !,
-   field_body(Str0, Str).
+structured_body_el(Str0, Str, [A|Tokens], Tokens) -->
 
-field_body_continuation(Str, Str) --> [].
+   domain_literal(Str0, Str, Full_Str, []), !,
+   { atom_codes(A, Full_Str) }.
+
+structured_body_el(Str0, Str, [A|Tokens], Tokens) -->
+
+   atom(Str0, Str, A).
 
 /*
      3.3.  LEXICAL TOKENS
@@ -161,22 +165,22 @@ lwsp(C) --> { C = 32 }, [C], !.
 
 lwsp(C) --> htab(C).
 
-linear_white_space([C2|Str0], Str) -->
+linear_white_space([C2|Str0], Str, [C2|SS0], SS) -->
 
    crlf(_), lwsp(C2),  !, % <NB> remove crlf accourding to 3.1.1
-   linear_white_space2(Str0, Str).
+   linear_white_space2(Str0, Str, SS0, SS).
 
-linear_white_space([C2|Str0], Str) -->
+linear_white_space([C2|Str0], Str, [C2|SS0], SS) -->
 
    lwsp(C2),
-   linear_white_space2(Str0, Str).
+   linear_white_space2(Str0, Str, SS0, SS).
 
-linear_white_space2(Str0, Str) -->
+linear_white_space2(Str0, Str, SS0, SS) -->
 
-   linear_white_space(Str0, Str1), !,
-   linear_white_space2(Str1, Str).
+   linear_white_space(Str0, Str1, SS0, SS1), !,
+   linear_white_space2(Str1, Str, SS1, SS).
 
-linear_white_space2(Str, Str) --> [].
+linear_white_space2(Str, Str, SS, SS) --> [].
 
 specials(C) -->
 
@@ -186,12 +190,13 @@ specials(C) -->
                   ])
    }.
 
-delimiters([C|Str], Str) --> specials(C), !.
+delimiters([C|Str], Str, C) --> specials(C), !.
 
-delimiters(Str0, Str) --> linear_white_space(Str0, Str), !.
+% <NB> change to single space (3.4.2)
+delimiters(Str0, Str, 32) --> linear_white_space(Str0, Str, _, _), !.
 
-delimiters(Str0, Str) --> comment(Str0, Str).
-
+% <NB> change to single space (3.4.3)
+delimiters(Str0, Str, 32) --> comment(Str0, Str).
 
 /*
      text        =  <any CHAR, including bare    ; => atoms, specials,
@@ -228,10 +233,11 @@ text_chars(Str, Str) --> [].
 
 %    atom        =  1*<any CHAR except specials, SPACE and CTLs>
 
-atom([C0|Str0], Str) -->
+atom([C0|Str0], Str, Atom) -->
 
    atom_char(C0),
-   atom_chars(Str0, Str).
+   atom_chars(Str0, Str, Full_Tail, []),
+   { atom_codes(Atom, [C0|Full_Tail]) }.
 
 atom_char(_) -->
 
@@ -241,12 +247,12 @@ atom_char(C) -->
 
    char(C).
 
-atom_chars([C0|Str0], Str) -->
+atom_chars([C0|Str0], Str, [C0|SS0], SS) -->
 
    atom_char(C0), !,
-   atom_chars(Str0, Str).
+   atom_chars(Str0, Str, SS0, SS).
 
-atom_chars(Str, Str) --> [].
+atom_chars(Str, Str, SS, SS) --> [].
 
 /*
     quoted-string = <"> *(qtext/quoted-pair) <">; Regular qtext or
@@ -257,49 +263,57 @@ atom_chars(Str, Str) --> [].
                      linear-white-space>
 */
 
-quoted_string(Str0, Str) -->
+quoted_string(Str0, Str, SS0, SS) -->
 
-   "\"", %"
-   quoted_string2(Str0, Str),
-   "\"". %".
+   { Quote = "\"" %"
+   },
+   [Quote],
+   { Str0 = [Quote|Str1],
+     SS0 = [Quote|SS1]
+   },
+   quoted_string2(Str1, Str2, SS1, SS2),
+   [Quote],
+   { Str2 = [Quote|Str],
+     SS2 = [Quote|SS]
+   }.
 
-quoted_string2(Str0, Str) -->
+quoted_string2(Str0, Str, SS0, SS) -->
 
-   quoted_string2_el(Str0, Str1), !,
-   quoted_string2(Str1, Str).
+   quoted_string2_el(Str0, Str1, SS0, SS1), !,
+   quoted_string2(Str1, Str, SS1, SS).
 
-quoted_string2(Str, Str) --> [].
+quoted_string2(Str, Str, SS, SS) --> [].
 
-quoted_string2_el(Str0, Str) --> qtext(Str0, Str), !.
+quoted_string2_el(Str0, Str, SS0, SS) --> qtext(Str0, Str, SS0, SS), !.
 
-quoted_string2_el(Str0, Str) --> quoted_pair(Str0, Str).
+quoted_string2_el(Str0, Str, SS0, SS) --> quoted_pair(Str0, Str, SS0, SS).
 
-qtext(Str0, Str) -->
+qtext(Str0, Str, SS0, SS) -->
 
-   qtext_char(Str0, Str1),
-   qtext_chars(Str1, Str).
+   qtext_char(Str0, Str1, SS0, SS1),
+   qtext_chars(Str1, Str, SS1, SS).
 
-qtext_char(Str0, Str) -->
+qtext_char(Str0, Str, SS0, SS) -->
 
-   linear_white_space(Str0, Str), !.
+   linear_white_space(Str0, Str, SS0, SS), !.
 
-qtext_char(_, _) -->
+qtext_char(_, _, _, _) -->
 
    ( "\"" %"
    ; "\\" %"
    ; "\r" ), !,
    { fail }.
 
-qtext_char([C|Str], Str) -->
+qtext_char([C|Str], Str, [C|SS], SS) -->
 
    char(C).
 
-qtext_chars(Str0, Str) -->
+qtext_chars(Str0, Str, SS0, SS) -->
 
-   qtext_char(Str0, Str1), !,
-   qtext_chars(Str1, Str).
+   qtext_char(Str0, Str1, SS0, SS1), !,
+   qtext_chars(Str1, Str, SS1, SS).
 
-qtext_chars(Str, Str) --> [].
+qtext_chars(Str, Str, SS, SS) --> [].
 
 /*
      domain-literal =  "[" *(dtext / quoted-pair) "]"
@@ -309,6 +323,53 @@ qtext_chars(Str, Str) --> [].
                      "]", "\" & CR, & including
                      linear-white-space>
 */
+
+domain_literal(Str0, Str, SS0, SS) -->
+
+   { Quote = "[" },
+   [Quote],
+   { Str0 = [Quote|Str1],
+     SS0 = [Quote|SS1]
+   },
+   domain_literal2(Str1, Str2, SS1, SS2),
+   [Quote],
+   { Str2 = [Quote|Str], SS2 = [Quote|SS]}.
+
+domain_literal2(Str0, Str, SS0, SS) -->
+
+   domain_literal2_el(Str0, Str1, SS0, SS1), !,
+   domain_literal2(Str1, Str, SS1, SS).
+
+domain_literal2(Str, Str, SS, SS) --> [].
+
+domain_literal2_el(Str0, Str, SS0, SS) --> dtext(Str0, Str, SS0, SS), !.
+
+domain_literal2_el(Str0, Str, SS0, SS) --> quoted_pair(Str0, Str, SS0, SS).
+
+dtext(Str0, Str, SS0, SS) -->
+
+   dtext_char(Str0, Str1, SS0, SS1),
+   dtext_chars(Str1, Str, SS1, SS).
+
+dtext_char(Str0, Str, SS0, SS) -->
+
+   linear_white_space(Str0, Str, SS0, SS), !.
+
+dtext_char(_, _, _, _) -->
+
+   ( "[" ; "]" ; "\\" ; "\r" ), !, { fail }.
+
+dtext_char([C|Str], Str, [C|SS], SS) -->
+
+   char(C).
+
+dtext_chars(Str0, Str, SS0, SS) -->
+
+   dtext_char(Str0, Str1, SS0, SS1), !,
+   dtext_chars(Str1, Str, SS1, SS).
+
+dtext_chars(Str, Str, SS, SS) --> [].
+
 /*
      comment     =  "(" *(ctext / quoted-pair / comment) ")"
 
@@ -331,7 +392,7 @@ comment2(Str, Str) --> [].
 
 comment2_el(Str0, Str) --> ctext(Str0, Str), !.
 
-comment2_el(Str0, Str) --> quoted_pair(Str0, Str), !.
+comment2_el(Str0, Str) --> quoted_pair(Str0, Str, _, _), !.
 
 comment2_el(Str0, Str) --> comment(Str0, Str).
 
@@ -342,7 +403,7 @@ ctext(Str0, Str) -->
 
 ctext_char(Str0, Str) -->
 
-   linear_white_space(Str0, Str), !.
+   linear_white_space(Str0, Str, _, _), !.
 
 ctext_char(_, _) -->
 
@@ -363,7 +424,7 @@ ctext_chars(Str, Str) --> [].
      quoted-pair =  "\" CHAR                     ; may quote any char
 */
 
-quoted_pair([C|Str], Str) -->
+quoted_pair([C|Str], Str, [C|SS], SS) -->
 
    "\\", char(C).
 
