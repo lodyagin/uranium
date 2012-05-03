@@ -1,5 +1,5 @@
 :- module(stream_input,
-          [stream_to_lazy_list/3
+          [stream_to_lazy_list/5
           ]).
 
 :- use_module(u(v)).
@@ -8,10 +8,19 @@
 :- use_module(v(db_auto_value_v)).
 :- use_module(v(stream_buffer_v)).
 
-stream_to_lazy_list(Stream_DB, Stream, List) :-
+:- reexport(v(stream_buffer_v), [stream_close/1]).
 
+%% stream_to_lazy_list(+Stream_DB, +Stream, ?Buffer_Class, -Buffer, -List)
+stream_to_lazy_list(Stream_DB, Stream, Buffer_Class, Buffer, List) :-
+
+   Ctx = context(stream_to_lazy_list/5, _),
+   (  nonvar(Buffer_Class) -> true
+   ; Buffer_Class = stream_buffer_v
+   ),
+   check_existing_class_arg(Buffer_Class, Ctx),
+   
    init_stream_db(Stream_DB),
-   get_buffer(Stream_DB, Stream, Buffer),
+   get_buffer(Stream_DB, Stream, Buffer_Class, Buffer),
    freeze(List, read_input_stream_at(Buffer, 1, List)).
 
 read_input_stream_at(Buffer, Packet_Num, List) :-
@@ -21,22 +30,20 @@ read_input_stream_at(Buffer, Packet_Num, List) :-
    succ(Packet_Num, Next_Packet_Num),
    freeze(Tail, read_input_stream_at(Buffer, Next_Packet_Num, Tail)).
 
-get_buffer(Stream_DB, Stream, Buffer) :-
+get_buffer(Stream_DB, Stream, Buffer_Class, Buffer) :-
 
-   (  named_args_unify(Stream_DB, stream_buffer_v,
+   (  named_args_unify(Stream_DB, Buffer_Class,
                        [stream], [Stream], Buffer)
    -> true
    ;
       atom_concat(Stream_DB, '.packets', Packets_DB),
-      obj_construct(stream_buffer_v,
+      obj_construct(Buffer_Class,
                    [stream, packets_db],
                    [Stream, Packets_DB],
-                   Buffer),
-      db_bind_auto(Stream_DB, Buffer),
-      db_put_object(Stream_DB, Buffer)
+                   Buffer0),
+      db_bind_auto(Stream_DB, Buffer0),
+      db_put_object(Stream_DB, Buffer0, Buffer)
    ).
-
-%read_input_stream_at(
 
 init_stream_db(Stream_DB) :-
 
