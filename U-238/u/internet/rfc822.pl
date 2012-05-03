@@ -163,7 +163,12 @@ lwsp(C) --> htab(C).
 
 linear_white_space([C2|Str0], Str) -->
 
-   crlf(_), lwsp(C2),  % <NB> remove crlf accourding to 3.1.1
+   crlf(_), lwsp(C2),  !, % <NB> remove crlf accourding to 3.1.1
+   linear_white_space2(Str0, Str).
+
+linear_white_space([C2|Str0], Str) -->
+
+   lwsp(C2),
    linear_white_space2(Str0, Str).
 
 linear_white_space2(Str0, Str) -->
