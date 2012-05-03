@@ -1,5 +1,6 @@
 :- module(stream_buffer_v,
-          [get_list_at_position/4
+          [get_list_at_position/4,
+           stream_close/1
            ]).
 
 :- use_module(u(v)).
@@ -11,7 +12,7 @@ new_class(stream_buffer_v, object_v,
            packets_db
            %position_packet_map
            ],
-          [stream_id]
+          [stream]
          ).
 
 new_class(stream_buffer_packet_v, db_object_v,
@@ -89,6 +90,9 @@ refresh_packets(Packet_DB, Stream_Id, Packet_Num, Tail) :-
    succ(Pred_Packet_Num, Packet_Num),
    refresh_packets(Packet_DB, Stream_Id, Pred_Packet_Num, List).
 
+stream_close(Stream_Obj) :-
 
+   obj_field(Stream_Obj, stream, Stream),
+   close(Stream).
 
 
