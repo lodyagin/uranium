@@ -38,7 +38,6 @@
 
 :- module(http_headers_v,
           [http_headers_list_obj/2,   % ?List, ?Obj
-           %http_headers_list_obj/3,   % ?List0, ?List, ?Obj
            read_headers/2,            % +Stream, -Obj
            send_headers/2             % +Stream, +Obj
            ]).
@@ -105,6 +104,12 @@ new_class(http_request_headers_v, http_headers_v,
            user_agent
           ]).
 
+new_class(http_request_with_origin_headers_v, http_headers_v,
+          [
+           % rfc 6454
+           origin
+          ]).
+
 new_class(http_response_headers_v, http_headers_v,
           [
            % rfc 2616, 6.2 Response Header Fields
@@ -119,9 +124,42 @@ new_class(http_response_headers_v, http_headers_v,
            www_authenticate
           ]).
 
+% rfc 6265
+new_class(http_response_with_cookies_headers_v, http_headers_v,
+          [
+           % rfc 6265, 5.2.  The Set-Cookie Header
+           set_cookie
+          ]).
+
+new_class(http_request_with_cookies_headers_v, http_headers_v,
+          [
+           % rfc 6265, 5.4.  The Cookie Header
+           cookie
+          ]).
+
 new_class(http_experimental_1_0_request_headers_v, http_request_headers_v,
           [keep_alive]).
 
+new_class(http_websocket_general_headers_v, http_headers_v,
+          [
+           % rfc 6455, 4.3
+           sec_websocket_extensions,
+           sec_websocket_protocol,
+           sec_websocket_version
+          ]).
+
+new_class(http_websocket_request_headers_v, http_headers_v,
+          [
+           % rfc 6455, 4.3, client headers
+           sec_websocket_key
+          ]).
+
+new_class(http_websocket_response_headers_v, http_headers_v,
+          [
+           % rfc 6455, 4.3, server headers
+           sec_websocket_accept
+          ]).
+           
 % It contains not empty @bulk or contains mixed
 % request/response headers or miss required fields
 new_class(http_invalid_headers_v, http_headers_v, []).
@@ -170,7 +208,14 @@ http_headers_list_obj_cmn(List, Obj, Ctx) :-
    findall(fields(Class, Fields),
            (  member(Type,
                      [general, entity, request, response,
-                      experimental_1_0_request]
+                      experimental_1_0_request,
+                      websocket_general,
+                      request_with_origin,
+                      request_with_cookies,
+                      response_with_cookies,
+                      websocket_request,
+                      websocket_response
+                      ]
                     ),
               concat_atom([http, Type, headers_v], '_',
                           Class),
@@ -192,9 +237,15 @@ http_headers_list_obj_cmn(List, Obj, Ctx) :-
                            http_invalid_mixed_headers_v,
                            http_invalid_headers_v,
                            http_entity_headers_v,
+                           http_websocket_response_headers_v,
+                           http_response_with_cookies_headers_v,
                            http_response_headers_v,
+                           http_websocket_request_headers_v,
+                           http_request_with_cookies_headers_v,
                            http_experimental_1_0_request_headers_v,
+                           http_request_with_origin_headers_v,
                            http_request_headers_v,
+                           http_websocket_general_headers_v,
                            http_general_headers_v,
                            http_headers_v,
                            object_v, object_base_v],
@@ -244,19 +295,6 @@ http_headers_list_obj([Option|Tail], Class_Fields,
 http_headers_list_obj(X, _, _, _, _, _, Ctx) :-
 
    throw(error(type_error(option_list, X), Ctx)).
-
-% %% add_header(+Obj0, +Name, +Value, -Obj)
-% %
-% % Add new header, downcast Obj appropriately
-
-% add_header(Obj0, Name, Value, Obj) :-
-
-%    Ctx = context(add_header/4, _),
-%    check_inst(Obj0, Ctx),
-%    check_ibject_arg(Obj0, Ctx, _),
-%    must_be(atom, Name),
-%    must_be(atom, Value),
-
 
 
 downcast_headers(Header, Value, Class_Fields,
@@ -342,8 +380,9 @@ read_headers2(Stream, List0, List, Str0, Str) :-
 
    % timeout should be set on the stream as a property before the call
    read_line_to_codes(Stream, Str0, Str1),
-   (  phrase(field(Name, Value), Str0, Str1)
-   -> List0 = [Name=Value|List],
+   (  phrase(field(Name, Value0), Str0, Str1)
+   -> trim_atom(both, [32], Value0, Value),
+      List0 = [Name=Value|List],
       read_headers2(Stream, List0, List, Str1, Str)
    ;  Str == "\r\n"
    ).
