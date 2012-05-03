@@ -170,7 +170,8 @@ ixpath(Spec, Options, Dom, Result) :-
 
 ixpath2(Spec, Options, LDOM, Result, Ctx) :-
 
-   nonvar(LDOM), LDOM = [DOM], !,
+   nonvar(LDOM), is_list(LDOM), !,
+   member(DOM, LDOM),
    ixpath2(Spec, Options, DOM, Result, Ctx).
 
 ixpath2(Spec, Options, Obj, Result, Ctx) :-
