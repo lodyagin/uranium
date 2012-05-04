@@ -35,7 +35,8 @@
            %trim_string/4,
            remove_quotes/2,
            replace_char/4,
-           replace_chars/4
+           replace_chars/4,
+           replace_all/4
 ]).
 
 /** <module> Operations with atoms
@@ -129,4 +130,16 @@ replace_character_code(C1, _, Code1, Code1) :-
 
   C1 \= Code1.
 
+%% replace_substrings(From, Atom1, To, Atom2) is det.
+%
+% Replace all occurences of From in Atom1 to To and return as Atom2.
+replace_all(From, Atom1, To, Atom2) :-
 
+   atom_codes(From, From_Codes),
+   atom_codes(To, To_Codes),
+   atom_codes(Atom1, Atom1_Codes),
+   replace_all_sublists(From_Codes, Atom1_Codes, To_Codes, Atom2_Codes),
+   atom_codes(Atom2, Atom2_Codes).
+
+   
+   
