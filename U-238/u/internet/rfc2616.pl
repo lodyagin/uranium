@@ -34,6 +34,7 @@
   TODO rfc 2047 (MIME)
 */
 
+:- use_module(u(v)).
 :- use_module(rfc822).
 :- use_module(v(http_headers_v)).
 

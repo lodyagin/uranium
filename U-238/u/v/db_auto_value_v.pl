@@ -64,6 +64,7 @@
 */
 
 :- use_module(library(error)).
+:- use_module(u(v)).
 :- use_module(u(vd)).
 :- use_module(u(internal/check_arg)).
 :- use_module(u(util/lambda)).

@@ -37,6 +37,7 @@
 :- use_module(library(uri)).
 :- use_module(library(socket)).
 :- use_module(library(debug)).
+:- use_module(u(v)).
 :- use_module(v(http_headers_v)).
 :- use_module(u(internet/common_internet_data)).
 
