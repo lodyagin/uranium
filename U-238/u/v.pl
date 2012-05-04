@@ -586,6 +586,8 @@ obj_reinterpret(From, Class_To, To) :-
    ;  check_existing_class_arg(Class_To, Ctx)
    ),
 
+   (  nonvar(Class_To) -> true ; Det = f ),
+
    functor(From, From_Class, _),
    (  clause(objects:reinterpret(From_Class, To_Class, _, _), _),
       class_primary_id(To_Class, To_Class_Id),
@@ -594,7 +596,9 @@ obj_reinterpret(From, Class_To, To) :-
    ;
       functor(From, Class_To, _),
       To = From
-   ).
+   ),
+
+   (  Det = t -> ! ; true ).
 
 % obj_rewrite(+Object0, +Fields, ?Old_Vals, +New_Vals, -Object)
 
