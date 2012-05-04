@@ -1,7 +1,84 @@
+% -*- fill-column: 65; -*-
+%
+%  This file is a part of Uranium, a general-purpose functional
+%  test platform.
+%
+%  Copyright (C) 2009-2011, Sergei Lodyagin
+%  Copyright (C) 2012, Kogorta OOO Ltd
+%
+%  This library is free software; you can redistribute it and/or
+%  modify it under the terms of the GNU Lesser General Public
+%  License as published by the Free Software Foundation; either
+%  version 2.1 of the License, or (at your option) any later
+%  version.
+%
+%  This library is distributed in the hope that it will be
+%  useful, but WITHOUT ANY WARRANTY; without even the implied
+%  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+%  PURPOSE.  See the GNU Lesser General Public License for more
+%  details.
+%
+%  You should have received a copy of the GNU Lesser General
+%  Public License along with this library; if not, write to the
+%  Free Software Foundation, Inc., 51 Franklin Street, Fifth
+%  Floor, Boston, MA 02110-1301 USA
+%
+%  e-mail: lodyagin@gmail.com
+%  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
+
 :- module(stream_buffer_v,
           [get_list_at_position/4,
            stream_close/1
            ]).
+
+/** <module> Object for use streams with lazy lists.
+
+  It buffers input packet and give a possibility of returning to
+  any previous packet.
+
+  --++ Object
+  stream_buffer_v
+  
+  ---+++ Parent
+  object_v
+
+  ---+++ New static fields
+  
+   * stream_id
+   It is autofilled by stream_to_lazy_list/5 with a help of
+   v(db_auto_value). stream_to_lazy_list/5 always put the stream
+   objects into DB defined as the first argument of the predicate.
+
+  * stream
+  Stream pair.
+
+  * packets_db
+  Name of DB for storing red packets. It is filled by
+  stream_to_lazy_list/5.
+
+  ---+++ Key
+  stream
+
+  ---++ Object
+  stream_buffer_packet_v
+
+  ---+++ Parent
+  db_object_v
+
+  ---+++ New static fields
+  * stream_id
+  Id of the stream (see stream_buffer_v).
+
+  * packet_num
+  1-based incremetal number of the packet.
+
+  * diff_list_head, diff_list_tail
+  Difference list with codes red from the stream starting from
+  this packets. Usually it is a *|lazy list|*. It is possible to
+  read whole stream starting from this place.
+    
+  @see ../stream_input.pl
+*/
 
 :- use_module(u(v)).
 :- use_module(u(vd)).
@@ -18,8 +95,6 @@ new_class(stream_buffer_v, object_v,
 new_class(stream_buffer_packet_v, db_object_v,
           [stream_id,
            packet_num,
-           %stream_position,
-           %packet_size,
            diff_list_head,
            diff_list_tail
           ],
