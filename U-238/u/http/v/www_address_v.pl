@@ -33,6 +33,7 @@
 :- use_module(u(vd)).
 :- use_module(u(internet/rfc6454)). % origin
 :- use_module(u(http/cookies_man)).
+:- use_module(u(logging)).
 
 new_class(www_address_v, object_v,
           [http_request_url,  % original URL of the request
@@ -80,3 +81,22 @@ copy(www_address_v, From, To) :-
 % contain required fields)
 
 
+typedef(www_address, [pretty_print - www_address_print]).
+
+www_address_print(_, Field, Options) :-
+
+   u_object(Field), !,
+
+   obj_unify(Field, fail,
+             [http_request_url, http_response_url],
+             [Url1, Url2]),
+
+   (  Url1 == Url2
+   -> log_piece(['www-address:', Url1], Options)
+   ;  log_piece(['www-address:', Url1, '->', Url2],
+                Options)
+   ).
+
+www_address_print(_, _, Options) :-
+
+   log_piece(['www-address:', '?'], Options).

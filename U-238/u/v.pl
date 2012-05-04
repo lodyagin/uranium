@@ -895,6 +895,10 @@ one_diff_print(Options, diff(Field, Before, After)) :-
    log_piece([Field, ':', Before, '->', After], Options).
 
 
+% Skip obvious fields
+field_pretty_print(_, _, class) :- !.
+field_pretty_print(_, _, functor) :- !.
+
 field_pretty_print(Options, Object, Field) :-
 
   named_arg(Object, Field, Value, Type),

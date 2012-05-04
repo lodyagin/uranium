@@ -28,4 +28,7 @@
 
 :- module(http_result_v, []).
 
-new_class(http_result_v, object_v, [www_address], [www_address]).
+new_class(http_result_v, object_v,
+          [www_address : www_address
+          ],
+          [www_address]).

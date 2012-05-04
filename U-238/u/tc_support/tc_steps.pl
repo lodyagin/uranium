@@ -215,7 +215,7 @@ action_do(Options, Goal, Exec_Session) :-
               % Exec_Session не определена
 
      % Логируем запуск цели.
-     write_log('before: ', [module(no), lf(no), quoted(no)]),
+%     write_log('before: ', [module(no), lf(no), quoted(no)]),
      log_step_goal(Goal, [module(no), lf(no), quoted(no)]),
 
      % Запуск
@@ -224,8 +224,8 @@ action_do(Options, Goal, Exec_Session) :-
            true
           ), !,
 
-     write_log('after: ', [module(no), lf(no), quoted(no)]),
-     log_step_goal(Goal, [module(no), lf(no), quoted(no)]),
+%     write_log('after: ', [module(no), lf(no), quoted(no)]),
+%     log_step_goal(Goal, [module(no), lf(no), quoted(no)]),
 
      % Отчет о выполнении
      write_log(' |passed|', [module(no), lf(2)])

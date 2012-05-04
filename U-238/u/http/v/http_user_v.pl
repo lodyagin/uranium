@@ -33,7 +33,7 @@
 
 % it is a 'free' internet user
 new_class(http_user_v, object_v,
-          [www_address
+          [www_address : www_address
           ]).
 
 copy(http_user_v, From, To) :-

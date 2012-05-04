@@ -34,7 +34,8 @@
 */
 
 :- use_module(u(v)).
-
+:- use_module(u(logging)).
+  
 new_class(browser_v, object_v,
           [browser, version, proxy_settings],
           [browser, version]).
@@ -133,3 +134,10 @@ new_class(firefox_browser_swipl_v, firefox_browser_v, []).
                   'deflate',
                   'ISO-8859-1,utf-8;q=0.7,*;q=0.3'
                   ], Headers).
+
+typedef(browser, [pretty_print - browser_print]).
+
+browser_print(_, Fld, Opts) :-
+
+   functor(Fld, B, _),
+   log_piece(['browser: ', B], Opts).
