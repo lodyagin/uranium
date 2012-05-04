@@ -36,7 +36,25 @@
 
 :- use_module(library(error)).
 :- use_module(library(clpfd)).
+:- use_module(library(option)).
 :- use_module(u(clpfd_adds)).
+:- use_module(u(regex/regex)).
+
+:- predicate_options(random_string/2, 1,
+                     [empty,
+                      length(nonneg),
+                      length(nonneg, nonneg),
+                      range(nonvar),
+                      regex(atom)
+                     ]).
+
+:- predicate_options(random_string/3, 2,
+                     [empty,
+                      length(nonneg),
+                      length(nonneg, nonneg),
+                      range(nonvar),
+                      regex(atom)
+                     ]).
 
 random_string(Str) :-
 
@@ -44,10 +62,7 @@ random_string(Str) :-
 
 random_string(Options, Str) :-
 
-  append(Options,
-	 [range(match(Drep))], % should be after user options
-	 Options1),
-  random_string(gt_strings:range_pattern(Drep), Options1, Str).
+  random_string(_, Options, Str).
 
 
 :- meta_predicate random_string(1, +, -).
@@ -64,37 +79,57 @@ random_string(Pattern, Options, Str) :-
 % length(N) - a string of length N
 % length(N1, N2) - a string of length N1..N2 (linear random)
 
-random_string(Pattern, Generator, Options, Str) :-
+random_string(Module:Pattern, Generator, Options, Str) :-
 
-  must_be(callable, Pattern),
   must_be(callable, Generator),
   must_be(list, Options),
 
-  random_string_int(Pattern,
+  (   var(Pattern)
+  ->  append(Options,
+	     [range(match(Drep))], % should be after user
+				   % options
+	     Options1),
+      Pattern1 = range_pattern(Drep) % Module is this module
+  ;   Pattern1 = Pattern,
+      Options1 = Options
+  ),
+
+  must_be(callable, Pattern1),
+
+  random_string_int(Module:Pattern1,
 		    Generator,
-		    Options,
-		    Options,
+		    Options1,
+		    Options1,
 		    default_to_multi([empty, length(1, 80)]),
 		    default(range(32..126)),
+		    default(regex(_)),
 		    Str).
 
 random_string_int(Pattern, Generator, [O|Os], Options,
-		  Lengths, Range, Str) :- !,
+		  Lengths, Range, Regex, Str) :- !,
 
   (  var(O) -> instantiation_error(O)
   ;  override(length, Lengths, O, Options, Lengths1) ->
      random_string_int(Pattern, Generator, Os, Options,
-		       Lengths1, Range, Str)
+		       Lengths1, Range, Regex, Str)
   ;  override(range, Range, O, Options, Range1) ->
      random_string_int(Pattern, Generator, Os, Options,
-		       Lengths, Range1, Str)
+		       Lengths, Range1, Regex, Str)
+  ;  override(regex, Regex, O, Options, Regex1) ->
+     random_string_int(Pattern, Generator, Os, Options,
+		       Lengths, Range, Regex1, Str)
   ;  domain_error(random_string_option, O)
   ).
 
-random_string_int(Pattern, Generator, [], _,
-		  Lengths, _, Str) :-
+random_string_int(Pattern0, Generator, [], _,
+		  Lengths, _, Regex, Str) :-
 
-  maplist(arg(1), [Lengths], [L]),
+  maplist(arg(1), [Lengths, Regex], [L, regex(Reg)]),
+
+  (   nonvar(Reg)
+  ->  regex_pattern(Regex, Pattern)  % ignore Pattern0
+  ;   Pattern = Pattern0 ),
+
   random_string_int(Pattern, Generator, L, Codes),
   (   nonvar(Str), Str = atom(Atom)
   ->  atom_codes(Atom, Codes)
@@ -144,6 +179,9 @@ length(length(N1, N2)) :- !,
 
 range(range(_)) :- !.
 
+regex(Codes) :- !,
+	must_be(codes, Codes).
+
 override(What, Prev, Value, Options, Result) :-
         call(What, Value),
         override_(Prev, Value, Options, Result).
@@ -164,7 +202,8 @@ override_(user(Prev), Value, Options, _) :- !,
         ).
 override_(default_to_multi(_), Value, _, multi([Value])) :- !.
 override_(multi([]), Value, _, multi([Value])) :- !.
-override_(multi([V1|T]), Value, _, multi([Value, V1|T])).
+override_(multi([V1|T]), Value, _, multi([Value, V1|T])) :- !.
+
 
 % Randomly choose length with proper distribution
 choose_length(Lengths, L) :-
@@ -197,3 +236,30 @@ std_random(Drep, X) :-
   succ(Max, Max1),
   Idx is random(Max1),
   drep_nth0(Idx, Drep, X).
+
+% regex -> NFA
+
+regex_pattern(Regex, regex_pt(Nodes, Arcs)) :-
+
+   regex_nfa(Regex, nfa(States0, Arcs, Initial, Final)),
+   !,
+   sort(States0, States),
+   length(States, NStates),
+   numlist(1, NStates, States),
+   findall(source(X), member(X, Initial), L1),
+   findall(sink(X), member(X, Final), L2),
+   append(L1, L2, Nodes).
+
+%regex_pat(Nodes, Arcs, Str) :-
+
+%   length(Str, N),
+%   N1 is N * 4,
+%   automaton(S, Nodes, Arcs).
+
+
+
+
+
+
+
+
