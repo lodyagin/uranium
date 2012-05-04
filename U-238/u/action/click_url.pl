@@ -47,6 +47,7 @@
 /** <module> Emulate browser actions (clicks and send forms).
   */
 
+:- use_module(library(error)).
 :- use_module(u(http/http_ops)).
 :- use_module(u(v)).
 :- use_module(u(html/http_page)).
@@ -57,6 +58,7 @@
 click_url(URL_Expr, Page) :-
 
    Ctx = context(click_url/2, _),
+   must_be(var, Page),
    url_cmn(get, URL_Expr, _, _, _, _, Page, Ctx).
 
 
@@ -65,6 +67,7 @@ click_url(URL_Expr, Page) :-
 click_url(URL_Expr, Browser, Page) :-
 
    Ctx = context(click_url/3, _),
+   must_be(var, Page),
    url_cmn(get, URL_Expr, _, Browser, _, _, Page, Ctx).
 
 
@@ -73,6 +76,8 @@ click_url(URL_Expr, Browser, Page) :-
 click_url(URL_Expr, Browser, User0, User, Page) :-
 
    Ctx = context(click_url/5, _),
+   must_be(var, User),
+   must_be(var, Page),
    url_cmn(get, URL_Expr, _, Browser, User0, User, Page, Ctx).
 
 
@@ -124,6 +129,8 @@ perform_redirects(Page1, Page2) :-
 send_form(URL_Expr, Form, Browser, User0, User, Page) :-
 
    Ctx = context(send_form/6, _),
+   must_be(var, User),
+   must_be(var, Page),
    url_cmn(post, URL_Expr, Form, Browser, User0, User, Page, Ctx).
 
 url_cmn(Method, URL_Expr, Form, Browser, User0, User, Page, Ctx) :-
