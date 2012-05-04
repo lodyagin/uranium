@@ -17,6 +17,22 @@ test(remove_options2,
                   [z, a(_), a(_, _)],
                   List).
 
+test(replace_all_sublists1) :-
+
+   replace_all_sublists([a], [a, b, c, a, d], [1], X1),
+   assertion(X1 == [1, b, c, 1, d]),
+   replace_all_sublists([a], [a, b, c, a, d], [1, 2], X2),
+   assertion(X2 == [1, 2, b, c, 1, 2, d]),
+   replace_all_sublists([a], [a, b, c, a, d], [], X3),
+   assertion(X3 == [b, c, d]),
+   replace_all_sublists([a, b], [a, b, c, a, d], [1], X4),
+   assertion(X4 == [1, c, a, d]).
+
+test(replace_all_sublists2, [fail]) :-
+
+   replace_all_sublists([], [a, b, c, a, d], [1], _).
+   
+   
 test(select_value1, [fail]) :-
 
    select_value(_, [], _, [], _, _).

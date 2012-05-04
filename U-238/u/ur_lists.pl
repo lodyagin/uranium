@@ -46,6 +46,7 @@
            extract_by_key_order/3,
            pairs_replace_functor/3,
 
+           replace_all_sublists/4,
            remove_options/3, % +List0, +Remove, -List
 
            select_value/4, % +Selector, +Selectors,
@@ -240,6 +241,32 @@ remove_options(List0, [Option0|Remove], List) :-
    ),
    select_option_req(Option, List0, List1),
    remove_options(List1, Remove, List).
+
+%% replace_all_sublists(+From, +List0, +To, ?List1) is det.
+%
+% List1 is List0 with all sublists From replaced to To.
+
+replace_all_sublists(From, List0, To, List1) :-
+
+%   must_be(list, From),
+%   must_be(list, List0),
+   From \= [],
+   phrase(replace_all_sublists_dcg(From, To, List1, []), List0).
+
+replace_all_sublists_dcg(From, To, List0, List) -->
+
+   From, !,
+   { append(To, List1, List0) },
+   replace_all_sublists_dcg(From, To, List1, List).
+
+replace_all_sublists_dcg(From, To, [C|List0], List) -->
+
+   [C], !,
+   replace_all_sublists_dcg(From, To, List0, List).
+   
+replace_all_sublists_dcg(_, _, List, List) -->
+
+   [].
 
 select_option_req(Option, List0, List) :-
 
