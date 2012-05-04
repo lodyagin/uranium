@@ -38,7 +38,7 @@
 
 :- module(http_headers_v,
           [http_headers_list_obj/2,   % ?List, ?Obj
-           read_headers/2,            % +Stream, -Obj
+           %read_headers/2,            % +Stream, -Obj
            send_headers/2             % +Stream, +Obj
            ]).
 
@@ -371,20 +371,20 @@ out_headers_list([Header=Value|T], Stream) :-
 % Read all http headers from Stream. Exit after reading 2*CRLF from
 % the stream.
 
-read_headers(Stream, Obj) :-
+% read_headers(Stream, Obj) :-
 
-   read_headers2(Stream, List, [], _, []),
-   http_headers_list_obj(List, Obj).
+%    read_headers2(Stream, List, [], _, []),
+%    http_headers_list_obj(List, Obj).
 
-read_headers2(Stream, List0, List, Str0, Str) :-
+% read_headers2(Stream, List0, List, Str0, Str) :-
 
-   % timeout should be set on the stream as a property before the call
-   read_line_to_codes(Stream, Str0, Str1),
-   (  phrase(field(Name, Value0), Str0, Str1)
-   -> trim_atom(both, [32], Value0, Value),
-      List0 = [Name=Value|List],
-      read_headers2(Stream, List0, List, Str1, Str)
-   ;  Str == "\r\n"
-   ).
+%    % timeout should be set on the stream as a property before the call
+%    read_line_to_codes(Stream, Str0, Str1),
+%    (  phrase(field(Name, Value0), Str0, Str1)
+%    -> trim_atom(both, [32], Value0, Value),
+%       List0 = [Name=Value|List],
+%       read_headers2(Stream, List0, List, Str1, Str)
+%    ;  Str == "\r\n"
+%    ).
 
 
