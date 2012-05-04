@@ -50,14 +50,20 @@ init_stream_db(Stream_DB) :-
    Ctx = context(stream_to_lazy_list/3, _),
    check_db_key(Stream_DB, Ctx),
 
-   (  db_name(Stream_DB) -> true
-   ;  init_stream_db2(Stream_DB)
+   Class_Name = stream_buffer_v,
+   Field_Name = stream_id,
+   (  named_args_unify(Stream_DB, db_auto_value_v,
+                       [class_name, field_name],
+                       [Class_Name, Field_Name], _)
+   -> true
+   ;  db_construct(Stream_DB, db_auto_value_v,
+                   [class_name, field_name,
+                    next_seed_pred, auto_value_seed],
+                   [Class_Name, Field_Name,
+                    succ, 0])
    ).
 
-init_stream_db2(Stream_DB) :-
 
-   db_construct(Stream_DB, db_auto_value_v,
-                [class_name, field_name, next_seed_pred, auto_value_seed],
-                [stream_buffer_v, stream_id, succ, 0]).
+   
 
 
