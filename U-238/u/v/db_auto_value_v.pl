@@ -27,6 +27,7 @@
 
 :- module(db_auto_value_v,
           [
+           add_bind_to_db/5,
            db_bind_auto/2      % +DB_Key, ?Obj
            ]).
 
@@ -98,7 +99,32 @@ new_class(db_auto_value_v, db_object_v,
       )
    ).
 
-%% db_bind_auto(DB_Key, Obj) is det
+:- meta_predicate add_bind_to_db(+, +, +, 2, +).
+
+%% add_bind_to_db(+DB_Key, +Class_Name, Field_Name, Pred, Seed) is det.
+%
+% Create and put in DB_Key new db_auto_value with Pred if not
+% exists for pair (Class_Name, Field_Name).
+
+add_bind_to_db(DB_Key, Class_Name, Field_Name, Pred, Seed) :-
+
+   must_be(atom, Class_Name),
+   must_be(atom, Field_Name),
+   must_be(callable, Pred),
+   
+   (  named_args_unify(DB_Key, db_auto_value_v,
+                       [class_name, field_name],
+                       [Class_Name, Field_Name], _)
+   -> true
+   ;  db_construct(DB_Key, db_auto_value_v,
+                   [class_name, field_name,
+                    next_seed_pred, auto_value_seed],
+                   [Class_Name, Field_Name,
+                    Pred, Seed])
+   ).
+
+
+%% db_bind_auto(+DB_Key, ?Obj) is det
 %
 % For every Obj field with an existing db_auto_value_v (or its
 % descendant) object in DB_Key calculate a new auto value and
