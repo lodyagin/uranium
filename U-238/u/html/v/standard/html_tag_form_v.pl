@@ -24,7 +24,9 @@
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
-:- module(html_tag_form_v, []).
+:- module(html_tag_form_v,
+          [form_nv_list/2
+           ]).
 
 /** <module> Html form tag.
 
@@ -169,6 +171,27 @@ fill_default_values(From, To) :-
    % TODO checkboxes
 
    
+%% form_nv_list(+Form, -NV_List) is det.
+%
+%  Convert form_v descendant to a list of Field_Name = Value. All
+%  field names (of the object) started with '..' are returned
+%  with '..' stripped.
+
+form_nv_list(Form, NV_List) :-
+
+   functor(Form, Class, _),
+   class_fields(Class, Fields),
+   findall(Name=Value,
+           (  member(Field, Fields),
+              atom_concat('..', Name, Field),
+              obj_field(Form, Field, Value0),
+              (  nonvar(Value0)
+              -> Value = Value0
+              ;  Value = ''
+              )
+           ),
+           NV_List).
+
 
 
 
