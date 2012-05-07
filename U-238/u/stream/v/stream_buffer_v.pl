@@ -107,11 +107,14 @@ get_list_at_position(Buffer, Packet_Num, List0, List) :-
              [stream_id, stream, packets_db],
              [Stream_Id, Stream, Packet_DB]),
 
-   (  db_select(Packet_DB,
-                [stream_id, packet_num,
-                 diff_list_head, diff_list_tail],
-                [Stream_Id, Packet_Num,
-                 List0, List])
+   (  named_args_unify(Packet_DB, _,
+                      [stream_id, packet_num,
+                       diff_list_head, diff_list_tail],
+                       [Stream_Id, Packet_Num,
+                        List0, List],
+                       Packet),
+      obj_same_or_descendant(Packet, stream_buffer_packet_v)
+      
    -> true
    ;  get_data(Stream, List0, List),
       obj_construct(stream_buffer_packet_v,
