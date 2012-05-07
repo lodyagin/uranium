@@ -193,6 +193,7 @@
 
 db_clear(DB_Key) :-
 
+   debug(vd, '~p', db_clear(DB_Key)),
    Ctx = context(db_clear/1, _),
    check_db_key(DB_Key, Ctx),
    db_clear_int(DB_Key).
@@ -264,6 +265,7 @@ db_copy(DB_In, DB_Out) :-
 
 db_erase(Obj) :-
 
+   debug(vd, '~p', db_erase(Obj)),
    Ctx = context(db_erase/1, _),
    check_object_arg(Obj, Ctx, Class_Id),
 
@@ -410,6 +412,10 @@ handle_key_dup(overwrite, DB_Key, Class_Id, _, New_Object) :-
 db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
                   Object, Replaced, Ctx) :-
 
+   debug(vd, '~p', db_put_object_int(DB_Key, Class_Id0, Option,
+                                     Order, Object0, Object, Replaced,
+                                     Ctx)),
+   
    % Rebase if needed
 
    % this block already binds Object and Replaced
@@ -538,7 +544,8 @@ db_recorded(DB_Key, Object) :-
        Ctx = context(db_recorded/2, _),
        check_object_arg(Object, Ctx, _)
    ),
-   db_recorded_int(DB_Key, Object).
+   db_recorded_int(DB_Key, Object),
+   debug(vd, '~p', db_recorded(DB_Key, Object)).
 
 % db_rewrite(+DB_Key, ?Functor, +Fields, @Old_Vals, +New_Vals)
 %

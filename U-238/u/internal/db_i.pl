@@ -636,7 +636,9 @@ named_args_unify_int(DB_Key, Option, Des, Field_Names, Values,
    obj_rebase((object_v -> db_object_v), Term0, Term), % ?
    db_recorded_int(DB_Key, Term),
 
-   obj_unify_int(Local_Class_Id, Field_Names, Option, Term, Values, Ctx).
+   obj_unify_int(Local_Class_Id, Field_Names, Option, Term, Values, Ctx),
+   debug(vd, '~p', named_args_unify_int(DB_Key, Option, Des, Field_Names,
+                                        Values, Term)).
 
 % exclude_field(_, [], [], [], []) :- !.
 
