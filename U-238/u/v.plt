@@ -218,8 +218,8 @@ test(obj_copy2) :-
 
    new_http_user(U1),
    obj_copy(U1, U2),
-   obj_field(U1, cookie_db_key, Key1),
-   obj_field(U2, cookie_db_key, Key2),
+   eval_obj_expr(U1 / www_address / cookies_db, Key1),
+   eval_obj_expr(U2 / www_address / cookies_db, Key2),
    assertion(Key1 \= Key2).
 
 test(obj_diff1,
@@ -711,8 +711,8 @@ test(obj_sort_parents_bug1) :-
    % citizen_v -> man_v -> http_user_v -> ...object_base_v
 
    obj_copy(HTTP_Citizen, HTTP_Citizen_Copy),
-   obj_field(HTTP_Citizen, cookie_db_key, Key1),
-   obj_field(HTTP_Citizen_Copy, cookie_db_key, Key2),
+   eval_obj_expr(HTTP_Citizen / www_address / cookies_db, Key1),
+   eval_obj_expr(HTTP_Citizen_Copy / www_address / cookies_db, Key2),
    assertion(Key1 \= Key2).
 
 test(class_fields) :-
