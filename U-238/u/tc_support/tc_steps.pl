@@ -1,26 +1,30 @@
-%% This file is a part of Uranium, a general-purpose functional test platform.
-%% Copyright (C) 2011  Sergei Lodyagin
-%%
-%% This library is free software; you can redistribute it and/or
-%% modify it under the terms of the GNU Lesser General Public
-%% License as published by the Free Software Foundation; either
-%% version 2.1 of the License, or (at your option) any later version.
-%%
-%% This library is distributed in the hope that it will be useful,
-%% but WITHOUT ANY WARRANTY; without even the implied warranty of
-%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-%% Lesser General Public License for more details.
-
-%% You should have received a copy of the GNU Lesser General Public
-%% License along with this library; if not, write to the Free Software
-%% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-%%
-%% e-mail: lodyagin@gmail.com
-%% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
-%% -------------------------------------------------------------------------------
-%%
-
-%  -*-coding: mule-utf-8-unix; fill-column: 58-*-
+% -*- fill-column: 65; -*-
+%
+%  This file is a part of Uranium, a general-purpose functional
+%  test platform.
+%
+%  Copyright (C) 2009-2011, Sergei Lodyagin
+%  Copyright (C) 2012, Kogorta OOO Ltd
+%
+%  This library is free software; you can redistribute it and/or
+%  modify it under the terms of the GNU Lesser General Public
+%  License as published by the Free Software Foundation; either
+%  version 2.1 of the License, or (at your option) any later
+%  version.
+%
+%  This library is distributed in the hope that it will be
+%  useful, but WITHOUT ANY WARRANTY; without even the implied
+%  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+%  PURPOSE.  See the GNU Lesser General Public License for more
+%  details.
+%
+%  You should have received a copy of the GNU Lesser General
+%  Public License along with this library; if not, write to the
+%  Free Software Foundation, Inc., 51 Franklin Street, Fifth
+%  Floor, Boston, MA 02110-1301 USA
+%
+%  e-mail: lodyagin@gmail.com
+%  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 %
 %  Copyright (C) 2009, 2011 Kogorta
 %
@@ -40,19 +44,33 @@
 %           step_map/3
           ]).
 
+/** <module> Run a test case.
+*/
+
+:- use_module(library(option)).
 :- use_module(u(action/check_result)).
 :- use_module(u(logging)).
 :- use_module(u(v)).
 :- use_module(u(tc_support/tc_log)).
 
-% Выполнение тест-кейса
+%% main_batch(+Name, :Initialize, +Step_List, :Finalize) is det.
 %
-% main_batch(+Name, :Initialize, Step_List, :Finalize)
+% Runs a test case Name.
 %
+%  @param Initialize initialization
+%
+%  @param Step_List list of steps. Elements can be step/3 or
+%  conventional predicates.
+%
+%  @param Finalize finalizatin
+
+:- meta_predicate main_batch(+, 0, :, 0).
+:- meta_predicate main_batch(+, 0, :, 0, +).
+
 main_batch(Name, Initialize, Step_List, Finalize) :-
     main_batch(Name, Initialize, Step_List, Finalize, []).
 
-main_batch(Name, Initialize, Step_List, Finalize, Options) :-
+main_batch(Name, Initialize, Module:Step_List, Finalize, Options) :-
     check_option_list(Options, [pause(_), gtrace(_)]),
     write_log([Name, start]),
     \+ memberchk(step_num(_), Options),
@@ -60,7 +78,9 @@ main_batch(Name, Initialize, Step_List, Finalize, Options) :-
           ignore(
                  call_cleanup((Initialize, !,
                                run_series(Step_List,
-                                          [step_num([]) | Options])
+                                          [step_num([]),
+                                           context_module(Module) |
+                                          Options])
                               ),
                               Catcher,
                               (Finalize, !,
@@ -91,7 +111,8 @@ call_with_options(Options, Goal) :-
     (memberchk(gtrace(Step_Num), Options),
      memberchk(step_num([Step_Num|_]), Options)
      -> gtrace; true),
-    Goal.
+    option(context_module(Module), Options),
+    call(Module:Goal).
 
 % Выполнение части тест-кейса
 %
