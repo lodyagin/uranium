@@ -36,7 +36,8 @@ get_buffer(Stream_DB, Stream, Buffer_Class, Buffer) :-
                        [stream], [Stream], Buffer)
    -> true
    ;
-      atom_concat(Stream_DB, '.packets', Packets_DB),
+      %atom_concat(Stream_DB, '.packets', Packets_DB),
+      Packets_DB = Stream_DB,
       obj_construct(Buffer_Class,
                    [stream, packets_db],
                    [Stream, Packets_DB],
