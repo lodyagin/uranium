@@ -467,7 +467,7 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
    get_key(Class_Id, Key),
    (  Key \== []
    ->
-      % ... it always has key, hide under key-checking
+      % ... it always has a key, hide under key-checking
       % for performance
       db_properties_hook(DB_Key, Class_Id, Object1),
 
@@ -498,13 +498,18 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
 
 db_properties_hook(DB_Key, Class_Id, DB_Properties) :-
 
+   Ctx = context(db_properties_hook/3, _),
    functor(DB_Properties, db_properties_v, _), !,
-   obj_field_int(Class_Id, key_policy, throw, DB_Properties,
-                 Key_Policy, _, _),
+   obj_unify_int(Class_Id, [key_policy, after_put_callback], throw,
+                 DB_Properties, [Key_Policy, After_Put_Callback], Ctx),
    (  var(Key_Policy) -> Key_Policy = throw
    ; true
    ),
-   db_key_policy(DB_Key, _, Key_Policy).
+   db_key_policy(DB_Key, _, Key_Policy),
+
+   (  var(After_Put_Callback) -> true
+   ;  db_set_callbacks(DB_Key, After_Put_Callback)
+   ).
 
 
 db_properties_hook(_, _, _).  % a hook should always succeed

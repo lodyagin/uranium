@@ -35,6 +35,7 @@
            db_functor_des/4, % +DB_Key, ?Functor, -Des, +Ctx
            db_key_is_valid/1,
            db_key_policy/3,  % +DB_Key, -Old, ?New
+           db_set_callbacks/2, 
            db_name_int/1,    % ?DB_Key
            db_object_class_int/2,
            db_recorded_int/2,
@@ -45,6 +46,7 @@
            prolog:message//1
            ]).
 
+:- use_module(library(error)).
 :- use_module(library(ordsets)).
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/db_vocab)).
@@ -52,12 +54,18 @@
 :- use_module(u(internal/ur_debug)).
 :- use_module(u(util/lambda)).
 
-:- multifile prolog:message/3.
+/** <module> Internal DB preds for use only from Uranium itself.
+
+  It is unified interface which hides different specific DB
+  implementations.
+*/
+
 :- multifile db_recorded_int/2, db_erase_int/2, db_record_int/4.
 
 :- dynamic db_class_des/8,     % DB_Key, DB_Class_Id, DB_Parent_Class_Id,
                                % Name, Arity, Fields, Key, Parents
-           db_key_policy/2,
+           db_key_policy/2,    
+           db_after_put_callback/2,  % DB_Key, Pred
            db_next_class_id_/2,
            db_keymaster/2.     % DB_Key, Class_Name
 
@@ -86,8 +94,7 @@ db_functor_des(DB_Key, Functor, Des, Ctx) :-
    ).
 
 
-% db_key_policy(+DB_Key, -Old, ?New)
-% is det
+%% db_key_policy(+DB_Key, -Old, ?New) is det
 db_key_policy(DB_Key, Old, New) :-
 
    atom(DB_Key),
@@ -109,6 +116,17 @@ db_key_policy(DB_Key, Old, New) :-
    ),
 
    assertz(db_key_policy(DB_Key, New)).
+
+%% db_set_callbacks(+DB_Key, :After_Put_Callback) is det.
+
+:- meta_predicate db_set_callback(+, 1).
+
+db_set_callbacks(DB_Key, After_Put_Callback) :-
+
+   must_be(ground, DB_Key),
+   
+   retractall(db_after_put_callback(DB_Key, _)),
+   assertz(db_after_put_callback(DB_Key, After_Put_Callback)).
 
 % db_name_int(?DB_Key, +Ctx)
 
@@ -340,6 +358,7 @@ db_clear_int(DB_Key) :-
       fail ; true
    ),
    retractall(db_key_policy(DB_Key, _)),
+   retractall(db_after_put_callback(DB_Key, _)),
    retractall(db_next_class_id_(DB_Key, _)),
    retractall(db_keymaster(DB_Key, _)),
    retractall(db_class_des(DB_Key, _, _, _, _, _, _, _)),
@@ -426,7 +445,7 @@ db_recorded_int(DB_Key, L_Object) :-
     call_db_pred(DB_Ref, erase, []).
 */
 
-% db_record_int(+DB_Key, +Order, +Object, +Ctx)
+%% db_record_int(+DB_Key, +Order, +Object, +Ctx) is det.
 %
 % Set db_ref (and db_key if it is unbound) in Object
 % Order = recordz | recorda
@@ -453,6 +472,11 @@ db_record_int(DB_Key, Order, Object0, Ctx) :-
     (   Order = recordz
     ->  assertz(Object)
     ;   asserta(Object)
+    ),
+
+    (  db_after_put_callback(DB_Key, After_Put_CB)
+    -> call(After_Put_CB, Object0)
+    ;  true
     ).
 
 

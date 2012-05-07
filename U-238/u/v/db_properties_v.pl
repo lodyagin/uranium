@@ -41,6 +41,9 @@
    * key_policy
    For possible key policy values see ../vd.pl.
 
+   * after_put_callback
+   Pred/1 to be called on each packet succesfully put in DB.
+  
   --
   
   The example of usage (change the per-DB policy to ignore)
@@ -62,5 +65,7 @@
 */
 
 new_class(db_properties_v, db_singleton_v,
-          [key_policy]).
+          [key_policy,
+           after_put_callback
+           ]).
 

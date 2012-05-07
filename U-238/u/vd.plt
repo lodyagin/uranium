@@ -26,7 +26,7 @@ test(db_clear, [blocked(temporary), setup(model_db), List == []]) :-
       ),
       fail ; true
    ),
-   
+
    findall(X,
            (db_i:current_predicate(citizen_v, X), call(db_i:X)),
            List).
@@ -123,7 +123,7 @@ test(db_put_object3,
 
 test(db_put_object4, [setup(model_db)]) :-
 % replacing
-   
+
    db_construct(people2, man_v, [name], ['Moses']),
    db_recorded(people2, Man0), !,
    obj_rewrite(Man0, [name], ['Moses'], [_], Man1),
@@ -231,33 +231,33 @@ test(db_recorded2, [setup(model_db)]) :-
 
    findall('.',
            (obj_construct(man_v, [sex], [man], X0),
-            obj_rebase((object_v -> db_object_v), X0, X), 
+            obj_rebase((object_v -> db_object_v), X0, X),
             db_recorded(people, X)),
            L2),
    length(L2, N2),
    assertion(N2 =:= 1).
-   
+
 
 test(db_recorded3, [setup(model_db)]) :-
 
    findall('.',
            (obj_construct(man_v, [], [], X0),
-            obj_rebase((object_v -> db_object_v), X0, X), 
+            obj_rebase((object_v -> db_object_v), X0, X),
             db_recorded(people, X)),
            L2),
    length(L2, N2),
    assertion(N2 =:= 2).
-   
+
 test(db_recorded4, [setup(model_db)]) :-
 
    findall('.',
            (obj_construct(man_v, [height], [1.76], X0),
-            obj_rebase((object_v -> db_object_v), X0, X), 
+            obj_rebase((object_v -> db_object_v), X0, X),
             db_recorded(people, X)),
            L2),
    length(L2, N2),
    assertion(N2 =:= 2).
-   
+
 test(db_recorded5, [setup(db_clear(people))]) :-
 
    db_construct(people, man_v, [], []),
@@ -432,33 +432,33 @@ test(key_rule1,
                 [name, surname], ['Sergei', 'Lodyagin']),
    db_construct(people, man_v,
                 [name, surname], ['Sergei', 'Lodyagin']).
-                
+
 test(key_rule2,
      [setup(db_clear(people)),
       error(db_key_exists(people, _, _))]) :-
 
    db_construct(people, man_v, [], []),
    db_construct(people, man_v, [], []).
-                
+
 test(key_rule3,
      [setup(db_clear(people)),
       error(db_key_exists(people, _, _))]) :-
 
    db_construct(people, man_v, [name], ['Sergei']),
    db_construct(people, man_v, [], []).
-                
+
 test(key_rule4,
      [setup(db_clear(people)),
       error(db_key_exists(people, _, _))]) :-
 
    db_construct(people, man_v, [], []),
    db_construct(people, man_v, [name], ['Sergei']).
-                
+
 test(key_rule5, [setup(db_clear(people))]) :-
 
    db_construct(people, man_v,
                 [name, surname], ['Sergei', 'Lodyagin']),
-   
+
    db_construct(people, man_v,
                 [name, surname], ['Sergei', 'Sikorsky']).
 
@@ -468,7 +468,7 @@ test(key_rule6,
 
    db_construct(people, man_v,
                 [name], ['Sergei']),
-   
+
    db_construct(people, man_v,
                 [name], ['Sergei']).
 
@@ -478,7 +478,7 @@ test(key_rule7,
 
    db_construct(people, man_v,
                 [name], ['Sergei']),
-   
+
    db_construct(people, man_v,
                 [surname], ['Lodyagin']).
 
@@ -486,7 +486,7 @@ test(key_rule8, [setup(db_clear(people))]) :-
 
    db_construct(people, man_v,
                 [name], ['Sergei']),
-   
+
    db_construct(people, man_v,
                 [name], ['Artem']).
 
@@ -496,7 +496,7 @@ test(key_rule9,
 
    db_construct(people, man_v,
                 [name, surname], ['Sergei', 'Sysoev']),
-   
+
    db_construct(people, man_v,
                 [name], ['Sergei']).
 
@@ -509,24 +509,24 @@ test(key_rule10,
 
    db_construct(people, man_v,
                 [name, surname], ['Sergei', 'Sysoev']).
-   
+
 test(key_rule11,
      [setup(db_clear(people)),
       error(db_key_exists(people, _, _))]) :-
 
    db_construct(people, citizen_v, [id], [4]),
    db_construct(people, citizen_v, [], []).
-                
+
 test(key_rule12, [setup(db_clear(people))]) :-
 
    db_construct(people, citizen_v, [id], [4]),
    db_construct(people, man_v, [], []).
-                
+
 test(key_rule13, [setup(db_clear(people))]) :-
 
    db_construct(people, citizen_v, [id], [4]),
    db_construct(people, man_v, [name], ['James']).
-                
+
 test(key_rule14,
      [setup(db_clear(people)),
       error(db_key_exists(people, _, _))]) :-
@@ -534,7 +534,7 @@ test(key_rule14,
    db_construct(people, citizen_v, [id], [4]),
    db_construct(people, man_v, [], []),
    db_construct(people, citizen_v, [id], [5]).
-                
+
 test(key_rule15, [setup(db_clear(people))]) :-
 
    db_construct(people, citizen_v, [id], [4]),
@@ -542,7 +542,7 @@ test(key_rule15, [setup(db_clear(people))]) :-
                 [name, surname], ['James', 'Crick']),
    db_construct(people, citizen_v,
                 [name, surname, id], ['Adam', 'Adamovitch', 5]).
-   
+
 test(key_rule16,
      [setup(db_clear(people)),
       error(db_key_exists(people, _, _))]) :-
@@ -558,7 +558,7 @@ test(db_properties_v1_overwrite, [setup(db_clear(people))]) :-
    db_construct(people, db_properties_v,
                 [key_policy], [overwrite]),
    db_construct(people, man_v, [surname], ['Lodyagin']),
-   
+
    findall([Name, Surname],
            named_args_unify(people, _, [name, surname],
                             [Name, Surname], _),
@@ -589,7 +589,7 @@ test(db_properties_v3_fail_ignore, [setup(db_clear(people))]) :-
    named_args_unify(people, db_properties_v, [], _, Singl1), !,
    obj_rewrite(Singl1, [key_policy], [fail], [ignore], Singl2),
    db_put_object(people, _, Singl2, _, replaced),
-   
+
    db_construct(people, man_v,
                 [name, surname, height], ['Sergei', 'Lodyagin',
                 1.74], Obj2),
@@ -612,7 +612,7 @@ test(db_properties_v4_fail_ignore2, [setup(db_clear(people))]) :-
 
    obj_construct(db_properties_v, [key_policy], [ignore], Singl2),
    db_put_object(people, overwrite, Singl2, _),
-   
+
    db_construct(people, man_v,
                 [name, surname, height], ['Sergei', 'Lodyagin',
                 1.74], Obj2),
@@ -642,19 +642,83 @@ test(rebase_collision_bug1, [blocked(rebase_collision)]) :-
    obj_construct(man_v, [], [], O0),
    obj_rebase((object_v -> tarjan_vertex_v), O0, O),
    db_put_object(people, O).
-   
+
+% check default key policy
+test(after_put_callback1,
+     [setup(callback_setup),
+      error(db_key_exists(people, _, _))
+     ]) :-
+
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Lodyagin']),
+
+   context_module(This),
+   db_construct(people, db_properties_v,
+                [after_put_callback], [This:after_put_callback]),
+
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Lodyagin']).
+
+
+test(after_put_callback2,
+     [setup(callback_setup)]) :-
+
+   db_construct(people, man_v,
+                [name, surname], ['Sergei', 'Lodyagin']),
+
+   context_module(This),
+   db_construct(people, db_properties_v,
+                [after_put_callback], [This:after_put_callback], Props),
+
+   db_construct(people, man_v,
+                [name, surname], ['Alex', 'Petrenko']),
+
+   obj_rewrite(Props, [key_policy], _, [fail], Props2),
+   db_put_object(people, _, Props2, Props3, replaced),
+   ignore(db_construct(people, man_v,
+                       [name, surname], ['Alex', 'Petrenko'])),
+
+   obj_rewrite(Props3, [after_put_callback], _, [_], Props4),
+   db_put_object(people, _, Props4, _, replaced),
+
+   db_construct(people, man_v,
+                [name, surname], ['James', 'Petrenko']),
+
+   findall(p(Functor, Name, Surname),
+           (  apc(Obj),
+              obj_unify(Obj, weak,
+                        [functor, name, surname], [Functor, Name, Surname])
+           ),
+           List),
+
+   assertion(List = [p(db_properties_v, _, _),
+                     p(man_v, 'Alex', 'Petrenko'),
+                     p(db_properties_v, _, _),
+                     p(db_properties_v, _, _),
+                     p(man_v, 'James', 'Petrenko')
+                     ]).
+
+after_put_callback(Obj) :-
+
+   assertz(apc(Obj)).
+
+callback_setup :-
+
+   db_clear(people),
+   retractall(apc(_)).
+
 model_db :-
 
 	db_clear(people),
 	db_clear(people2),
-        
-        db_construct(people, man_v,
-                     [sex, name, weight], [man, 'Adam', 73]), 
-        db_construct(people, man_v,
-                     [sex, name, weight], [woman, 'Eva', 64]), 
 
-        db_construct(people, citizen_v, 
-                      [sex, name, surname, country], 
+        db_construct(people, man_v,
+                     [sex, name, weight], [man, 'Adam', 73]),
+        db_construct(people, man_v,
+                     [sex, name, weight], [woman, 'Eva', 64]),
+
+        db_construct(people, citizen_v,
+                      [sex, name, surname, country],
                       [man, 'Vladimir', 'Mayakovsky',
                        ['Soviet Union']]).
 
