@@ -53,6 +53,7 @@
 :- use_module(u(v)).
 :- use_module(u(tc_support/tc_log)).
 
+
 %% main_batch(+Name, :Initialize, +Step_List, :Finalize) is det.
 %
 % Runs a test case Name.
@@ -102,11 +103,13 @@ run_series(Series, Options) :-
     maplist(call_with_options(Options), Series).
 
 call_with_options(Options, Goal) :-
+    option(context_module(Module), Options),
+    
     % Накладываем опции только если это step
     functor(Goal, F, _),
     atom_concat(step, _, F) % начинается со step
     ->
-    call(Goal, Options)
+    call(Module:Goal, Options)
     ;
     (memberchk(gtrace(Step_Num), Options),
      memberchk(step_num([Step_Num|_]), Options)
@@ -140,6 +143,9 @@ format_step_number([Step|Oversteps]) :-
     reverse(Oversteps, List),
     maplist(format("~w / "), List),
     format("~w", Step).
+
+%:- meta_predicate step(+, :, :).
+%:- meta_predicate step(+, :, :, +).
 
 step(Num, Exec_List, Check_List) :-
     step(Num, Exec_List, Check_List, []).
