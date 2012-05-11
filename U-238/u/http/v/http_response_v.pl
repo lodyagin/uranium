@@ -31,7 +31,7 @@
 
 /** <module> http_response_v
 
-  HTTP response according with rfc2616.
+  HTTP response by rfc2616.
 */
 
 new_class(http_response_v, object_v,

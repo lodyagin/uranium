@@ -42,6 +42,16 @@
            send_headers/2             % +Stream, +Obj
            ]).
 
+/* TODO
+
+   rfc2616:   General-header field names can be extended reliably only in
+   combination with a change in the protocol version. However, new or
+   experimental header fields may be given the semantics of general
+   header fields if all parties in the communication recognize them to
+   be general-header fields. Unrecognized header fields are treated as
+   entity-header fields.
+*/
+
 :- use_module(library(error)).
 :- use_module(library(ordsets)).
 :- use_module(u(ur_atoms)).
