@@ -42,7 +42,7 @@
 :- use_module(u(internet/common_internet_data)).
 
 :- predicate_options(http_open/4, 2,
-		     [ http_version(atom), % default is 1.1
+		     [ http_version(nonneg, nonneg), % default is 1.1
                        method(oneof([get,head,post])), % default is `get`
 		       timeout(number) % default is `ifinite`
 		     ]).
