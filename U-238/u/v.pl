@@ -82,7 +82,11 @@
            obj_pretty_print/1,
            obj_pretty_print/2,
            obj_unify/3,
-           obj_unify/4
+           obj_unify/4,
+
+           op(700, xfx, =^=),
+
+           (=^=)/2
            ]).
 
 /** <module> Uranium object system.
@@ -680,6 +684,9 @@ obj_sort_parents(Obj0, Class_Order, Obj) :-
 % obj_expr ::= Object / Field | obj_expr / Field
 % ==
 
+eval_obj_expr(Value, Value) :-
+   var(Value), !.
+
 eval_obj_expr(Object0 / Field, Value) :- !,
     eval_obj_expr(Object0, Object),
     obj_field(Object, Field, Value).
@@ -1124,6 +1131,12 @@ obj_copy_int(Class_Id, From, To) :-
    ;  print_message(warning, undef_operation(copy, Class_Id))
    ).
 
+
+A =^= B :-
+
+   eval_obj_expr(A, A1),
+   eval_obj_expr(B, B1),
+   A1 =@= B1.
 
 %class_field_type(Class, Field, Type) :-
 %
