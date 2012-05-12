@@ -265,7 +265,7 @@ atom_chars(Str, Str, SS, SS) --> [].
 
 quoted_string(Str0, Str, SS0, SS) -->
 
-   { Quote = "\"" %"
+   { Quote = 0'\" %'
    },
    [Quote],
    { Str0 = [Quote|Str1],
@@ -326,7 +326,8 @@ qtext_chars(Str, Str, SS, SS) --> [].
 
 domain_literal(Str0, Str, SS0, SS) -->
 
-   { Quote = "[" },
+   { Quote = 0'[ %'
+   },
    [Quote],
    { Str0 = [Quote|Str1],
      SS0 = [Quote|SS1]
