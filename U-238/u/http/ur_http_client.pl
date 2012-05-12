@@ -28,7 +28,9 @@
 
 
 :- module(ur_http_client,
-          [http_open/4
+          [http_open/4,
+           http_response/4,
+           http_request/2
            ]).
 
 /** <module> Uranium http low-level client.
@@ -40,6 +42,9 @@
 :- use_module(u(v)).
 :- use_module(v(http_headers_v)).
 :- use_module(u(internet/common_internet_data)).
+:- use_module(u(stream/stream_input)).
+:- use_module(u(internet/rfc2616)).
+
 
 :- predicate_options(http_open/4, 2,
 		     [ http_version(nonneg, nonneg), % default is 1.1
@@ -305,5 +310,35 @@ url_part(Part, Parts, Default) :-
 	).
 
 
+%% http_request(+Stream, +Request) is det.
+%
+% Request must have these mandatory fields: method,
+% request_uri, http_version
+http_request(Stream, Request) :-
 
+   obj_unify(Request,
+             [method, request_uri, http_version, headers],
+             [Method, URI, Version, Headers]),
+   upcase_atom(Method, Method_Upcase),
+   format(Stream, '~a ~a HTTP/~a\r\n',
+          [Method_Upcase, URI, Version]),
+   ( var(Headers) -> true
+   ; send_headers(Stream, Headers)
+   ),
+   write(Stream, '\r\n'),
+   flush_output(Stream).
+
+%% http_response(+Stream_DB, +Stream, -Response, -Tail) is det.
+% Read an http_response_v object Response from Stream.
+%
+% @param Stream_DB used as a read buffer (DB key).
+% @param Tail unread part of server output (after
+%  message-body). (Normally it should be []).
+
+http_response(Stream_DB, Stream, Response, Tail) :-
+
+   stream_to_lazy_list(Stream_DB, Stream, stream_buffer_v,
+                       _, List),
+   phrase(response(Response), List, Tail).
+   
 

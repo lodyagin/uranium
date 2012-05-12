@@ -25,19 +25,23 @@
 % e-mail: lodyagin@gmail.com
 % post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
-:- module(http_response_v,
-          [
-           ]).
+:- module(http_response_v, []).
 
 /** <module> http_response_v
 
   HTTP response by rfc2616.
+
+  ---+++ Parent
+  v(http_message_v)
+
+  ---+++ New static fields
+
+   * status_code
+   * reason_phrase
 */
 
-new_class(http_response_v, object_v,
-          [http_version,
-           status_code,
-           reason_phrase,
-           headers,
-           message_body
+new_class(http_response_v, http_message_v,
+          [status_code,
+           reason_phrase
           ]).
+

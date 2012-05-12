@@ -25,9 +25,7 @@
 % e-mail: lodyagin@gmail.com
 % post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
-:- module(http_request_v,
-          [send_request/2
-           ]).
+:- module(http_request_v, []).
 
 /** <module> HTTP request by rfc2616.
 
@@ -39,9 +37,6 @@
 
    * request_uri
 */
-
-:- use_module(u(v)).
-:- use_module(v(http_headers_v)).
 
 new_class(http_request_v, http_message_v,
           [method,
@@ -71,20 +66,3 @@ new_class(http_connect_request_v, http_request_v, []).
    ;  concat_atom([http, Method, request_v], '_', Class)
    ).
 
-%% send_request(+Stream, +Request) is det.
-%
-% Request must have these mandatory fields: method,
-% request_uri, http_version
-send_request(Stream, Request) :-
-
-   obj_unify(Request,
-             [method, request_uri, http_version, headers],
-             [Method, URI, Version, Headers]),
-   upcase_atom(Method, Method_Upcase),
-   format(Stream, '~a ~a HTTP/~a\r\n',
-          [Method_Upcase, URI, Version]),
-   ( var(Headers) -> true
-   ; send_headers(Stream, Headers)
-   ),
-   write(Stream, '\r\n'),
-   flush_output(Stream).
