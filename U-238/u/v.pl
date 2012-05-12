@@ -85,8 +85,10 @@
            obj_unify/4,
 
            op(700, xfx, =^=),
+           op(700, xfx, ^=),
 
-           (=^=)/2
+           (=^=)/2,
+           (^=)/2
            ]).
 
 /** <module> Uranium object system.
@@ -1137,6 +1139,12 @@ A =^= B :-
    eval_obj_expr(A, A1),
    eval_obj_expr(B, B1),
    A1 =@= B1.
+
+A ^= B :-
+
+   eval_obj_expr(A, A1),
+   eval_obj_expr(B, B1),
+   A1 = B1.
 
 %class_field_type(Class, Field, Type) :-
 %
