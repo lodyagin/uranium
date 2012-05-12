@@ -18,7 +18,7 @@ stream_to_lazy_list(Stream_DB, Stream, Buffer_Class, Buffer, List) :-
    ; Buffer_Class = stream_buffer_v
    ),
    check_existing_class_arg(Buffer_Class, Ctx),
-   
+
    init_stream_db(Stream_DB),
    get_buffer(Stream_DB, Stream, Buffer_Class, Buffer),
    freeze(List, read_input_stream_at(Buffer, 1, List)).
@@ -28,7 +28,10 @@ read_input_stream_at(Buffer, Packet_Num, List) :-
    get_list_at_position(Buffer, Packet_Num, List, Tail),
    % now freeze the tail
    succ(Packet_Num, Next_Packet_Num),
-   freeze(Tail, read_input_stream_at(Buffer, Next_Packet_Num, Tail)).
+   (  var(Tail)
+   -> freeze(Tail, read_input_stream_at(Buffer, Next_Packet_Num, Tail))
+   ;  true
+   ).
 
 get_buffer(Stream_DB, Stream, Buffer_Class, Buffer) :-
 
@@ -49,9 +52,9 @@ get_buffer(Stream_DB, Stream, Buffer_Class, Buffer) :-
 init_stream_db(Stream_DB) :-
 
    add_bind_to_db(Stream_DB, stream_buffer_v, stream_id, succ, 0).
-   
 
 
-   
+
+
 
 

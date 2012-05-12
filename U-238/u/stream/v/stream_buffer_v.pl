@@ -111,12 +111,14 @@ get_list_at_position(Buffer, Packet_Num, List0, List) :-
                       [stream_id, packet_num,
                        diff_list_head, diff_list_tail],
                        [Stream_Id, Packet_Num,
-                        List0, List],
+                        List0_P, List_P],
                        Packet),
       obj_same_or_descendant(Packet, stream_buffer_packet_v)
       
-   -> true
-   ;  get_data(Stream, List0, List),
+   -> List0_P = List0,
+      List_P = List
+   ;
+      get_data(Stream, List0, List),
       obj_construct(stream_buffer_packet_v,
                     [stream_id, packet_num,
                      diff_list_head, diff_list_tail],
