@@ -38,7 +38,6 @@
 
 :- module(http_headers_v,
           [http_headers_list_obj/2,   % ?List, ?Obj
-           %read_headers/2,            % +Stream, -Obj
            send_headers/2             % +Stream, +Obj
            ]).
 
@@ -286,12 +285,12 @@ http_headers_list_obj([Option|Tail], Class_Fields,
                       Obj0, Obj, Bulk0, Bulk, Ctx) :-
 
    nonvar(Option),
-   (  Option = (Header0 = Value)
-   ;  functor(Option, Header0, 1), arg(1, Option, Value)
+   (  Option = (Header0 = Value1)
+   ;  functor(Option, Header0, 1), arg(1, Option, Value1)
    ),
    !,
 
-   header_prolog_http(Header=Value, Header0=Value),
+   header_prolog_http(Header=Value, Header0=Value1),
 
    must_be(atom, Header),
    (  obj_field(Obj0, fail, Header, Value)
@@ -344,23 +343,27 @@ mix_case(Obj0, Obj) :-
 
 % Translate between prolog and http header formats (names)
 
-header_prolog_http(PHeader=Value, HHeader=Value) :-
+header_prolog_http(PHeader=Value_Obj, HHeader=Value) :-
 
    nonvar(PHeader), !,
+   obj_field(Value_Obj, body, Value),
    (  concat_atom(PTokens, '_', PHeader)
    -> maplist(capitalize_atom, PTokens, HTokens),
       concat_atom(HTokens, '-', HHeader)
    ;  capitalize_atom(PHeader, HHeader)
    ).
 
-header_prolog_http(PHeader=Value, HHeader=Value) :-
+header_prolog_http(PHeader=Value_Obj, HHeader=Value) :-
 
    nonvar(HHeader), !,
    (  concat_atom(HTokens, '-', HHeader)
    -> maplist(downcase_atom, HTokens, PTokens),
       concat_atom(PTokens, '_', PHeader)
    ;  downcase_atom(HHeader, PHeader)
-   ).
+   ),
+   obj_construct(http_header_v, [name, body], [PHeader, Value],
+                 Value_Obj0),
+   obj_downcast(Value_Obj0, Value_Obj).
 
 send_headers(Stream, Obj) :-
 
@@ -374,27 +377,5 @@ out_headers_list([Header=Value|T], Stream) :-
    format(Stream, '~a: ~a\r\n', [Header, Value]),
    out_headers_list(T, Stream).
 
-
-
-%% read_headers(+Stream, -Obj)
-%
-% Read all http headers from Stream. Exit after reading 2*CRLF from
-% the stream.
-
-% read_headers(Stream, Obj) :-
-
-%    read_headers2(Stream, List, [], _, []),
-%    http_headers_list_obj(List, Obj).
-
-% read_headers2(Stream, List0, List, Str0, Str) :-
-
-%    % timeout should be set on the stream as a property before the call
-%    read_line_to_codes(Stream, Str0, Str1),
-%    (  phrase(field(Name, Value0), Str0, Str1)
-%    -> trim_atom(both, [32], Value0, Value),
-%       List0 = [Name=Value|List],
-%       read_headers2(Stream, List0, List, Str1, Str)
-%    ;  Str == "\r\n"
-%    ).
 
 

@@ -26,7 +26,8 @@
 % post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(rfc822,
-          [field//3
+          [ctl//1,
+           field//3
 	   %email_address//1
            ]).
 
