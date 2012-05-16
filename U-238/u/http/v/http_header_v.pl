@@ -49,14 +49,8 @@ new_class(http_header_content_type_v, http_header_v,
    ;  Class = http_header_v
    ).
 
-TODO: rfc822 not use diff lists if not neccessary
-      rfc2616 here :  Linear white space
-   (LWS) MUST NOT be used between the type and subtype, nor between an
-   attribute and its value
-
 downcast(http_header_v, http_header_content_type_v, From, To) :-
 
-   gtrace,
    obj_field(From, body, Body),
    (  nonvar(Body)
    ->
@@ -67,4 +61,4 @@ downcast(http_header_v, http_header_content_type_v, From, To) :-
                 [Type, Subtype, Parameters], To)
    ;  true
    ).
-         
+
