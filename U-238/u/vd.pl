@@ -361,7 +361,7 @@ db_recorda(DB_Key, Option, Object0, Object) :-
 db_recorda(DB_Key, Option, Object0, Object, Replaced) :-
 
    Ctx = context(db_recorda/5, _),
-   db_put_object_cmn(DB_Key, Option, _, Object0, Object, Replaced,
+   db_put_object_cmn(DB_Key, Option, recorda, Object0, Object, Replaced,
                      Ctx).
 
 
@@ -415,7 +415,7 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
    debug(vd, '~p', db_put_object_int(DB_Key, Class_Id0, Option,
                                      Order, Object0, Object, Replaced,
                                      Ctx)),
-   
+
    % Rebase if needed
 
    % this block already binds Object and Replaced
@@ -586,7 +586,7 @@ db_recorded(DB_Key, Object) :-
 
 
 %% filter_on_db(+DB_Key, +Field_Names, @Field_Values) is
-%% det. 
+%% det.
 %
 % Leave only matched objects from DB by the search
 % criteria Do not unify unbounded fields in DB (which are
@@ -599,7 +599,7 @@ filter_on_db(DB_Key, Field_Names, Field_Values) :-
    Ctx = context(filter_on_db/3, _),
    filter_on_db_cmn(DB_Key, fail, Field_Names,
                     Field_Values, Ctx).
-   
+
 %% filter_on_db(+DB_Key, +Weak, +Field_Names,
 %% @Field_Values) is det.
 %
@@ -613,7 +613,7 @@ filter_on_db(DB_Key, Weak, Field_Names, Field_Values) :-
    Ctx = context(filter_on_db/4, _),
    filter_on_db_cmn(DB_Key, Weak, Field_Names,
                     Field_Values, Ctx).
-   
+
 filter_on_db_cmn(DB_Key, Weak, Field_Names, Field_Values,
                  Ctx) :-
 
