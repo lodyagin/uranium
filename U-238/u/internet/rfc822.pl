@@ -27,7 +27,9 @@
 
 :- module(rfc822,
           [ctl//1,
-           field//3
+           field//3,
+           linear_white_space//4,
+           linear_white_space_if_present//4
 	   %email_address//1
            ]).
 
@@ -169,19 +171,19 @@ lwsp(C) --> htab(C).
 linear_white_space([C2|Str0], Str, [C2|SS0], SS) -->
 
    crlf(_), lwsp(C2),  !, % <NB> remove crlf accourding to 3.1.1
-   linear_white_space2(Str0, Str, SS0, SS).
+   linear_white_space_if_present(Str0, Str, SS0, SS).
 
 linear_white_space([C2|Str0], Str, [C2|SS0], SS) -->
 
    lwsp(C2),
-   linear_white_space2(Str0, Str, SS0, SS).
+   linear_white_space_if_present(Str0, Str, SS0, SS).
 
-linear_white_space2(Str0, Str, SS0, SS) -->
+linear_white_space_if_present(Str0, Str, SS0, SS) -->
 
    linear_white_space(Str0, Str1, SS0, SS1), !,
-   linear_white_space2(Str1, Str, SS1, SS).
+   linear_white_space_if_present(Str1, Str, SS1, SS).
 
-linear_white_space2(Str, Str, SS, SS) --> [].
+linear_white_space_if_present(Str, Str, SS, SS) --> [].
 
 specials(C) -->
 

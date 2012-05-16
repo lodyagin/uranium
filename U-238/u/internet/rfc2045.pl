@@ -92,6 +92,7 @@ subtype(Subtype) --> extension_token(Subtype) ; iana_token(Subtype).
 iana_token(html) --> "html".
 
 parameters([Par|Pars]) -->
+   linear_white_space_if_present(_, _, _, _),
    parameter(Par), !,
    parameters(Pars).
 
