@@ -59,9 +59,9 @@
                                 % +Term, ?Value, +Ctx
 
            parent/2,            % ?Id, ?Parent_Id
-           descendant_class/3,  %+Parent_Id, ?No_Rebased, ?Desc_Id
-           same_class/3,        %+Class1_Id, ?No_Rebased, ?Class2_Id
-           same_or_descendant/3,%+Parent_Id, ?No_Rebased, ?Desc_Id
+           descendant_class/3,  %+Parent_Id, ?No_Rebased, ?Desc_Class_Name
+           same_class/3,        %+Class1_Id, ?No_Rebased, ?Class_Name
+           same_or_descendant/3,%+Parent_Id, ?No_Rebased, ?Desc_Class_Name
            u_class/1,
            u_object/1,
            unbounded_fields/2  % +Obj, -Field_Names
