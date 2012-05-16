@@ -2,6 +2,7 @@
 :- use_module(u(v)).
 :- use_module(u(internal/objects_i)).
 :- use_module(u(http/v/http_user_v)).
+:- use_module(u(util/lambda)).
 
 test(class_create1) :-
    % test class_create/3 version
@@ -151,8 +152,9 @@ test(class_parent3) :-
    length(L, N),
    assertion(N > 10).
 
-test(eval_obj_expr,
-     [[E1, E2, E3] =@= [HTTP_Result, WWW_Addr, Url]]
+test(eval_obj_expr1,
+     [[E0, E1, E2, E3]
+     =@= [Man, HTTP_Result, WWW_Addr, Url]]
      ) :-
 
    Url = 'http://kogorta.dp.ua',
@@ -160,9 +162,99 @@ test(eval_obj_expr,
                  [http_request_url], [Url], WWW_Addr),
    obj_construct(http_result_v,
                  [www_address], [WWW_Addr], HTTP_Result),
-   eval_obj_expr(HTTP_Result, E1),
-   eval_obj_expr(HTTP_Result/www_address, E2),
-   eval_obj_expr(HTTP_Result/www_address/http_request_url, E3).
+   obj_construct(man_v,
+                 [name], [HTTP_Result], Man),
+   eval_obj_expr(Man, E0),
+   eval_obj_expr(Man/name, E1),
+   eval_obj_expr(Man/name/www_address, E2),
+   eval_obj_expr(Man/name/www_address/http_request_url,
+                 E3).
+
+test(eval_obj_expr2_list) :-
+
+   Url1 = 'http://kogorta.dp.ua',
+   Url2 = 'http://google.com',
+   obj_construct(www_address_v,
+                 [http_request_url], [Url1], WWW_Addr1),
+   obj_construct(www_address_v,
+                 [http_request_url], [Url2], WWW_Addr2),
+   obj_construct(http_result_v,
+                 [www_address], [WWW_Addr1], HTTP_Result1),
+   obj_construct(http_result_v,
+                 [www_address], [WWW_Addr2], HTTP_Result2),
+   [HTTP_Result1, HTTP_Result2] / www_address
+   / http_request_url =^= [Url1, Url2].
+
+test(eval_obj_expr3_4_ops) :-
+
+   Url1 = 'http://kogorta.dp.ua',
+   Url2 = 'http://google.com',
+   obj_construct(www_address_v,
+                 [http_request_url], [Url1], WWW_Addr1),
+   obj_construct(www_address_v,
+                 [http_request_url], [Url2], WWW_Addr2),
+   obj_construct(http_result_v,
+                 [www_address], [WWW_Addr1], HTTP_Result1),
+   obj_construct(http_result_v,
+                 [www_address], [WWW_Addr2], HTTP_Result2),
+   maplist(\Name^Obj^
+          obj_construct(man_v, [name], [Name], Obj),
+           [HTTP_Result1, HTTP_Result2],
+           Mans),
+   Mans / name / www_address / http_request_url
+      =^= [Url1, Url2].
+
+test(eval_obj_expr4_compound1,
+     [error(no_object_field(_, name), _)]) :-
+
+   obj_construct(man_v, [name], ['Sergei'], M1),
+   obj_construct(man_v, [name], ['Artemiy'], M2),
+   obj_construct(www_address_v, [http_request_url],
+                 ['http://kogorta.dp.ua'], A1),
+   (p(M1, A1) = p(M2, _)) / name ^= _.
+
+test(eval_obj_expr4_compound2) :-
+
+   obj_construct(man_v, [name], ['Sergei'], M1),
+   obj_construct(man_v, [name], ['Artemiy'], M2),
+   obj_construct(www_address_v, [http_request_url],
+                 ['http://kogorta.dp.ua'], A1),
+   (p(M1, A1) = p(M2, A2)) // name ^= R1,
+   R1 // name ^= R2,
+   R2 // http_request_url ^= R3,
+   assertion(R1 =@= (p('Sergei', A1) = p('Artemiy', A2))),
+   assertion(R2 =@= R1),
+   assertion(R3 =@= (p('Sergei', 'http://kogorta.dp.ua')
+                  = p('Artemiy', 'http://kogorta.dp.ua'))).
+
+test(eval_obj_expr5_fail1,
+     [error(no_object_field(Man, url), _)]) :-
+
+   obj_construct(man_v, [], [], Man),
+   Man / url ^= _.
+
+test(eval_obj_expr5_fail2, [fail]) :-
+
+   'http://kogorta.dp.ua' / url ^= _.
+
+test(eval_obj_expr5_fail3, [fail]) :-
+
+   'http://kogorta.dp.ua' / url / url ^= _.
+
+test(eval_obj_expr5_weak1, [Man =@= Val]) :-
+
+   obj_construct(man_v, [], [], Man),
+   Man / url ^= Val.
+
+test(eval_obj_expr5_weak2, [Url == Val]) :-
+
+   Url = 'http://kogorta.dp.ua',
+   Url / url ^= Val.
+
+test(eval_obj_expr5_weak3, [Url == Val]) :-
+
+   Url = 'http://kogorta.dp.ua',
+   Url / url / url ^= Val.
 
 test(obj_construct_with_evals1) :-
 
@@ -527,6 +619,22 @@ test(obj_rebase_bug4,
    arg(1, Obj3, Class_Id3),
    assertion(Class_Id0 =:= Class_Id3),
    assertion(Obj2_0 == Obj3).
+
+test(obj_rebase_bug5, [X == 1]) :-
+
+   obj_construct(http_headers_v, [], [], O0),
+   obj_rebase((http_headers_v
+              -> http_response_headers_v), O0, O1),
+   obj_rebase((http_headers_v
+              -> http_invalid_bulk_headers_v), O1, O2),
+   obj_rebase((http_headers_v
+              -> http_response_with_cookies_headers_v),
+              O2, O3),
+   O3 / set_cookie ^= 1,
+   obj_rebase((http_headers_v
+              -> http_response_with_cookies_headers_v),
+              O3, O4),
+   obj_field(O4, set_cookie, X).
 
 test(obj_reset_fields1) :-
 

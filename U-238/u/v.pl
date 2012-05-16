@@ -119,6 +119,7 @@
 :- use_module(library(ordsets)).
 :- use_module(u(ur_lists)).
 :- use_module(u(logging)).
+:- use_module(u(util/lambda)).
 
 :- reexport(u(internal/objects_i),
             [
@@ -511,6 +512,8 @@ reinterpret_fill_values(Parent_Class_Id, Desc_Class_Id, Parent,
 
 obj_rebase(Rebase_Rule, Object0, Object) :-
 
+   debug(v, '~p',
+         obj_rebase(Rebase_Rule, Object0, Object)),
    Ctx = context(obj_rebase/3, _),
    check_inst(Object0, Ctx),
    check_rebase_rule(Rebase_Rule, Ctx, Old_Base, New_Base),
@@ -683,17 +686,53 @@ obj_sort_parents(Obj0, Class_Order, Obj) :-
 %
 % ==
 % expr ::= obj_expr | Value
-% obj_expr ::= Object / Field | obj_expr / Field
+% obj_expr ::= element / Field | obj_expr / Field
+% element ::= (Object | List)
 % ==
 
-eval_obj_expr(Value, Value) :-
+eval_obj_expr(Expr, Value) :-
+   eval_obj_expr_cmn(Expr, throw, Value).
+
+eval_obj_expr(Expr, Weak0, Value) :-
+   Ctx = context(eval_obj_expr/3, _),
+   decode_arg([[throw, strict],
+               [weak],
+               [fail]], Weak0, Weak, Ctx),
+   eval_obj_expr_cmn(Expr, Weak, Value).
+
+eval_obj_expr_cmn(Value, _, Value) :-
    var(Value), !.
 
-eval_obj_expr(Object0 / Field, Value) :- !,
-    eval_obj_expr(Object0, Object),
-    obj_field(Object, Field, Value).
+eval_obj_expr_cmn(Expr0 / Field1 / Field2, Weak, Value) :-
+   !,
+   eval_obj_expr_cmn(Expr0 / Field1, Weak, Value1),
+   eval_obj_expr_cmn(Value1 / Field2, Weak, Value).
 
-eval_obj_expr(Value, Value).
+eval_obj_expr_cmn(List / Field, Weak, Value) :-
+   nonvar(List),
+   ( List = [_|_] ; List = []), !,
+   maplist(Field+\Element^V^
+          eval_obj_expr_cmn(Element / Field, Weak, V),
+           List, Value).
+
+eval_obj_expr_cmn(Object / Field, Weak, Value) :-
+   u_object(Object), !,
+   (  Weak == weak
+   -> (  obj_field(Object, fail, Field, Value) -> true
+      ;  Value = Object
+      )
+   ;
+      obj_field(Object, Weak, Field, Value)
+   ).
+
+eval_obj_expr_cmn(Compound / Field, Weak, Value) :-
+   compound(Compound), !,
+   Compound =.. [Functor|Expr_List],
+   maplist(Field+\E^V^eval_obj_expr_cmn(E / Field, Weak, V),
+           Expr_List, Val_List),
+   Value    =.. [Functor|Val_List].
+
+eval_obj_expr_cmn(Value, _, Value).
 
 %% class_descendant(+Class, ?Descendant) is nondet.
 %
@@ -1145,14 +1184,5 @@ A ^= B :-
    eval_obj_expr(A, A1),
    eval_obj_expr(B, B1),
    A1 = B1.
-
-%class_field_type(Class, Field, Type) :-
-%
-%   class_arg_num(Class, Arg_Num, Field),
-%   atom_concat(Class, '#t', Type_Functor),
-%   objects:current_predicate(Type_Functor, Type_Term),
-%   objects:Type_Term,
-%   arg(Arg_Num, Type_Term, Type), !.
-
 
 :- initialization clear_decode_arg.
