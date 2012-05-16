@@ -1,6 +1,22 @@
 :- begin_tests(http_headers_v).
 :- use_module(http_headers_v).
 
+test(http_headers_list_obj_bug1) :-
+
+   List = [ 'Location' = 'http : //www . facebook . com/unsupportedbrowser',
+            'P3P' = 'CP= " Facebook   does   not   have   a   P3P   policy .   Learn   why   here :   http : //fb . me/p3p "',
+            'X-Content-Type-Options' = nosniff,
+            'X-Frame-Options' = 'DENY',
+            'Set-Cookie' = 'datr=KEqyTzuMCfz1GhP8w26-BZg7 ;   expires=Thu ,   15-May-2014   12 : 20 : 56   GMT ;   path=/ ;   domain= . facebook . com ;   httponly',
+            'Set-Cookie' = 'lsd=AVqm9Avf ;   path=/ ;   domain= . facebook . com',
+            'Content-Type' = 'text/html ;   charset=utf-8',
+            'X-FB-Debug' = 'f+bKUUtzin/3WCNVE3tWLoNB0ksWI1iaPqSmhhrIdpk=',
+            'Date' = 'Tue ,   15   May   2012   12 : 20 : 56   GMT',
+            'Content-Length' = '0',
+            'Connection' = close
+          ],
+   http_headers_list_obj(List, _).
+
 test(list_to_http_headers_v1) :-
 
    Headers = [date = 'Tue, 03 Apr 2012 19:32:50 GMT',
