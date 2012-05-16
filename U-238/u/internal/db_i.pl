@@ -35,7 +35,7 @@
            db_functor_des/4, % +DB_Key, ?Functor, -Des, +Ctx
            db_key_is_valid/1,
            db_key_policy/3,  % +DB_Key, -Old, ?New
-           db_set_callbacks/2, 
+           db_set_callbacks/2,
            db_name_int/1,    % ?DB_Key
            db_object_class_int/2,
            db_recorded_int/2,
@@ -64,7 +64,7 @@
 
 :- dynamic db_class_des/8,     % DB_Key, DB_Class_Id, DB_Parent_Class_Id,
                                % Name, Arity, Fields, Key, Parents
-           db_key_policy/2,    
+           db_key_policy/2,
            db_after_put_callback/2,  % DB_Key, Pred
            db_next_class_id_/2,
            db_keymaster/2.     % DB_Key, Class_Name
@@ -124,7 +124,7 @@ db_key_policy(DB_Key, Old, New) :-
 db_set_callbacks(DB_Key, After_Put_Callback) :-
 
    must_be(ground, DB_Key),
-   
+
    retractall(db_after_put_callback(DB_Key, _)),
    assertz(db_after_put_callback(DB_Key, After_Put_Callback)).
 
@@ -633,7 +633,9 @@ named_args_unify_int(DB_Key, Option, Des, Field_Names, Values,
 
    obj_construct_int(Local_Class_Id, Field_Names, Option, Values,
                      Term0),
-   obj_rebase((object_v -> db_object_v), Term0, Term), % ?
+   (  same_or_descendant(Local_Class_Id, _, db_object_v) -> true
+   ;  obj_rebase((object_v -> db_object_v), Term0, Term)
+   ),
    db_recorded_int(DB_Key, Term),
 
    obj_unify_int(Local_Class_Id, Field_Names, Option, Term, Values, Ctx),
