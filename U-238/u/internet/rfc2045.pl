@@ -107,6 +107,14 @@ attribute(Attr) -->
    { atom_codes(Str, Attr1),
      downcase_atom(Attr1, Attr) }.
 
+value(Value) -->
+   token(Str), !,
+   { atom_codes(Value, Str) }.
+
+value(Value) -->
+   quoted_string(Str, [], _, _), !,
+   { atom_codes(Value, Str) }.
+
 token([C|Str0]) -->
    token_el(C),
    token_els(Str0).

@@ -29,7 +29,8 @@
           [ctl//1,
            field//3,
            linear_white_space//4,
-           linear_white_space_if_present//4
+           linear_white_space_if_present//4,
+           quoted_string//4
 	   %email_address//1
            ]).
 
