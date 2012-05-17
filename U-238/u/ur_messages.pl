@@ -93,8 +93,6 @@ prolog:message(not_downcast(From_Class, To_Class)) -->
 
    ['~a -> ~a is not downcast' - [From_Class, To_Class]].
 
-
-
 prolog:message(old_base_is_invalid(Old_Base, Orig_Id)) -->
 
    ['~a is not a base for the class with id ~d'
@@ -108,7 +106,6 @@ prolog:message(insufficient_class_order(Order, Orig_Order)) -->
 
    ['The defined class order ~p is insufficient ' - [Order]],
    ['for ordering a class with the parents ~p' - [Orig_Order]].
-
 
 
 prolog:message(ignore_cookie_attribute(Attr, Val, Obj)) -->
@@ -133,6 +130,8 @@ prolog:message(ixpath_not_implemented(What, Expr)) -->
 prolog:message(html_invalid_attribute_value(Attr, Val)) -->
 
    ['invalud value ~p for html attribute ~a' - [Val, Attr]].
+
+% Uranium DB
 
 prolog:message(db_system_bad_state(Format, Args)) -->
 

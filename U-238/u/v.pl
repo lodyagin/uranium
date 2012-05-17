@@ -40,6 +40,7 @@
            class_parents/2,
            %class_same_or_descendant/2, % +Class, ?Descendant
            eval_obj_expr/2,
+           eval_obj_expr/3,
 
            named_arg/3,
            named_arg/4,
@@ -685,38 +686,54 @@ obj_sort_parents(Obj0, Class_Order, Obj) :-
 % Calculate expressions in an operator form
 %
 % ==
-% expr ::= obj_expr | Value
-% obj_expr ::= element / Field | obj_expr / Field
+% expr ::= obj_expr | Value | Variable
+% obj_expr ::= obj_expr / Field | obj_expr // Field | element
 % element ::= (Object | List)
 % ==
 
 eval_obj_expr(Expr, Value) :-
-   eval_obj_expr_cmn(Expr, throw, Value).
+   Ctx = context(eval_obj_expr/2, _),
+   eval_obj_expr_cmn(Expr, throw, Value, _, Ctx).
 
 eval_obj_expr(Expr, Weak0, Value) :-
    Ctx = context(eval_obj_expr/3, _),
    decode_arg([[throw, strict],
                [weak],
                [fail]], Weak0, Weak, Ctx),
-   eval_obj_expr_cmn(Expr, Weak, Value).
+   eval_obj_expr_cmn(Expr, Weak, Value, _, Ctx).
 
-eval_obj_expr_cmn(Value, _, Value) :-
-   var(Value), !.
+eval_obj_expr_cmn(Variable, _, Variable, variable, _) :-
+   var(Variable), !.
 
-eval_obj_expr_cmn(Expr0 / Field1 / Field2, Weak, Value) :-
+% NB with Weak = weak '/' is the same as '//'
+eval_obj_expr_cmn(Obj_Expr / Field, Weak, Value, Type, Ctx) :-
    !,
-   eval_obj_expr_cmn(Expr0 / Field1, Weak, Value1),
-   eval_obj_expr_cmn(Value1 / Field2, Weak, Value).
+   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type, Ctx),
+   eval_obj_field(Type, Value1, Weak, Field, Value, Ctx).
 
-eval_obj_expr_cmn(List / Field, Weak, Value) :-
+eval_obj_expr_cmn(Obj_Expr // Field, Weak, Value, Type, Ctx) :-
+   !,
+   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type, Ctx),
+   eval_obj_field(Type, Value1, weak, Field, Value, Ctx).
+
+eval_obj_expr_cmn(List, _, List, list, _) :-
    nonvar(List),
-   ( List = [_|_] ; List = []), !,
-   maplist(Field+\Element^V^
-          eval_obj_expr_cmn(Element / Field, Weak, V),
+   ( List = [_|_] ; List = []), !.
+
+eval_obj_expr_cmn(Object, _, Object, object, _) :-
+   u_object(Object), !.
+
+eval_obj_expr_cmn(Compound, _, Compound, compound, _) :-
+   compound(Compound), !.
+
+eval_obj_expr_cmn(Value, _, Value, value, _) :- !.
+
+eval_obj_field(list, List, Weak, Field, Value, Ctx) :- !,
+   maplist(Field^Ctx+\Element^V^
+          eval_obj_expr_cmn(Element / Field, Weak, V, _, Ctx),
            List, Value).
 
-eval_obj_expr_cmn(Object / Field, Weak, Value) :-
-   u_object(Object), !,
+eval_obj_field(object, Object, Weak, Field, Value, _) :- !,
    (  Weak == weak
    -> (  obj_field(Object, fail, Field, Value) -> true
       ;  Value = Object
@@ -725,14 +742,22 @@ eval_obj_expr_cmn(Object / Field, Weak, Value) :-
       obj_field(Object, Weak, Field, Value)
    ).
 
-eval_obj_expr_cmn(Compound / Field, Weak, Value) :-
-   compound(Compound), !,
+eval_obj_field(compound, Compound, Weak, Field, Value, Ctx) :- !,
    Compound =.. [Functor|Expr_List],
-   maplist(Field+\E^V^eval_obj_expr_cmn(E / Field, Weak, V),
-           Expr_List, Val_List),
+   eval_obj_field(list, Expr_List, Weak, Field, Val_List, Ctx),
    Value    =.. [Functor|Val_List].
 
-eval_obj_expr_cmn(Value, _, Value).
+eval_obj_field(value, Value, weak, _, Value, _) :- !.
+eval_obj_field(value, Value, throw, _, _, Ctx) :-
+   throw(error(invalid_object(Value, 'may be use `weak` option?'), Ctx)).
+eval_obj_field(value, _, fail, _, _, _) :-
+   !, fail.
+
+eval_obj_field(variable, Variable, weak, _, Variable, _) :- !.
+eval_obj_field(variable, Value, throw, _, _, Ctx) :-
+   throw(error(invalid_object(Value, 'may be use `weak` option?'), Ctx)).
+eval_obj_field(variable, _, fail, _, _, _) :-
+   !, fail.
 
 %% class_descendant(+Class, ?Descendant) is nondet.
 %
@@ -1175,14 +1200,16 @@ obj_copy_int(Class_Id, From, To) :-
 
 A =^= B :-
 
-   eval_obj_expr(A, A1),
-   eval_obj_expr(B, B1),
+   Ctx = context((=^=)/2, _),
+   eval_obj_expr_cmn(A, throw, A1, _, Ctx),
+   eval_obj_expr_cmn(B, throw, B1, _, Ctx),
    A1 =@= B1.
 
 A ^= B :-
 
-   eval_obj_expr(A, A1),
-   eval_obj_expr(B, B1),
+   Ctx = context((^=)/2, _),
+   eval_obj_expr_cmn(A, throw, A1, _, Ctx),
+   eval_obj_expr_cmn(B, throw, B1, _, Ctx),
    A1 = B1.
 
 :- initialization clear_decode_arg.

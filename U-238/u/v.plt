@@ -222,39 +222,56 @@ test(eval_obj_expr4_compound2) :-
    (p(M1, A1) = p(M2, A2)) // name ^= R1,
    R1 // name ^= R2,
    R2 // http_request_url ^= R3,
-   assertion(R1 =@= (p('Sergei', A1) = p('Artemiy', A2))),
-   assertion(R2 =@= R1),
-   assertion(R3 =@= (p('Sergei', 'http://kogorta.dp.ua')
-                  = p('Artemiy', 'http://kogorta.dp.ua'))).
+   assertion(R1 == (p('Sergei', A1) = p('Artemiy', A2))),
+   assertion(R2 == R1),
+   assertion(R3 == (p('Sergei', 'http://kogorta.dp.ua')
+                  = p('Artemiy', A2))).
 
-test(eval_obj_expr5_fail1,
+test(eval_obj_expr5_throw1,
      [error(no_object_field(Man, url), _)]) :-
 
    obj_construct(man_v, [], [], Man),
    Man / url ^= _.
 
+test(eval_obj_expr5_throw2, [error(invalid_object(Url, _), _)]) :-
+
+   Url = 'http://kogorta.dp.ua',
+   Url / url ^= _.
+
+test(eval_obj_expr5_thorw3, [error(invalid_object(Url, _), _)]) :-
+
+   Url = 'http://kogorta.dp.ua',
+   Url / url / url ^= _.
+
+test(eval_obj_expr5_fail1, [fail]) :-
+
+   obj_construct(man_v, [], [], Man),
+   eval_obj_expr(Man / url, fail, _).
+
 test(eval_obj_expr5_fail2, [fail]) :-
 
-   'http://kogorta.dp.ua' / url ^= _.
+   Url = 'http://kogorta.dp.ua',
+   eval_obj_expr(Url / url, fail, _).
 
 test(eval_obj_expr5_fail3, [fail]) :-
 
-   'http://kogorta.dp.ua' / url / url ^= _.
+   Url = 'http://kogorta.dp.ua',
+   eval_obj_expr(Url / url / url, fail, _).
 
 test(eval_obj_expr5_weak1, [Man =@= Val]) :-
 
    obj_construct(man_v, [], [], Man),
-   Man / url ^= Val.
+   Man // url ^= Val.
 
 test(eval_obj_expr5_weak2, [Url == Val]) :-
 
    Url = 'http://kogorta.dp.ua',
-   Url / url ^= Val.
+   Url // url ^= Val.
 
 test(eval_obj_expr5_weak3, [Url == Val]) :-
 
    Url = 'http://kogorta.dp.ua',
-   Url / url / url ^= Val.
+   Url // url // url ^= Val.
 
 test(obj_construct_with_evals1) :-
 
