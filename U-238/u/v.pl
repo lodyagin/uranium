@@ -89,10 +89,7 @@
            op(700, xfx, ^=),
 
            (=^=)/2,
-           (^=)/2,
-
-           % for internal usage
-           obj_parents_cmn/4
+           (^=)/2
            ]).
 
 /** <module> Uranium object system.
@@ -548,27 +545,15 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
       Object = Object0
    ;
       % find the common base class
-      common_parent(Old_Base_Id, New_Base_Id, Cmn_Base_Id),
+      %common_parent(Old_Base_Id, New_Base_Id, Cmn_Base_Id),
 
       % find the new parent line
-      list_inheritance(New_Base_Id, New_Parents1),
-      list_inheritance(Old_Base_Id, Orig_Id, [_|New_Parents2]),
+      list_inheritance_names(New_Base_Id, New_Parents1),
+      list_inheritance_names(Old_Base_Id, Orig_Id, [_|New_Parents2]),
       append(New_Parents1, New_Parents2, New_Parents_R),
-      reverse(New_Parents_R, New_Parents3),
+      reverse(New_Parents_R, New_Parents),
 
-      class_rebase_int(New_Parents3, New_Parents, _, Ctx),
-      New_Parents = [Rebased_Id|_],
-
-      % find the fields to through out
-      class_all_fields(Old_Base_Id, Old_Base_List),
-      class_all_fields(Cmn_Base_Id, Cmn_Base_List),
-      ord_subtract(Old_Base_List, Cmn_Base_List, Through_Out),
-      % find the fields we will transfer to the new object
-      class_all_fields(Orig_Id, Orig_List),
-      ord_subtract(Orig_List, Through_Out, Transfer_Fields),
-      obj_unify(Object0, Transfer_Fields, Transfer_Values),
-      obj_construct_int(Rebased_Id, Transfer_Fields, strict,
-                        Transfer_Values, Object)
+      obj_parents_int(Object0, New_Parents, Object, Ctx)
    ).
 
 % If Base is a same or ancestor return its id
@@ -1111,15 +1096,9 @@ obj_parents(Obj0, Class_Names_List, Obj) :-
 
 obj_parents_cmn(Obj0, Class_Names_List, Obj, Ctx) :-
 
-   check_existing_class_list_arg(Class_Names_List, Ctx,
-                                 Class_Ids_List),
+   check_existing_class_list_arg(Class_Names_List, Ctx, _),
    % TODO always check [..|object_v, object_base_v] ?
-
-   class_rebase_int(Class_Ids_List, [New_Class_Id|_], _, Ctx),
-   Class_Names_List = [New_Functor|_],
-
-   Obj0 =.. [_, _|Obj0_T],
-   Obj =.. [New_Functor, New_Class_Id|Obj0_T].
+   obj_parents_int(Obj0, Class_Names_List, Obj, Ctx).
 
 %
 % obj_diff(+Obj1, +Obj2, -Diff_List)

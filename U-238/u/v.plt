@@ -492,13 +492,12 @@ test(obj_parents2_1) :-
    obj_field(Man2, functor, F2),
    assertion([F1, F2, C1, C2] == [citizen_v, man_v, callup_v, callup_v]).
 
-test(obj_parents2_bug1,
-     [error(use_rebase_to_insert_parents),
-      blocked(rebase_family)
-      ]) :-
+test(obj_parents2_bug1) :-
 
-   obj_construct(man_v, [], [], M),
-   obj_parents(M, [man_v, db_object_v, object_v, object_base_v], _).
+   obj_construct(man_v, [name, surname], [s, l], M),
+   obj_parents(M, [man_v, db_object_v, object_v, object_base_v], M1),
+   obj_unify(M1, [name, surname], NS),
+   assertion(NS == [s, l]).
 
 test(obj_rebase1) :-
 

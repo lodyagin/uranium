@@ -26,9 +26,10 @@
 :- module(class_create,
           [class_create_cmn/6, % +Class, +Parent, +Fields,
                                % ?New_Key, -Class_Id, +Ctx
-           
-           class_rebase_int/4  % +Parents, -New_Parents, -Rebased,
+
+           class_rebase_int/4, % +Parents, -Parents_Ids, -Rebased,
                                % +Ctx
+           obj_parents_int/4
           ]).
 
 :- use_module(library(error)).
@@ -195,7 +196,7 @@ assert_class_fields2([Field_Name|FT], Arg0, Arg, Class_Id,
 assert_eval_fields(Class_Id) :-
 
    class_id(Class_Id, Class),
-   
+
    % TODO type for eval field
    (  setof(Name,
             Parent_Id^Type^Native^
@@ -270,7 +271,7 @@ assert_eval_batch([], _) :- !.
 assert_eval_batch([Field_Pred|T], Native) :-
 
    %Field_Pred = (field(Class_Id, Field, _, _) :- _),
-   %(  objects:field_info(Class_Id, Field, _, 
+   %(  objects:field_info(Class_Id, Field, _,
    assertz_pred(classes, objects:Field_Pred),
    assert_eval_batch(T, Native).
 
@@ -301,7 +302,7 @@ assert_copy(Class_Id, Parent_Id) :-
 
    class_id(Class_Id, Class),
    %class_primary_id(Class, Primary_Id),
-   
+
    (   objects:clause(copy(Class_Id, Class, From, To),
                       Body)
    ->
@@ -338,62 +339,60 @@ assert_copy(Class_Id, Parent_Id) :-
 
 
 
-%% class_rebase_int(+Parents, -New_Parents, -Rebase, +Ctx) is semidet.
+%% class_rebase_int(+Parents, -Parents_Ids, -New_Class, +Ctx) is semidet.
 %
-% Parents - a list of new parents ids for this class (it
+% Parents - a list of new parents names for this class (it
 % is started from the nearest and ended with object_base_v
 % (id = 0).
 %
 % It is det on existing class ids.
 %
-% @param Rebase will be unified with true if new Class_Id
-% is created and false in other case
+% @param Parents_Ids - new Ids for Parents.
+% @param New_Class will be unified with true if new Class_Id
+% is created and unbound in other case
 
-class_rebase_int([0], [0], false, _) :- !.
+class_rebase_int([object_base_v], [0], false, _) :- !.
 
-class_rebase_int([Class_Orig_Id|Parents0],
-                 [Class_New_Id|Parents],
-                 Rebase, _) :-
+class_rebase_int([Class|Parents],
+                 [Class_New_Id|Parents_Ids],
+                 New_Class, Ctx) :-
 
    % The recursion into parents
-   class_rebase_int(Parents0, Parents, Rebase1, _),
-   Parents = [Parent_Id|_],
+   class_rebase_int(Parents, Parents_Ids, New_Class_For_Parent, Ctx),
+   Parents_Ids = [Parent_Id|_],
 
    % Check the rebased classes cache (by the class name)
-   class_id(Class_Orig_Id, Class_Name), % get Class_Name
-   (  objects:rebased_class(Class_Name, Parents,
-                            Class_New_Id)
-   ->
-      (  % check whether Class_New_Id is really rebased
-         objects:class_id(Class_New_Id, true, _)
-      -> true
-      ;  Rebase = rebase
-      )
+   % It bounds New_Class or Class_New_Id (at least one)
+   (  objects:rebased_class(Class, Parents, Class_New_Id)
+   -> true
    ;
       % check whether do rebase
-      (  Rebase1 \== rebase
-      -> (  objects:parent_(Class_Orig_Id, Parent_Id)
-         -> Rebase = false
-         ;  Rebase = rebase )
-      ;
+      (  New_Class_For_Parent == true
+      ->
          % parents already rebased, need rebase
-         Rebase = rebase
+         New_Class = true
+      ;
+         (  % search existing Class descendant of Parent_Id
+            class_id(Class_New_Id, Class),
+            objects:parent_(Class_New_Id, Parent_Id)
+         -> true
+         ;  New_Class = true
+         )
       ),
 
+      class_primary_id(Class, Class_Prim_Id),
       % rebase if needed
-      (  Rebase == rebase
-      -> class_fields(_:_, Class_Orig_Id, true, false, New_Fields),
-         class_id(Class_Orig_Id, Class),
+      (  New_Class == true
+      -> class_fields(_:_, Class_Prim_Id, true, false, New_Fields),
          assert_new_class_rebased(Class, Parent_Id, New_Fields,
-                                  Class_New_Id, _),
+                                  Class_New_Id, Ctx),
 
-         get_key(Class_Orig_Id, Orig_Key),
+         get_key(Class_Prim_Id, Orig_Key),
          assert_new_key(Class_New_Id, Orig_Key),
          assert_copy(Class_New_Id, Parent_Id),
          assert_eval_fields(Class_New_Id)
-
-      ;  % the same class is sufficient
-         Class_New_Id = Class_Orig_Id
+      ;
+         true % Class_New_Id should be already bound
       )
    ).
 
@@ -483,5 +482,20 @@ normalize_fields_def([Name:Type|T1], [Name:Type|T2]) :- !,
 normalize_fields_def([Name|T1], [Name:_|T2]) :-
 
   normalize_fields_def(T1, T2).
+
+obj_parents_int(Obj0, Parents, Obj, Ctx) :-
+
+   class_rebase_int(Parents, [New_Id|_], _, Ctx),
+
+   % find the fields we will transfer to the new object
+   arg(1, Obj0, Orig_Id),
+   class_all_fields(Orig_Id, Orig_Fields),
+   class_all_fields(New_Id, New_Fields),
+   ord_intersect(Orig_Fields, New_Fields, Transfer_Fields),
+   obj_unify_int(Orig_Id, Transfer_Fields, throw, Obj0, Transfer_Values,
+                 Ctx),
+   obj_construct_int(New_Id, Transfer_Fields, strict,
+                     Transfer_Values, Obj).
+
 
 

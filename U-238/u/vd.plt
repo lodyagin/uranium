@@ -11,7 +11,7 @@ test(clear_test_db, [fail, setup(db_clear(people))]) :-
 
 	db_recorded(people, _).
 
-test(db_clear, [blocked(temporary), setup(model_db), List == []]) :-
+test(db_clear, [setup(model_db), List == []]) :-
 
    current_prolog_flag(verbose, Old_Verbose),
    set_prolog_flag(verbose, silent),

@@ -49,10 +49,10 @@
 :- use_module(library(error)).
 :- use_module(library(ordsets)).
 :- use_module(u(internal/objects_i)).
+:- use_module(u(internal/class_create)).
 :- use_module(u(internal/db_vocab)).
 :- use_module(u(v)).
 :- use_module(u(internal/ur_debug)).
-:- use_module(u(util/lambda)).
 
 /** <module> Internal DB preds for use only from Uranium itself.
 
@@ -171,6 +171,7 @@ db_next_class_id(DB_Key, Id) :-
 % Store class information in db and return new id
 db_add_class(DB_Key, Local_Id, DB_Id, Des) :-
 
+   nonvar(Local_Id), var(DB_Id), !,
    parent(Local_Id, Local_Parent_Id),
    db_conv_local_db(DB_Key, Local_Parent_Id, DB_Parent_Id, _),
 
@@ -198,6 +199,22 @@ db_add_class(DB_Key, Local_Id, DB_Id, Des) :-
       true   % in hope the parent already added it
    ).
 
+% Retrieve class information from db and create new local class
+db_add_class(DB_Key, Local_Id, DB_Id, Des) :-
+
+   nonvar(DB_Id), var(Local_Id), !,
+   Ctx = context(db_add_class/4, _),
+   Des = db_class_des(_, DB_Parent_Id, Class, _, Fields, Key, Parents1),
+   db_conv_local_db(DB_Key, Local_Parent_Id, DB_Parent_Id, _),
+   (  class_primary_id(Class, _)
+   -> % new rebased
+      Parents2 = [object_base_v|Parents1],
+      reverse(Parents2, Parents),
+      class_rebase_int([Class|Parents], [Local_Id|_], _, Ctx)
+   ;  % new class
+      class_id(Local_Parent_Id, Parent),
+      class_create_cmn(Class, Parent, Fields, Key, Local_Id, Ctx)
+   ).
 
 class_parents_as_names(Local_Class_Id, Parents) :-
 
@@ -286,10 +303,13 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
 					   DB_Class_Id)))
        ),
 
-       class_id(Local_Class_Id0, Class), % try next class id
-
-       % check class compatibility (can BT to next local id)
-       class_parents_as_names(Local_Class_Id0, DB_Parents),
+       (   class_id(Local_Class_Id, Class), % try next class id
+           % check class compatibility (can BT to next local id)
+           class_parents_as_names(Local_Class_Id, DB_Parents)
+       ->  true
+       ;   % add the new local class
+           db_add_class(DB_Key, Local_Class_Id, DB_Class_Id, Des)
+       ),
        class_all_fields(Local_Class_Id, Local_Fields),
        (   Local_Fields == DB_Fields
        ->  true

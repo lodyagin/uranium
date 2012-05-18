@@ -175,6 +175,7 @@
 :- use_module(u(internal/decode_arg)).
 :- use_module(u(internal/db_i)).
 :- use_module(u(internal/objects_i)).
+:- use_module(u(internal/class_create)).
 :- use_module(u(v)).
 :- use_module(u(logging)).
 :- use_module(u(ur_lists)).
@@ -516,14 +517,15 @@ make_db_ready(DB_Key, Object0, Object, Ctx) :-
    ),
    (  Parents1 = [db_object_v|_]
    -> Object = Object0
-   ;  (  select(db_object_v, Parents1, Parents2)
-      -> Parents3 = [object_base_v, object_v, db_object_v | Parents2],
-         reverse(Parents3, Parents),
-         obj_parents_cmn(Object0, Parents, Object, Ctx)
-      ;  obj_rebase((object_v -> db_object_v), Object0, Object)
-      )
+   ;
+      (  select(db_object_v, Parents1, Parents2) -> true
+      ;	 Parents2 = Parents1
+      ),
+      Parents3 = [object_base_v, object_v, db_object_v | Parents2],
+      reverse(Parents3, Parents),
+      obj_parents_int(Object0, Parents, Object, Ctx)
    ).
-   
+
 
 
 db_properties_hook(DB_Key, Class_Id, DB_Properties) :-
