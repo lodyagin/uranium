@@ -182,7 +182,7 @@ test(list_to_http_invalid_bulk_headers_v1) :-
    assertion(Headers2 == Headers1),
    obj_field(Obj, '@bulk', Bulk_Rev),
    reverse(Bulk_Rev, Bulk),
-   assertion(Bulk == Headers).
+   assertion(Bulk // body =^= Headers).
 
 test(list_to_http_invalid_bulk_headers_v2) :-
 
@@ -207,7 +207,7 @@ test(list_to_http_invalid_bulk_headers_v2) :-
    assertion(Headers2 == Headers1),
    obj_field(Obj, '@bulk', Bulk_Rev),
    reverse(Bulk_Rev, Bulk),
-   assertion(Bulk == [bulk1 = 1]).
+   assertion(Bulk // body =^= [bulk1 = 1]).
 
 test(list_to_http_invalid_bulk_headers_v3) :-
 
@@ -239,7 +239,7 @@ test(list_to_http_invalid_bulk_headers_v3) :-
    assertion(Headers2 == Headers1),
    obj_field(Obj, '@bulk', Bulk_Rev),
    reverse(Bulk_Rev, Bulk),
-   assertion(Bulk == [bulk1 = 1]).
+   assertion(Bulk // body =^= [bulk1 = 1]).
 
 test(list_to_http_invalid_bulk_headers_v4) :-
 
@@ -271,7 +271,7 @@ test(list_to_http_invalid_bulk_headers_v4) :-
    assertion(Headers2 == Headers1),
    obj_field(Obj, '@bulk', Bulk_Rev),
    reverse(Bulk_Rev, Bulk),
-   assertion(Bulk == [bulk1 = 1]).
+   assertion(Bulk // body =^= [bulk1 = 1]).
 
 test(list_to_http_invalid_bulk_headers_v5) :-
 
@@ -313,7 +313,7 @@ test(list_to_http_invalid_bulk_headers_v5) :-
    assertion(Headers2 == Headers1),
    obj_field(Obj, '@bulk', Bulk_Rev),
    reverse(Bulk_Rev, Bulk),
-   assertion(Bulk ==
+   assertion(Bulk // body =^=
             [bulk1 = 1, bulk2 = 2, bulk3 = 3,
              bulk4 = 4, bulk5 = 5
             ]).
@@ -358,7 +358,7 @@ test(list_to_http_invalid_bulk_headers_v6) :-
    assertion(Headers2 == Headers1),
    obj_field(Obj, '@bulk', Bulk_Rev),
    reverse(Bulk_Rev, Bulk),
-   assertion(Bulk ==
+   assertion(Bulk // body =^=
             [bulk1 = 1, bulk2 = 2, bulk3 = 3,
              bulk4 = 4, bulk5 = 5
             ]).
@@ -405,7 +405,7 @@ test(list_to_http_invalid_bulk_headers_v7) :-
    assertion(Headers2 == Headers1),
    obj_field(Obj, '@bulk', Bulk_Rev),
    reverse(Bulk_Rev, Bulk),
-   assertion(Bulk ==
+   assertion(Bulk // body =^=
             [bulk1 = 1, bulk2 = 2, bulk3 = 3,
              bulk4 = 4, bulk5 = 5
             ]).
