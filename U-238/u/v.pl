@@ -1083,7 +1083,7 @@ obj_parents_int(Class_Id, Class_Names_List) :-
    maplist(class_id, Id_List, Class_Names_List).
 
 
-%% obj_parents(+Obj0, +Class_Names_List, -Obj)
+%% obj_parents(+Obj0, +Class_Names_List, -Obj) is det.
 %
 % Rebase Obj0 such way that Class_Names_List is the new
 % list of parents in Obj, for example:

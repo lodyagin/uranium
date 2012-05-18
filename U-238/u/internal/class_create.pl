@@ -338,11 +338,13 @@ assert_copy(Class_Id, Parent_Id) :-
 
 
 
-%% class_rebase_int(+Parents, -New_Parents, -Rebase, +Ctx)
+%% class_rebase_int(+Parents, -New_Parents, -Rebase, +Ctx) is semidet.
 %
 % Parents - a list of new parents ids for this class (it
 % is started from the nearest and ended with object_base_v
-% (id = 0)
+% (id = 0).
+%
+% It is det on existing class ids.
 %
 % @param Rebase will be unified with true if new Class_Id
 % is created and false in other case
