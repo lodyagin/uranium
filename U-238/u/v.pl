@@ -89,7 +89,10 @@
            op(700, xfx, ^=),
 
            (=^=)/2,
-           (^=)/2
+           (^=)/2,
+
+           % for internal usage
+           obj_parents_cmn/4
            ]).
 
 /** <module> Uranium object system.

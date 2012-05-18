@@ -418,8 +418,8 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
 
    % Rebase if needed
 
-   % this block already binds Object and Replaced
-   (  same_or_descendant(Class_Id0, _, db_object_v)
+   % this block already binds Object1 and Replaced
+   (  is_db_ready(Object0)
    ->
       Class_Id = Class_Id0, % already has a db_object_v ancestor
 
@@ -459,7 +459,7 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
       ;  throw(error(db_obj_replace_protector(
                DB_Key, Replaced, Object0), Ctx))
       ),
-      obj_rebase((object_v -> db_object_v), Object0, Object1),
+      make_db_ready(DB_Key, Object0, Object1, Ctx),
       arg(1, Object1, Class_Id)
    ),
 
@@ -501,6 +501,30 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
    ;
       db_record_int(DB_Key, Order, Object, Ctx)
    ).
+
+is_db_ready(Object) :-
+   arg(1, Object, Class_Id),
+   list_inheritance_names(Class_Id,
+                          [object_base_v, object_v, db_object_v|_]).
+
+make_db_ready(DB_Key, Object0, Object, Ctx) :-
+   arg(1, Object0, Class_Id),
+   list_inheritance_names(Class_Id, Parents0),
+   (  Parents0 = [object_base_v, object_v|Parents1]
+   -> true
+   ;  throw(error(db_unformatted_object(DB_Key, Parents0), Ctx))
+   ),
+   (  Parents1 = [db_object_v|_]
+   -> Object = Object0
+   ;  (  select(db_object_v, Parents1, Parents2)
+      -> Parents3 = [object_base_v, object_v, db_object_v | Parents2],
+         reverse(Parents3, Parents),
+         obj_parents_cmn(Object0, Parents, Object, Ctx)
+      ;  obj_rebase((object_v -> db_object_v), Object0, Object)
+      )
+   ).
+   
+
 
 db_properties_hook(DB_Key, Class_Id, DB_Properties) :-
 

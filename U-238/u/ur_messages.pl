@@ -176,6 +176,11 @@ prolog:message(db_obj_replace_protector(DB_Key,
    ['Replace protector ~a when try add ~p into db ~a~n'
    - [Protector, Object, DB_Key]].
 
+prolog:message(db_unformatted_object(DB_Key, Parents)) -->
+
+   ['Try to put unformatted object in DB ~a (parents: ~p)'
+   - [DB_Key, Parents]].
+
 %prolog:message(db_ungrounded_key(Key, Key_Value, Action)) -->
 
 %   ['When try ~a the ungrounded key ~p = ~p was found'

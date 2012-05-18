@@ -108,7 +108,8 @@ test(db_recorded_int4, [setup(setup)]) :-
    obj_rebase((object_v -> db_object_v), Obj0, Obj1),
    obj_rebase((object_v -> tarjan_vertex_v), Obj1, Obj2),
    db_put_object(db_i_test, Obj2, Obj),
-   db_recorded(db_i_test, Obj).
+   db_recorded(db_i_test, Obj),
+   db_clear(db_i_test).
 
 test(key_conflict, [setup(model_db(Slod1))]) :-
 
