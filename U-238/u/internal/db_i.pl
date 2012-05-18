@@ -63,7 +63,7 @@
 :- multifile db_recorded_int/2, db_erase_int/2, db_record_int/4.
 
 :- dynamic db_class_des/8,     % DB_Key, DB_Class_Id, DB_Parent_Class_Id,
-                               % Name, Arity, Fields, Key, Parents
+                               % Name, Arity, Fields, Key, Parents (names)
            db_key_policy/2,
            db_after_put_callback/2,  % DB_Key, Pred
            db_next_class_id_/2,
@@ -179,13 +179,13 @@ db_add_class(DB_Key, Local_Id, DB_Id, Des) :-
    class_all_fields(Local_Id, Fields),
    get_key(Local_Id, Key),
    class_id(Local_Id, Class),
-   class_parents_as_db_ids(DB_Key, Local_Id, DB_Parents),
+   class_parents_as_names(Local_Id, Parents),
    assertz_pred(vd,
                 db_class_des(DB_Key, DB_Id, DB_Parent_Id, Class,
-                             Arity, Fields, Key, DB_Parents)
+                             Arity, Fields, Key, Parents)
                ),
-   Des = db_class_des(DB_Id, DB_Parent_Id, Class, Arity, Fields,
-                      Key, DB_Parents),
+   Des = db_class_des(DB_Id, DB_Parent_Id, Class, Arity, Fields, Key,
+                      Parents),
    dynamic(Class/Arity),
 
    % Parents are added before children.
@@ -199,19 +199,12 @@ db_add_class(DB_Key, Local_Id, DB_Id, Des) :-
    ).
 
 
-class_parents_as_db_ids(DB_Key, Local_Class_Id, DB_Parents) :-
+class_parents_as_names(Local_Class_Id, Parents) :-
 
-   list_inheritance(Local_Class_Id, [_|Local_Parents0]),
+   list_inheritance_names(Local_Class_Id, [_|Parents0]),
                                 % skip object_base_v
 
-   append(Local_Parents, [_], Local_Parents0), !,
-                                % skip the Local_Id itself
-
-   maplist(\C_Local_Id^C_DB_Id^
-          db_conv_local_db(DB_Key, C_Local_Id, C_DB_Id, _),
-          Local_Parents, DB_Parents
-          ).
-
+   append(Parents, [_], Parents0), !.
 
 % class_db_local_id(+DB_Key, ?Local_Id, ?DB_Id, -Des)
 % Convert local <-> db id for the class
@@ -225,7 +218,7 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
    !,
    (   DB_Class_Id =:= 1
    ->  % object_v is not stored in db
-       Des = db_class_des(1, 0, object_v, 0, [], [], [0, 1])
+       Des = db_class_des(1, 0, object_v, 0, [], [], [])
    ;
        db_class_des(DB_Key, DB_Class_Id, A, B, C, D, E, F), !,
        Des = db_class_des(DB_Class_Id, A, B, C, D, E, F)
@@ -243,20 +236,19 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
        Class = object_v
    ->
        DB_Class_Id = 1,  % DB_Class_Id for object_v is always 1
-       Des = db_class_des(1, 0, object_v, 0, [], [], [0, 1])
+       Des = db_class_des(1, 0, object_v, 0, [], [], [])
    ;
        (   db_class_des(DB_Key, DB_Class_Id, A1, Class, A2,
-                        DB_Fields, A3, DB_Parents)
+                        DB_Fields, A3, Parents)
        ->  % a descriptor of this class is already in db
 
-           class_parents_as_db_ids(DB_Key, Local_Class_Id,
-                                   Local_Parents),
-           (   Local_Parents == DB_Parents
+           class_parents_as_names(Local_Class_Id, Local_Parents),
+           (   Local_Parents == Parents
            ->  true
            ;
                print_message(warning,
                              class_parents_mismatch(DB_Key, Class,
-                                   Local_Parents, DB_Parents)),
+                                   Local_Parents, Parents)),
                fail
            ),
            class_all_fields(Local_Class_Id, Local_Fields),
@@ -268,7 +260,7 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
 	   ),
 
            Des = db_class_des(DB_Class_Id, A1, Class, A2,
-			      DB_Fields, A3, DB_Parents)
+			      DB_Fields, A3, Parents)
        ;
            db_add_class(DB_Key, Local_Class_Id, DB_Class_Id, Des)
        )
@@ -281,8 +273,7 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
    var(Local_Class_Id), integer(DB_Class_Id), !,
 
    (   DB_Class_Id =:= 1,   % object_v
-       Des = db_class_des(DB_Key, 1, 0, object_v, 0, [], [],
-                          [0, 1])
+       Des = db_class_des(1, 0, object_v, 0, [], [], [])
    ->  class_primary_id(object_v, Local_Class_Id)
    ;   Des = db_class_des(DB_Class_Id, DB_Parent_Id, Class, DBF1,
 		       DB_Fields, DBF2, DB_Parents),
@@ -298,21 +289,7 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
        class_id(Local_Class_Id0, Class), % try next class id
 
        % check class compatibility (can BT to next local id)
-       class_parents_as_db_ids(DB_Key, Local_Class_Id0,
-                               Local_Parents),
-       (   Local_Parents == DB_Parents
-       ->  true
-       ;
-           (   %try rebasing
-               db_rebase(Local_Parents, DB_Parents)
-           ->  true
-           ;
-               print_message(warning,
-                             class_parents_mismatch(DB_Key, Class,
-                                Local_Parents, DB_Parents)),
-               fail
-           )
-       ),
+       class_parents_as_names(Local_Class_Id0, DB_Parents),
        class_all_fields(Local_Class_Id, Local_Fields),
        (   Local_Fields == DB_Fields
        ->  true
@@ -330,21 +307,6 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
        ! % no more BT
    ),
    db_vocab_local_db_add(DB_Key, Local_Class_Id, DB_Class_Id).
-
-
-db_rebase(Parents, Parents) :- !.
-
-db_rebase([Parent|LPT], [Parent|DBPT]) :- !,
-
-   db_rebase(LPT, DBPT).
-
-db_rebase(Local_Parents, DB_Parents) :-
-
-   debug(vd, 'fail on ~p',
-         [db_rebase(Local_Parents, DB_Parents)]),
-   fail.
-
-
 
 
 db_clear_int(DB_Key) :-
@@ -633,7 +595,8 @@ named_args_unify_int(DB_Key, Option, Des, Field_Names, Values,
 
    obj_construct_int(Local_Class_Id, Field_Names, Option, Values,
                      Term0),
-   (  same_or_descendant(Local_Class_Id, _, db_object_v) -> true
+   (  same_or_descendant(Local_Class_Id, _, db_object_v)
+   -> Term = Term0
    ;  obj_rebase((object_v -> db_object_v), Term0, Term)
    ),
    db_recorded_int(DB_Key, Term),
