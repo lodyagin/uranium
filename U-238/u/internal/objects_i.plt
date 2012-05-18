@@ -52,6 +52,13 @@ test(list_inheritance_names2) :-
    list_inheritance_names(Id, List),
    assertion(List == [object_base_v]).
 
+test(list_inheritance_names3) :-
+
+   class_primary_id(man_v, Id1),
+   class_primary_id(citizen_v, Id2),
+   list_inheritance_names(Id1, Id2, List),
+   assertion(List == [man_v, citizen_v]).
+
 test(obj_unify_int_with_evals) :-
 
    class_primary_id(citizen_v, Class_Id),

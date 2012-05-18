@@ -48,6 +48,7 @@
            list_inheritance/2,
            list_inheritance/3,
            list_inheritance_names/2, % +Class_Id, -List
+           list_inheritance_names/3,
            obj_class_id/2,
            obj_construct_int/5,
            obj_field_int/7,
@@ -229,6 +230,11 @@ list_inheritance(From_Id, To_Id, List0, List) :-
 list_inheritance_names(Class_Id, List) :-
 
    list_inheritance(0, Class_Id, [], Id_List),
+   maplist(class_id, Id_List, List).
+
+list_inheritance_names(From_Id, To_Id, List) :-
+
+   list_inheritance(From_Id, To_Id, [], Id_List),
    maplist(class_id, Id_List, List).
 
 
