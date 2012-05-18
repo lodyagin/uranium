@@ -47,6 +47,7 @@
            no_rebased_class/2,  % ?Class_Id, ?No_Rebased
            list_inheritance/2,
            list_inheritance/3,
+           list_inheritance_names/2, % +Class_Id, -List
            obj_class_id/2,
            obj_construct_int/5,
            obj_field_int/7,
@@ -219,6 +220,17 @@ list_inheritance(From_Id, To_Id, List0, List) :-
 
    objects:parent_(To_Id, Parent_Id),
    list_inheritance(From_Id, Parent_Id, [To_Id|List0], List).
+
+
+%% list_inheritance_names(+Class_Id, -List)
+%
+% The same as list_inheritance/2 but return a list of class names.
+
+list_inheritance_names(Class_Id, List) :-
+
+   list_inheritance(0, Class_Id, [], Id_List),
+   maplist(class_id, Id_List, List).
+
 
 
 % fields_names_types(?Fields_Def, ?Names, ?Types)

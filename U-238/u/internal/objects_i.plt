@@ -39,6 +39,18 @@ test(class_fields) :-
                    functor:_, height:_, id:_, name:_, sex:_,
                    surname:_,weight:_]).   
 
+test(list_inheritance_names1) :-
+
+   class_primary_id(callup_v, Id),
+   list_inheritance_names(Id, List),
+   assertion(List == [object_base_v, object_v, man_v, citizen_v,
+                      callup_v]).
+
+test(list_inheritance_names2) :-
+
+   class_primary_id(object_base_v, Id),
+   list_inheritance_names(Id, List),
+   assertion(List == [object_base_v]).
 
 test(obj_unify_int_with_evals) :-
 
