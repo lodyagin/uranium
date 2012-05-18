@@ -16,14 +16,19 @@
 
 db_vocab_clear(DB_Key) :-
 
+   debug(db_vocab, '~p', db_vocab_clear(DB_Key)),
    retractall(db_ids(DB_Key, _, _)).
 
 db_vocab_local_db(DB_Key, Local_Class_Id, DB_Class_Id) :-
 
-   db_ids(DB_Key, Local_Class_Id, DB_Class_Id), !.
+   db_ids(DB_Key, Local_Class_Id, DB_Class_Id), !,
+   debug(db_vocab, '~p',
+         db_vocab_local_db(DB_Key, Local_Class_Id, DB_Class_Id)).
 
 db_vocab_local_db_add(DB_Key, Local_Class_Id, DB_Class_Id) :-
 
+   debug(db_vocab, '~p',
+         db_vocab_local_db_add(DB_Key, Local_Class_Id, DB_Class_Id)),
    (   db_ids(DB_Key, Local_Class_Id, DB_Class_Id)
    ->  throw(error(db_system_bad_state(
 	  'db_vocab_local_db_add: db_ids(~w, ~w, ~w) already exists',

@@ -154,14 +154,14 @@ prolog:message(db_key_exists(DB_Key, DB_Object, New_Object)) -->
 prolog:message(class_fields_mismatch(DB_Key, Class, Local, DB))
 -->
 
-   ['The DB ~a has another fields for the class ~a~n'
+   ['The DB ~a has other fields for the class ~a~n'
     - [DB_Key, Class]],
    ['our fields: ~w ~ndb  fields: ~w' - [Local, DB]].
 
 prolog:message(class_parents_mismatch(DB_Key, Class, Local, DB))
 -->
 
-   ['The DB ~a has another parents for the class ~a~n'
+   ['The DB ~a has other parents for the class ~a~n'
     - [DB_Key, Class]],
    ['our parents: ~w ~ndb  parents: ~w' - [Local, DB]].
 
