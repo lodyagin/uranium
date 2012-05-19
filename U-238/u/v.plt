@@ -276,16 +276,16 @@ test(eval_obj_expr5_weak3, [Url == Val]) :-
 test(eval_obj_expr6_list) :-
 
    obj_construct(http_header_v, [body], [body], H1),
-   obj_construct(http_multiheader_v, [], [], MH),
-   MH/bodies ^= [a, H1/body],
-   assertion(MH/bodies =^= [a, body]).
+   obj_construct(http_header_v, [], [], H2),
+   H2/name ^= [a, H1/body],
+   assertion(H2/name =^= [a, body]).
 
 test(eval_obj_expr6_compound) :-
 
    obj_construct(http_header_v, [body], [body], H1),
-   obj_construct(http_multiheader_v, [], [], MH),
-   MH/bodies ^= p(a, H1/body) // ss,
-   assertion(MH/bodies =^= p(a, body)).
+   obj_construct(http_header_v, [], [], MH),
+   MH/name ^= p(a, H1/body) // ss,
+   assertion(MH/name =^= p(a, body)).
 
 test(obj_construct_with_evals1) :-
 
@@ -555,9 +555,9 @@ test(obj_rebase3_transitivity2,
 
 test(obj_rebase4) :-
    obj_construct(http_header_v, [], [], H1),
-   obj_rebase((http_header_v -> http_multiheader_v), H1, H2),
+   obj_rebase((http_header_v -> http_invalid_header_v), H1, H2),
    obj_parents(H2, P2),
-   assertion(P2 == [http_multiheader_v, http_header_v, object_v,
+   assertion(P2 == [http_invalid_header_v, http_header_v, object_v,
                     object_base_v]).
 
 test(obj_rebase_bug1) :-
