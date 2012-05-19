@@ -273,6 +273,20 @@ test(eval_obj_expr5_weak3, [Url == Val]) :-
    Url = 'http://kogorta.dp.ua',
    Url // url // url ^= Val.
 
+test(eval_obj_expr6_list) :-
+
+   obj_construct(http_header_v, [body], [body], H1),
+   obj_construct(http_multiheader_v, [], [], MH),
+   MH/bodies ^= [a, H1/body],
+   assertion(MH/bodies =^= [a, body]).
+
+test(eval_obj_expr6_compound) :-
+
+   obj_construct(http_header_v, [body], [body], H1),
+   obj_construct(http_multiheader_v, [], [], MH),
+   MH/bodies ^= p(a, H1/body) // ss,
+   assertion(MH/bodies =^= p(a, body)).
+
 test(obj_construct_with_evals1) :-
 
     obj_construct(citizen_v,
@@ -538,6 +552,13 @@ test(obj_rebase3_transitivity2,
    obj_rebase((object_v -> db_object_v), M1, M2),
    obj_rebase((man_v -> tarjan_vertex_v), M2, M3),
    foreach(obj_field(M3, _, _), true).
+
+test(obj_rebase4) :-
+   obj_construct(http_header_v, [], [], H1),
+   obj_rebase((http_header_v -> http_multiheader_v), H1, H2),
+   obj_parents(H2, P2),
+   assertion(P2 == [http_multiheader_v, http_header_v, object_v,
+                    object_base_v]).
 
 test(obj_rebase_bug1) :-
 

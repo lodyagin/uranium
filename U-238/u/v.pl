@@ -676,7 +676,8 @@ obj_sort_parents(Obj0, Class_Order, Obj) :-
 % ==
 % expr ::= obj_expr | Value | Variable
 % obj_expr ::= obj_expr / Field | obj_expr // Field | element
-% element ::= (Object | List)
+% element ::= (Object | list)
+% list ::= [obj_expr, ...] | []
 % ==
 
 eval_obj_expr(Expr, Value) :-
@@ -687,6 +688,7 @@ eval_obj_expr(Expr, Weak0, Value) :-
    Ctx = context(eval_obj_expr/3, _),
    decode_arg([[throw, strict],
                [weak],
+	       [hold],
                [fail]], Weak0, Weak, Ctx),
    eval_obj_expr_cmn(Expr, Weak, Value, _, Ctx).
 
@@ -697,29 +699,37 @@ eval_obj_expr_cmn(Variable, _, Variable, variable, _) :-
 eval_obj_expr_cmn(Obj_Expr / Field, Weak, Value, Type, Ctx) :-
    !,
    eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type, Ctx),
-   eval_obj_field(Type, Value1, Weak, Field, Value, Ctx).
+   (  eval_obj_field(Type, Value1, Weak, Field, Value, Ctx)
+   -> true
+   ;  Weak == hold
+   -> Value = Value1 / Field
+   ;  fail
+   ).
 
 eval_obj_expr_cmn(Obj_Expr // Field, Weak, Value, Type, Ctx) :-
    !,
    eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type, Ctx),
-   eval_obj_field(Type, Value1, weak, Field, Value, Ctx).
+   (  Weak == hold -> Weak1 = hold ; Weak1 = weak ),
+   eval_obj_field(Type, Value1, Weak1, Field, Value, Ctx).
 
 eval_obj_expr_cmn(List, _, List, list, _) :-
-   nonvar(List),
-   ( List = [_|_] ; List = []), !.
+   nonvar(List), List = [], !.
+
+eval_obj_expr_cmn(List, _, Value, list, Ctx) :-
+   nonvar(List), List = [_|_], !,
+   maplist(Ctx+\Obj_Expr^V^eval_obj_expr_cmn(Obj_Expr, hold, V, _, Ctx),
+	   List, Value).
 
 eval_obj_expr_cmn(Object, _, Object, object, _) :-
    u_object(Object), !.
 
-eval_obj_expr_cmn(Compound, _, Compound, compound, _) :-
-   compound(Compound), !.
+eval_obj_expr_cmn(Compound, _, Value, compound, Ctx) :-
+   compound(Compound), !,
+   Compound =.. [Fun|List],
+   eval_obj_expr_cmn(List, _, Value_List, _, Ctx),
+   Value =.. [Fun|Value_List].
 
 eval_obj_expr_cmn(Value, _, Value, value, _) :- !.
-
-eval_obj_field(list, List, Weak, Field, Value, Ctx) :- !,
-   maplist(Field^Ctx+\Element^V^
-          eval_obj_expr_cmn(Element / Field, Weak, V, _, Ctx),
-           List, Value).
 
 eval_obj_field(object, Object, Weak, Field, Value, _) :- !,
    (  Weak == weak
@@ -727,8 +737,16 @@ eval_obj_field(object, Object, Weak, Field, Value, _) :- !,
       ;  Value = Object
       )
    ;
-      obj_field(Object, Weak, Field, Value)
+      ( Weak == hold -> Weak1 = fail ; Weak1 = Weak ),
+      obj_field(Object, Weak1, Field, Value)
    ).
+
+eval_obj_field(_, _, hold, _, _, _) :- !, fail.
+
+eval_obj_field(list, List, Weak, Field, Value, Ctx) :- !,
+   maplist(Field^Ctx+\Element^V^
+          eval_obj_expr_cmn(Element / Field, Weak, V, _, Ctx),
+           List, Value).
 
 eval_obj_field(compound, Compound, Weak, Field, Value, Ctx) :- !,
    Compound =.. [Functor|Expr_List],
