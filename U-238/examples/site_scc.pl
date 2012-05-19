@@ -1,15 +1,15 @@
 :- module(site_scc, [site_scc/2]).
 
+:- use_module(library(uri)).
 :- use_module(u(v)).
 :- use_module(u(vd)).
 :- use_module(u(algorithm/tarjan)).
-:- use_module(u(ur_url)).
 :- use_module(u(action/click_url)).
 :- use_module(u(parser/html/html_page_parse)).
 
 site_scc(Url, Scc) :-
 
-   url_normalize(Url, Url1),
+   uri_normalized(Url, Url1),
 
    load_page(Url1, Start_Page),
 

@@ -30,7 +30,6 @@
 
 :- use_module(library(uri)).
 :- use_module(u(v)).
-:- use_module(u(ur_url)).
 
 new_class(link_v, http_result_v, [link_url, text],
           [www_address, link_url]).
@@ -70,8 +69,8 @@ downcast(link_v, local_link_v, From, To) :-
    atom(WWW_Address),
    obj_field(WWW_Address, http_request_url, Base_Url0),
    atom(Base_Url0),
-   url_normalize(Base_Url0, Base_Url),
-   url_normalize(Orig_Link_Url, Base_Url, Link_Url),
+   uri_normalized(Base_Url0, Base_Url),
+   uri_normalized(Orig_Link_Url, Base_Url, Link_Url),
    obj_field(To, link_url, Link_Url),
    obj_field(To, www_address, WWW_Address).
 
@@ -83,8 +82,8 @@ downcast(link_v, global_link_v, From, To) :-
    atom(WWW_Address),
    obj_field(WWW_Address, http_request_url, Base_Url0),
    atom(Base_Url0),
-   url_normalize(Base_Url0, _), %Base_Url),
-   url_normalize(Orig_Link_Url, Link_Url),
+   uri_normalized(Base_Url0, _), %Base_Url),
+   uri_normalized(Orig_Link_Url, Link_Url),
    obj_field(To, link_url, Link_Url),
    obj_field(To, www_address, WWW_Address).
 

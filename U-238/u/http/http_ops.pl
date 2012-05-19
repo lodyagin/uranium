@@ -51,7 +51,6 @@
 :- use_module(u(logging)).
 :- use_module(u(v)).
 :- use_module(u(ur_lists)).
-:- use_module(u(ur_url)).
 :- use_module(u(internal/check_arg)).
 :- use_module(u(internal/decode_arg)).
 
@@ -177,7 +176,7 @@ http_do_int(Method, Options, Headers, Cookies_DB, URL, Post_Data,
         nonvar(Redirect)
     ->  write_log(['redirect to', Redirect],
                   [logger(http_ops), lf(1, before), lf(1)]),
-        url_normalize(Redirect, URL, New_URL),
+        uri_normalized(Redirect, URL, New_URL),
         http_do_int(get, Options, Headers, Cookies_DB, New_URL, _,
                     DOM, Redirect_Steps1, Redirect_Steps, Ctx)
     ;   DOM = Data, Redirect_Steps = Redirect_Steps1
