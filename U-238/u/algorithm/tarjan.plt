@@ -24,7 +24,7 @@ test(tarjan1,
    tarjan(tarjan_test,
           tarjan_test_vertex_v, vertex_id,
           load_vertex, resolve_destinations(test_graph1),
-          Start, SCC0),
+          Start, _, SCC0),
    msort(SCC0, SCC).
 
 test(tarjan_deadlock_bug, [SCC == [[1, 3], [2]]]) :-
@@ -37,7 +37,7 @@ test(tarjan_deadlock_bug, [SCC == [[1, 3], [2]]]) :-
    tarjan(tarjan_test,
           tarjan_test3_vertex_v, vertex_id,
           load_vertex2, resolve_destinations(test_graph2),
-          Start, SCC0),
+          Start, _, SCC0),
    msort(SCC0, SCC).
 
 test_graph1(Graph) :-
@@ -68,13 +68,13 @@ test_graph2(Graph) :-
             3  - [1, 2, 3]
            ].
 
-load_vertex(Id, Obj) :-
+load_vertex(Id, _, _, Obj) :-
 
    obj_construct(tarjan_test_vertex_v,
                  [vertex_id], [Id], Obj0),
    obj_rebase((object_v -> tarjan_vertex_v), Obj0, Obj).
 
-load_vertex2(Id, Obj) :-
+load_vertex2(Id, _, _, Obj) :-
 
    (  Id =:= 2
    -> Class = tarjan_test2_vertex_v

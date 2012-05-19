@@ -38,7 +38,7 @@
 :- use_module(u(v)).
 :- use_module(u(vd)).
 
-:- meta_predicate tarjan(+, +, +, 4, 2, +, -).
+:- meta_predicate tarjan(+, +, +, 4, 2, +, +, -).
 
 % TODO Vertex_Functor is unnecessary
 
