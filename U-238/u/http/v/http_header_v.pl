@@ -35,6 +35,8 @@
 
 new_class(http_header_v, object_v, [name, body]).
 
+new_class(http_invalid_header_v, http_header_v, []).
+
 new_class(http_header_content_type_v, http_header_v,
           [type,
            subtype,
@@ -42,12 +44,28 @@ new_class(http_header_content_type_v, http_header_v,
 
 'http_header_v?'(Obj, class, Class) :-
 
-   obj_field(Obj, name, Name),
+   obj_unify(Obj, [name, body], [Name, Body]),
    concat_atom([http_header, Name, v], '_', Class1),
    (  class_name(Class1)
-   -> Class = Class1
+   -> (  var(Body)
+      -> Class = Class1
+      ;  check_syntax(Class1, Body)
+      -> Class = Class1
+      ;  Class = http_invalid_header_v
+      )
    ;  Class = http_header_v
    ).
+
+'http_header_v?'(Obj, name_value, NV) :-
+
+   obj_unify(Obj, [name, body], [Name, Value]),
+   (  var(Name) -> true
+   ;  NV = (Name = Value)
+   ).
+
+check_syntax(http_header_content_type_v, Body) :-
+   atom_codes(Body, Codes),
+   phrase(media_type(_, _, _), Codes).
 
 downcast(http_header_v, http_header_content_type_v, From, To) :-
 

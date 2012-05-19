@@ -90,7 +90,7 @@ test(list_to_http_request_headers_v1) :-
    assertion(Parents ==
             [http_request_headers_v,
              http_general_headers_v,
-             http_headers_v, 
+             http_headers_v,
              object_v, object_base_v]),
    http_headers_list_obj(Headers2, Obj),
    sort(Headers_Ref, Headers1),
@@ -113,7 +113,7 @@ test(list_to_http_request_headers_v2) :-
    assertion(Parents ==
             [http_request_headers_v,
              http_general_headers_v,
-             http_headers_v, 
+             http_headers_v,
              object_v, object_base_v]),
    http_headers_list_obj(Headers2, Obj),
    sort(Headers_Ref, Headers1),
@@ -132,7 +132,7 @@ test(list_to_http_response_headers_v) :-
    assertion(Parents ==
             [http_response_headers_v,
              http_general_headers_v,
-             http_headers_v, 
+             http_headers_v,
              object_v, object_base_v]),
    http_headers_list_obj(Headers2, Obj),
    sort(Headers_Ref, Headers1),
@@ -441,7 +441,7 @@ test(repeated_headers2) :-
 test(repeated_headers3) :-
 
    Headers = [accept_language = [en, ru]],
-   Headers_Ref = ['Accept-Language' = [en, ru]],
+   Headers_Ref = ['Accept-Language' = ru, 'Accept-Language' = en],
    http_headers_list_obj(Headers, Obj),
    obj_parents(Obj, Parents),
    assertion(Parents ==

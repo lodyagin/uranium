@@ -93,6 +93,8 @@ iana_token(html) --> "html".
 
 parameters([Par|Pars]) -->
    linear_white_space_if_present(_, _, _, _),
+   ";",
+   linear_white_space_if_present(_, _, _, _),
    parameter(Par), !,
    parameters(Pars).
 
@@ -104,7 +106,7 @@ parameter(Attribute = Value) -->
 
 attribute(Attr) -->
    token(Str),
-   { atom_codes(Str, Attr1),
+   { atom_codes(Attr1, Str),
      downcase_atom(Attr1, Attr) }.
 
 value(Value) -->
@@ -141,4 +143,4 @@ ci([]) --> [].
 cic(L) --> [C], { code_type(L, to_lower(C)) }.
 
 
-   
+

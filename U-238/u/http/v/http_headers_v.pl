@@ -56,6 +56,7 @@
 :- use_module(u(ur_atoms)).
 :- use_module(u(v)).
 :- use_module(u(internet/rfc822)).
+:- use_module(u(util/lambda)).
 
 new_class(http_headers_v, object_v, []).
 
@@ -168,7 +169,7 @@ new_class(http_websocket_response_headers_v, http_headers_v,
            % rfc 6455, 4.3, server headers
            sec_websocket_accept
           ]).
-           
+
 % It contains not empty @bulk or contains mixed
 % request/response headers or miss required fields
 new_class(http_invalid_headers_v, http_headers_v, []).
@@ -197,16 +198,6 @@ http_headers_list_obj(List, Obj) :-
 
    Ctx = context(http_headers_list_obj/2, _),
    http_headers_list_obj_cmn(List, Obj, Ctx).
-
-% % http_headers_list_obj(?List0, ?List, ?Obj)
-% %
-% % This is a difference list version of http_headers_list_obj/2
-
-% http_headers_list_obj(List0, List, Obj) :-
-
-%    Ctx = context(http_headers_list_obj/3, _),
-%    http_headers_list_obj_cmn(List0, List, Obj, Ctx).
-
 
 % http_headers_list_obj_cmn(+List, -Obj, Ctx)
 
@@ -270,13 +261,27 @@ http_headers_list_obj_cmn(List, Obj, _) :-
    ignore(Bulk = []),
    obj_list(Obj1, List1),
    append(List1, Bulk, List2),
-   maplist(header_prolog_http, List2, List).
+   http_headers_list_obj2(List2, List).
 
 http_headers_list_obj_cmn(_, _, Ctx) :-
 
    % At least one arg should be instantiated
    throw(error(instantiation_error, Ctx)).
 
+http_headers_list_obj2([], []) :- !.
+
+http_headers_list_obj2([PHeader|Tail], List0) :-
+
+   header_prolog_http(PHeader, Name=Value1),
+   (  Value1 = [_|_]
+   -> reverse(Value1, Value2),
+      maplist(Name+\V^H^(H=(Name=V)), Value2, HHeader),
+      append(HHeader, List1, List0)
+   ;  List0 = [Name=Value1|List1]
+   ),
+   http_headers_list_obj2(Tail, List1).
+
+% list -> obj
 
 http_headers_list_obj([], _,
                       Obj, Obj, Bulk, Bulk, _) :- !.
@@ -293,8 +298,8 @@ http_headers_list_obj([Option|Tail], Class_Fields,
    header_prolog_http(Header=Value, Header0=Value1),
 
    must_be(atom, Header),
-   (  obj_field(Obj0, fail, Header, Value)
-   -> Obj1 = Obj0, Bulk1 = Bulk0
+   (  http_header_add_value(Obj0, Header, Value, Obj1)
+   -> Bulk1 = Bulk0
    ;  downcast_headers(Header, Value, Class_Fields,
                        Obj0, Obj1, Bulk0, Bulk1, Ctx)
    ),
@@ -305,6 +310,16 @@ http_headers_list_obj(X, _, _, _, _, _, Ctx) :-
 
    throw(error(type_error(option_list, X), Ctx)).
 
+http_header_add_value(Headers0, Header, Value, Headers) :-
+
+   obj_rewrite(Headers0, fail, [Header], [Old_Value], [New_Value],
+               Headers),
+   (  var(Old_Value)
+   -> New_Value = Value
+   ;  Old_Value = [_|_]
+   -> New_Value = [Value|Old_Value]
+   ;  New_Value = [Value, Old_Value]
+   ).
 
 downcast_headers(Header, Value, Class_Fields,
                  Obj0, Obj, Bulk0, Bulk, _) :-
@@ -343,10 +358,10 @@ mix_case(Obj0, Obj) :-
 
 % Translate between prolog and http header formats (names)
 
-header_prolog_http(PHeader=Value_Obj, HHeader=Value) :-
+header_prolog_http(PHeader=PValue, HHeader=Value) :-
 
    nonvar(PHeader), !,
-   obj_field(Value_Obj, body, Value),
+   PValue // body ^= Value,
    (  concat_atom(PTokens, '_', PHeader)
    -> maplist(capitalize_atom, PTokens, HTokens),
       concat_atom(HTokens, '-', HHeader)
