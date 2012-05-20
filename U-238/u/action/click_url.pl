@@ -165,10 +165,12 @@ url_cmn(Method, URL_Expr, Form, Browser, User0, User, Page, Ctx) :-
 
    http_page(http_do(Method, Options, Headers, Cookies_DB),
              Url, Form, Page),
-   
+
    % Store the new page location in the User object
-   obj_field(Page, www_address, New_WWW_Address),
-   obj_rewrite(User0, [www_address], _, [New_WWW_Address], User).
+   (  var(User0) -> true
+   ;  obj_field(Page, www_address, New_WWW_Address),
+      obj_rewrite(User0, [www_address], _, [New_WWW_Address], User)
+   ).
 
 
 
