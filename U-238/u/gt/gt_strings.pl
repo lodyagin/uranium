@@ -45,7 +45,7 @@
                       length(nonneg),
                       length(nonneg, nonneg),
                       range(nonvar),
-                      regex(atom)
+                      regex(codes)
                      ]).
 
 :- predicate_options(random_string/3, 2,
@@ -53,7 +53,7 @@
                       length(nonneg),
                       length(nonneg, nonneg),
                       range(nonvar),
-                      regex(atom)
+                      regex(codes)
                      ]).
 
 random_string(Str) :-
@@ -127,7 +127,7 @@ random_string_int(Pattern0, Generator, [], _,
   maplist(arg(1), [Lengths, Regex], [L, regex(Reg)]),
 
   (   nonvar(Reg)
-  ->  regex_pattern(Regex, Pattern)  % ignore Pattern0
+  ->  regex_pattern(Reg, Pattern)  % ignore Pattern0
   ;   Pattern = Pattern0 ),
 
   random_string_int(Pattern, Generator, L, Codes),
@@ -179,7 +179,7 @@ length(length(N1, N2)) :- !,
 
 range(range(_)) :- !.
 
-regex(Codes) :- !,
+regex(regex(Codes)) :- !,
 	must_be(codes, Codes).
 
 override(What, Prev, Value, Options, Result) :-
@@ -239,22 +239,20 @@ std_random(Drep, X) :-
 
 % regex -> NFA
 
-regex_pattern(Regex, regex_pt(Nodes, Arcs)) :-
+regex_pattern(Regex, regex_pat(Nodes, Arcs)) :-
 
-   regex_nfa(Regex, nfa(States0, Arcs, Initial, Final)),
+   regex_dfa(Regex, dfa(States0, Arcs, Initial, Final)),
    !,
    sort(States0, States),
    length(States, NStates),
    numlist(1, NStates, States),
-   findall(source(X), member(X, Initial), L1),
    findall(sink(X), member(X, Final), L2),
-   append(L1, L2, Nodes).
+   Nodes = [source(Initial)|L2].
 
-%regex_pat(Nodes, Arcs, Str) :-
+regex_pat(Nodes, Arcs, Str) :-
 
-%   length(Str, N),
-%   N1 is N * 4,
-%   automaton(S, Nodes, Arcs).
+   length(Str, N),
+   automaton(Str, Nodes, Arcs).
 
 
 
