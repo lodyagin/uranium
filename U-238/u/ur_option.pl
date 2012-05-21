@@ -94,6 +94,12 @@ assert_rules([Rule0|T], DB, Ctx, Details) :-
       )
    ;  Rule2 = Rule1
    ),
+   (  select_option(default(Default_Value), Rule2, Rule3)
+   -> (  compound(Default_Value) -> true
+      ;  Details = 'invalid default value', throw(Err)
+      )
+   ;  Rule3 = Rule2
+   ),
    (  var(Is_Meta)
    -> Details = 'either option or meta_option should be specified',
       throw(Err)
@@ -106,17 +112,17 @@ assert_rules([Rule0|T], DB, Ctx, Details) :-
       throw(Err)
    ;  true
    ),
-   (  Rule2 == [] -> true
+   (  Rule3 == [] -> true
    ;  Details = 'unknown parameters in the definition', throw(Err)
    ),
-   assert_rule(DB, Functor, Arity, Is_Meta),
+   assert_rule(DB, Functor, Arity, Is_Meta, Default_Value),
    assert_rules(T, DB, Ctx, Details).
 
-assert_rule(DB, Functor, Arity, Is_Meta) :-
+assert_rule(DB, Functor, Arity, Is_Meta, Default_Value) :-
    functor(Pattern, Functor, Arity),
    db_construct(DB, single_option_rule_v,
-                [pattern, is_meta],
-                [Pattern, Is_Meta]).
+                [group_name, pattern, is_meta, default_value],
+                [Functor, Pattern, Is_Meta, Default_Value]).
 
 :- meta_predicate options_object(:, :, -).
 

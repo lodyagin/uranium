@@ -44,10 +44,12 @@ new_class(gt_strings__random_string_options_v,
            ]).
 
 new_class(option_rule_v, db_object_v,
-          [pattern,
+          [group_name,
+           pattern,
            options_object_in,
            'options_object_out#',
-           is_meta  % `pattern` is a meta option
+           is_meta,  % `pattern` is a meta option
+           default_value
            ],
           [pattern]).
 
@@ -56,7 +58,20 @@ new_class(single_option_rule_v, option_rule_v, []).
 'ur_options_v?'(Obj0, options_out, Obj) :-
 
    obj_unify(Obj0, [class, options_in], [Class, Options]),
-   process_options(Options, Class, Obj0, Obj).
+   process_options(Options, Class, Obj0, Obj),
+   set_defaults(Class, Obj).
+
+set_defaults(DB, Obj) :-
+
+   foreach(
+           db_iterate(DB,
+                      default_value(+bound)
+                     /\ default_value(Default_Value)
+                     /\ group_name(Name),
+                      _),
+
+           ignore(obj_field(Obj, Name, Default_Value))
+          ).
 
 process_options([], _, Obj, Obj) :- !.
 process_options([Option|T], DB, Obj0, Obj) :-
@@ -73,8 +88,9 @@ process_options([Option|T], DB, Obj0, Obj) :-
 
 'single_option_rule_v?'(Rule, option_in, Option0) :-
    obj_unify(Rule,
-             [options_object_in, 'options_object_out#', is_meta],
-             [Obj, Obj1, Is_Meta]),
+             [group_name, options_object_in, 'options_object_out#',
+              is_meta],
+             [Name, Obj, Obj1, Is_Meta]),
    (  Is_Meta == true
    -> functor(Option0, Name, 1),
       arg(1, Option0, Value0),
@@ -84,8 +100,7 @@ process_options([Option|T], DB, Obj0, Obj) :-
       ),
       functor(Option, Name, 1),
       arg(1, Option, Value)
-   ;  Option = Option0,
-      functor(Option, Name, _)
+   ;  Option = Option0
    ),
    obj_rewrite(Obj, [Name, context_module],
                [Old_Value, Context_Module], [Option, Context_Module],

@@ -14,6 +14,22 @@ test(single_option_unknown,
    Option = width(3),
    options_object(test_pred1, [Option], _).
 
+test(single_option_no_default, [setup(setup_options)]) :-
+
+   options_object(test_pred1, [], Obj),
+   Obj / length ^= Length,
+   assertion(Length =@= _).
+
+test(single_option_default, [setup(setup_options)]) :-
+
+   options_object(test_pred3, [], Obj),
+   assertion(Obj / length =^= length(4)).
+
+test(single_option_default_overriden, [setup(setup_options)]) :-
+
+   options_object(test_pred3, [length(3)], Obj),
+   assertion(Obj / length =^= length(3)).
+
 test(single_option_rep1,
      [error(domain_error(consistent_options, Options),
             _)]) :-
@@ -68,9 +84,11 @@ setup_options :-
    set_prolog_flag(verbose, Old_Verbose),
 
    ur_options(test_pred1, [[option(length/1)]]),
-   ur_options(test_pred2, [[meta_option(generator/1)]]).
+   ur_options(test_pred2, [[meta_option(generator/1)]]),
+   ur_options(test_pred3, [[option(length/1), default(length(4))]]).
 
 test_pred1(_).
 test_pred2(_).
+test_pred3(_).
 
 :- end_tests(ur_option).
