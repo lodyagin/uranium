@@ -48,7 +48,8 @@
 % ur_options(random_string,
 %           [multi(length, [length/2, length/1, empty/0], [empty, length(1, 80)]),
 %            single(pattern, [range/1, regex/1, _:pattern], range(32..126)),
-%            option(_:generator, randgen:fd_random(lcq, gnu))
+%            [meta_option(generator/1),
+%             default(randgen:fd_random(lcq, gnu))]
 %           ]).
 % ==
 
@@ -72,28 +73,58 @@ assert_rules([], _, _, _) :- !.
 assert_rules([Rule0|T], DB, Ctx, Details) :-
    Err = error(invalid_option_definition(Rule0), Ctx),
    must_be(list, Rule0),
-   select_option(option(Option), Rule0, Rule1),
-   (  nonvar(Option), Option = Functor/Arity -> true
-   ;  Details = 'option(Functor/Arity) expected',
+   (  select_option(option(Option), Rule0, Rule1)
+   -> (  nonvar(Option), Option = Option_Functor/Option_Arity,
+         atom(Option_Functor), integer(Option_Arity), Option_Arity > 0
+      -> Is_Meta = false
+      ;  Details = 'option(Functor/Arity) expected',
+         throw(Err)
+      )
+   ;  Rule1 = Rule0
+   ),
+   (  select_option(meta_option(Meta_Option), Rule1, Rule2)
+   -> (  nonvar(Meta_Option), Meta_Option = MO_Functor/MO_Arity,
+         atom(MO_Functor), integer(MO_Arity), MO_Arity > 0
+      -> ( Is_Meta = true -> true
+         ; Details = 'only option or meta_option should be specified',
+           throw(Err)
+         )
+      ;  Details = 'meta_option(Functor/Arity) expected',
+        throw(Err)
+      )
+   ;  Rule2 = Rule1
+   ),
+   (  var(Is_Meta)
+   -> Details = 'either option or meta_option should be specified',
       throw(Err)
+   ;  Is_Meta = true
+   -> Functor = MO_Functor, Arity = MO_Arity
+   ;  Functor = Option_Functor, Arity = Option_Arity
    ),
-   (  Rule1 == [] -> true
-   ;  throw(Err)
+   (  Is_Meta = true, Arity > 1
+   -> Details = 'for a meta option the only available arity is 1',
+      throw(Err)
+   ;  true
    ),
-   assert_rule(DB, Functor, Arity),
+   (  Rule2 == [] -> true
+   ;  Details = 'unknown parameters in the definition', throw(Err)
+   ),
+   assert_rule(DB, Functor, Arity, Is_Meta),
    assert_rules(T, DB, Ctx, Details).
 
-assert_rule(DB, Functor, Arity) :-
+assert_rule(DB, Functor, Arity, Is_Meta) :-
    functor(Pattern, Functor, Arity),
-   db_construct(DB, single_option_rule_v, [pattern], [Pattern]).
+   db_construct(DB, single_option_rule_v,
+                [pattern, is_meta],
+                [Pattern, Is_Meta]).
 
 :- meta_predicate options_object(:, :, -).
 
-options_object(Module:Pred, _:Options, Object) :-
-   format(atom(Class), '~a__~a_v', [Module, Pred]),
+options_object(Pred_Module:Pred, Opts_Module:Options, Object) :-
+   format(atom(Class), '~a__~a_v', [Pred_Module, Pred]),
    obj_construct(Class,
-                 [options_in, options_out],
-                 [Options, Object],
+                 [options_in, options_out, context_module],
+                 [Options, Object, Opts_Module],
                  _).
 
 % override_(+Option0, +Value, +Options, -Option)
@@ -124,11 +155,6 @@ override_(Prev_Stu, Stu, _, Prev_Stu) :-
 	arg(1, Opt, Val).
 
 override_(default(_), Value, _, user(Value)) :- !.
-override_(user(Prev), Value, Options, _) :- !,
-        (   Value == Prev ->
-            domain_error(nonrepeating_options, Options)
-        ;   domain_error(consistent_options, Options)
-        ).
 override_(default_to_multi(_), Value, _, multi([Value])) :- !.
 override_(multi([]), Value, _, multi([Value])) :- !.
 override_(multi([V1|T]), Value, _, multi([Value, V1|T])) :- !.

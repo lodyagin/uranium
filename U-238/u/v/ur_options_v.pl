@@ -32,27 +32,9 @@
 
 :- discontiguous new_class/3, new_class/4.
 
-/*
-new_class(ur_option_v, object_v, [definition, pattern, default]).
-
-new_class(ur_option_group_v, ur_option_v,
-          [group_name, group_type, patterns]).
-
-new_class(ur_option_group_single_v, ur_option_group_v, []).
-
-new_class(ur_option_group_multi_v, ur_option_group_v, []).
-
-new_class(ur_invalid_option_v, ur_option_v, []).
-
-'ur_option_v?'(Obj, class, Class) :-
-   obj_field(Obj, definition, Defitinion),
-   definition_class(Definition, Class).
-
-definition_class(multi(Group_Name, Patterns, Defaults), ur_option_group_multi_v,
-  */
-
 new_class(ur_options_v, object_v,
-          [options_in  % as passed by user
+          [options_in,    % as passed by a user
+           context_module % the context module for meta-options
           ]
          ).
 
@@ -64,7 +46,8 @@ new_class(gt_strings__random_string_options_v,
 new_class(option_rule_v, db_object_v,
           [pattern,
            options_object_in,
-           'options_object_out#'
+           'options_object_out#',
+           is_meta  % `pattern` is a meta option
            ],
           [pattern]).
 
@@ -78,7 +61,9 @@ new_class(single_option_rule_v, option_rule_v, []).
 process_options([], _, Obj, Obj) :- !.
 process_options([Option|T], DB, Obj0, Obj) :-
    must_be(compound, Option),
-   named_args_unify(DB, _, [pattern], [Option], Rule), !,
+   (  named_args_unify(DB, _, [pattern], [Option], Rule) -> true
+   ;  domain_error(valid_option, Option)
+   ),
    obj_unify(Rule,
              [options_object_in, option_in,
               options_object_out],
@@ -86,12 +71,24 @@ process_options([Option|T], DB, Obj0, Obj) :-
               Obj1]),
    process_options(T, DB, Obj1, Obj).
 
-'single_option_rule_v?'(Rule, option_in, Option) :-
-   functor(Option, Name, _),
+'single_option_rule_v?'(Rule, option_in, Option0) :-
    obj_unify(Rule,
-             [options_object_in, 'options_object_out#'],
-             [Obj, Obj1]),
-   obj_rewrite(Obj, [Name], [Old_Value], [Option],
+             [options_object_in, 'options_object_out#', is_meta],
+             [Obj, Obj1, Is_Meta]),
+   (  Is_Meta == true
+   -> functor(Option0, Name, 1),
+      arg(1, Option0, Value0),
+      (  Value0 = _:_
+      -> Value = Value0
+      ;  Value = Context_Module : Value0
+      ),
+      functor(Option, Name, 1),
+      arg(1, Option, Value)
+   ;  Option = Option0,
+      functor(Option, Name, _)
+   ),
+   obj_rewrite(Obj, [Name, context_module],
+               [Old_Value, Context_Module], [Option, Context_Module],
                Obj1),
    (  var(Old_Value) -> true
    ;  obj_field(Obj, options_in, Options),
@@ -104,11 +101,3 @@ process_options([Option|T], DB, Obj0, Obj) :-
 'single_option_rule_v?'(Rule, options_object_out, Obj) :-
    obj_field(Rule, 'options_object_out#', Obj).
 
-/*
-'ur_options_v?'(Obj, is_meta_pred,
-                That:is_meta_option(List)) :-
-   context_module(That),
-   obj_field(Obj, meta_options, List).
-
-is_meta_option(List, Option) :- member(Option, List).
-*/
