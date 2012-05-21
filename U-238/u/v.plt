@@ -152,6 +152,18 @@ test(class_parent3) :-
    length(L, N),
    assertion(N > 10).
 
+test(eval_fields1) :-
+
+   obj_construct(adder_v, [], [], Adder1),
+
+   obj_unify(Adder1, [a, b, c], [3, 11, C]),
+   assertion(C == 14),
+
+   obj_unify(Adder1, [z, y, x], [2, 10, X]),
+   assertion(X == 12).
+
+   
+
 test(eval_obj_expr1,
      [[E0, E1, E2, E3]
      =@= [Man, HTTP_Result, WWW_Addr, Url]]
