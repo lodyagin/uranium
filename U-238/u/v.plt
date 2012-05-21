@@ -162,7 +162,13 @@ test(eval_fields1) :-
    obj_unify(Adder1, [z, y, x], [2, 10, X]),
    assertion(X == 12).
 
-   
+test(eval_fields2) :-
+
+   obj_construct(adder_v, [a, b, c], [3, 11, C], _),
+   assertion(C == 14),
+
+   obj_construct(adder_v, [z, y, x], [2, 10, X], _),
+   assertion(X == 12).
 
 test(eval_obj_expr1,
      [[E0, E1, E2, E3]
