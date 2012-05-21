@@ -250,8 +250,6 @@ regex_pattern(Regex, regex_pat(Nodes, Arcs)) :-
    Nodes = [source(Initial)|L2].
 
 regex_pat(Nodes, Arcs, Str) :-
-
-   length(Str, N),
    automaton(Str, Nodes, Arcs).
 
 

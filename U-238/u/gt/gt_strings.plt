@@ -28,6 +28,20 @@ test(one_length_one_char) :-
 	      AL),
   sort(AL, ['aaaaa']).
 
+test(regex1) :-
+
+   random_string([regex("a(b|c)*d"), length(100)], atom(Str)),
+   atom_length(Str, N),
+   assertion(N == 100),
+   sub_atom(Str, 0, 1, _, X1),
+   sub_atom(Str, 1, _, 1, X2),
+   sub_atom(Str, _, 1, 0, X3),
+   assertion(X1 == a),
+   atom_codes(X2, C2),
+   sort(C2, CC),
+   assertion(CC == "bc"),
+   assertion(X3 == d).
+
 % add test on only one lenth option
 
 % on all length options
