@@ -84,6 +84,13 @@ test(db_iterate7, [setup(model_db), N =:= 1]) :-
    findall(O, db_iterate(people, same_or_descendant(citizen_v), O), L),
    length(L, N).
 
+test(db_iterate8, [setup(model_db)]) :-
+
+   findall(Surname, db_iterate(people, surname(Surname), _), SL),
+   assertion(SL =@= [_, _, 'Mayakovsky']),
+   findall(Surname, db_iterate(people, sex(Surname), _), SL2),
+   assertion(SL2 == [man, woman, man]).
+
 test(db_to_list, [setup(model_db)]) :-
 
    db_to_list(people, man_v, L1),
