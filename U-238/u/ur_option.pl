@@ -49,7 +49,7 @@
 %           [multi(length, [length/2, length/1, empty/0], [empty, length(1, 80)]),
 %            single(pattern, [range/1, regex/1, _:pattern], range(32..126)),
 %            [meta_option(generator/1),
-%             default(randgen:fd_random(lcq, gnu))]
+%             default(generator(randgen:fd_random(lcq, gnu)))]
 %           ]).
 % ==
 
@@ -94,18 +94,22 @@ assert_rules([Rule0|T], DB, Ctx, Details) :-
       )
    ;  Rule2 = Rule1
    ),
-   (  select_option(default(Default_Value), Rule2, Rule3)
-   -> (  compound(Default_Value) -> true
-      ;  Details = 'invalid default value', throw(Err)
-      )
-   ;  Rule3 = Rule2
-   ),
    (  var(Is_Meta)
    -> Details = 'either option or meta_option should be specified',
       throw(Err)
    ;  Is_Meta = true
    -> Functor = MO_Functor, Arity = MO_Arity
    ;  Functor = Option_Functor, Arity = Option_Arity
+   ),
+   (  select_option(default(Default_Value), Rule2, Rule3)
+   -> (  compound(Default_Value),
+         functor(Default_Value, Default_Functor, Default_Arity),
+         Default_Functor == Functor,
+         Default_Arity == Arity
+      -> true
+      ;  Details = 'invalid default value', throw(Err)
+      )
+   ;  Rule3 = Rule2
    ),
    (  Is_Meta = true, Arity > 1
    -> Details = 'for a meta option the only available arity is 1',
