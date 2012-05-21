@@ -186,3 +186,14 @@ prolog:message(db_unformatted_object(DB_Key, Parents)) -->
 %   ['When try ~a the ungrounded key ~p = ~p was found'
 %   - [Action, Key, Key_Value]].
 
+% randgen
+
+prolog:message(unknown_random_generator(Family, Name)) -->
+
+   ['The random generator ~a/~a is unknown' - [Family, Name]].
+
+% ur_option
+
+prolog:message(invalid_option_definition(Rule)) -->
+
+   ['The option definition ~p is invalid' - [Rule]].
