@@ -181,6 +181,10 @@ prolog:message(db_unformatted_object(DB_Key, Parents)) -->
    ['Try to put unformatted object in DB ~a (parents: ~p)'
    - [DB_Key, Parents]].
 
+prolog:message(db_invalid_query(DB_Key, Query)) -->
+
+   ['Invalid query ~w on DB ~a' - [Query, DB_Key]].
+
 %prolog:message(db_ungrounded_key(Key, Key_Value, Action)) -->
 
 %   ['When try ~a the ungrounded key ~p = ~p was found'

@@ -859,11 +859,40 @@ db_iterate(DB_Key, Query, Filter_Pred, Object) :-
 db_iterate2(DB_Key, Query, Object, Ctx) :-
 
    % BT 1
-   parse_db_query(DB_Key, Query, Des, Fields, Values, Ctx),
+   parse_db_query(DB_Key, Query, Des, Fields, [], Values0, [], Ctx),
+
+   split_bound_unbound(Values0, Values1, Bound, Unbound, Bounding_Check),
 
    % BT 2
-   named_args_unify_int(DB_Key, fail, Des, Fields, Values,
-                        Object).
+   named_args_unify_int(DB_Key, fail, Des, Fields, Values1,
+                        Object0),
+
+   (  Bounding_Check == true
+   -> % reload fresh object
+      arg(1, Object0, Class_Id),
+      obj_field_int(Class_Id, db_ref, throw, Object0, DB_Ref, _, Ctx),
+      named_args_unify_int(DB_Key, throw, Des, [db_ref], [DB_Ref], Object),
+      obj_unify_int(Class_Id, Fields, throw, Object, Values, Ctx),
+      check_bound_unbound(Values, Bound, Unbound)
+   ;  Object = Object0
+   ).
+
+split_bound_unbound([], [], [], [], _) :- !.
+split_bound_unbound([Var|TV0], [Var|TV], [false|TB], [false|TU], BC) :-
+   var(Var), !,
+   split_bound_unbound(TV0, TV, TB, TU, BC).
+split_bound_unbound([+bound|TV0], [_|TV], [true|TB], [false|TU], true) :-
+   !, split_bound_unbound(TV0, TV, TB, TU, _).
+split_bound_unbound([+free|TV0], [_|TV], [false|TB], [true|TU], true) :-
+   !, split_bound_unbound(TV0, TV, TB, TU, _).
+split_bound_unbound([Value|TV0], [Value|TV], [true|TB], [false|TU], true) :-
+   split_bound_unbound(TV0, TV, TB, TU, _).
+
+check_bound_unbound([], [], []) :- !.
+check_bound_unbound([Value|TV], [Bound|TB], [Unbound|TU]) :-
+   (  Bound = true -> nonvar(Value) ; true ),
+   (  Unbound = true -> var(Value) ; true ),
+   check_bound_unbound(TV, TB, TU).
 
 
 %
@@ -920,18 +949,19 @@ db_iterate_replace2(DB_Key, Pred, Query, Filter_Pred) :-
    ;
    true.
 
-parse_db_query(DB_Key, true, Des, [], [], _) :- !,
+parse_db_query(DB_Key, true, Des, Fs, Fs, Vs, Vs, _) :- !,
 
    db_des(DB_Key, Des).
 
-parse_db_query(DB_Key, functor(Functor), Des, [], [], Ctx) :- !,
+parse_db_query(DB_Key, functor(Functor), Des, Fs, Fs, Vs, Vs, Ctx) :- !,
 
    (  var(Functor) -> true
    ;  check_class_arg(Functor, Ctx)
    ),
    db_functor_des(DB_Key, Functor, Des, Ctx).
 
-parse_db_query(DB_Key, same_or_descendant(Class), Des, [], [], Ctx) :- !,
+parse_db_query(DB_Key, same_or_descendant(Class), Des,
+               Fs, Fs, Vs, Vs, Ctx) :- !,
 
    check_inst(Class, Ctx),
    check_existing_class_arg(Class, Ctx),
@@ -943,20 +973,27 @@ parse_db_query(DB_Key, same_or_descendant(Class), Des, [], [], Ctx) :- !,
    same_or_descendant(Desc_Id, _, Class). % filter descendants
                                           % (inc. rebased)
 
-%parse_db_query(DB_Key, Expr1 \/ Expr2, Des,
-
-parse_db_query(DB_Key, Expr, Des, [Field], [Value], _) :-
+parse_db_query(DB_Key, Expr, Des, [Field|Fs], Fs, [Value|Vs], Vs, _) :-
 
    functor(Expr, Field, 1), !,
    arg(1, Expr, Value),
 
-   %Des = db_class_des(_, _, _, _, DB_Fields, _, _),
    db_des(DB_Key, Des).
 
-   % only those classes which contain Field
-   % <NB> no evaluated fields
-%   ord_memberchk(Field, DB_Fields).
+parse_db_query(DB_Key, Expr1 /\ Expr2, Des, Fs0, Fs, Vs0, Vs, Ctx) :-
+   !,
+   parse_db_query(DB_Key, Expr1, Des, Fs0, Fs1, Vs0, Vs1, Ctx),
+   parse_db_query(DB_Key, Expr2, Des, Fs1, Fs, Vs1, Vs, Ctx).
 
+parse_db_query(DB_Key, Expr1 \/ Expr2, Des, Fs0, Fs, Vs0, Vs, Ctx) :-
+   !,
+   (  parse_db_query(DB_Key, Expr1, Des, Fs0, Fs, Vs0, Vs, Ctx)
+   ;  parse_db_query(DB_Key, Expr2, Des, Fs0, Fs, Vs0, Vs, Ctx)
+   ).
+
+parse_db_query(DB_Key, Expr, _, _, _, _, _, Ctx) :-
+
+   throw(error(db_invalid_query(DB_Key, Expr), Ctx)).
 
 db_move_all_data(From_DB, To_DB) :-
 

@@ -6,6 +6,7 @@
 :- use_module(u(vd)).
 :- use_module(u(internal/db_i)).
 :- use_module(u(util/lambda)).
+:- use_module(library(aggregate)).
 
 test(clear_test_db, [fail, setup(db_clear(people))]) :-
 
@@ -90,6 +91,50 @@ test(db_iterate8, [setup(model_db)]) :-
    assertion(SL =@= [_, _, 'Mayakovsky']),
    findall(Surname, db_iterate(people, sex(Surname), _), SL2),
    assertion(SL2 == [man, woman, man]).
+
+test(db_iterate9, [setup(model_db), N == 1]) :-
+
+   findall(Surname, db_iterate(people, surname(+bound), _), L),
+   length(L, N).
+
+test(db_iterate10, [setup(model_db), N == 2]) :-
+
+   findall(Surname, db_iterate(people, surname(+free), _), L),
+   length(L, N).
+
+test(db_iterate11, [setup(model_db)]) :-
+
+   aggregate_all(count,
+                 db_iterate(people,
+                            surname('Mayakovsky') /\ surname(+free), _),
+                 N1),
+   assertion(N1 == 0),
+   aggregate_all(count,
+                 db_iterate(people,
+                            surname(+free) /\ surname('Mayakovsky'), _),
+                 N2),
+   assertion(N2 == 0),
+   aggregate_all(count,
+                 db_iterate(people,
+                            surname(+free) /\ surname(+bound), _),
+                 N3),
+   assertion(N3 == 0),
+   aggregate_all(count,
+                 db_iterate(people,
+                            surname(+free) \/ surname(+bound), _),
+                 N4),
+   assertion(N4 == 3),
+   aggregate_all(count,
+                 db_iterate(people,
+                            surname('Mayakovsky') /\ surname(+bound), _),
+                 N5),
+   assertion(N5 == 1),
+   aggregate_all(count,
+                 db_iterate(people,
+                            surname(+bound) /\ surname('Mayakovsky'), _),
+                 N6),
+   assertion(N6 == 1).
+
 
 test(db_to_list, [setup(model_db)]) :-
 
