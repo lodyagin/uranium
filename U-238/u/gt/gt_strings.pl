@@ -69,10 +69,10 @@ random_string(Options, Str) :-
 
 random_string(Pattern, Options, Str) :-
 
-  random_string(Pattern, gt_strings:std_random, Options, Str).
+  random_string(Pattern, std_random, Options, Str).
 
 
-:- meta_predicate random_string(1, 2, +, -).
+:- meta_predicate random_string(1, 1, +, -).
 
 % options
 % empty - a string of length 0
@@ -162,9 +162,8 @@ randsel(Rand, [X|L]) :-
   fd_size(X, Size),
   Size > 0,
 
-  fd_dom(X, Drep),
   repeat,
-  call(Rand, Drep, X),
+  call(Rand, X),
   !,
   randsel(Rand, L).
 
@@ -230,8 +229,9 @@ range_pattern(Drep, Str) :-
 
 
 % Linear distribution over X domain
-std_random(Drep, X) :-
+std_random(X) :-
 
+  fd_dom(X, Drep),
   fd_size(X, Max),
   succ(Max, Max1),
   Idx is random(Max1),
