@@ -5,9 +5,9 @@
 
 test(single_option_nonrep, [setup(setup_options)]) :-
 
-   options_object(test_pred1, [width(-1), length(3)], Obj),
+   options_object(test_pred1, [height(-1), length(3)], Obj),
    assertion(Obj / length =^= length(3)),
-   assertion(Obj / width =^= width(-1)),
+   assertion(Obj / height =^= height(-1)).
 
 test(single_option_unknown,
      [error(domain_error(valid_option, Option), _)]) :-
@@ -108,7 +108,7 @@ setup_options :-
    reload_all_classes,
    set_prolog_flag(verbose, Old_Verbose),
 
-   ur_options(test_pred1, [[option(length/1)], [option(width/1)]]),
+   ur_options(test_pred1, [[option(length/1)], [option(height/1)]]),
    ur_options(test_pred2, [[meta_option(generator/1)]]),
    ur_options(test_pred3, [[option(length/1), default(length(4))]]).
 
