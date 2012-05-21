@@ -94,13 +94,11 @@ test(db_iterate8, [setup(model_db)]) :-
 
 test(db_iterate9, [setup(model_db), N == 1]) :-
 
-   findall(Surname, db_iterate(people, surname(+bound), _), L),
-   length(L, N).
+   aggregate_all(count, db_iterate(people, surname(+bound), _), N).
 
 test(db_iterate10, [setup(model_db), N == 2]) :-
 
-   findall(Surname, db_iterate(people, surname(+free), _), L),
-   length(L, N).
+   aggregate_all(count, db_iterate(people, surname(+free), _), N).
 
 test(db_iterate11, [setup(model_db)]) :-
 
