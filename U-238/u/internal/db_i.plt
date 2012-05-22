@@ -111,10 +111,11 @@ test(db_recorded_int4, [setup(setup)]) :-
    db_recorded(db_i_test, Obj),
    db_clear(db_i_test).
 
-test(key_conflict, [setup(model_db(Slod1))]) :-
+test(key_conflict1, [setup(model_db(Slod1))]) :-
 
    obj_construct(man_v,
-                 [name, surname], ['Sergei', 'Lodyagin'], Man1_0),
+                 [name, surname], ['Sergei', 'Lodyagin'],
+                 Man1_0),
    obj_rebase((object_v -> db_object_v), Man1_0, Man1),
 
    arg(1, Man1, Man_V_Re_Id),
@@ -132,9 +133,8 @@ test(key_conflict, [setup(model_db(Slod1))]) :-
               obj_field(O, surname, Name)
            ),
            List2),
-   assertion(List2 =@= ['Lodyagin', 'Sikorsky'
-                        %'Sysoev', 'Ivan'
-                        % (man_v is not desc. of citizen_v)
+   assertion(List2 =@= ['Lodyagin', 'Sikorsky',
+                        'Sysoev', 'Ivan'
                         ]),
 
    obj_construct(man_v, [], [], Man3_0),
@@ -144,19 +144,25 @@ test(key_conflict, [setup(model_db(Slod1))]) :-
            key_conflict(people, Man_V_Re_Id, Man3, C),
            List3),
    length(List3, N3),
-   assertion(N3 =:= 5),
+   assertion(N3 =:= 8),
 
-   obj_construct(citizen_v, [name, id], ['Sergei', 4], Man4_0),
+   obj_construct(citizen_v, [name, id], ['Sergei', 4],
+                 Man4_0),
    obj_rebase((object_v -> db_object_v), Man4_0, Man4),
 
    arg(1, Man4, Citizen_V_Re_Id),
    
    findall(Name,
-           (  key_conflict(people, Citizen_V_Re_Id, Man4, O),
-              obj_field(O, surname, Name)
+           (key_conflict(people, Citizen_V_Re_Id, Man4, O),
+            obj_field(O, surname, Name)
            ),
            List4),
-   assertion(List4 =@= ['Lodyagin', 'Sikorsky', 'Sysoev']),
+   assertion(List4 =@= ['Sysoev', % conf on id
+                        % cond on name down here
+                        'Lodyagin',
+                        'Sikorsky',
+                        'Sysoev',
+                        'Ivan']),
    
    obj_construct(citizen_v,
                  [name, surname, id],
@@ -164,19 +170,47 @@ test(key_conflict, [setup(model_db(Slod1))]) :-
    obj_rebase((object_v -> db_object_v), Man5_0, Man5),
 
    findall(Name,
-           (  key_conflict(people, Citizen_V_Re_Id, Man5, O),
-              obj_field(O, surname, Name)
+           (key_conflict(people, Citizen_V_Re_Id, Man5, O),
+            obj_field(O, surname, Name)
            ),
            List5),
-   assertion(List5 =@= ['Sysoev']).
+   assertion(List5 =@= ['Sysoev']),
+
+   obj_construct(callup_v,
+                 [name, surname, id],
+                 ['Igor', 'Litvin', 4], Man6_0),
+   obj_rebase((object_v -> db_object_v), Man6_0, Man6),
+   arg(1, Man6, Callup_V_Re_Id),
+
+   findall(Name,
+           ( key_conflict(people, Callup_V_Re_Id, Man6, O),
+             obj_field(O, surname, Name)
+           ),
+           List6),
+   assertion(List6 =@= ['Sysoev']).
+
+test(key_conflict2, [setup(model_db2)]) :-
+
+   obj_construct(citizen_v,
+                 [name, surname, id],
+                 ['Igor', 'Litvin', 4], Man5_0),
+   obj_rebase((object_v -> db_object_v), Man5_0, Man5),
+   arg(1, Man5, Citizen_V_Re_Id),
    
+   findall(Name,
+          (key_conflict(people2, Citizen_V_Re_Id, Man5, O),
+            obj_field(O, surname, Name)
+           ),
+           List5),
+   assertion(List5 =@= ['Petrenko']).
    
 
 model_db(Slod1) :-
 
    db_clear(people),
    db_construct(people, man_v,
-                [name, surname], ['Sergei', 'Lodyagin'], Slod1),
+                [name, surname], ['Sergei', 'Lodyagin'],
+                Slod1),
    
    db_construct(people, man_v,
                 [name, surname], ['Sergei', 'Sikorsky']),
@@ -186,9 +220,20 @@ model_db(Slod1) :-
    db_construct(people, man_v,
                 [name, surname], ['Artemiy', 'Lebedev']),
    db_construct(people, citizen_v,
-                [name, surname, id], ['Sergei', 'Sysoev', 4]),
+                [name, surname, id],
+                ['Sergei', 'Sysoev', 4]),
    db_construct(people, citizen_v,
-                [name, surname, id], ['Sergei', 'Ivan', 5]).
+                [name, surname, id],
+                ['Sergei', 'Ivan', 5]),
+   db_construct(people, citizen_v,
+                [name, surname, id],
+                ['Igor', 'Ivan', 6]).
+
+model_db2 :-
+
+   db_clear(people2),
+   db_construct(people2, callup_v,
+                [id, surname], [4, 'Petrenko']).
 
 setup :-
 

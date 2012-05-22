@@ -567,12 +567,16 @@ test(key_rule11,
    db_construct(people, citizen_v, [id], [4]),
    db_construct(people, citizen_v, [], []).
 
-test(key_rule12, [setup(db_clear(people))]) :-
+test(key_rule12,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
 
    db_construct(people, citizen_v, [id], [4]),
    db_construct(people, man_v, [], []).
 
-test(key_rule13, [setup(db_clear(people))]) :-
+test(key_rule13,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
 
    db_construct(people, citizen_v, [id], [4]),
    db_construct(people, man_v, [name], ['James']).
@@ -585,13 +589,13 @@ test(key_rule14,
    db_construct(people, man_v, [], []),
    db_construct(people, citizen_v, [id], [5]).
 
-test(key_rule15, [setup(db_clear(people))]) :-
+test(key_rule15,
+     [setup(db_clear(people)),
+      error(db_key_exists(people, _, _))]) :-
 
    db_construct(people, citizen_v, [id], [4]),
    db_construct(people, man_v,
-                [name, surname], ['James', 'Crick']),
-   db_construct(people, citizen_v,
-                [name, surname, id], ['Adam', 'Adamovitch', 5]).
+                [name, surname], ['James', 'Crick']).
 
 test(key_rule16,
      [setup(db_clear(people)),

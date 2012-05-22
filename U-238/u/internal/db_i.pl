@@ -579,24 +579,52 @@ erase_conflicts(DB_Key, Class_Id, Object) :-
      fail ; true
   ).
 
-% key_conflict(+DB_Key, +Class_Id, @Object, -Conflicting)
-% nondet
+%% key_conflict(+DB_Key, +Class_Id, @Object, -Conflicting)
+%% is nondet
 %
-% Return the conflicting objects.
-% Using of ground(Key_Value) ensures Object is not changed
+% On BT return all conflicting objects. Some objects can
+% be returned more than one due to possible different key
+% rules defined in the DB.
+%
+% This is the rule of Conflicting objects search:
+%
+% Try all keymasters (KM1) present in DB
+% (up to hierarchy from the Object).
+% Get the Object key value (KV) based on KM1.
+% For each class which is a descendant of KM1 try unify
+% objects of this class with KV.
 
 key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
 
    Ctx = context(key_conflict/4, _),
-   db_keymaster(DB_Key, Key_Class_Name),
-   same_or_descendant(Class_Id, _, Key_Class_Name),
 
-   Des = db_class_des(_, _, Key_Class_Name, _, _, Key, _),
-   db_des(DB_Key, Des),
-   obj_unify_int(Class_Id, Key, throw, Object, Key_Value, Ctx),
+   % BT keymasters up to the hierarchy
+   same_or_descendant(Class_Id, _, Key_Class_Name),
+   db_keymaster(DB_Key, Key_Class_Name),
+
+   % get the key of keymaster
+   Keymaster_Des = db_class_des(_, _, Key_Class_Name, _,
+                                _, Key, _),
+   db_des(DB_Key, Keymaster_Des),
+
+   % get the key value from Object
+   obj_unify_int(Class_Id, Key, throw, Object, Key_Value,
+                 Ctx),
+
+   % try to unify (copy_term is used to ignore
+   % the bind result in Object)
    copy_term_nat(Key_Value, Test_Value),
-   named_args_unify_int(DB_Key, throw, Des, Key, Test_Value,
-                        Conflicting).
+   % <NB> try all descriptors from Key_Class_Name down
+   % to the hierarchy
+   Conflicting_Des = db_class_des(Conflicting_DB_Id, _, _,
+                                  _, _, _, _),
+   db_des(DB_Key, Conflicting_Des),
+   db_conv_local_db(DB_Key, Conflicting_Class_Id,
+		    Conflicting_DB_Id, _),
+   same_or_descendant(Conflicting_Class_Id, _,
+	              Key_Class_Name),
+   named_args_unify_int(DB_Key, throw, Conflicting_Des,
+                        Key, Test_Value, Conflicting).
 
 
 
