@@ -51,9 +51,11 @@ new_class(option_rule_v, db_object_v,
            is_meta,  % `pattern` is a meta option
            default_value
            ],
-          [pattern]).
+          [group_name]).
 
 new_class(single_option_rule_v, option_rule_v, []).
+
+new_class(group_option_rule_v, option_rule_v, []).
 
 'ur_options_v?'(Obj0, options_out, Obj) :-
 
@@ -76,7 +78,11 @@ set_defaults(DB, Obj) :-
 process_options([], _, Obj, Obj) :- !.
 process_options([Option|T], DB, Obj0, Obj) :-
    must_be(compound, Option),
-   (  named_args_unify(DB, _, [pattern], [Option], Rule) -> true
+   (  db_iterate(DB,
+                 pattern(Option)
+                /\ same_or_descendant(option_rule_v),
+                 Rule)
+   -> true
    ;  domain_error(valid_option, Option)
    ),
    obj_unify(Rule,
@@ -86,24 +92,30 @@ process_options([Option|T], DB, Obj0, Obj) :-
               Obj1]),
    process_options(T, DB, Obj1, Obj).
 
+'option_rule_v?'(Rule, options_object_out, Obj) :-
+   obj_field(Rule, 'options_object_out#', Obj).
+
+% It will be called iff others fail
+'option_rule_v?'(Rule, option_in, _) :-
+   Ctx = context('option_rule_v?'/3, _),
+   throw(error(abstract_eval(Rule, option_in), Ctx)).
+
 'single_option_rule_v?'(Rule, option_in, Option0) :-
    obj_unify(Rule,
-             [group_name, options_object_in, 'options_object_out#',
+             [group_name,
+              options_object_in,
+              'options_object_out#',
               is_meta],
-             [Name, Obj, Obj1, Is_Meta]),
-   (  Is_Meta == true
-   -> functor(Option0, Name, 1),
-      arg(1, Option0, Value0),
-      (  Value0 = _:_
-      -> Value = Value0
-      ;  Value = Context_Module : Value0
-      ),
-      functor(Option, Name, 1),
-      arg(1, Option, Value)
-   ;  Option = Option0
-   ),
-   obj_rewrite(Obj, [Name, context_module],
-               [Old_Value, Context_Module], [Option, Context_Module],
+             [Name,
+              Obj,
+              Obj1,
+              Is_Meta]),
+   normalize_meta_option(Is_Meta, Context_Module,
+                         Option0, Option),
+   obj_rewrite(Obj,
+               [Name, context_module],
+               [Old_Value, Context_Module],
+               [Option, Context_Module],
                Obj1),
    (  var(Old_Value) -> true
    ;  obj_field(Obj, options_in, Options),
@@ -113,6 +125,46 @@ process_options([Option|T], DB, Obj0, Obj) :-
       )
    ).
 
-'single_option_rule_v?'(Rule, options_object_out, Obj) :-
-   obj_field(Rule, 'options_object_out#', Obj).
+'group_option_rule_v?'(Rule, option_in, Option0) :-
+   obj_unify(Rule,
+             [group_name,
+              options_object_in,
+              'options_object_out#',
+              is_meta],
+             [Name,
+              Obj,
+              Obj1,
+              Is_Meta]),
+   must_be(nonvar, Is_Meta),
+   normalize_meta_option(Is_Meta, Context_Module,
+                         Option0, Option),
+   obj_rewrite(Obj,
+               [Name, context_module],
+               [Old_Value, Context_Module],
+               [Option, Context_Module],
+               Obj1),
+   (  var(Old_Value) -> true
+   ;  obj_field(Obj, options_in, Options),
+      (  Old_Value == Option
+      -> domain_error(nonrepeating_options, Options)
+      ;  functor(Old_Value, Option_Name, Option_Arity),
+         functor(Option, Option_Name, Option_Arity)
+      -> domain_error(consistent_options, Options)
+      ;  domain_error(one_option_per_group, Options)
+      )
+   ).
+
+normalize_meta_option(true, Context_Module,
+                      Option0, Option) :- !,
+   functor(Option0, Name, 1),
+   arg(1, Option0, Value0),
+   (  Value0 = _:_
+   -> Value = Value0
+   ;  Value = Context_Module : Value0
+   ),
+   functor(Option, Name, 1),
+   arg(1, Option, Value).
+
+normalize_meta_option(_, _, Option, Option).
+
 
