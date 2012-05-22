@@ -152,24 +152,6 @@ test(class_parent3) :-
    length(L, N),
    assertion(N > 10).
 
-test(eval_fields1) :-
-
-   obj_construct(adder_v, [], [], Adder1),
-
-   obj_unify(Adder1, [a, b, c], [3, 11, C]),
-   assertion(C == 14),
-
-   obj_unify(Adder1, [z, y, x], [2, 10, X]),
-   assertion(X == 12).
-
-test(eval_fields2) :-
-
-   obj_construct(adder_v, [a, b, c], [3, 11, C], _),
-   assertion(C == 14),
-
-   obj_construct(adder_v, [z, y, x], [2, 10, X], _),
-   assertion(X == 12).
-
 test(eval_obj_expr1,
      [[E0, E1, E2, E3]
      =@= [Man, HTTP_Result, WWW_Addr, Url]]
@@ -907,14 +889,6 @@ test(class_fields) :-
    assertion(Citizen_V_New_Fields == [birthday, country, id]).
 
 
-% After some time it will always fails (because it depends
-% on the current year, see The Uranium Book).
-test(eval_fields1, [Class == callup_v]) :-
-
-   obj_construct(citizen_v, [sex, birthday], [man, 1994], C), 
-   obj_field(C, class, Class).
-
-
 test(cleanup_obj_rebase, [blocked(transaction_bug), N1 =:= N2]) :-
 
    aggregate(count, A^B^C^(objects:class_id(A, B, C)), N1),
@@ -925,7 +899,15 @@ test(cleanup_obj_rebase, [blocked(transaction_bug), N1 =:= N2]) :-
    aggregate(count, A^B^C^(objects:class_id(A, B, C)), N2).
 
 
-test(eval_fields1) :-
+% After some time it will always fails (because it depends
+% on the current year, see The Uranium Book).
+test(eval_fields1, [Class == callup_v]) :-
+
+   obj_construct(citizen_v, [sex, birthday], [man, 1994], C), 
+   obj_field(C, class, Class).
+
+
+test(eval_fields2) :-
 
    % man_v doesn't define class eval, so in this example
    % the eval from citizen_v is always used.
@@ -940,7 +922,7 @@ test(eval_fields1) :-
    assertion(Cl1 == callup_v),
    assertion(Cl2 == callup_v).
 
-test(eval_fields2,
+test(eval_fields3,
      [blocked(need_to_see)]
      ) :-
 
@@ -957,5 +939,47 @@ test(eval_fields2,
    obj_field(C2, class, Cl2),
    assertion(Cl1 == callup_v),
    assertion(Cl2 == man_v).
+
+test(eval_fields4) :-
+
+   obj_construct(adder_v, [], [], Adder1),
+
+   obj_unify(Adder1, [a, b, c], [3, 11, C]),
+   assertion(C == 14),
+
+   obj_unify(Adder1, [z, y, x], [2, 10, X]),
+   assertion(X == 12).
+
+test(eval_fields5) :-
+
+   obj_construct(adder_v, [a, b, c], [3, 11, C], _),
+   assertion(C == 14),
+
+   obj_construct(adder_v, [z, y, x], [2, 10, X], _),
+   assertion(X == 12).
+
+% eval inheritance
+test(eval_fields6) :-
+
+   obj_construct(vector_adder_v, [], [], Adder1),
+
+   obj_unify(Adder1,
+             [a, b, c],
+             [[2, 3], [10, 11], C]),
+   assertion(C == [12, 14]),
+
+   obj_unify(Adder1, [z, y, x], [2, 10, X]),
+   assertion(X == 12).
+
+test(eval_fields7) :-
+
+   obj_construct(vector_adder_v,
+                 [a, b, c],
+                 [[2, 3], [10, 11], C],
+                 _),
+   assertion(C == [12, 14]),
+
+   obj_construct(adder_v, [z, y, x], [2, 10, X], _),
+   assertion(X == 12).
 
 :- end_tests(v).

@@ -7,6 +7,8 @@
 
 new_class(adder_v, object_v, [a, z, 'c#', 'x#']).
 
+new_class(vector_adder_v, adder_v, []).
+
 'adder_v?'(Obj, b, B) :-
    obj_unify(Obj, [a, 'c#'], [A, C]),
    C is A + B.
@@ -20,6 +22,11 @@ new_class(adder_v, object_v, [a, z, 'c#', 'x#']).
 
 'adder_v?'(Obj, x, X) :-
    obj_field(Obj, 'x#', X).
+
+'vector_adder_v?'(Obj, b, B) :-
+   obj_unify(Obj, [a, 'c#'], [A, C]),
+   maplist(plus, A, B, C).
+
 
 
 
