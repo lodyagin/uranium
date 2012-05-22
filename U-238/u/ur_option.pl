@@ -64,7 +64,18 @@ ur_options(Pred, _:Options) :-
    format(atom(Class), '~a__~a_v', [Pred_Module, Pred1]),
    ( class_name(Class) -> true
    ; db_clear(Class),
-     assert_rules(Options, Class, Ctx, Details),
+     catch(
+           assert_rules(Options, Class, Ctx, Details),
+           error(db_key_exists(_, _, New_Object), _),
+           ( obj_key_value(New_Object, [Existing_Opt]),
+             functor(Existing_Opt, Ex_Fun, Ex_Arity),
+             format(atom(Details),
+                 'multiple definitions for ~a/~d found',
+                 [Ex_Fun, Ex_Arity]),
+             Err =error(invalid_option_definition(Options),
+                        Ctx),
+             throw(Err)
+           )),
      setof(Field, db_select(Class, [group_name], [Field]),
            Fields),
      class_create(Class, ur_options_v, Fields)
@@ -189,9 +200,10 @@ select_single_option(Template, Rule0, Rule,
       throw(Err)
    ).
 
-assert_group_options(Template, DB, Group_Name, Default,
+assert_group_options(Template0, DB, Group_Name, Default,
                      Rule0, Rule, Details, Err) :-
 
+   copy_term(Template0, Template),
    select_single_option(Template, Rule0, Rule1,
                         Functor, Arity, Details, Err),
    !,
@@ -205,7 +217,7 @@ assert_group_options(Template, DB, Group_Name, Default,
                  default_value],
                 [Group_Name, Pattern, Is_Meta,
                  Default]),
-   assert_group_options(Template, DB, Group_Name, Default,
+   assert_group_options(Template0, DB, Group_Name, Default,
                         Rule1, Rule, Details, Err).
 
 assert_group_options(_, _, _, _, Rule, Rule, _, _).

@@ -51,7 +51,7 @@ new_class(option_rule_v, db_object_v,
            is_meta,  % `pattern` is a meta option
            default_value
            ],
-          [group_name]).
+          [pattern]).
 
 new_class(single_option_rule_v, option_rule_v, []).
 

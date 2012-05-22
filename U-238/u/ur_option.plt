@@ -89,17 +89,29 @@ test(single_option_bad_default1,
    Rule = [option(length/1), default(length(3, 4))],
    ur_options(test_pred5, [Rule]).
 
-test(single_option_repeated1, [fail]) :-
+test(single_option_repeated1,
+     [error(invalid_option_definition(Options), _)]
+    ) :-
 
-   ur_options(test_pred6, [[option(length/1)],
-                           [option(width/1)],
-                           [option(length/1)]]).
+   Options = [[option(length/1)],
+              [option(width/1)],
+              [option(length/1)]],
+   ur_options(test_pred6, Options).
 
-test(single_option_repeated2, [fail]) :-
+test(single_option_repeated2) :-
 
    ur_options(test_pred7, [[option(length/1)],
                            [option(width/1)],
                            [option(length/3)]]).
+
+test(group_option_repeated1,
+     [error(invalid_option_definition(O), _)]) :-
+
+   O = [[group(length),
+         option(length/1), option(length/3)],
+        [option(width/1)],
+        [option(length/3)]],
+   ur_options(test_pred8, O).
 
 setup_options :-
 
@@ -119,5 +131,6 @@ test_pred4(_).
 test_pred5(_).
 test_pred6(_).
 test_pred7(_).
+test_pred8(_).
 
 :- end_tests(ur_option).
