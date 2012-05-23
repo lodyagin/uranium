@@ -127,7 +127,47 @@ test(group_option2,
    options_object(test_pred9,
                   [empty, generator(test_pred1),
                    length(1)], _).
-   
+
+test(multi_group_option1) :-
+
+   OL = [empty, length(5), length(5), length(9)],
+   options_object(test_pred10, OL, Obj),
+   Obj / length ^= OL2,
+   msort(OL2, OL3),
+   msort(OL, OL4),
+   assertion(OL3 == OL4).
+
+test(multi_group_option2,
+     [error(invalid_option_definition(O), _)]) :-
+
+   O = [multi_group(length),
+        option(empty/0), option(length/1),
+        option(length/1)],
+   ur_options(test_pred11, [O]).
+
+test(multi_group_option3,
+     [error(invalid_option_definition(O), _)]) :-
+
+   O = [multi_group(length),
+        option(empty/0), option(length/1),
+        meta_option(length/1)],
+   ur_options(test_pred12, [O]).
+
+test(multi_group_option4,
+     [error(invalid_option_definition(O), _)]) :-
+
+   O = [multi_group(length),
+        option(empty/0), option(length/1),
+        default(empty/0)],
+   ur_options(test_pred13, [O]).
+
+test(multi_group_option5,
+     [error(invalid_option_definition(O), _)]) :-
+
+   O = [multi_group(length),
+        option(empty/0), option(length/1),
+        default([length/1, width/2])],
+   ur_options(test_pred14, [O]).
 
 setup_options :-
 
@@ -146,6 +186,12 @@ setup_options :-
               [[group(length), option(empty/0),
                 option(length/1), option(length/2),
                 meta_option(length_pred/1)],
+               [meta_option(generator/1)]]),
+   ur_options(test_pred10,
+              [[multi_group(length), option(empty/0),
+                option(length/1), option(length/2),
+                default([empty, length(1, 80)]),
+                meta_option(length_pred/1)],
                [meta_option(generator/1)]]).
 
 test_pred1(_).
@@ -157,5 +203,10 @@ test_pred6(_).
 test_pred7(_).
 test_pred8(_).
 test_pred9(_).
+test_pred10(_).
+test_pred11(_).
+test_pred12(_).
+test_pred13(_).
+test_pred14(_).
 
 :- end_tests(ur_option).

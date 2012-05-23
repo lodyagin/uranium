@@ -57,6 +57,8 @@ new_class(single_option_rule_v, option_rule_v, []).
 
 new_class(group_option_rule_v, option_rule_v, []).
 
+new_class(multi_group_option_rule_v, option_rule_v, []).
+
 'ur_options_v?'(Obj0, options_out, Obj) :-
 
    obj_unify(Obj0, [class, options_in], [Class, Options]),
@@ -152,6 +154,29 @@ process_options([Option|T], DB, Obj0, Obj) :-
       -> domain_error(consistent_options, Options)
       ;  domain_error(one_option_per_group, Options)
       )
+   ).
+
+'multi_group_option_rule_v?'(Rule, option_in, Option0) :-
+   obj_unify(Rule,
+             [group_name,
+              options_object_in,
+              'options_object_out#',
+              is_meta],
+             [Name,
+              Obj,
+              Obj1,
+              Is_Meta]),
+   must_be(nonvar, Is_Meta),
+   normalize_meta_option(Is_Meta, Context_Module,
+                         Option0, Option),
+   obj_rewrite(Obj,
+               [Name, context_module],
+               [Old_Value, Context_Module],
+               [New_Value, Context_Module],
+               Obj1),
+   (  var(Old_Value)
+   -> New_Value = [Option]
+   ;  New_Value = [Option|Old_Value]
    ).
 
 normalize_meta_option(true, Context_Module,

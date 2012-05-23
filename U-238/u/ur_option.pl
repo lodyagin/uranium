@@ -46,7 +46,11 @@
 % Example:
 % ==
 % ur_options(random_string,
-%           [multi(length, [length/2, length/1, empty/0], [empty, length(1, 80)]),
+%           [[multi_group(length),
+%             option(length/2),
+%             option(length/1),
+%             option(empty/0)],
+%             default([empty, length(1, 80)])],
 %            [group(pattern),
 %             option(range/1),
 %             option(regex/1),
@@ -96,15 +100,52 @@ assert_rule(Rule0, DB, Details, Err) :-
    select_option(group(Name), Rule0, Rule1), !,
    % default value
    select_default(Rule1, Rule2, Default, Details, Err),
-   assert_group_options(option(_), DB, Name, Default,
-                        Rule2, Rule3, Details, Err),
-   assert_group_options(meta_option(_), DB, Name, Default,
-                        Rule3, Rule4, Details, Err),
+   assert_group_options(DB, option(_),
+                        group_option_rule_v, Name,
+                        Default, Rule2, Rule3,
+                        Details, Err),
+   assert_group_options(DB, meta_option(_),
+                        group_option_rule_v, Name,
+                        Default, Rule3, Rule4,
+                        Details, Err),
    check_rest(Rule4, Details, Err),
 
    (  db_iterate(DB,
                  pattern(Default)
                 /\ same_or_descendant(option_rule_v), _)
+   -> true
+   ;  Details = 'the default value is not belong to the group',
+      throw(Err)
+   ).
+
+% multi group
+assert_rule(Rule0, DB, Details, Err) :-
+
+   % basic checks
+   select_option(multi_group(Name), Rule0, Rule1), !,
+   % default value
+   select_default(Rule1, Rule2, Default, Details, Err),
+   ( is_list(Default) -> true
+   ; Details = 'the default value for multi_group must be a list',
+     throw(Err)
+   ),
+   assert_group_options(DB, option(_),
+                        multi_group_option_rule_v, Name,
+                        Default, Rule2, Rule3,
+                        Details, Err),
+   assert_group_options(DB, meta_option(_),
+                        multi_group_option_rule_v, Name,
+                        Default, Rule3, Rule4,
+                        Details, Err),
+   check_rest(Rule4, Details, Err),
+
+   findall(Pattern,
+           db_iterate(DB,
+                    pattern(Pattern)
+                   /\ same_or_descendant(option_rule_v),
+                    _),
+         Patterns),
+   (  forall(member(O, Default), memberchk(O, Patterns))
    -> true
    ;  Details = 'the default value is not belong to the group',
       throw(Err)
@@ -200,7 +241,8 @@ select_single_option(Template, Rule0, Rule,
       throw(Err)
    ).
 
-assert_group_options(Template0, DB, Group_Name, Default,
+assert_group_options(DB, Template0, Rule_Class,
+                     Group_Name, Default,
                      Rule0, Rule, Details, Err) :-
 
    copy_term(Template0, Template),
@@ -212,15 +254,16 @@ assert_group_options(Template0, DB, Group_Name, Default,
    ;  Is_Meta = false
    ),
    functor(Pattern, Functor, Arity),
-   db_construct(DB, group_option_rule_v,
+   db_construct(DB, Rule_Class,
                 [group_name, pattern, is_meta,
                  default_value],
                 [Group_Name, Pattern, Is_Meta,
                  Default]),
-   assert_group_options(Template0, DB, Group_Name, Default,
+   assert_group_options(DB, Template0, Rule_Class,
+                        Group_Name, Default,
                         Rule1, Rule, Details, Err).
 
-assert_group_options(_, _, _, _, Rule, Rule, _, _).
+assert_group_options(_, _, _, _, _, Rule, Rule, _, _).
 
 
 select_default(Rule0, Rule, Default, Details, Err) :-
@@ -233,8 +276,10 @@ select_default(Rule0, Rule, Default, Details, Err) :-
    ).
 
 check_rest([], _, _) :- !.
-check_rest(_, Details, Err) :-
-   Details = 'unknown parameters in the definition',
+check_rest(Rejected, Details, Err) :-
+   format(atom(Details),
+          'unknown parameters ~w in the definition',
+          [Rejected]),
    throw(Err).
 
 :- meta_predicate options_object(:, :, -).
