@@ -82,7 +82,7 @@ random_string_int(Opt, Str) :-
              [Lengths,
               Patterns,
               generator(Generator),
-              seed(Seed)
+              seed(Seed0)
              ]),
 
    % TODO always use passed generators instead of library(random)
@@ -97,6 +97,11 @@ random_string_int(Opt, Str) :-
    ;  Pattern1 = range(Drep)
    -> Pattern = That:range_pattern(Drep)
    ;  pattern(Pattern) = Pattern1
+   ),
+
+   (  Seed0 >= 0
+   -> Seed = Seed0
+   ;  Seed is random(4294967295) % TODO
    ),
 
    random_string_int(Pattern, Generator, Seed, Length,
@@ -176,7 +181,7 @@ setup_options :-
                 default([range(32..126)])],
                [meta_option(generator/1),
                 default(generator(randgen:fd_random(lcq, gnu)))],
-               [option(seed/1), default(seed(0))]
+               [option(seed/1), default(seed(-1))]
               ]).
 
 :- initialization setup_options.
