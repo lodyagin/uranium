@@ -77,7 +77,7 @@ set_defaults(DB, Obj) :-
 
 process_options([], _, Obj, Obj) :- !.
 process_options([Option|T], DB, Obj0, Obj) :-
-   must_be(compound, Option),
+   must_be(nonvar, Option),
    (  db_iterate(DB,
                  pattern(Option)
                 /\ same_or_descendant(option_rule_v),

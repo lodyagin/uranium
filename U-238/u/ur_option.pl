@@ -193,7 +193,7 @@ select_single_option(Template, Rule0, Rule,
    select_option(Template, Rule0, Rule),
    arg(1, Template, Option),
    (  nonvar(Option), Option = Functor/Arity,
-      atom(Functor), integer(Arity), Arity > 0
+      atom(Functor), integer(Arity), Arity >= 0
    -> true
    ;  format(atom(Details), '~a(Functor/Arity) expected',
              [Name]),
