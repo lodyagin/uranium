@@ -23,21 +23,62 @@
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
-% This module defines various clpfd-compatible random number generators.
-
 :- module(randgen,
           [random_generator/4,
            lcq_gnu/2,
-           lcq_knuth/2
+           lcq_knuth/2,
+           fd_random/5
           ]).
 
+/** <module>  clpfd-compatible random number generators
+*/
+
+:- use_module(library(error)).
 :- use_module(library(clpfd)).
+:- use_module(u(clpfd_adds)).
+
+:- multifile random_generator/4.
+
+%% fd_random(+Family, +Name, +Seed0, -Seed, -X)
+%
+% Random distribution over fd_dom of X.
+%
+% @param Family random generator family
+% @param Name random generator name
+% @param Seed0 previous seed
+% @param Seed used for X calculation (to pass as Seed0 in the next call)
+% @param X variable with finite domain attributes
+
+fd_random(Family, Name, Seed0, Seed, X) :-
+
+   Ctx = context(fd_random/5, _),
+   must_be(atom, Family),
+   must_be(atom, Name),
+   must_be(integer, Seed0),
+   fd_size(X, Max),
+   (  random_generator(Family, Name, Generator, _) -> true
+   ;  throw(error(unknown_random_generator(Family, Name), Ctx))
+   ),
+   call(Generator, Seed0, Seed),
+   (  Max > 1
+   -> % TODO check Max_Value >> Max
+      Idx is Seed mod Max,
+      fd_dom(X, Drep),
+      drep_nth0(Idx, Drep, X)
+   ;  true
+   ).
+
+
+%% random_generator(?Family, ?Name, -Pred, -Max_Value)
+%
+% Select generator Pred by Family/Name. Pred should generate random numbers
+% in the range 0 .. Max_Value
 
 % This group is from
 % http://en.wikipedia.org/wiki/Linear_congruential_generator
 % NB the last number is mod - 1!
-random_generator(lcq, gnu, lcq_gnu, 4294967295).
-random_generator(lcq, knuth, lcq_knuth, 18446744073709551615).
+random_generator(lcq, gnu, randgen:lcq_gnu, 4294967295).
+random_generator(lcq, knuth, randgen:lcq_knuth, 18446744073709551615).
 
 lcq_gnu(X0, X) :-
 

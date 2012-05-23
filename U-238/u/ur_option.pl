@@ -291,6 +291,8 @@ options_object(Pred_Module:Pred, Opts_Module:Options, Object) :-
                  [Options, Object, Opts_Module],
                  _).
 
+% TODO check all this functionality is realized in the new module ur_option:
+
 % override_(+Option0, +Value, +Options, -Option)
 %
 % @param Option0 can have one of these forms:

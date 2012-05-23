@@ -1,6 +1,6 @@
 :- use_module(library(clpfd)).
 
-:- begin_tests(random_string).
+:- begin_tests(gt_strings).
 :- use_module(u(gt/gt_strings)).
 
 test(all_different_full) :-
@@ -9,7 +9,8 @@ test(all_different_full) :-
   Last = 0'z,   %'
   Length is Last - First + 1,
   numlist(First, Last, Etalon),
-  random_string(all_different_pat(First..Last), [length(Length)],
+  random_string([pattern(all_different_pat(First..Last)),
+                 length(Length)],
 		Codes),
   perm_check(Codes, Etalon).
   % Codes must be always a permutation of the Etalon
@@ -46,7 +47,7 @@ test(regex1) :-
 
 % on all length options
 
-:- end_tests(random_string).
+:- end_tests(gt_strings).
 
 % deterministic permutation check
 
@@ -60,6 +61,7 @@ all_different_pat(Drep, Str) :-
 
   gt_strings:range_pattern(Drep, Str),
   all_different(Str).
+
 
 
 
