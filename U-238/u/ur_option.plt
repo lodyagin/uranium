@@ -57,7 +57,7 @@ test(single_option_rep3,
 
 test(single_option_meta1) :-
 
-   
+
    options_object(test_pred2, [generator(test_pred1)],
                   Obj),
    context_module(That),
@@ -113,6 +113,22 @@ test(group_option_repeated1,
         [option(length/3)]],
    ur_options(test_pred8, O).
 
+test(group_option1) :-
+   options_object(test_pred9,
+                  [empty, generator(test_pred1)],
+                  Obj),
+   context_module(That),
+   assertion(Obj / length =^= empty),
+   assertion(Obj/generator=^=generator(That:test_pred1)).
+
+test(group_option2,
+    [error(domain_error(one_option_per_group, _), _)]) :-
+   
+   options_object(test_pred9,
+                  [empty, generator(test_pred1),
+                   length(1)], _).
+   
+
 setup_options :-
 
    current_prolog_flag(verbose, Old_Verbose),
@@ -120,9 +136,17 @@ setup_options :-
    reload_all_classes,
    set_prolog_flag(verbose, Old_Verbose),
 
-   ur_options(test_pred1, [[option(length/1)], [option(height/1)]]),
-   ur_options(test_pred2, [[meta_option(generator/1)]]),
-   ur_options(test_pred3, [[option(length/1), default(length(4))]]).
+   ur_options(test_pred1,
+              [[option(length/1)], [option(height/1)]]),
+   ur_options(test_pred2,
+              [[meta_option(generator/1)]]),
+   ur_options(test_pred3,
+              [[option(length/1), default(length(4))]]),
+   ur_options(test_pred9,
+              [[group(length), option(empty/0),
+                option(length/1), option(length/2),
+                meta_option(length_pred/1)],
+               [meta_option(generator/1)]]).
 
 test_pred1(_).
 test_pred2(_).
@@ -132,5 +156,6 @@ test_pred5(_).
 test_pred6(_).
 test_pred7(_).
 test_pred8(_).
+test_pred9(_).
 
 :- end_tests(ur_option).
