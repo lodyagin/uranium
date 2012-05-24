@@ -168,24 +168,6 @@ regex_pat(Nodes, Arcs, Str) :-
    automaton(Str, Nodes, Arcs).
 
 
-setup_options :-
-   
-   ur_options(random_string,
-              [[multi_group(length), %not_empty,
-                option(empty/0), option(length/1), option(length/2),
-                default([empty, length(1, 80)])],
-               [multi_group(pattern),
-                option(regex/1),
-                option(range/1),
-                meta_option(pattern/1),
-                default([range(32..126)])],
-               [meta_option(generator/1),
-                default(generator(randgen:fd_random(lcq, gnu)))],
-               [option(seed/1), default(seed(-1))]
-              ]).
-
-:- initialization setup_options.
-
 
 
 

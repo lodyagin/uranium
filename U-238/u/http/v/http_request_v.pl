@@ -38,8 +38,13 @@
    * request_uri
 */
 
+:- use_module(library(random)).
+:- use_module(u(gt/gt_strings)).
+:- use_module(library(clpfd)).
+:- use_module(u(ur_option)).
+
 new_class(http_request_v, http_message_v,
-          [method,
+          [method : http_method,
            request_uri
           ]).
 
@@ -64,5 +69,38 @@ new_class(http_connect_request_v, http_request_v, []).
    obj_field(Obj, method, Method),
    (  var(Method) -> true
    ;  concat_atom([http, Method, request_v], '_', Class)
+   ).
+
+typedef(http_method, [value_set - http_method_set_gen]).
+
+:- meta_predicate http_method_set_gen(:, -).
+
+http_method_set_gen(Options, Value) :-
+
+   options_object(http_method_set_gen, Options, Opt),
+
+   obj_unify(Opt,
+             [http_method_type, length, generator, seed],
+             [Method_Type, Length, Generator, Seed]),
+
+   (  Method_Type = http_method_standard
+   -> random_member(Value, [options, get, head, post, put, delete, trace,
+                            connect]) %TODO use Gen
+   ;
+      /* rfc2616:
+       token          = 1*<any CHAR except CTLs or separators>
+       separators     = "(" | ")" | "<" | ">" | "@"
+                      | "," | ";" | ":" | "\" | <">
+                      | "/" | "[" | "]" | "?" | "="
+                      | "{" | "}" | SP | HT
+        */
+      C in 0..127,
+      #\ C in 0..31 \/ 127, % CTL
+      #\ C in 0'( \/ 0') \/ 0'< \/ 0'> \/ 0'@ \/ 0', \/ 0'; \/ 0': \/ 0'\\
+              \/ 0'" \/ 0'/ \/ 0'[ \/ 0'] \/ 0'? \/ 0'= \/ 0'{ \/ 0'} %'"
+              \/ 32 \/ 9,
+      fd_dom(C, Token_Chars),
+      random_string([Length, Generator, Seed, range(Token_Chars)],
+                    atom(Value))
    ).
 

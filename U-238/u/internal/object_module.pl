@@ -212,6 +212,15 @@ process_typedefs(Module) :-
      ;  true
      ),
 
+     % value_set
+     (  memberchk(value_set - VS_Head, TD_List)
+     -> VS_Pred =.. [VS_Head, VS_Opt, VS_Value],
+        Pred = (value_set(TD_Type, VS_Opt, VS_Value) :- Module:VS_Pred),
+        objects:assertz(Pred),
+        debug(classes, 'objects:assertz(~p)', [Pred])
+     ;  true
+     ),
+
      % postgres types
      (  memberchk(postgres - type(PG_Type, PG_Convert_Pred),
                   TD_List)

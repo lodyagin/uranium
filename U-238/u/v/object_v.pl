@@ -62,6 +62,8 @@
 */
 
 :- use_module(u(v)).
+:- use_module(library(clpfd)).
+:- use_module(u(ur_option)).
 
 %
 % the class evaluation can be overrided
@@ -90,3 +92,25 @@ copy(object_v, From, To) :-
    duplicate_term(From, To), !.
 
 new_class(object_v, object_base_v, []).
+
+
+typedef(nonneg, [value_set - nonneg_set_gen]).
+
+
+:- meta_predicate nonneg_set_gen(:, -).
+
+nonneg_set_gen(Options, Value) :-
+
+   options_object(nonneg_set_gen, Options, Opt),
+
+   obj_unify(Opt,
+             [range, generator, seed],
+             [range(From, To), generator(Gen), seed(Seed0)]),
+
+   (  Seed0 < 0
+   -> Seed is random(4 * 10**9)
+   ;  Seed = Seed0
+   ),
+   Value in From .. To,
+   call(Gen, Seed, _, Value).
+

@@ -51,10 +51,11 @@
 */
 
 :- use_module(u(v)).
+:- use_module(library(clpfd)).
 
 new_class(http_message_v, object_v,
-          [http_version_major,
-           http_version_minor,
+          [http_version_major : nonneg,
+           http_version_minor : nonneg,
            headers,
            message_body]).
 
@@ -78,4 +79,5 @@ new_class(http_message_v, object_v,
              [Major, Minor]).
 
              
+
 
