@@ -38,6 +38,7 @@
 :- use_module(u(regex/regex)).
 :- use_module(u(rand/randgen)).
 :- use_module(u(ur_option)).
+:- use_module(u(v)).
 
 random_string(Str) :-
 

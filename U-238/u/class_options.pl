@@ -1,6 +1,7 @@
 :- module(class_options, []).
 
 :- use_module(u(ur_option)).
+:- use_module(library(clpfd)).
 
 setup_options :-
 

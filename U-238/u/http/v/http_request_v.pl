@@ -42,6 +42,7 @@
 :- use_module(u(gt/gt_strings)).
 :- use_module(library(clpfd)).
 :- use_module(u(ur_option)).
+:- use_module(u(v)).
 
 new_class(http_request_v, http_message_v,
           [method : http_method,
@@ -81,7 +82,9 @@ http_method_set_gen(Options, Value) :-
 
    obj_unify(Opt,
              [http_method_type, length, generator, seed],
-             [Method_Type, Length, Generator, Seed]),
+             [Method_Types, Length, Generator, Seed]),
+
+   random_member(Method_Type, Method_Types),
 
    (  Method_Type = http_method_standard
    -> random_member(Value, [options, get, head, post, put, delete, trace,

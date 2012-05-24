@@ -84,14 +84,13 @@ process_options([Option|T], DB, Obj0, Obj) :-
                  pattern(Option)
                 /\ same_or_descendant(option_rule_v),
                  Rule)
-   -> true
-   ;  domain_error(valid_option, Option)
+   -> obj_unify(Rule,
+                [options_object_in, option_in,
+                 options_object_out],
+                [Obj0, Option,
+                 Obj1])
+   ;  Obj1 = Obj0 % ignore unknown options
    ),
-   obj_unify(Rule,
-             [options_object_in, option_in,
-              options_object_out],
-             [Obj0, Option,
-              Obj1]),
    process_options(T, DB, Obj1, Obj).
 
 'option_rule_v?'(Rule, options_object_out, Obj) :-
