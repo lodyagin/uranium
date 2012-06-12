@@ -25,7 +25,8 @@
 
 :- module(ur_option,
           [ur_options/2,
-           options_object/3
+           options_object/3,
+           options_object/4
            ]).
 
 /** <module> Options processing
@@ -35,6 +36,7 @@
 :- use_module(library(error)).
 :- use_module(u(v)).
 :- use_module(u(vd)).
+:- use_module(u(internal/decode_arg)).
 :- use_module(v(ur_options_v)).
 
 :- meta_predicate ur_options(:, :).
@@ -284,11 +286,21 @@ check_rest(Rejected, Details, Err) :-
 
 :- meta_predicate options_object(:, :, -).
 
-options_object(Pred_Module:Pred, Opts_Module:Options, Object) :-
+options_object(Pred, Options, Object) :-
+   options_object_cmn(Pred, Options, strict, Object).
+   
+options_object(Pred, Options, Weak0, Object) :-
+   Ctx = context(options_object/4, _),
+   decode_arg([[strict],
+               [_, weak]],
+              Weak0, Weak, Ctx),
+   options_object_cmn(Pred, Options, Weak, Object).
+   
+options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak, Object) :-
    format(atom(Class), '~a__~a_v', [Pred_Module, Pred]),
    obj_construct(Class,
-                 [options_in, options_out, context_module],
-                 [Options, Object, Opts_Module],
+                 [options_in, options_out, context_module, weak],
+                 [Options, Object, Opts_Module, Weak],
                  _).
 
 % TODO check all this functionality is realized in the new module ur_option:
@@ -326,7 +338,7 @@ override_(multi([V1|T]), Value, _, multi([Value, V1|T])) :- !.
 */
 
 
-
+:- initialization clear_decode_arg.
 
 
 

@@ -33,8 +33,9 @@
 :- discontiguous new_class/3, new_class/4.
 
 new_class(ur_options_v, object_v,
-          [options_in,    % as passed by a user
-           context_module % the context module for meta-options
+          [options_in,     % as passed by a user
+           context_module, % the context module for meta-options
+           weak            % `strict` or whatever
           ]
          ).
 
@@ -61,8 +62,8 @@ new_class(multi_group_option_rule_v, option_rule_v, []).
 
 'ur_options_v?'(Obj0, options_out, Obj) :-
 
-   obj_unify(Obj0, [class, options_in], [Class, Options]),
-   process_options(Options, Class, Obj0, Obj),
+   obj_unify(Obj0, [class, options_in, weak], [Class, Options, Weak]),
+   process_options(Options, Class, Weak, Obj0, Obj),
    set_defaults(Class, Obj).
 
 set_defaults(DB, Obj) :-
@@ -77,8 +78,8 @@ set_defaults(DB, Obj) :-
            ignore(obj_field(Obj, Name, Default_Value))
           ).
 
-process_options([], _, Obj, Obj) :- !.
-process_options([Option|T], DB, Obj0, Obj) :-
+process_options([], _, _, Obj, Obj) :- !.
+process_options([Option|T], DB, Weak, Obj0, Obj) :-
    must_be(nonvar, Option),
    (  db_iterate(DB,
                  pattern(Option)
@@ -89,9 +90,13 @@ process_options([Option|T], DB, Obj0, Obj) :-
                  options_object_out],
                 [Obj0, Option,
                  Obj1])
-   ;  Obj1 = Obj0 % ignore unknown options
+   ;
+      (  Weak == strict
+      -> domain_error(valid_option, Option)
+      ;  Obj1 = Obj0 % ignore unknown options
+      )
    ),
-   process_options(T, DB, Obj1, Obj).
+   process_options(T, DB, Weak, Obj1, Obj).
 
 'option_rule_v?'(Rule, options_object_out, Obj) :-
    obj_field(Rule, 'options_object_out#', Obj).

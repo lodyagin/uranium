@@ -128,6 +128,10 @@ test(group_option2,
                   [empty, generator(test_pred1),
                    length(1)], _).
 
+test(group_option3) :-
+   options_object(test_pred9, [], Obj),
+   assertion(Obj / length =^= _).
+   
 test(multi_group_option1) :-
 
    OL = [empty, length(5), length(5), length(9)],
