@@ -1,3 +1,5 @@
+% -*- fill-column: 65; -*-
+%
 %  This file is a part of Uranium, a general-purpose
 %  functional test platform.
 %
@@ -108,6 +110,7 @@
 
 :- use_module(library(lists)).
 :- use_module(u(v)).
+:- use_module(u(ur_option)).
 :- use_module(u(internal/check_arg)).
 :- use_module(u(ur_messages)).
 
@@ -121,7 +124,8 @@
 ixpath(Spec, Dom, Result) :-
 
    Ctx = context(ixpath/3, _),
-   ixpath2(Spec, [], Dom, Result, Ctx).
+   context_module(That),
+   ixpath_cmn(Spec, That:[], Dom, Result, Ctx).
 
 
 %% ixpath(+Spec, +Options, +Dom, -Result)
@@ -157,14 +161,23 @@ ixpath(Spec, Dom, Result) :-
 %  with xpath in the format of this library (the same
 %  syntax as for Spec parameter).
 %
+%  $ vixc: the same as vix but ensure there is a position number
+%  for each tag in xpath, e.g.:
+%  /html(1)/body(1)/div(1)/div(2)/table(3)
+%
 % @param Dom it can be element/3 term, Uranium object with
 % a `dom' field or a list with single element/3 member
 %
 
+:- meta_predicate ixpath(+, :, +, -).
 
 ixpath(Spec, Options, Dom, Result) :-
 
    Ctx = context(ixpath/4, _),
+   ixpath_cmn(Spec, Options, Dom, Result, Ctx).
+
+ixpath_cmn(Spec, Options0, Dom, Result, Ctx) :-
+   options_object(ixpath, Options0, Options),
    ixpath2(Spec, Options, Dom, Result, Ctx).
 
 
@@ -181,15 +194,11 @@ ixpath2(Spec, Options, Obj, Result, Ctx) :-
    ixpath2(Spec, Options, DOM, Result, Ctx).
 
 ixpath2(Spec, Options, Dom, Result, Ctx) :-
-% TODO check no repeats in options
 
    check_inst(Dom, Ctx),
    functor(Dom, element, 3), !,
-   (  (var(Spec); var(Options))
-   -> throw(error(instantiation_error, Ctx))
-   ;  (Options = [] | Options = [_|_])
-   -> true
-   ;  throw(error(type_error(list, Options), Ctx))
+   (  nonvar(Spec) -> true
+   ;  throw(error(instantiation_error, Ctx))
    ),
    w3c_xpath(Spec, Expr),
    xpath(Expr, Dom, Options, Result).
@@ -391,7 +400,32 @@ preprocess_cond([Num|T], Attrs0, Attrs, Num0, Num) :-
    preprocess_cond(T, Attrs0, Attrs, Num, Num).
 
 
+xpath(Spec, Dom, Options0, Result) :-
+
+   obj_rewrite(Options0, [v], [V0], [V], Options),
+   V0 == vixc, !,
+   V = vix,
+   findall(R,
+	   ( copy_term(Spec, Spec1),
+	     xpath2(Spec1, Dom, Options, R)
+	   ),
+	   Result1
+	  ),
+   setof(XPath,
+         R^( member(R, Result1),
+             obj_field(R, xpath, XPath)
+           ),
+         XPathes
+         ),
+   member(XPath1, XPathes),
+   w3c_xpath(XPath1, Spec1),
+   xpath2(Spec1, Dom, Options, Result).
+
 xpath(Spec, Dom, Options, Result) :-
+
+   xpath2(Spec, Dom, Options, Result).
+
+xpath2(Spec, Dom, Options, Result) :-
 
    bagof(pair(Path, Path_R, Result1, Spec1),
 	 ( copy_term(Spec, Spec1),
@@ -416,11 +450,10 @@ unify_list_pairs([El|T1], [El|T2]) :-
    unify_list_pairs(T1, T2).
 
 
-proc_options(_, _, [], Result, Result) :- !.
+proc_options(Path, Path_R, Options, Result0, Result) :-
+   obj_field(Options, v, V),
+   proc_option(V, Path, Path_R, Result0, Result).
 
-proc_options(Path, Path_R, [Option|OT], Result0, Result) :-
-   proc_option(Option, Path, Path_R, Result0, Result1),
-   proc_options(Path, Path_R, OT, Result1, Result).
 
 proc_option(v, _, _, Result0, Result) :- !,
    obj_construct(html_piece_v, [dom], [Result0], Result1),
@@ -588,10 +621,15 @@ step(self::tag(Tag, _, _), Dom, Path, Path, Dom) :- !,
    Dom = element(Tag, _, _).
 
 
+% Node_Test - the test expression
+% M - if bound - the number of tag from the matched set
+% I - current tag number
+% Cnt - number of matched nodes - 1
+
 child_member_test(Node_Test, M, I, Cnt, [Child|T], Matched_Node) :-
    ( var(M) -> true ; Cnt < M ),
 
-   (  Child = element(_, _, _)
+   (  functor(Child, element, 3)
    -> (  I1 is I + 1,
          (  step(self::Node_Test, Child, _, _, Result)
          ->
@@ -604,6 +642,7 @@ child_member_test(Node_Test, M, I, Cnt, [Child|T], Matched_Node) :-
          )
       )
    ;
+      % skip not element/3 parts (like simple text)
       child_member_test(Node_Test, M, I, Cnt, T, Matched_Node)
    ).
 
@@ -615,9 +654,4 @@ check_attrs([Attr=Value|TC], Result) :-
    Result = element(_, Attributes, _),
    memberchk(Attr=Value, Attributes),
    check_attrs(TC, Result).
-
-
-
-
-
 

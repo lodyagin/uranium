@@ -33,7 +33,11 @@ setup_options :-
                [meta_option(generator/1),
                 default(generator(randgen:fd_random(lcq, gnu)))],
                [option(seed/1), default(seed(-1))]
-              ]).
+              ]),
+   ur_options(ixpath:ixpath,
+              [[group(v),
+                option(v/0),
+                option(vx/0), option(vix/0), option(vixc/0)]]).
 
 
 :- initialization setup_options.
