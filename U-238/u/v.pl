@@ -1020,14 +1020,15 @@ obj_merge(A, B, Class, C) :-
 
 
 %
-% obj_key(+Object, -Key)
+% obj_key(+Object, ?Key)
 %
 
 obj_key(Object, Key) :-
 
   Ctx = context(obj_key/2, _),
   check_object_arg(Object, Ctx, Class_Id),
-  get_key(Class_Id, Key).
+  get_key(Class_Id, Key2),
+  Key = Key2.
 
 
 %
