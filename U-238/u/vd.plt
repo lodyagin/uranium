@@ -1,12 +1,14 @@
-:- begin_tests(vd).
+:- begin_tests(vd, [setup(setup)]).
 
 :- multifile prolog:message//1.
 
 :- use_module(u(v)).
 :- use_module(u(vd)).
 :- use_module(u(internal/db_i)).
+:- use_module(u(internal/objects_i)).
 :- use_module(u(util/lambda)).
 :- use_module(library(aggregate)).
+:- use_module(library(ordsets)).
 
 test(clear_test_db, [fail, setup(db_clear(people))]) :-
 
@@ -14,10 +16,7 @@ test(clear_test_db, [fail, setup(db_clear(people))]) :-
 
 test(db_clear, [setup(model_db), List == []]) :-
 
-   current_prolog_flag(verbose, Old_Verbose),
-   set_prolog_flag(verbose, silent),
-   reload_all_classes,
-   set_prolog_flag(verbose, Old_Verbose),
+   reload_classes,
 
    % clear all DBs with citizen_v
    (  db_name(DB_Key),
@@ -604,6 +603,64 @@ test(key_rule16,
    db_construct(people, man_v, [name], ['James']),
    db_construct(people, citizen_v, [id], [4]).
 
+% nearest_keymaster(A) = nearest_keymaster(B)
+test(key_test_set1) :-
+
+   key_test(c1_v, c2_v).
+
+% nearest_keymaster(A) is_desc_off nearest_keymaster(B)
+test(key_test_set2) :-
+
+   key_test(c1_v, c3_v), % key(nk(A)) is_superset_of key(nk(B))
+   key_test(c1_v, c4_v), % key(nk(A)) is_subset_of key(nk(B))
+   key_test(c1_v, c5_v), % key(nk(A)) = key(nk(B))
+   key_test(c1_v, c6_v), % key(nk(A)) instersect key(nk(B)) /= {}
+   key_test(c1_v, c7_v). % key(nk(A)) instersect key(nk(B)) = {}
+
+% nearest_keymaster(A) is_accessor_off nearest_keymaster(B)
+test(key_test_set3) :-
+
+   key_test(c4_v, c1_v), % key(nk(A)) is_superset_of key(nk(B))
+   key_test(c3_v, c1_v), % key(nk(A)) is_subset_of key(nk(B))
+   key_test(c5_v, c1_v), % key(nk(A)) = key(nk(B))
+   key_test(c6_v, c1_v), % key(nk(A)) instersect key(nk(B)) /= {}
+   key_test(c7_v, c1_v). % key(nk(A)) instersect key(nk(B)) = {}
+
+% nk(A) no_parent_relation_to nk(B) /\ key(nk(A, B)) = {}
+test(key_test_set4_1) :-
+
+   key_test(c1_v, d2_v), % key(nk(A)) is_superset_of key(nk(B))
+   key_test(c1_v, d3_v), % key(nk(A)) is_subset_of key(nk(B))
+   key_test(c1_v, d4_v), % key(nk(A)) = key(nk(B))
+   key_test(c1_v, d5_v), % key(nk(A)) instersect key(nk(B)) /= {}
+   key_test(c1_v, d6_v). % key(nk(A)) instersect key(nk(B)) = {}
+
+% nk(A) no_parent_relation_to nk(B) /\ key(nk(A, B)) /= {}
+test(key_test_set4_2) :-
+
+   key_test(c5_v, e2_v), % key(nk(A)) is_superset_of key(nk(B))
+   key_test(c5_v, e3_v), % key(nk(A)) is_subset_of key(nk(B))
+   key_test(c5_v, e4_v), % key(nk(A)) = key(nk(B))
+   key_test(c5_v, e5_v), % key(nk(A)) instersect key(nk(B)) /= {}
+   key_test(c5_v, e6_v). % key(nk(A)) instersect key(nk(B)) = {}
+
+% nk(A) no_parent_relation_to nk(B) /\ key(nk(A, B)) = key(nk(A))
+test(key_test_set4_3) :-
+
+   key_test(c5_v, f2_v), % key(nk(A)) is_superset_of key(nk(B))
+   key_test(c5_v, f3_v), % key(nk(A)) is_subset_of key(nk(B))
+   key_test(c5_v, f4_v), % key(nk(A)) = key(nk(B))
+   key_test(c5_v, f5_v), % key(nk(A)) instersect key(nk(B)) /= {}
+   key_test(c5_v, f6_v). % key(nk(A)) instersect key(nk(B)) = {}
+
+% nk(A) no_parent_relation_to nk(B) /\ key(nk(A, B)) = key(nk(B))
+test(key_test_set4_4) :-
+
+   key_test(f3_v, c5_v), % key(nk(A)) is_superset_of key(nk(B))
+   key_test(f2_v, c5_v), % key(nk(A)) is_subset_of key(nk(B))
+   key_test(f4_v, c5_v), % key(nk(A)) = key(nk(B))
+   key_test(f5_v, c5_v), % key(nk(A)) instersect key(nk(B)) /= {}
+   key_test(f6_v, c5_v). % key(nk(A)) instersect key(nk(B)) = {}
 
 test(db_properties_v1_overwrite, [setup(db_clear(people))]) :-
 
@@ -776,7 +833,130 @@ model_db :-
                       [man, 'Vladimir', 'Mayakovsky',
                        ['Soviet Union']]).
 
+setup :-
+
+   db_clear(plunit_vd__key_test),
+   reload_classes.
+
+reload_classes :-
+
+   current_prolog_flag(verbose, Old_Verbose),
+   set_prolog_flag(verbose, silent),
+   reload_all_classes,
+   set_prolog_flag(verbose, Old_Verbose),
+   key_test_classes.
+
+key_test_classes :-
+
+   class_create(c0_v, object_v, [a, b, c], [a]),
+   class_create(c1_v, c0_v, [], [b, c]),
+   class_create(c2_v, c1_v, [d]),
+   class_create(c3_v, c2_v, [], [c]),
+   class_create(c4_v, c3_v, [], [a, b, c]),
+   class_create(c5_v, c1_v, [], [b, c]),
+   class_create(c6_v, c1_v, [d], [c, d]),
+   class_create(c7_v, c1_v, [e], [a, e]),
+
+   class_create(d1_v, object_v, [a, b, c], [a]),
+   class_create(d2_v, d1_v, [], [b]),
+   class_create(d3_v, d1_v, [], [a, b, c]),
+   class_create(d4_v, d3_v, [], [b, c]),
+   class_create(d5_v, d2_v, [], [a, b]),
+   class_create(d6_v, d2_v, [f], [c, f]),
+
+   class_create(e1_v, c0_v, [], [b]),
+   class_create(e2_v, e1_v, [], [b]),
+   class_create(e3_v, e1_v, [], [a, b, c]),
+   class_create(e4_v, e3_v, [], [b, c]),
+   class_create(e5_v, e2_v, [], [a, b]),
+   class_create(e6_v, e2_v, [g], [c, g]),
+
+   class_create(f1_v, c1_v, [], [a]),
+   class_create(f2_v, f1_v, [], [b]),
+   class_create(f3_v, f1_v, [], [a, b, c]),
+   class_create(f4_v, f3_v, [], [b, c]),
+   class_create(f5_v, f2_v, [], [a, b]),
+   class_create(f6_v, f2_v, [h, j], [j, h]).
+
+%key_patterns(AP, BP) :-
+%   key_pattern(AP),
+%   key_pattern(BP).
+
+key_pattern(patt(Left, Common, Right)) :-
+   L = [free, bound],
+   member(Left, L),
+   member(Common, L),
+   member(Right, L).
+
+key_test(AC, BC) :-
+   class_primary_id(AC, Id1),
+   class_primary_id(BC, Id2),
+   nearest_common_keymaster_int(Id1, Id2, Keymaster_Id),
+   forall(
+          key_pattern(Patt),
+          (   fill_keys(AC, BC, Keymaster_Id, Patt, A, B),
+              assertion(key_test2(A, B))
+	  )).
+
+% Calculate the result
+key_test_result(A, B, allow) :-
+   ( obj_key(A, []) ; obj_key(B, [])), !.
+key_test_result(A, B, conflict) :-
+   arg(1, A, Id1),
+   arg(1, B, Id2),
+   nearest_common_keymaster_int(Id1, Id2, Keymaster_Id),
+   get_key(Keymaster_Id, K_Key),
+   obj_unify(A, K_Key, Value),
+   obj_unify(B, K_Key, Value), !.
+key_test_result(_, _, allow).
+
+key_test2(A, B) :-
+   key_test_result(A, B, Conflict),
+   key_test2(A, B, Conflict).
+
+key_test2(A, B, allow) :-
+   DB = plunit_vd__key_test,
+   db_clear(DB),
+   db_put_object(DB, A),
+   db_put_object(DB, fail, B, _),
+   db_clear(DB),
+   db_put_object(DB, B),
+   db_put_object(DB, fail, A, _).
+
+key_test2(A, B, conflict) :-
+   DB = plunit_vd__key_test,
+   db_clear(DB),
+   db_put_object(DB, A),
+   \+ db_put_object(DB, fail, B, _),
+   db_clear(DB),
+   db_put_object(DB, B),
+   \+ db_put_object(DB, fail, A, _).
+
+fill_keys(AC, BC, Keymaster_Id, Patt, A, B) :-
+   get_key(Keymaster_Id, Common_Key_Part),
+   obj_construct(AC, [], [], A),
+   obj_construct(BC, [], [], B),
+   fill_key(Patt, Common_Key_Part, A, B).
+
+fill_key(patt(A_Patt, Common_Patt, B_Patt), Common_Key, A, B) :-
+   obj_key(A, A_Key),
+   obj_unify(A, A_Key, A_Key_Value),
+   fill_key(A_Patt, A_Key, A_Key_Value),
+   obj_unify(A, Common_Key, Common_Key_Value),
+   fill_key(Common_Patt, Common_Key, Common_Key_Value),
+   obj_key(B, B_Key),
+   obj_unify(B, B_Key, B_Key_Value),
+   fill_key(B_Patt, B_Key, B_Key_Value).
+
+
+fill_key(bound, Key, Key) :- !.
+fill_key(half_bound, [K|KT], [K|KVT]) :- !,
+   same_length(KT, KVT).
+fill_key(free, Key, Key_Value) :-
+   same_length(Key, Key_Value).
+
 :- end_tests(vd).
+
 
 
 

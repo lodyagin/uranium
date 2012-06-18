@@ -49,6 +49,7 @@
            list_inheritance/3,
            list_inheritance_names/2, % +Class_Id, -List
            list_inheritance_names/3,
+           nearest_common_keymaster_int/3, % +Id1, +Id2, -Keymaster_Id
            obj_class_id/2,
            obj_construct_int/5,
            obj_field_int/7,
@@ -179,9 +180,9 @@ class_primary_id(Class, Class_Id) :-
    objects:class_id(Class_Id, true, Class), !.
 
 
-% common_parent(+Class1_Id, +Class2_Id, -Cmn_Parent_Id)
+%% common_parent(+Class1_Id, +Class2_Id, -Cmn_Parent_Id) is det.
 %
-% find the common parent's id
+% Find the common parent's id.
 
 common_parent(Class1_Id, Class2_Id, Cmn_Parent_Id) :-
 
@@ -280,13 +281,13 @@ gen_new_class_id(Class_Id) :-
    assertz(objects:next_class_id(New_Id)).
 
 
-%
-% get_key(+Class_Id, -Key)
+%% get_key(+Class_Id, -Key_Set) is det.
 %
 
 get_key(Class_Id, Key) :-
 
   nonvar(Class_Id),
+  var(Key),
   (objects:key(Class_Id, _, Key) -> true ; Key = []).
 
 
@@ -300,6 +301,14 @@ get_keymaster(Class_Id, Keymaster_Id) :-
 
    must_be(nonneg, Class_Id),
    objects:key(Class_Id, Keymaster_Id, _).
+
+%% nearest_common_keymaster_int(+Id1, +Id2, -Keymaster_Id) is det.
+%
+
+nearest_common_keymaster_int(Id1, Id2, Keymaster_Id) :-
+
+   common_parent(Id1, Id2, Parent_Id),
+   get_keymaster(Parent_Id, Keymaster_Id).
 
 
 %% is_rebased_class(+Class_Id)

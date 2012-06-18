@@ -126,19 +126,27 @@
 
   ---++ Key conflicts
 
-  When put an object into Uranium database it always performs
-  checking on key conflicts. A key conflict is defined as
-  follows:
+  Let's make 2 definitions:
 
-   1. The class of new object has a non-empty key.
+   $ keymaster : a class which introduce a new key (it can be []
+   - no key also)
 
-   1. The class of new object is same or descendant of some
-   _keymaster_ class definition already stored in the database.
+   $ keymaster of the class : the class ancestor (or the same
+   class) which is a keymaster
 
-   1. All key fields of new object can be unified with some object
-   from DB which is same or descendant of the same _keymaster_
-   class.
+   $ nearest common keymaster of the classes: a common
+   keymaster of the classes which has no another common keymaster
+   of the same classes as a descendant
+  
+  When it puts an object into Uranium database it always performs
+  a key conflict check. A key conflict is defined as follows:
 
+   1. The class of the new object has a non-empty key.
+
+   1. There is another object in db which can be unified with
+   this object by the key fields of the nearest common keymaster
+   of both classes.
+  
   ---++ Key conflicts resolution policy
 
   When the system finds a key conflict it always resolve it
