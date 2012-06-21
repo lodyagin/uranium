@@ -606,6 +606,7 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
    Keymaster_Des = db_class_des(_, _, Key_Class_Name, _,
                                 _, Key, _),
    db_des(DB_Key, Keymaster_Des),
+   Key \= [],
 
    % get the key value from Object
    obj_unify_int(Class_Id, Key, throw, Object, Key_Value,

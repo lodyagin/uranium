@@ -906,6 +906,7 @@ key_test_result(A, B, conflict) :-
    arg(1, B, Id2),
    nearest_common_keymaster_int(Id1, Id2, Keymaster_Id),
    get_key(Keymaster_Id, K_Key),
+   K_Key \= [],
    obj_unify(A, K_Key, Value),
    obj_unify(B, K_Key, Value), !.
 key_test_result(_, _, allow).
