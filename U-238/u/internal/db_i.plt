@@ -132,10 +132,10 @@ test(key_conflict1, [setup(model_db(Slod1))]) :-
            (  key_conflict(people, Man_V_Re_Id, Man2, O),
               obj_field(O, surname, Name)
            ),
-           List2),
-   assertion(List2 =@= ['Lodyagin', 'Sikorsky',
-                        'Sysoev', 'Ivan'
-                        ]),
+           List2_U),
+   msort(List2_U, List2),
+   assertion(List2 =@= ['Ivan', 'Lodyagin', 'Sikorsky',
+                        'Sysoev']),
 
    obj_construct(man_v, [], [], Man3_0),
    obj_rebase((object_v -> db_object_v), Man3_0, Man3),
@@ -156,13 +156,9 @@ test(key_conflict1, [setup(model_db(Slod1))]) :-
            (key_conflict(people, Citizen_V_Re_Id, Man4, O),
             obj_field(O, surname, Name)
            ),
-           List4),
-   assertion(List4 =@= ['Sysoev', % conf on id
-                        % cond on name down here
-                        'Lodyagin',
-                        'Sikorsky',
-                        'Sysoev',
-                        'Ivan']),
+           List4_U),
+   sort(List4_U, List4),
+   assertion(List4 =@= ['Lodyagin', 'Sikorsky', 'Sysoev']),
    
    obj_construct(citizen_v,
                  [name, surname, id],

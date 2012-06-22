@@ -4,14 +4,8 @@
 :- use_module(u(http/v/http_user_v)).
 :- use_module(u(util/lambda)).
 
-test(class_create1) :-
+test(class_create1, [setup(reload_classes)]) :-
    % test class_create/3 version
-
-   current_prolog_flag(verbose, Old_Verbose),
-   set_prolog_flag(verbose, silent),
-   reload_all_classes,
-   set_prolog_flag(verbose, Old_Verbose),
-
    class_create(class_create_test_v, citizen_v, [a, c, b]),
    obj_construct(class_create_test_v, [birthday], [1976], CCTO),
    class_fields(citizen_v, CF), sort(CF, CFS),
@@ -30,13 +24,8 @@ test(class_create1) :-
    obj_key(CCTO, Key),
    assertion(Key == [id]).
 
-test(class_create2) :-
+test(class_create2, [setup(reload_classes)]) :-
    % test class_create/4 version
-
-   current_prolog_flag(verbose, Old_Verbose),
-   set_prolog_flag(verbose, silent),
-   reload_all_classes,
-   set_prolog_flag(verbose, Old_Verbose),
 
    class_create(class_create_test_v, citizen_v, [a, c, b],
                 [birthday, a]),
@@ -58,30 +47,28 @@ test(class_create2) :-
    assertion(Key == [a, birthday]).
 
 test(class_create3,
-     [error(class_exists(class_create_test_v))]
+     [error(class_exists(class_create_test_v)),
+      setup(reload_classes)]
      ) :-
-
-   current_prolog_flag(verbose, Old_Verbose),
-   set_prolog_flag(verbose, silent),
-   reload_all_classes,
-   set_prolog_flag(verbose, Old_Verbose),
-
    class_create(class_create_test_v, citizen_v, [a, c, b],
                 [birthday, a]),
    class_create(class_create_test_v, citizen_v, [d, e]).
 
-test(class_create_feature1) :-
-   % It is a strange feature
-
-   current_prolog_flag(verbose, Old_Verbose),
-   set_prolog_flag(verbose, silent),
-   reload_all_classes,
-   set_prolog_flag(verbose, Old_Verbose),
-
+test(class_create_feature1, [setup(reload_classes)]) :-
    class_create(class_create_test_v, citizen_v, [a, c, b], []),
    obj_construct(class_create_test_v, [birthday], [1976], CCTO),
    obj_key(CCTO, Key),
    assertion(Key == []).
+
+test(class_create_key_inheritance,
+     [setup(reload_classes)]) :-
+
+   class_create(c1_v, citizen_v, [c1_fld], [id]),
+   obj_construct(c1_v, [], [], O),
+   arg(1, O, Clid),
+   get_keymaster(Clid, Kid),
+   class_primary_id(citizen_v, Id),
+   assertion(Kid == Id).
 
 % test(class_descendant1,
 %      [List == [callup_v, citizen_v, class_create_test_v]]
@@ -141,8 +128,10 @@ test(class_parent1, [Parent == man_v]) :-
    class_parent(citizen_v, Parent).
 
 test(class_parent2,
-     [L == [callup_v, class_create_test_v]]) :-
+     [setup(reload_classes),
+      L == [callup_v, class_create_test_v]]) :-
 
+   class_create(class_create_test_v, citizen_v, [a, c, b]),
    findall(Desc, class_parent(Desc, citizen_v), LU),
    msort(LU, L).
 
@@ -560,8 +549,18 @@ test(obj_rebase4) :-
    assertion(P2 == [http_invalid_header_v, http_header_v, object_v,
                     object_base_v]).
 
-test(obj_rebase_bug1) :-
+test(obj_rebase_keymaster) :-
+   obj_construct(citizen_v, [], [], Citizen0),
+   obj_construct(callup_v, [], [], Callup0),
+   obj_rebase((object_v -> db_object_v), Citizen0, Citizen),
+   obj_rebase((object_v -> db_object_v), Callup0, Callup),
+   arg(1, Citizen, CiId),
+   arg(1, Callup, CaId),
+   get_keymaster(CiId, K1_Id),
+   get_keymaster(CaId, K2_Id),
+   assertion(K1_Id == K2_Id).
 
+test(obj_rebase_bug1) :-
    obj_construct(man_v, [sex, name], [man, 'Adam'], Obj1_0),
    obj_rebase((object_v -> db_object_v), Obj1_0, Obj1),
 
@@ -981,5 +980,11 @@ test(eval_fields7) :-
 
    obj_construct(adder_v, [z, y, x], [2, 10, X], _),
    assertion(X == 12).
+
+reload_classes :-
+   current_prolog_flag(verbose, Old_Verbose),
+   set_prolog_flag(verbose, silent),
+   reload_all_classes,
+   set_prolog_flag(verbose, Old_Verbose).
 
 :- end_tests(v).

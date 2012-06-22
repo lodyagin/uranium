@@ -83,8 +83,10 @@ class_create_int(Class, Parent, Fields, New_Key_Set, Class_Id,
    class_primary_id(Parent, Parent_Id),
    assert_new_class(Class, Parent_Id, Fields, Ctx),
    class_primary_id(Class, Class_Id),
-   (  nonvar(New_Key_Set)
-   -> % <NB> when New_Key = [] reset parent key (is it correct)?
+   (  nonvar(New_Key_Set),
+      get_key(Parent_Id, Parent_Key_Set),
+      New_Key_Set \= Parent_Key_Set
+   -> % <NB> when New_Key = [] reset the parent key
       assert_new_key(Class_Id, New_Key_Set)
    ;  assert_parent_key(Class_Id, Parent_Id)
    ),
@@ -387,8 +389,12 @@ class_rebase_int([Class|Parents],
          assert_new_class_rebased(Class, Parent_Id, New_Fields,
                                   Class_New_Id, Ctx),
 
+         get_key(Parent_Id, Parent_Key),
          get_key(Class_Prim_Id, Orig_Key),
-         assert_new_key(Class_New_Id, Orig_Key),
+         (  Parent_Key \= Orig_Key
+         -> assert_new_key(Class_New_Id, Orig_Key)
+         ;  assert_parent_key(Class_New_Id, Parent_Id)
+         ),
          assert_copy(Class_New_Id, Parent_Id),
          assert_eval_fields(Class_New_Id)
       ;

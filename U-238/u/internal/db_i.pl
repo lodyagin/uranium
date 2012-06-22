@@ -346,7 +346,11 @@ db_clear_int(DB_Key) :-
    retractall(db_class_des(DB_Key, _, _, _, _, _, _, _)),
    debug(vd, '~p',
          retractall(db_class_des(DB_Key, _, _, _, _, _, _, _))),
-   db_vocab_clear(DB_Key).
+   db_vocab_clear(DB_Key),
+
+   assertz(db_keymaster(DB_Key, object_base_v)),
+   debug(vd, '~p',
+         assertz(db_keymaster(DB_Key, object_base_v))).
 
 %db_object_class_int(+DB_Key, -Local_Class_Id)
 % unify Local_Class_Id with all classes in DB on BT
@@ -594,19 +598,28 @@ erase_conflicts(DB_Key, Class_Id, Object) :-
 % For each class which is a descendant of KM1 try unify
 % objects of this class with KV.
 
+% NB need db <-> local keymasters match
 key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
 
    Ctx = context(key_conflict/4, _),
+   %class_id(Class_Id, Class),
+
+   % ensure the info about Class_Id and all its parents
+   % are in the DB
+   db_conv_local_db(DB_Key, Class_Id, _, _),
 
    % BT keymasters up to the hierarchy
    same_or_descendant(Class_Id, _, Key_Class_Name),
    db_keymaster(DB_Key, Key_Class_Name),
 
    % get the key of keymaster
-   Keymaster_Des = db_class_des(_, _, Key_Class_Name, _,
-                                _, Key, _),
+   Keymaster_Des = db_class_des(Keymaster_DB_Id, _,
+                                Key_Class_Name, _, _, Key,
+                                _),
    db_des(DB_Key, Keymaster_Des),
    Key \= [],
+   db_conv_local_db(DB_Key, Keymaster_Id, Keymaster_DB_Id,
+                    _),
 
    % get the key value from Object
    obj_unify_int(Class_Id, Key, throw, Object, Key_Value,
@@ -615,16 +628,40 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
    % try to unify (copy_term is used to ignore
    % the bind result in Object)
    copy_term_nat(Key_Value, Test_Value),
-   % <NB> try all descriptors from Key_Class_Name down
-   % to the hierarchy
-   Conflicting_Des = db_class_des(Conflicting_DB_Id, _, _,
-                                  _, _, _, _),
-   db_des(DB_Key, Conflicting_Des),
+
+   % try all descriptors from Keymaster_Id down to the
+   % hierarchy
+   (  Conflicting_Class_Id = Keymaster_Id
+   ;  descendant_class(Conflicting_Class_Id, Keymaster_Id)
+   ),
    db_conv_local_db(DB_Key, Conflicting_Class_Id,
-		    Conflicting_DB_Id, _),
-   same_or_descendant(Conflicting_Class_Id, _,
-	              Key_Class_Name),
-   named_args_unify_int(DB_Key, throw, Conflicting_Des,
+                    _, Conflicting_Des),
+%   Conflicting_Des = db_class_des(Conflicting_DB_Id, _,
+%                                  _, _, _,
+%                                  _, _),
+%   db_des(DB_Key, Conflicting_Des),
+%   db_conv_local_db(DB_Key, Conflicting_Class_Id,
+%		    Conflicting_DB_Id, _),
+
+   % the keymaster of the conflicting class should not be
+   % descendant of the first class keymaster but not the
+   % first class
+   get_keymaster(Conflicting_Class_Id,
+                 Conflicting_Keymaster_Id),
+   \+ (
+         % there is keymaster K2 >= Conflicting_Keymaster
+         same_or_descendant(Conflicting_Keymaster_Id,
+                            K2_Id),
+         class_id(K2_Id, K2),
+         db_keymaster(DB_Key, K2),
+
+         % K2 < Keymaster
+         descendant_class(K2_Id, Keymaster_Id),
+         % Class <= K2
+         same_or_descendant(Class_Id, K2_Id)
+      ),
+
+   named_args_unify_int(DB_Key, fail, Conflicting_Des,
                         Key, Test_Value, Conflicting).
 
 
