@@ -63,9 +63,10 @@
 
            parent/2,            % ?Id, ?Parent_Id
 	   descendant_class/2,  % ?Desc_Id, ?Ancestor_Id
-           descendant_class/3,  %+Parent_Id, ?No_Rebased, ?Desc_Class_Name
+           descendant_class/3,  %+Desc_Id, ?No_Rebased, ?Anc_Class_Name
            same_class/3,        %+Class1_Id, ?No_Rebased, ?Class_Name
-           same_or_descendant/3,%+Parent_Id, ?No_Rebased, ?Desc_Class_Name
+           same_or_descendant/2,%?Desc_Id, ?Ancestor_Id
+           same_or_descendant/3,%+Desc_Id, ?No_Rebased, ?Anc_Class_Name
            u_class/1,
            u_object/1,
            unbounded_fields/2  % +Obj, -Field_Names
@@ -594,6 +595,16 @@ descendant_class_int(Desc_Id, Ancestor_Name) :-
    (  Ancestor_Name = Parent_Name
    ;  descendant_class_int(Parent_Id, Ancestor_Name)
    ).
+
+%% same_or_descendant(?Desc_Id, ?Ancestor_Id) is nondet.
+same_or_descendant(Desc_Id, Ancestor_Id) :-
+   var(Desc_Id),
+   Desc_Id = Ancestor_Id.
+same_or_descendant(Desc_Id, Ancestor_Id) :-
+   descendant_class(Desc_Id, Ancestor_Id).
+same_or_descendant(Desc_Id, Ancestor_Id) :-
+   var(Ancestor_Id),
+   Desc_Id = Ancestor_Id.
 
 %% same_or_descendant(+Desc_Id, ?No_Rebased, ?Class_Name) is nondet.
 %
