@@ -276,6 +276,19 @@ test(eval_obj_expr6_compound) :-
    MH/name ^= p(a, H1/body) // ss,
    assertion(MH/name =^= p(a, body)).
 
+test(eval_obj_expr7) :-
+
+   V = [s, l],
+   obj_construct(man_v, [name, surname], V, Obj),
+   assertion(Obj / [name, surname] =^= V).
+
+test(eval_obj_expr8) :-
+
+   obj_construct(http_header_v, [name, body], [connection, x], H1),
+   obj_construct(http_header_v, [name, body], [date, y], H2),
+   obj_construct(http_general_headers_v, [connection, date], [H1, H2], O),
+   assertion(O / [date, connection] / body =^= [y, x]).
+
 test(obj_construct_with_evals1) :-
 
     obj_construct(citizen_v,
