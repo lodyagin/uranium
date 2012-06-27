@@ -1,7 +1,8 @@
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
 %
-%  Copyright (C) 2011  Sergei Lodyagin
+%  Copyright (C) 2011, Sergei Lodyagin
+%  Copyright (C) 2012, Kogorta OOO Ltd
 %
 %  This library is free software; you can redistribute it and/or
 %  modify it under the terms of the GNU Lesser General Public
@@ -84,7 +85,7 @@ class_create_int(Class, Parent, Fields, New_Key_Set, Class_Id,
    assert_new_class(Class, Parent_Id, Fields, Ctx),
    class_primary_id(Class, Class_Id),
    (  nonvar(New_Key_Set)
-   -> % <NB> when New_Key = [] reset parent key (is it correct)?
+   -> % <NB> when New_Key = [] reset the parent key
       assert_new_key(Class_Id, New_Key_Set)
    ;  assert_parent_key(Class_Id, Parent_Id)
    ),

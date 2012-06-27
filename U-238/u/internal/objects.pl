@@ -64,7 +64,7 @@
            eval_field/5,
            field/4,
            field_info/5,
-           key/3,
+           key/3,         % Class_Id, Parent_Id, Key_Set
            module/2,
            module_class_def/3,
            next_class_id/1,
