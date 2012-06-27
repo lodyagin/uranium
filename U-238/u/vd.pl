@@ -144,8 +144,8 @@
    1. The class of the new object has a non-empty key.
 
    1. There is another object in db which can be unified with
-   this object by the key fields of the nearest common keymaster
-   of both classes.
+   this object by the non-empty key fields of the nearest common
+   keymaster of both classes.
   
   ---++ Key conflicts resolution policy
 

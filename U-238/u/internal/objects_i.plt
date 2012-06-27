@@ -198,7 +198,7 @@ test(same_class) :-
    assertion(L1 == [[true, man_v]]),
    assertion(L3 == [[false, man_v]]).
    
-test(descendant_class) :-
+test(descendant_class1) :-
 
    obj_construct(callup_v, [], [], Obj1),
    obj_rebase((object_v -> db_object_v), Obj1, Obj2),
@@ -235,8 +235,26 @@ test(descendant_class) :-
    assertion(L4 == L1),
    assertion(B5 == [false]),
    assertion(L5 == L2).
-   
-test(same_or_descendant) :-
+
+test(descendant_class2_1) :-
+   class_primary_id(man_v, Man_Id),
+   findall(Desc,
+           (  descendant_class(Desc_Id, Man_Id),
+              class_id(Desc_Id, Desc)
+           ),
+           Descendants),
+   assertion(Descendants = [citizen_v, callup_v]).
+
+test(descendant_class2_2) :-
+   class_primary_id(man_v, Man_Id),
+   findall(Anc,
+           (  descendant_class(Man_Id, Anc_Id),
+              class_id(Anc_Id, Anc)
+           ),
+           Ancestors),
+   assertion(Ancestors = [object_v, object_base_v]).
+
+test(same_or_descendant1) :-
 
    obj_construct(callup_v, [], [], Obj1),
    obj_rebase((object_v -> db_object_v), Obj1, Obj2),
@@ -281,6 +299,24 @@ test(same_or_descendant) :-
    assertion(B5 == [false]),
    assertion(L5 == L2).
    
+test(same_or_descendant2_1) :-
+   class_primary_id(man_v, Man_Id),
+   findall(Desc,
+           (  same_or_descendant(Desc_Id, Man_Id),
+              class_id(Desc_Id, Desc)
+           ),
+           Descendants),
+   assertion(Descendants = [man_v, citizen_v, callup_v]).
+
+test(same_or_descendant2_2) :-
+   class_primary_id(man_v, Man_Id),
+   findall(Anc,
+           (  same_or_descendant(Man_Id, Anc_Id),
+              class_id(Anc_Id, Anc)
+           ),
+           Ancestors),
+   assertion(Ancestors = [object_v, object_base_v, man_v]).
+
 objects_i_test_v :-
 
    current_prolog_flag(verbose, Old_Verbose),

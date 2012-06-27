@@ -603,12 +603,17 @@ test(key_rule16,
    db_construct(people, man_v, [name], ['James']),
    db_construct(people, citizen_v, [id], [4]).
 
+test(key_test1) :-
+   obj_construct(c4_v, [a, b, c], [1, 2, 3], A),
+   obj_construct(c4_v, [a, b, c], [1, 20, 30], B),
+   key_test2(A, B, allow).
+
 % nearest_keymaster(A) = nearest_keymaster(B)
 test(key_test_set1) :-
 
    key_test(c1_v, c2_v).
 
-% nearest_keymaster(A) is_desc_off nearest_keymaster(B)
+% nearest_keymaster(A) is_accessor_off nearest_keymaster(B)
 test(key_test_set2) :-
 
    key_test(c1_v, c3_v), % key(nk(A)) is_superset_of key(nk(B))
@@ -617,7 +622,7 @@ test(key_test_set2) :-
    key_test(c1_v, c6_v), % key(nk(A)) instersect key(nk(B)) /= {}
    key_test(c1_v, c7_v). % key(nk(A)) instersect key(nk(B)) = {}
 
-% nearest_keymaster(A) is_accessor_off nearest_keymaster(B)
+% nearest_keymaster(A) is_desc_off nearest_keymaster(B)
 test(key_test_set3) :-
 
    key_test(c4_v, c1_v), % key(nk(A)) is_superset_of key(nk(B))
@@ -878,10 +883,6 @@ key_test_classes :-
    class_create(f5_v, f2_v, [], [a, b]),
    class_create(f6_v, f2_v, [h, j], [j, h]).
 
-%key_patterns(AP, BP) :-
-%   key_pattern(AP),
-%   key_pattern(BP).
-
 key_pattern(patt(Left, Common, Right)) :-
    L = [free, bound],
    member(Left, L),
@@ -906,6 +907,7 @@ key_test_result(A, B, conflict) :-
    arg(1, B, Id2),
    nearest_common_keymaster_int(Id1, Id2, Keymaster_Id),
    get_key(Keymaster_Id, K_Key),
+   K_Key \= [],
    obj_unify(A, K_Key, Value),
    obj_unify(B, K_Key, Value), !.
 key_test_result(_, _, allow).
@@ -921,7 +923,7 @@ key_test2(A, B, allow) :-
    db_put_object(DB, fail, B, _),
    db_clear(DB),
    db_put_object(DB, B),
-   db_put_object(DB, fail, A, _).
+   db_put_object(DB, fail, A, _), !.
 
 key_test2(A, B, conflict) :-
    DB = plunit_vd__key_test,

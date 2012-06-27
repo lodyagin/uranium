@@ -62,9 +62,11 @@
                                 % +Term, ?Value, +Ctx
 
            parent/2,            % ?Id, ?Parent_Id
-           descendant_class/3,  %+Parent_Id, ?No_Rebased, ?Desc_Class_Name
+	   descendant_class/2,  % ?Desc_Id, ?Ancestor_Id
+           descendant_class/3,  %+Desc_Id, ?No_Rebased, ?Anc_Class_Name
            same_class/3,        %+Class1_Id, ?No_Rebased, ?Class_Name
-           same_or_descendant/3,%+Parent_Id, ?No_Rebased, ?Desc_Class_Name
+           same_or_descendant/2,%?Desc_Id, ?Ancestor_Id
+           same_or_descendant/3,%+Desc_Id, ?No_Rebased, ?Anc_Class_Name
            u_class/1,
            u_object/1,
            unbounded_fields/2  % +Obj, -Field_Names
@@ -535,6 +537,24 @@ same_class_int(Class_Id, No_Rebased, Class_Name) :-
 
    objects:class_id(Class_Id, No_Rebased, Class_Name), !.
 
+%% descendant_class(?Desc_Id, ?Ancestor_Id) is nondet.
+%
+%  True if Desc_Id is a descendant of Ancestor_Id.
+%
+%  @see descendant_class/3
+
+descendant_class(Desc_Id, Ancestor_Id) :-
+   nonvar(Desc_Id), !,
+   objects:parent_(Desc_Id, Parent_Id),
+   (  Ancestor_Id = Parent_Id
+   ;  descendant_class(Parent_Id, Ancestor_Id)
+   ).
+
+descendant_class(Desc_Id, Ancestor_Id) :-
+   objects:parent_(Child_Id, Ancestor_Id),
+   (  Desc_Id = Child_Id
+   ;  descendant_class(Desc_Id, Child_Id)
+   ).
 
 
 %% descendant_class(+Desc_Id, ?No_Rebased, ?Ancestor_Name) is nondet.
@@ -575,6 +595,16 @@ descendant_class_int(Desc_Id, Ancestor_Name) :-
    (  Ancestor_Name = Parent_Name
    ;  descendant_class_int(Parent_Id, Ancestor_Name)
    ).
+
+%% same_or_descendant(?Desc_Id, ?Ancestor_Id) is nondet.
+same_or_descendant(Desc_Id, Ancestor_Id) :-
+   var(Desc_Id),
+   Desc_Id = Ancestor_Id.
+same_or_descendant(Desc_Id, Ancestor_Id) :-
+   descendant_class(Desc_Id, Ancestor_Id).
+same_or_descendant(Desc_Id, Ancestor_Id) :-
+   var(Ancestor_Id),
+   Desc_Id = Ancestor_Id.
 
 %% same_or_descendant(+Desc_Id, ?No_Rebased, ?Class_Name) is nondet.
 %
