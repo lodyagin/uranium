@@ -452,8 +452,9 @@ unify_list_pairs([El|T1], [El|T2]) :-
 
 proc_options(Path, Path_R, Options, Result0, Result) :-
    obj_field(Options, v, V),
-   proc_option(V, Path, Path_R, Result0, Result).
-
+   ( var(V) -> Result = Result0
+   ; proc_option(V, Path, Path_R, Result0, Result)
+   ).
 
 proc_option(v, _, _, Result0, Result) :- !,
    obj_construct(html_piece_v, [dom], [Result0], Result1),
