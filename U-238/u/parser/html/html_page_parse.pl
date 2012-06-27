@@ -73,7 +73,7 @@ extract_element(Page, Class, Object) :-
 
   obj_field(Page, www_address, WWW_Address),
   element_type_tag(Class, Tag, Cmn_Class),
-  ixpath(//Tag, [vix], Page, Object1),
+  ixpath(//Tag, [vixc], Page, Object1),
   atom_concat(Cmn_Class, '_parse', Pred),
   atom_concat('parser/html/', Pred, Module),
   use_module(u(Module), [Pred/2]),

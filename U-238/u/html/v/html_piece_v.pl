@@ -12,8 +12,8 @@ new_class(html_piece_v, http_result_v,
                      % descendant. Leave unbound for
                      % toplevel object to prevent cyclic
                      % term.
-           ]
-          %[www_address, xpath]
+           ],
+          [www_address, xpath]
           % xpath must be from the root_node
          ).
 
