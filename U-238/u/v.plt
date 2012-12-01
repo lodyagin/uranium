@@ -289,6 +289,16 @@ test(eval_obj_expr8) :-
    obj_construct(http_general_headers_v, [connection, date], [H1, H2], O),
    assertion(O / [date, connection] / body =^= [y, x]).
 
+test(eval_obj_expr9) :-
+   Url = 'http://kogorta.dp.ua',
+   Name = 'Oleg',
+   obj_construct(www_address_v, [http_request_url], [Url], WWW_Addr),
+   obj_construct(man_v,
+                 [name, surname],
+                 [Name, WWW_Addr], O),
+   assertion(O / [name, surname / http_request_url]
+            =^= [Name, Url]).
+   
 test(obj_construct_with_evals1) :-
 
     obj_construct(citizen_v,

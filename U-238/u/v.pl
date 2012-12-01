@@ -684,6 +684,8 @@ eval_obj_expr(Expr, Value) :-
    Ctx = context(eval_obj_expr/2, _),
    eval_obj_expr_cmn(Expr, throw, Value, _, Ctx).
 
+% Weak = hold - do not process the value at all
+
 eval_obj_expr(Expr, Weak0, Value) :-
    Ctx = context(eval_obj_expr/3, _),
    decode_arg([[throw, strict],
@@ -775,12 +777,21 @@ eval_obj_field(variable, Value, throw, _, _, Ctx) :-
 eval_obj_field(variable, _, fail, _, _, _) :-
    !, fail.
 
+% It is always called for Value / List
 eval_list_obj_expr([], _, _, Value, Value, _).
-eval_list_obj_expr([Field|Tail], Obj, Weak, Value0, [V|Value1], Ctx) :-
-   check_field_name(Field, Ctx),
-   eval_obj_field(object, Obj, Weak, Field, V, Ctx),
-   % <NB> Weak = hold is not implemented
+eval_list_obj_expr([Expr_Tail|Tail], Obj, Weak, Value0,
+                   [V|Value1], Ctx) :-
+   eval_list_build_obj_expr(Obj, Expr_Tail, Expr),
+   eval_obj_expr_cmn(Expr, Weak, V, _, Ctx),
    eval_list_obj_expr(Tail, Obj, Weak, Value0, Value1, Ctx).
+
+eval_list_build_obj_expr(Obj, Field, Obj / Field) :-
+   atom(Field), !.
+eval_list_build_obj_expr(Obj, Part1 / Field, Expr1 / Field) :-
+   eval_list_build_obj_expr(Obj, Part1, Expr1), !.
+eval_list_build_obj_expr(Obj, Part1 // Field, Expr1 // Field) :-
+   eval_list_build_obj_expr(Obj, Part1, Expr1), !.
+
 
 %% class_descendant(+Class, ?Descendant) is nondet.
 %
