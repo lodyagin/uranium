@@ -375,8 +375,11 @@ find_class_module(Module_Path) :-
 
   findall(Files,
           (
-             (  user:file_search_path(u, Dir)
-             ;  user:file_search_path(tc, Dir)
+             (  ( user:file_search_path(U, Dir),
+                  \+ memberchk(U, [app_preferences, autoload,
+                                   foreign, library, path, pce, swi,
+                                   user_profile])
+                )
              ;   working_directory(Dir, Dir)
              ),
              class_module_file(Dir, Mask),
