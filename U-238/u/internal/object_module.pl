@@ -376,6 +376,7 @@ find_class_module(Module_Path) :-
   findall(Files,
           (
              (  ( user:file_search_path(U, Dir),
+                  atom(Dir),
                   \+ memberchk(U, [app_preferences, autoload,
                                    foreign, library, path, pce, swi,
                                    user_profile])
