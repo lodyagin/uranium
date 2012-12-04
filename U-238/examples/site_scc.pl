@@ -11,17 +11,18 @@ site_scc(Url, Scc) :-
 
    uri_normalized(Url, Url1),
 
-   load_page(Url1, Start_Page),
+   load_page(Url1, _, _, Start_Page),
 
    db_clear(pages), db_clear(links),
    
    tarjan(pages,
-          page_v, http_request_url,
+          page_v, www_address / http_request_url,
           load_page, resolve_links(links),
           Start_Page,
+          _,
           Scc).
 
-load_page(Url, Page) :-
+load_page(Url, _, _, Page) :-
 
    click_url(Url, Page0),
    obj_rebase((object_v -> tarjan_vertex_v), Page0, Page).
@@ -29,7 +30,7 @@ load_page(Url, Page) :-
 resolve_links(DB, Page, Link_Urls) :-
 
    html_page_parse(DB, Page, [local_link_v]),
-   obj_field(Page, http_request_url, Page_Url),
+   Page_Url ^= Page / www_address / http_request_url,
    findall(Link_Url,
            db_select(DB, 
                      [functor, http_request_url, link_url],

@@ -93,6 +93,7 @@ extract_element(Page, Class, Object) :-
        )).
 
 
+% FIXME!!: move to eval field:
 % object - tag mapping
 element_type_tag(table_v, table, table_v).
 element_type_tag(form_v, form, form_v).

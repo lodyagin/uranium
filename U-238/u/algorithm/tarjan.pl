@@ -43,7 +43,7 @@
 % TODO Vertex_Functor is unnecessary
 
 tarjan(DB,
-       Vertex_Functor, Vertex_Id_Fld,
+       Vertex_Functor, Vertex_Id_Expr,
        Load_Vertex, Resolve_Destinations,
        Start_Vertex,
        Vertex_Ctx_Arg,
@@ -53,36 +53,35 @@ tarjan(DB,
    check_inst(Vertex_Functor, Ctx),
    check_inst(Start_Vertex, Ctx),
    check_db_key(DB, Ctx),
-   check_field_name(Vertex_Id_Fld, Ctx),
    check_existing_class_arg(Vertex_Functor, Ctx),
 
    must_be(callable, Load_Vertex),
    must_be(callable, Resolve_Destinations),
 
    check_object_arg(Start_Vertex, Ctx, _),
-   
+
    scc(DB,
-       Vertex_Functor, Vertex_Id_Fld,
+       Vertex_Functor, Vertex_Id_Expr,
        Load_Vertex, Resolve_Destinations,
        Start_Vertex, _,
        Vertex_Ctx_Arg,
        [], _, 0, _, [], Scc).
 
 scc(DB,
-    Vertex_Functor, Vertex_Id_Fld,
+    Vertex_Functor, Vertex_Id_Expr,
     Load_Vertex, Resolve_Destinations,
     V0, V,
     Vertex_Ctx_Arg,
     Stack0, Stack, Index0, Index, Scc_L0, Scc_L) :-
 
    must_be(nonneg, Index0),
-   
-   named_args_unify(V0,
-                    [tarjan_index, tarjan_lowlink, Vertex_Id_Fld],
-                    [Index0, Index0, V_Id]),
+
+   V0 / [tarjan_index, tarjan_lowlink, Vertex_Id_Expr]
+   ^= [Index0, Index0, V_Id],
+
    debug(tarjan, 'Put vertex ~p into DB', [V_Id]),
    db_put_object(DB, V0, V1),
-              
+
    succ(Index0, Index1),
    Stack1 = [V_Id|Stack0],
    (   debugging(tarjan)
@@ -99,7 +98,7 @@ scc(DB,
    ;   true ),
 
    scc_down(DB,
-            Vertex_Functor, Vertex_Id_Fld,
+            Vertex_Functor, Vertex_Id_Expr,
             Load_Vertex, Resolve_Destinations,
             V1, V, W_Id_Lst,
             Vertex_Ctx_Arg,
@@ -109,7 +108,7 @@ scc(DB,
    named_args_unify(V,
                     [tarjan_index, tarjan_lowlink],
                     [V_Index, V_Lowlink]),
-   
+
    (  V_Index =:= V_Lowlink
    ->
       % V it is a root node of an scc subtree
@@ -124,21 +123,19 @@ scc(DB,
 
 
 scc_down(_, _, _, _, _, V, V, [],
-         _, 
+         _,
          Stack, Stack, Index, Index, Scc_L, Scc_L) :-
    !.
 
 scc_down(DB,
-         Vertex_Functor, Vertex_Id_Fld,
+         Vertex_Functor, Vertex_Id_Expr,
          Load_Vertex, Resolve_Destinations,
          V0, V, [W_Id|W_Id_T],
          Vertex_Ctx_Arg0,
          Stack0, Stack, Index0, Index, Scc_L0, Scc_L) :-
 
-   obj_field(V0, tarjan_lowlink, V0_Lowlink),
-   obj_field(V0, Vertex_Id_Fld, V0_Id),
-
-   (  named_args_unify(DB, _, [Vertex_Id_Fld], [W_Id], W0)
+   V0 / [tarjan_lowlink, Vertex_Id_Expr] ^= [V0_Lowlink, V0_Id],
+   (  named_args_unify(DB, _, [Vertex_Id_Expr], [W_Id], W0)
    ->
       % Dst_Page is loaded already
       W = W0,
@@ -151,7 +148,7 @@ scc_down(DB,
           obj_rewrite(V0, [tarjan_lowlink], _,  [V1_Lowlink], V1),
           db_put_object(DB, _, V1, V2, replaced),
           (   debugging(tarjan)
-          ->  obj_field(V2, Vertex_Id_Fld, V2_Id_),
+          ->  V2 / Vertex_Id_Expr ^= V2_Id_,
               debug(tarjan,
                     '~p already in SCC, set ~p lowlink to ~d',
                     [W_Id, V2_Id_, V1_Lowlink])
@@ -161,16 +158,16 @@ scc_down(DB,
           debug(tarjan, '~p is loaded already', [W_Id])
       ),
       Stack1 = Stack0, Index1 = Index0, Scc_L1 = Scc_L0
-   ;  
+   ;
       % The vertex W0 has not yet been visited
       once(call(Load_Vertex, W_Id,
                 Vertex_Ctx_Arg0, Vertex_Ctx_Arg1, W0)),
       debug(tarjan, 'New vertex ~p is loaded', [W_Id]),
       obj_field(W0, prev_vertex_id, V0_Id), % link to parent
       scc(DB,
-          Vertex_Functor, Vertex_Id_Fld,
+          Vertex_Functor, Vertex_Id_Expr,
           Load_Vertex, Resolve_Destinations,
-          W0, W, 
+          W0, W,
           Vertex_Ctx_Arg1,
           Stack0, Stack1, Index0, Index1, Scc_L0, Scc_L1),
 
@@ -179,13 +176,13 @@ scc_down(DB,
       obj_rewrite(V0, [tarjan_lowlink], _,  [V1_Lowlink], V1),
       db_put_object(DB, _, V1, V2, replaced),
       (   debugging(tarjan)
-      ->  obj_field(V1, Vertex_Id_Fld, V1_Id_),
+      ->  V1 / Vertex_Id_Expr ^= V1_Id_,
           debug(tarjan,
                 'Set ~p lowlink to ~d', [V1_Id_, V1_Lowlink])
       ;   true )
    ),
    scc_down(DB,
-            Vertex_Functor, Vertex_Id_Fld,
+            Vertex_Functor, Vertex_Id_Expr,
             Load_Vertex, Resolve_Destinations,
             V2, V, W_Id_T,
             Vertex_Ctx_Arg0,
@@ -228,5 +225,5 @@ vertex_path(Prev_Vertex_Id, DB_Key, Vertex, Id_Field,
    vertex_path(DB_Key, Prev_Vertex, Id_Field,
                [Vertex_Id|Path0], Path).
 
-   
+
 
