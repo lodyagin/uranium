@@ -85,6 +85,10 @@ new_class(html_tag_input_text_v, html_tag_input_v,
    ;  functor(Obj, Class, _)
    ).
 
+downcast(html_tag_v, html_tag_input_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+
+
 downcast(html_tag_input_v, html_tag_input_button_v, From, To) :-
    gen_html_tag_downcast(From, To).
 

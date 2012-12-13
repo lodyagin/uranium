@@ -29,6 +29,7 @@
 
 :- module(v,
           [
+           assert_downcast/1,  % +Clause
            class_create/3,     % +Class, +Parent, +Add_Fields
            class_create/4,     % +Class, +Parent, +Add_Fields, +Key
            %class_descendant/2, % +Class, ?Descendant
@@ -129,7 +130,7 @@
             ]).
 
 :- reexport(u(internal/object_module),
-            [ reload_all_classes/0]).
+            [reload_all_classes/0]).
 
 % This is standard Weak arg values used in this module
 std_weak_arg_values([[throw, throws, strict, s],
@@ -138,6 +139,21 @@ std_weak_arg_values([[throw, throws, strict, s],
                     ]).
 
 
+%% assert_downcast(+Clause) is det.
+%
+% Assert a new downcast/4 definition in the object module.
+
+:- meta_predicate assert_downcast(:).
+
+assert_downcast(Module_From:Clause) :-
+
+   must_be('/'(':-',2), Clause),
+   Clause = (Term :- Body),
+   must_be(compound, Term),
+   must_be(compound, Body),
+   assert_clause_int(Module_From:Clause, objects, check_downcast_impl).
+
+                     
 %% class_create(+Class, +Parent, +Add_Fields)
 %
 % Assert the new Class definition into the objects module
