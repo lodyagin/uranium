@@ -30,6 +30,7 @@
 :- module(v,
           [
            assert_downcast/1,  % +Clause
+           class_can_downcast/2, % ?From_Class, ?To_Class
            class_create/3,     % +Class, +Parent, +Add_Fields
            class_create/4,     % +Class, +Parent, +Add_Fields, +Key
            %class_descendant/2, % +Class, ?Descendant
@@ -153,6 +154,14 @@ assert_downcast(Module_From:Clause) :-
    must_be(compound, Body),
    assert_clause_int(Module_From:Clause, objects, check_downcast_impl).
 
+%% class_can_downcast(?From_Class, ?To_Class) is nondet.
+% Check wether From_Class has a sequence of downcast rules to To_Class.
+% NB. The set of rules can grow, see assert_downcast/1
+class_can_downcast(From_Class, To_Class) :-
+   objects:clause(downcast(From_Class, To_Class, _, _), _).
+class_can_downcast(From_Class, To_Class) :-
+   objects:clause(downcast(From_Class, Class1, _, _), _),
+   class_can_downcast(Class1, To_Class).
                      
 %% class_create(+Class, +Parent, +Add_Fields)
 %

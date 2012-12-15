@@ -23,18 +23,16 @@ site_scc(Url, Scc) :-
           Scc).
 
 load_page(Url, _, _, Page) :-
-
    click_url(Url, Page0),
    obj_rebase((object_v -> tarjan_vertex_v), Page0, Page).
 
 resolve_links(DB, Page, Link_Urls) :-
-
-   html_page_parse(DB, Page, [local_link_v]),
+   html_page_parse(DB, Page, [html_local_link_v]),
    Page_Url ^= Page / www_address / http_request_url,
    findall(Link_Url,
            db_select(DB, 
                      [functor, http_request_url, link_url],
-                     [local_link_v, Page_Url, Link_Url]),
+                     [html_local_link_v, Page_Url, Link_Url]),
            Link_Urls).
 
 

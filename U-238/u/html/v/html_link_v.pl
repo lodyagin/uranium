@@ -26,25 +26,26 @@
 % post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 % _____________________________________________________________
 
-:- module(link_v, []).
+:- module(html_link_v, []).
 
 :- use_module(library(uri)).
 :- use_module(u(v)).
 
-new_class(link_v, http_result_v, [link_url, text],
-          [www_address, link_url]).
+new_class(html_link_v, html_tag_a_v, [text], [www_address, '.href']).
 
-new_class(local_link_v, link_v, []).
+% A link to the same domain
+new_class(html_local_link_v, html_link_v, []).
 
-new_class(global_link_v, link_v, []).
+% A link to another domain
+new_class(html_global_link_v, html_link_v, []).
 
-'link_v?'(Link, class, Class) :-
+'html_link_v?'(Link, class, Class) :-
 
-   obj_field(Link, link_url, Url),
+   obj_field(Link, '.href', Url),
    atom(Url),
    (  \+ uri_is_global(Url)
    ->
-      Class = local_link_v
+      Class = html_local_link_v
    ;
       eval_obj_expr(Link / www_address / http_request_url,
                     Base_Url),
@@ -56,14 +57,16 @@ new_class(global_link_v, link_v, []).
       uri_data(authority, Global_Url_Comps, Link_Domain),
 
       (   Base_Domain == Link_Domain
-      ->  Class = local_link_v
-      ;   Class = global_link_v
+      ->  Class = html_local_link_v
+      ;   Class = html_global_link_v
       )
    ).
 
-downcast(link_v, local_link_v, From, To) :-
+%downcast(
 
-   obj_field(From, link_url, Orig_Link_Url),
+downcast(link_v, html_local_link_v, From, To) :-
+
+   obj_field(From, '.href', Orig_Link_Url),
    atom(Orig_Link_Url),
    obj_field(From, www_address, WWW_Address),
    atom(WWW_Address),
@@ -71,12 +74,12 @@ downcast(link_v, local_link_v, From, To) :-
    atom(Base_Url0),
    uri_normalized(Base_Url0, Base_Url),
    uri_normalized(Orig_Link_Url, Base_Url, Link_Url),
-   obj_field(To, link_url, Link_Url),
+   obj_field(To, '.href', Link_Url),
    obj_field(To, www_address, WWW_Address).
 
-downcast(link_v, global_link_v, From, To) :-
+downcast(link_v, html_global_link_v, From, To) :-
 
-   obj_field(From, link_url, Orig_Link_Url),
+   obj_field(From, '.href', Orig_Link_Url),
    atom(Orig_Link_Url),
    obj_field(From, www_address, WWW_Address),
    atom(WWW_Address),
@@ -84,7 +87,7 @@ downcast(link_v, global_link_v, From, To) :-
    atom(Base_Url0),
    uri_normalized(Base_Url0, _), %Base_Url),
    uri_normalized(Orig_Link_Url, Link_Url),
-   obj_field(To, link_url, Link_Url),
+   obj_field(To, '.href', Link_Url),
    obj_field(To, www_address, WWW_Address).
 
 
