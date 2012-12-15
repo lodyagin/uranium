@@ -62,9 +62,9 @@ new_class(html_global_link_v, html_link_v, []).
       )
    ).
 
-%downcast(
+% downcast(html_tag_a_v, html_link_v, From, To) :-
 
-downcast(link_v, html_local_link_v, From, To) :-
+downcast(html_link_v, html_local_link_v, From, To) :-
 
    obj_field(From, '.href', Orig_Link_Url),
    atom(Orig_Link_Url),
@@ -77,7 +77,7 @@ downcast(link_v, html_local_link_v, From, To) :-
    obj_field(To, '.href', Link_Url),
    obj_field(To, www_address, WWW_Address).
 
-downcast(link_v, html_global_link_v, From, To) :-
+downcast(html_link_v, html_global_link_v, From, To) :-
 
    obj_field(From, '.href', Orig_Link_Url),
    atom(Orig_Link_Url),
