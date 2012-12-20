@@ -42,7 +42,7 @@ test(class_create2, [setup(reload_classes)]) :-
 
    obj_field(CCTO, age, Age),
    integer(Age),
-   
+
    obj_key(CCTO, Key),
    assertion(Key == [a, birthday]).
 
@@ -124,7 +124,11 @@ test(class_name3) :-
 %   findall(X, class_same_or_descendant(callup_v, X), List).
 
 test(class_parent1, [Parent == man_v]) :-
+   class_parent(citizen_v, Parent).
 
+test(class_parent1_2, [Parent == man_v]) :-
+   obj_construct(citizen_v, [], [], Obj1),
+   obj_rebase((man_v -> http_result_v), Obj1, _),
    class_parent(citizen_v, Parent).
 
 test(class_parent2,
@@ -135,11 +139,24 @@ test(class_parent2,
    findall(Desc, class_parent(Desc, citizen_v), LU),
    msort(LU, L).
 
-test(class_parent3) :-
+test(class_parent2_2, [setup(reload_classes), L == [callup_v]]) :-
+   obj_construct(callup_v, [], [], O1),
+   obj_parents(O1, [callup_v, http_result_v, citizen_v, man_v,
+                    object_v, object_base_v], _),
+   findall(Desc, class_parent(Desc, citizen_v), LU),
+   msort(LU, L).
 
+test(class_parent3) :-
    findall(p(A, B), class_parent(A, B), L),
    length(L, N),
    assertion(N > 10).
+
+test(class_parent3_2) :-
+   obj_construct(callup_v, [], [], O1),
+   obj_parents(O1, [callup_v, http_result_v, citizen_v, man_v,
+                    object_v, object_base_v], _),
+   findall(p(A, B), class_parent(A, B), L),
+   assertion(\+ memberchk(p(callup_v, http_result_v), L)).
 
 test(eval_obj_expr1,
      [[E0, E1, E2, E3]
@@ -298,7 +315,7 @@ test(eval_obj_expr9) :-
                  [Name, WWW_Addr], O),
    assertion(O / [name, surname / http_request_url]
             =^= [Name, Url]).
-   
+
 test(obj_construct_with_evals1) :-
 
     obj_construct(citizen_v,
@@ -306,13 +323,13 @@ test(obj_construct_with_evals1) :-
                   [citizen_v, citizen_v, 1994], O1),
     obj_field(O1, class, Class1),
     assertion(Class1 == citizen_v),
-    
+
     obj_construct(citizen_v,
                   [birthday, functor, class],
                   [1994, citizen_v, citizen_v], O2),
     obj_field(O2, class, Class2),
     assertion(Class2 == citizen_v),
-    
+
     obj_construct(citizen_v,
                   [birthday, sex, functor, class],
                   [1994, man, citizen_v, callup_v], O3),
@@ -333,7 +350,7 @@ test(obj_construct_with_evals1) :-
     assertion(X = citizen_v),
     assertion(Y = callup_v).
 
-    
+
 test(obj_construct_bug1) :-
 
    class_fields(man_v, Field_Names),
@@ -371,7 +388,7 @@ test(obj_diff2,
    obj_rebase((object_v -> db_object_v), M1_0, M1),
    obj_construct(man_v, [name, surname], ['Artemiy', 'Lodyagin'], M2),
    obj_diff(M1, M2, Diff).
-  
+
 
 % After some time it will always fails (because it depends
 % on the current year).
@@ -404,7 +421,7 @@ test(obj_field3, [Surname == 'Grisha']) :-
    obj_field(Man, surname, Name),
    Name = 'Grisha',
    obj_field(Man, surname, Surname).
-  
+
 test(obj_field_bug1, [fail]) :-
 
    obj_construct(citizen_v, [sex], [woman], Obj),
@@ -430,13 +447,13 @@ test(obj_set_field1, [Surname =@= _]) :-
    obj_set_field(Man, surname, Name),
    Name = 'Grisha',
    obj_field(Man, surname, Surname).
-  
+
 test(obj_set_field2, [Surname =@= 'Grisha']) :-
 
    obj_construct(man_v, [name, surname], [Name, Name], Man),
    obj_set_field(Man, name, 'Grisha'),
    obj_field(Man, surname, Surname).
-  
+
 test(obj_key1) :-
 
    obj_construct(man_v, [sex, name], [man, 'Adam'], Man1),
@@ -445,8 +462,8 @@ test(obj_key1) :-
    obj_key_value(Man1, Key_Value1),
    assertion(Key_Value1 =@= ['Adam', _]),
 
-   obj_construct(citizen_v, 
-                 [sex, surname, country], 
+   obj_construct(citizen_v,
+                 [sex, surname, country],
                  [man, 'Mayakovsky', ['Soviet Union']],
                  Man2),
    obj_key(Man2, Key2),
@@ -463,8 +480,8 @@ test(obj_key2) :-
    obj_key_value(Man1, Key_Value1),
    assertion(Key_Value1 =@= ['Adam', _]),
 
-   obj_construct(citizen_v, 
-                 [sex, surname, country], 
+   obj_construct(citizen_v,
+                 [sex, surname, country],
                  [man, 'Mayakovsky', ['Soviet Union']],
                  Man2_0),
    obj_rebase((object_v -> db_object_v), Man2_0, Man2),
@@ -480,12 +497,12 @@ test(obj_list1,
                 surname = 'Mayakovsky']]
      ) :-
 
-   obj_construct(citizen_v, 
-                 [sex, surname, country], 
+   obj_construct(citizen_v,
+                 [sex, surname, country],
                  [man, 'Mayakovsky', ['Soviet Union']],
                  Man),
    obj_list(Man, List).
- 
+
 test(obj_list2, [List =@= []]) :-
 
    obj_construct(citizen_v, [], [], Man),
@@ -499,8 +516,8 @@ test(obj_parents1_1,
 
 test(obj_parents2_1) :-
 
-   obj_construct(citizen_v, 
-                 [sex, surname, country, birthday], 
+   obj_construct(citizen_v,
+                 [sex, surname, country, birthday],
                  [man, 'Mayakovsky', ['Soviet Union'], 1994],
                  Man1),
    New_Parents_Order = [man_v, citizen_v, object_v, object_base_v],
@@ -700,31 +717,31 @@ test(obj_reset_fields1) :-
    obj_construct(man_v,
                  [sex, name, weight, height],
                  [man, 'Simeon', 63, 1.75], Man0),
-   
+
    obj_reset_fields([name, height], Man0, Man1),
    obj_class_id(Man1, Class_Id),
    assertion(Man1 =@= man_v(Class_Id, _, _, man, _, 63)),
-   
+
    obj_reset_fields([weight], Man1, Man2),
    assertion(Man2 =@= man_v(Class_Id, _, _, man, _, _)),
-   
+
    obj_reset_fields([], Man2, Man3),
    assertion(Man3 =@= Man2).
-   
+
 test(obj_reset_fields2, [fail]) :-
 
    obj_construct(man_v,
                  [sex, name, weight, height],
                  [man, 'Simeon', 63, 1.75], Man0),
-   
+
    obj_reset_fields([name, height, age], Man0, _).
-   
+
 test(obj_reset_fields_weak) :-
 
    obj_construct(man_v,
                  [sex, name, weight, height],
                  [man, 'Simeon', 63, 1.75], Man0),
-   
+
    obj_reset_fields_weak([name, height, age], Man0, Man1),
    obj_class_id(Man1, Class_Id),
    assertion(Man1 =@= man_v(Class_Id, _, _, man, _, 63)).
@@ -808,7 +825,7 @@ test(obj_rewrite_with_evals3, [X == callup_v]) :-
 
 test(obj_rewrite_with_evals4) :-
 % <NB> can't reset eval field, compare with test(obj_rewrite)
-   
+
    obj_construct(citizen_v, [sex, birthday], [man, 1994], O),
    obj_rewrite(O, [class], [_], [_], _).
 
@@ -853,7 +870,7 @@ test(obj_sort_parents2,
             tarjan_vertex_v,
             db_object_v,
             object_v, object_base_v],
-   
+
    obj_construct(http_request_headers_v, [], [], V1),
    obj_rebase((http_headers_v -> http_response_headers_v),
               V1, V2),
@@ -889,20 +906,20 @@ test(class_fields) :-
 
    class_fields_new(object_base_v, Object_Base_V_New_Fields),
    assertion(Object_Base_V_New_Fields == []),
-   
+
    class_fields(object_v, Object_V_Fields),
    assertion(Object_V_Fields == []),
 
    class_fields_new(object_v, Object_V_New_Fields),
    assertion(Object_V_New_Fields == []),
-   
+
    class_fields(man_v, Man_V_Fields),
    assertion(Man_V_Fields == [height, name, sex, surname, weight]),
 
    class_fields_new(man_v, Man_V_New_Fields),
    assertion(Man_V_New_Fields == [height, name, sex, surname,
                                   weight]),
-   
+
    class_fields(citizen_v, Citizen_V_Fields),
    assertion(Citizen_V_Fields == [birthday, country, height, id,
                                   name, sex, surname, weight]),
@@ -925,7 +942,7 @@ test(cleanup_obj_rebase, [blocked(transaction_bug), N1 =:= N2]) :-
 % on the current year, see The Uranium Book).
 test(eval_fields1, [Class == callup_v]) :-
 
-   obj_construct(citizen_v, [sex, birthday], [man, 1994], C), 
+   obj_construct(citizen_v, [sex, birthday], [man, 1994], C),
    obj_field(C, class, Class).
 
 
@@ -933,7 +950,7 @@ test(eval_fields2) :-
 
    % man_v doesn't define class eval, so in this example
    % the eval from citizen_v is always used.
-   
+
    obj_construct(citizen_v,
                  [sex, birthday], [man, 1994], C1),
    obj_field(C1, class, Cl1),

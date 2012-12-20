@@ -38,7 +38,7 @@
            class_fields/2,     % +Class, -Fields (ordset)
            %class_field_type/3,
            class_name/1,       % ?Class
-           class_parent/2,
+           class_parent/2,     % ?Class, ?Parent
            class_parents/2,
            %class_same_or_descendant/2, % +Class, ?Descendant
            eval_obj_expr/2,
@@ -156,6 +156,7 @@ assert_downcast(Module_From:Clause) :-
 
 %% class_can_downcast(?From_Class, ?To_Class) is nondet.
 % Check wether From_Class has a sequence of downcast rules to To_Class.
+% It is more strict relation than class_parent/2.
 % NB. The set of rules can grow, see assert_downcast/1
 class_can_downcast(From_Class, To_Class) :-
    objects:clause(downcast(From_Class, To_Class, _, _), _).
@@ -897,12 +898,14 @@ class_parent(Class, Parent) :-
    check_existing_class_arg(Parent, Ctx),
    class_primary_id(Parent, Parent_Id),
    parent(Class_Id, Parent_Id),
-   class_id(Class_Id, Class).
+   class_id(Class_Id, Class),
+   class_primary_id(Class, Class_Id).
 
 class_parent(Class, Parent) :-
 
    parent(Class_Id, Parent_Id),
    class_id(Class_Id, Class),
+   class_primary_id(Class, Class_Id),
    class_id(Parent_Id, Parent).
 
 
