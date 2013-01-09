@@ -38,6 +38,10 @@ new_class(html_tag_html_v, html_tag_v, []).
    ;  true ).
 
 
+downcast(html_tag_v, html_tag_html_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+
+% TODO move to page_v
 downcast(html_tag_html_v, page_v, From, To) :-
 
    (  ixpath(child::head/child::title, From, Title)

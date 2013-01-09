@@ -24,7 +24,11 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(object_module,
-          [reload_all_classes/0
+          [assert_clause_int/3,         % Module_From:Clause, +Module_To,
+                                        % :Checking_Pred
+
+           check_downcast_impl/1,       % +Clause
+           reload_all_classes/0
            ]).
 
 :- use_module(u(internal/objects)).
@@ -46,31 +50,35 @@ module_new_class_def(Main_Class, Class, Parent) :-
    ;  Main_Class:new_class(Class, Parent, _, _)
    ).
 
+% assert_class_modules/0 is det.
+% Assert objects:module(Main_Class, Module_File_Path) for each
+% class module.
+assert_class_modules :-
+   (  current_module(Main_Class),
+      u_class(Main_Class),
+      module_property(Main_Class, file(Module_File)),
+      assertz_pred(classes,
+                   objects:module(Main_Class, Module_File)),
+      fail ; true
+   ).
+
+% all_classes(-All_Classes) is det.
+% All_Classes will contain class names in the order to create
 all_classes(All_Classes) :-
 
      % associate each class with a module it is defined
      % add relation to parent classes
-     (  current_module(Main_Class),
-        u_class(Main_Class),
-        module_property(Main_Class, file(Module_File)),
-        assertz(objects:module(Main_Class, Module_File)),
-        debug(classes,
-              'assertz(objects:module(~a, ~a))',
-              [Main_Class, Module_File]
-             ),
-        process_module_def(Main_Class),
+     (  objects:module(Main_Class, _),
         module_new_class_def(Main_Class, Class, Parent),
-        (  %class_id(_, Class)
-           objects:clause(module_class_def(Class, _, _), _)
+        (  objects:clause(module_class_def(Class, _, _), _)
         -> throw(error(class_exists(Class), _))
-        ;  true %gen_class_id(Class, Class_Id)
+        ;  true
         ),
-        assertz(objects:module_class_def(Class, Parent,
-                                         Main_Class)),
-        debug(classes,
-              'assertz(objects:module_class_def(~a, ~a, ~a))',
-              [Class, Parent, Main_Class]),
-        fail ; true ),
+        assertz_pred(classes,
+                     objects:module_class_def(Class, Parent,
+                                              Main_Class)),
+        fail ; true
+     ),
 
      % TODO check no Main_Class repeats
      % TODO check no class name repeats
@@ -101,24 +109,16 @@ all_classes(All_Classes) :-
              All_Classes
             ).
 
+
 % Class module-wide definitions
 process_module_def(Module) :-
-
-   % reinterpret/4
-   % TODO import only /4
-   dynamic_import(Module, objects, reinterpret).
-
-   %  % assert reinterpret/4
-   % (clause(Module:reinterpret(Class_From, Class_To, Obj_From, Obj_To),
-   %         Term),
-
-   %  Reinterpret_Clause = (reinterpret(Class_From, Class_To,
-   %                                    Obj_From, Obj_To) :-
-   %                       Module:Term
-   %                       ),
-   %  objects:assertz(Reinterpret_Clause),
-   %  debug(classes, 'assertz(~p)', [Reinterpret_Clause]),
-   %  fail ; true ).
+   % reinterpret
+   dynamic_import(Module, objects, reinterpret, 4, true),
+   % typedef
+   process_typedefs(Module),
+   % downcast
+   dynamic_import(Module, objects, downcast, 4,
+                  check_downcast_impl).
 
 
 process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
@@ -169,20 +169,29 @@ process_class_def(new_class(Class, Parent, Add_Fields, Key)) :-
                    Module:Term
                    ),
     debug(classes,
-          'objects:assertz(copy(~d, ~a, ~p, ~p) :- ~a:~p',
+          'objects:assertz(copy(~d, ~a, ~p, ~p) :- ~a:~p)',
           [Class_Id, Class, Copy_From, Copy_To, Module, Term]),
-    fail ; true ),
-
-    % process class module-scoped objects
-   (  Class == Module
-   -> % import downcast/4 predicates
-      dynamic_import(Module, objects, downcast),
-                                % process typedefs
-      process_typedefs(Module)
-   ;  true ),
-
+    fail ; true
+   ),
    class_create_cmn(Class, Parent, Add_Fields, Key, _, Ctx).
 
+
+%% check_downcast_impl(:Clause) is det.
+% Check downcast/4 definitions
+:- meta_predicate check_downcast_impl(0).
+
+check_downcast_impl(Module:(Term :- _)) :-
+   Term = downcast(From_Class, To_Class, _, _),
+   (  \+ (u_class(From_Class), class_primary_id(From_Class, _))
+   -> print_message(warning,
+                    bad_downcast_impl(Module:Term,
+    'From_Class must be bounded to already defined uranium classes'))
+   ;  \+ (u_class(To_Class), class_primary_id(To_Class, _))
+   -> print_message(warning,
+                    bad_downcast_impl(Module:Term,
+    'To_Class must be bounded to already defined uranium classes'))
+   ;  true
+   ).
 
 process_typedefs(Module) :-
 
@@ -237,21 +246,43 @@ process_typedefs(Module) :-
   ).
 
 
-%
-% import all predicates with head Functor as dynamic assert
-%
-dynamic_import(Module_From, Module_To, Functor) :-
+% dynamic_import(+Module_From, +Module_To, +Functor, +Arity, :Checking_Pred)
+% is det.
+% Import all predicates with head Functor as dynamic assert
+% with additional checking defined by Checking_Pred(+Term, +Clause)
 
-  Module_From:current_predicate(Functor, Term),
-  Module_From:clause(Term, _),
-  Module_To:assertz(Term :- Module_From:Term),
-  debug(classes,
-        '~a:assertz(~p :- ~a:~p)',
-        [Module_To, Term, Module_From, Term]),
-  fail
-  ;
-  true.
+dynamic_import(Module_From, Module_To, Functor, Arity, Checking_Pred) :-
 
+   (  functor(Term, Functor, Arity),
+      Module_From:clause(Term, _),
+      assert_clause_int(Module_From:(Term :- Term), Module_To, Checking_Pred),
+      fail
+   ;  true
+   ).
+
+
+%% assert_clause_int(Module_From:Clause, +Module_To, :Checking_Pred)
+%% is semidet.
+%
+% Assert a new Clause in a Module if Checking_Pred(Clause) succeeds.
+% Checking_Pred can be just `true'.
+
+:- meta_predicate assert_clause_int(:, +, 0).
+
+assert_clause_int(Module_From:Clause, Module_To, Checking_Pred) :-
+
+   must_be('/'(':-',2), Clause),
+   Clause = (Term :- Body),
+   must_be(compound, Term),
+   must_be(compound, Body),
+   (  ( Checking_Pred = _:true ; Checking_Pred == true )
+   -> true
+   ;  call(Checking_Pred, Module_From:Clause)
+   ),
+   assertz_pred(classes, Module_To:(Term :- Module_From:Body)).
+
+%% reload_all_classes is det.
+% Reload all class definitions.
 reload_all_classes :-
 
    db_vocab_clear(_), % clear all current db class caches
@@ -282,10 +313,11 @@ reload_all_classes :-
       fail ; true
    ),
 
-   % Get classes in the creation order
-
-   all_classes(Class_Defs),
+   assert_class_modules,
    % + module/2
+
+   % Get classes in the creation order
+   all_classes(Class_Defs),
    % + module_class_def/3
 
    (  member(Class_Def, Class_Defs),
@@ -294,11 +326,6 @@ reload_all_classes :-
       % + class_id/3
       % + eval_field/5
       % + copy/4        :- ...
-      % + reinterpret/4 :- ...
-      % + downcast/4    :- ...
-      % + typedef_flag/2
-      % + pretty_print/4 :- ...
-      % + db_pg:pl_pg_type/3
       %
       % >> class_create:
       % + parent_/2
@@ -314,6 +341,18 @@ reload_all_classes :-
       % + key/3
       % + copy/4 :- ... (for descendants)
       % <<
+
+      fail ; true
+   ),
+
+   (  objects:module(Module_Name, _),
+      process_module_def(Module_Name),
+      % + reinterpret/4 :- ...
+      % + typedef_flag/2
+      % + pretty_print/4 :- ...
+      % + value_set/3 :- ...
+      % + db_pg:pl_pg_type/3
+      % + downcast/4    :- ...
 
       fail ; true
    ),

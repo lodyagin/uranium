@@ -33,3 +33,7 @@ new_class(html_tag_label_v, html_tag_v,
           [
            '.for'
           ]).
+
+downcast(html_tag_v, html_tag_label_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+

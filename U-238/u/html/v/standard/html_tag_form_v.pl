@@ -92,11 +92,16 @@ new_class(form_v, html_tag_form_v, []).
         ;  throw(error(class_exists(Class), Ctx))
         )
      ;
+        assert_downcast( downcast(html_tag_form_v, Class, From, To) :-
+               downcast_impl(html_tag_form_v, Class, From, To)),
         class_create(Class, form_v, Fields)
      )
    ).
 
-downcast(html_tag_form_v, Class_To, From, To) :-
+downcast(html_tag_v, html_tag_form_v, From, To) :-
+   gen_html_tag_downcast(From, To).
+
+downcast_impl(html_tag_form_v, Class_To, From, To) :-
 
    atom_concat(form_, _, Class_To),
    gen_html_tag_downcast(From, To),

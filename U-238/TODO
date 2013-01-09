@@ -1,0 +1,6 @@
+Test assert_downcast in html_tag_form_v.pl.
+
+db_recorded(forms, F), !, obj_field(F, input_field_list, IL), ( member(O, IL), obj_field(O, fail, name, Name), obj_field(O, default_value, Value), format('~p:\t~p\n', [Name, Value]), fail; true ).
+
+
+fail в obj_field не действует!

@@ -29,6 +29,8 @@
 
 :- module(v,
           [
+           assert_downcast/1,  % +Clause
+           class_can_downcast/2, % ?From_Class, ?To_Class
            class_create/3,     % +Class, +Parent, +Add_Fields
            class_create/4,     % +Class, +Parent, +Add_Fields, +Key
            %class_descendant/2, % +Class, ?Descendant
@@ -36,7 +38,7 @@
            class_fields/2,     % +Class, -Fields (ordset)
            %class_field_type/3,
            class_name/1,       % ?Class
-           class_parent/2,
+           class_parent/2,     % ?Class, ?Parent
            class_parents/2,
            %class_same_or_descendant/2, % +Class, ?Descendant
            eval_obj_expr/2,
@@ -129,7 +131,7 @@
             ]).
 
 :- reexport(u(internal/object_module),
-            [ reload_all_classes/0]).
+            [reload_all_classes/0]).
 
 % This is standard Weak arg values used in this module
 std_weak_arg_values([[throw, throws, strict, s],
@@ -138,6 +140,30 @@ std_weak_arg_values([[throw, throws, strict, s],
                     ]).
 
 
+%% assert_downcast(+Clause) is det.
+%
+% Assert a new downcast/4 definition in the object module.
+
+:- meta_predicate assert_downcast(:).
+
+assert_downcast(Module_From:Clause) :-
+
+   must_be('/'(':-',2), Clause),
+   Clause = (Term :- Body),
+   must_be(compound, Term),
+   must_be(compound, Body),
+   assert_clause_int(Module_From:Clause, objects, check_downcast_impl).
+
+%% class_can_downcast(?From_Class, ?To_Class) is nondet.
+% Check wether From_Class has a sequence of downcast rules to To_Class.
+% It is more strict relation than class_parent/2.
+% NB. The set of rules can grow, see assert_downcast/1
+class_can_downcast(From_Class, To_Class) :-
+   objects:clause(downcast(From_Class, To_Class, _, _), _).
+class_can_downcast(From_Class, To_Class) :-
+   objects:clause(downcast(From_Class, Class1, _, _), _),
+   class_can_downcast(Class1, To_Class).
+                     
 %% class_create(+Class, +Parent, +Add_Fields)
 %
 % Assert the new Class definition into the objects module
@@ -872,12 +898,14 @@ class_parent(Class, Parent) :-
    check_existing_class_arg(Parent, Ctx),
    class_primary_id(Parent, Parent_Id),
    parent(Class_Id, Parent_Id),
-   class_id(Class_Id, Class).
+   class_id(Class_Id, Class),
+   class_primary_id(Class, Class_Id).
 
 class_parent(Class, Parent) :-
 
    parent(Class_Id, Parent_Id),
    class_id(Class_Id, Class),
+   class_primary_id(Class, Class_Id),
    class_id(Parent_Id, Parent).
 
 

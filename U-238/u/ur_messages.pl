@@ -89,6 +89,10 @@ prolog:message(bad_downcast_impl(Mode, Object, Class_From,
    ['~a -> ~a transforms ~p to ~p'
    - [Class_From, Class_To, Object, Result]].
 
+prolog:message(bad_downcast_impl(Term, Message)) -->
+
+   ['User-defined ~p is bad:~n~a' - [Term, Message]].
+
 prolog:message(not_downcast(From_Class, To_Class)) -->
 
    ['~a -> ~a is not downcast' - [From_Class, To_Class]].

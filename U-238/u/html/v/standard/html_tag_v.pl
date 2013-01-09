@@ -39,12 +39,6 @@ new_class(html_tag_v, html_piece_v,
    ;  functor(Obj, Class, _) % leave unchanged
    ).
 
-downcast(html_tag_v, html_tag_input_v, From, To) :-
-   gen_html_tag_downcast(From, To).
-
-downcast(html_tag_v, html_tag_label_v, From, To) :-
-   gen_html_tag_downcast(From, To).
-
 unify_html_attrs(_, [], Rest, Rest) :- !. 
 unify_html_attrs(Obj, [Id = Val|T], Rest0, Rest) :-
    atom_concat('.', Id, Field),
