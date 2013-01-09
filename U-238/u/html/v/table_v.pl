@@ -31,7 +31,7 @@
 /** <module> parsed html table
 
   ---+++ Parent
-  ../../http/v/http_result_v.pl
+  ../../html/v/standard/html_tag_v.pl
 
   ---+++ New static fields
   * header
