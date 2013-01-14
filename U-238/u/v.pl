@@ -960,7 +960,7 @@ obj_same_or_descendant(Descendant, Class) :-
    same_or_descendant(Desc_Class_Id, _, Class).
 
 
-% class_new_fields(+Class, -Field_Names)
+% class_fields_new(+Class, -Field_Names)
 %
 % Get list of fields introduced in Class
 
