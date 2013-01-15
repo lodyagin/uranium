@@ -535,7 +535,9 @@ reinterpret_fill_values(Parent_Class_Id, Desc_Class_Id, Parent,
    objects:reinterpret(Parent_Class, Desc_Class, Parent, Desc).
 
 
-% obj_rebase(+Rebase_Rule, +Object0, -Object)
+%% obj_rebase(+Rebase_Rule, +Object0, -Object)
+%
+% Change the ancestor by the rule Rebase_Rule = (Old_Parent -> New_Parent).
 
 obj_rebase(Rebase_Rule, Object0, Object) :-
 
@@ -624,7 +626,9 @@ obj_reinterpret(From, Class_To, To) :-
 
    (  Det = t -> ! ; true ).
 
-% obj_rewrite(+Object0, +Fields, ?Old_Vals, +New_Vals, -Object)
+%% obj_rewrite(+Object0, +Fields, ?Old_Vals, +New_Vals, -Object) is det.
+%
+% Object is Object0 with Old_Vals of Fields replaced with New_Vals.
 
 obj_rewrite(Object0, Fields, Old_Vals, New_Vals, Object) :-
 
@@ -632,8 +636,10 @@ obj_rewrite(Object0, Fields, Old_Vals, New_Vals, Object) :-
    obj_rewrite_cmn(Object0, throw, Fields, Old_Vals, New_Vals,
                    Object, Ctx).
 
-% obj_rewrite(+Object0, +Weak, +Fields, ?Old_Vals, +New_Vals,
-%             -Object)
+%% obj_rewrite(+Object0, +Weak, +Fields, ?Old_Vals, +New_Vals,
+%%             -Object) is det.
+%
+% The same as obj_rewrite/5 but use options throw, unbound, fail.
 
 obj_rewrite(Object0, Weak, Fields, Old_Vals, New_Vals, Object) :-
 
@@ -945,7 +951,7 @@ obj_is_descendant(Descendant, Class) :-
    descendant_class(Desc_Class_Id, _, Class).
 
 
-% obj_same_or_descendant(+Descendant, ?Class) is nondet.
+%% obj_same_or_descendant(+Descendant, ?Class) is nondet.
 %
 %  True if Descendant = Class or it is a descendant of Class.
 %  Count rebased classes.
@@ -960,9 +966,10 @@ obj_same_or_descendant(Descendant, Class) :-
    same_or_descendant(Desc_Class_Id, _, Class).
 
 
-% class_fields_new(+Class, -Field_Names)
+%% class_fields_new(+Class, -Field_Names)
 %
-% Get list of fields introduced in Class
+% Get list of fields introduced in Class. Only for getting fields of a
+% primary (not rebased) class.
 
 class_fields_new(Class, Field_Names) :-
 
@@ -975,9 +982,10 @@ class_fields_new(Class, Field_Names) :-
    class_new_fields(Class_Id, Field_Names).
 
 
-% class_fields(+Class, -Field_Names)
+%% class_fields(+Class, -Field_Names)
 %
-% Get list of field names as ordset
+% Get list of field names as ordset. Only for getting fields of a
+% primary (not rebased) class.
 
 class_fields(Class, Field_Names) :-
 
@@ -1075,9 +1083,9 @@ obj_merge(A, B, Class, C) :-
    C = B1.
 
 
+%% obj_key(+Object, ?Key)
 %
-% obj_key(+Object, ?Key)
-%
+% Key is a key obj Object.
 
 obj_key(Object, Key) :-
 
@@ -1087,9 +1095,9 @@ obj_key(Object, Key) :-
   Key = Key2.
 
 
+%% obj_key_value(+Object, -Key_Value)
 %
-% obj_key_value(+Object, -Key_Value)
-%
+% Key_Value is a value of the key of the Object.
 
 obj_key_value(Object, Key_Value) :-
 

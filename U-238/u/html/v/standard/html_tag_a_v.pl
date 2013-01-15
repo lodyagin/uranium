@@ -23,28 +23,34 @@
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
-:- module(html_tag_html_v, []).
 
-:- use_module(u(ixpath)).
+:- module(html_tag_a_v, []).
+
 :- use_module(u(v)).
-:- use_module(v(html_tag_v)).
+:- use_module(html_tag_v).
 
+new_class(html_tag_a_v, html_tag_v,
+          [
+           '.charset',
+           '.coords',
+           '.href',
+           '.hreflang',
+           '.media',
+           '.name',
+           '.rel',
+           '.rev',
+           '.shape',
+           '.target',
+           '.type'
+          ]).
 
-new_class(html_tag_html_v, html_tag_v, []).
+'html_tag_a_v?'(Object, class, Class) :-
+   named_args_unify(Object, ['.href', dom], [Href, Dom]),
+   (   atom(Href), nonvar(Dom)
+   ->  Class = html_link_v
+   ;   Class = html_tag_a_v
+   ).
 
-'html_tag_html_v?'(Obj, class, Class) :-
-
-   (  ixpath(child::body, Obj, _)
-   -> Class = page_v
-   ;  true ).
-
-
-downcast(html_tag_v, html_tag_html_v, From, To) :-
+downcast(html_tag_v, html_tag_a_v, From, To) :-
    gen_html_tag_downcast(From, To).
 
-% TODO move to page_v
-downcast(html_tag_html_v, page_v, From, To) :-
-
-   (  ixpath(child::head/child::title, From, Title)
-   -> obj_field(To, title, Title)
-   ;  true ).

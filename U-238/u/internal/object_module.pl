@@ -261,8 +261,7 @@ dynamic_import(Module_From, Module_To, Functor, Arity, Checking_Pred) :-
    ).
 
 
-%% assert_clause_int(Module_From:Clause, +Module_To, :Checking_Pred)
-%% is semidet.
+%% assert_clause_int(:Clause, +Module_To, :Checking_Pred) is semidet.
 %
 % Assert a new Clause in a Module if Checking_Pred(Clause) succeeds.
 % Checking_Pred can be just `true'.
