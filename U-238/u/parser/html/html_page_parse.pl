@@ -32,13 +32,12 @@
 
 /** <module> Parse page_v objects.
 
-  Find objects on ../../html/v/page_v.pl
+  Extract specified classes from ../../html/v/page_v.pl
 */
 
 :- use_module(u(vd)).
 :- use_module(u(v)).
 :- use_module(u(ixpath)).
-:- use_module(u(logging)).
 :- use_module(u(internal/check_arg)).
 
 
@@ -68,36 +67,32 @@ extract_elements(DB_Key, Page, Class) :-
 		 ignore).
 
 
-% extract_element(+Page, +Class, -Object)
+% extract_element(+Page, +Class, -Object) is nondet.
 extract_element(Page, Class, Object) :-
-
   obj_field(Page, www_address, WWW_Address),
-  element_type_tag(Class, Tag, Cmn_Class),
+  element_type_tag(Class, Tag),
   ixpath(//Tag, [vixc], Page, Object1),
-  atom_concat(Cmn_Class, '_parse', Pred),
-  atom_concat('parser/html/', Pred, Module),
-  use_module(u(Module), [Pred/2]),
-  debug(html_page_parse, 'Call ~a for ~p', [Pred, Object1]),
-  call(Pred, Object1, Object2),
-
-
-  obj_unify(Object2,
+  %atom_concat(Cmn_Class, '_parse', Pred),
+  %atom_concat('parser/html/', Pred, Module),
+  %use_module(u(Module), [Pred/2]),
+  %debug(html_page_parse, 'Call ~a for ~p', [Pred, Object1]),
+  %call(Pred, Object1, Object2),
+  obj_unify(Object1,
             [www_address, root_node],
             [WWW_Address, Page]),
   % TODO move root_node setting into ixpath
-
-  obj_downcast(Object2, Object),
-
+  gtrace,
+  obj_downcast(Object1, Object),
   once(( functor(Object, Class, _)
        ; obj_is_descendant(Object, Class)
        )).
 
 
-% FIXME!!: move to eval field:
-% object - tag mapping
-element_type_tag(table_v, table, table_v).
-element_type_tag(form_v, form, form_v).
-%element_type_tag(link_v, a, link_v).
-%element_type_tag(local_link_v, a, link_v).
-%element_type_tag(global_link_v, a, link_v).
-%element_type_tag(list_v, ul, list_v).
+% element_type_tag(?Class, ?Tag) is nondet.
+% True if html_tag_<Tag>_v can be downcasted to Class.
+element_type_tag(Class, Tag) :-
+   class_parent(Tag_Class, html_tag_v),
+   (  Tag_Class = Class
+   ;  class_can_downcast(Tag_Class, Class)
+   ),
+   concat_atom([html, tag, Tag, v], '_', Tag_Class).

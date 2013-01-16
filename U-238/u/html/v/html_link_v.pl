@@ -62,7 +62,10 @@ new_class(html_global_link_v, html_link_v, []).
       )
    ).
 
-% downcast(html_tag_a_v, html_link_v, From, To) :-
+downcast(html_tag_a_v, html_link_v, From, To) :-
+   obj_field(From, dom, Dom),
+   xpath(Dom, /a(text), Text),
+   obj_field(To, text, Text).
 
 downcast(html_link_v, html_local_link_v, From, To) :-
 
