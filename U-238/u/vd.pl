@@ -207,7 +207,7 @@ db_clear(DB_Key) :-
    check_db_key(DB_Key, Ctx),
    db_clear_int(DB_Key).
 
-% db_construct(+DB_Key, +Class, +Fields, +Values)
+%% db_construct(+DB_Key, +Class, +Fields, +Values)
 %
 % Construct the object directly in the DB
 db_construct(DB_Key, Class, Fields, Values) :-
@@ -215,7 +215,7 @@ db_construct(DB_Key, Class, Fields, Values) :-
    Ctx = context(db_construct/4, _),
    db_construct2(DB_Key, Class, Fields, Values, _, Ctx).
 
-% db_construct(+DB_Key, +Class, +Fields, +Values, -Obj)
+%% db_construct(+DB_Key, +Class, +Fields, +Values, -Obj)
 %
 % This form returns the object (a db_object_v descendant)
 db_construct(DB_Key, Class, Fields, Values, Obj) :-
@@ -331,7 +331,7 @@ db_put_object(DB_Key, Option, Object0, Object) :-
    db_put_object_cmn(DB_Key, Option, _, Object0, Object, false,
                      Ctx).
 
-% db_put_object(+DB_Key, +Option, +Object0, -Object, -Replaced)
+%% db_put_object(+DB_Key, +Option, +Object0, -Object, -Replaced)
 %
 % This version unifies the last argument with `replaced'
 % if the original object has the same db_ref as already
@@ -343,7 +343,7 @@ db_put_object(DB_Key, Option, Object0, Object, Replaced) :-
    db_put_object_cmn(DB_Key, Option, _, Object0, Object, Replaced,
                      Ctx).
 
-% db_recorda(+DB_Key, +Object)
+%% db_recorda(+DB_Key, +Object)
 %
 % Put object before others objects of the same class
 %
@@ -554,6 +554,7 @@ db_properties_hook(DB_Key, Class_Id, DB_Properties) :-
 
 db_properties_hook(_, _, _).  % a hook should always succeed
 
+%% db_put_objects(+DB_Key, :Pred, +Options)
 %
 % Record all solutions of the Pred.
 % It is like findall/3, but use the last arg of Pred
@@ -568,6 +569,8 @@ db_put_objects(DB_Key, Pred, Options) :-
    db_put_object(DB_Key, Options, Object, _),
    fail ; true.
 
+%% db_recorded(+DB_Key, ?Object)
+%
 % Low-level db unification.
 % Object is var or db_object_v desc.
 % Doesn't process inheritance
@@ -581,7 +584,7 @@ db_recorded(DB_Key, Object) :-
    db_recorded_int(DB_Key, Object),
    debug(vd, '~p', db_recorded(DB_Key, Object)).
 
-% db_rewrite(+DB_Key, ?Functor, +Fields, @Old_Vals, +New_Vals)
+%% db_rewrite(+DB_Key, ?Functor, +Fields, @Old_Vals, +New_Vals)
 %
 % Change fields in all objects unified with Old_Vals
 
@@ -668,7 +671,7 @@ filter_on_db_cmn(DB_Key, Weak, Field_Names, Field_Values,
        true
    ).
 
-% db_search(+DB_In, +DB_Out, :Pred)
+%% db_search(+DB_In, +DB_Out, :Pred)
 %
 % Copy from DB_In to DB_Out all filtered by Pred
 %
@@ -903,6 +906,7 @@ check_bound_unbound([Value|TV], [Bound|TB], [Unbound|TU]) :-
    check_bound_unbound(TV, TB, TU).
 
 
+%% db_iterate_replace(+DB_Key, :Pred, +Query)
 %
 % Call Pred on all records meat the criteria
 % and replace object in DB
@@ -1033,6 +1037,7 @@ db_name(DB_Key) :-
    db_name_int(DB_Key).
 
 
+%% db_size(+DB_Key, ?N)
 % Get a number of recrods
 
 db_size(DB_Key, N) :-
@@ -1041,6 +1046,7 @@ db_size(DB_Key, N) :-
    findall('.', db_recorded(DB_Key, _), AL),
    length(AL, N).
 
+%% db_change(+DB_Key, +Fields, +Vals, +Query) is semidet.
 %
 % Change (reset+unify) fields in DB
 % is det.
@@ -1069,6 +1075,7 @@ unify_fields(Fields, Vals, Object, Object, true) :-
     named_args_unify(Object, Fields, Vals).
 
 
+%% db_reset(+DB_Key, +Reset_List, +Query)
 %
 % Reset fields in DB
 % Is det.
@@ -1173,6 +1180,7 @@ check_record(\/(Expr1, Expr2), Record) :-
    ), !.
 */
 
+%% db_merge(+DB1_Key, +DB2_Key)
 %
 % try unify DB1_Key x DB2_Key with key restrictions,
 % leave only unified in DB_Key1,
@@ -1186,6 +1194,7 @@ db_merge(DB1_Key, DB2_Key) :-
    Ctx = context(db_merge/3, _),
    db_merge_cmn(DB1_Key, DB2_Key, default, Ctx).
 
+%% db_merge(+DB1_Key, +DB2_Key, +Key)
 % Merge by Key fields
 
 db_merge(DB1_Key, DB2_Key, Key) :-
