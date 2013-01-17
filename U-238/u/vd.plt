@@ -455,10 +455,14 @@ test(named_args_unify_bug2, [setup(model_db)]) :-
            named_args_unify(people, _, [], [], _),
            ['.', '.', '.']).
 
-test(eval_obj_expr,
+test(eval_obj_expr1,
      [setup(model_db),
      List == ['Adam', 'Eva', 'Vladimir']]) :-
    findall(Name, @people / name ^= Name, List).
+
+test(eval_obj_expr2, [setup(model_db)]) :-
+   (@people -> Object) / functor ^= citizen_v,
+   assertion(Object / surname =^= 'Mayakovsky').
 
 test(store_and_retrieve1,
     [setup(db_clear(people)),
