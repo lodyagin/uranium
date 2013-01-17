@@ -320,6 +320,13 @@ test(eval_obj_expr10, [Value =@= _]) :-
    obj_construct(man_v, [], [], Obj),
    eval_obj_expr(Obj / name // no_such_field123, Value ).
 
+test(eval_obj_expr11_1, [fail]) :-
+   obj_construct(man_v, [], [], Obj),
+   eval_obj_expr(Obj / no_such_field123, fail, _).
+
+test(eval_obj_expr11_2, [fail]) :-
+   eval_obj_expr(_ / fld, fail, _).
+
 test(obj_construct_with_evals1) :-
 
     obj_construct(citizen_v,

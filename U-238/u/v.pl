@@ -776,6 +776,7 @@ eval_obj_expr_cmn(Compound, _, Value, compound, Ctx) :-
 eval_obj_expr_cmn(Value, _, Value, value, _) :- !.
 
 eval_obj_field(object, Var, weak, _, Var, _) :- var(Var), !.
+eval_obj_field(object, Var, fail, _, Var, _) :- var(Var), !, fail.
 eval_obj_field(object, Object, Weak, Field, Value, _) :- !,
    (  Weak == weak
    -> (  obj_field(Object, fail, Field, Value) -> true
