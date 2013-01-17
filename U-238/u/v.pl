@@ -764,6 +764,10 @@ eval_obj_expr_cmn(List, _, Value, list, Ctx) :-
    maplist(Ctx+\Obj_Expr^V^eval_obj_expr_cmn(Obj_Expr, hold, V, _, Ctx),
 	   List, Value).
 
+%TODO all evals to u(vexpr)
+eval_obj_expr_cmn(@(DB_Key), _, @(DB_Key), db, Ctx) :- !,
+   check_db_key(DB_Key, Ctx).
+
 eval_obj_expr_cmn(Object, _, Object, object, _) :-
    u_object(Object), !.
 
@@ -774,6 +778,9 @@ eval_obj_expr_cmn(Compound, _, Value, compound, Ctx) :-
    Value =.. [Fun|Value_List].
 
 eval_obj_expr_cmn(Value, _, Value, value, _) :- !.
+
+eval_obj_field(db, @(DB_Key), _, Field, Value, _) :-
+   db_select(DB_Key, [Field], [Value]).
 
 eval_obj_field(object, Var, weak, _, Var, _) :- var(Var), !.
 eval_obj_field(object, Var, fail, _, Var, _) :- var(Var), !, fail.
