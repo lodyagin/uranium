@@ -44,13 +44,13 @@ new_class(html_global_link_v, html_link_v, []).
 
    obj_field(Link, '.href', Url),
    atom(Url),
+   eval_obj_expr(Link / www_address / http_request_url, fail,
+                 Base_Url),
+   atom(Base_Url),
    (  \+ uri_is_global(Url)
    ->
       Class = html_local_link_v
    ;
-      eval_obj_expr(Link / www_address / http_request_url,
-                    Base_Url),
-      atom(Base_Url),
       uri_resolve(Url, Base_Url, Global_Url),
       uri_components(Base_Url, Base_Url_Comps),
       uri_components(Global_Url, Global_Url_Comps),
@@ -73,7 +73,6 @@ downcast(html_link_v, html_local_link_v, From, To) :-
    obj_field(From, '.href', Orig_Link_Url),
    atom(Orig_Link_Url),
    obj_field(From, www_address, WWW_Address),
-   atom(WWW_Address),
    obj_field(WWW_Address, http_request_url, Base_Url0),
    atom(Base_Url0),
    uri_normalized(Base_Url0, Base_Url),
@@ -86,7 +85,6 @@ downcast(html_link_v, html_global_link_v, From, To) :-
    obj_field(From, '.href', Orig_Link_Url),
    atom(Orig_Link_Url),
    obj_field(From, www_address, WWW_Address),
-   atom(WWW_Address),
    obj_field(WWW_Address, http_request_url, Base_Url0),
    atom(Base_Url0),
    uri_normalized(Base_Url0, _), %Base_Url),
