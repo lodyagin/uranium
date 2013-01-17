@@ -743,11 +743,11 @@ eval_obj_expr_cmn(Obj_Expr / Fields, Weak, Value, list, Ctx) :-
 eval_obj_expr_cmn(Obj_Expr / Field, Weak, Value, Type, Ctx) :-
    !,
    eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type, Ctx),
-   (  eval_obj_field(Type, Value1, Weak, Field, Value, Ctx)
-   -> true
-   ;  Weak == hold
-   -> Value = Value1 / Field
-   ;  fail
+   (   eval_obj_field(Type, Value1, Weak, Field, Value, Ctx)
+   *-> true
+   ;   Weak == hold
+   ->  Value = Value1 / Field
+   ;   fail
    ).
 
 eval_obj_expr_cmn(Obj_Expr // Field, Weak, Value, Type, Ctx) :-
