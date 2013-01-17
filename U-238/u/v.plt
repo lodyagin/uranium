@@ -316,6 +316,10 @@ test(eval_obj_expr9) :-
    assertion(O / [name, surname / http_request_url]
             =^= [Name, Url]).
 
+test(eval_obj_expr10, [Value =@= _]) :-
+   obj_construct(man_v, [], [], Obj),
+   eval_obj_expr(Obj / name // no_such_field123, Value ).
+
 test(obj_construct_with_evals1) :-
 
     obj_construct(citizen_v,
