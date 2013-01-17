@@ -379,6 +379,12 @@ test(db_select2,
            ), List
           ).
 
+test(db_select3,
+     [setup(model_db),
+      db_construct(people, citizen_v, [id, sex, name, age], [2, man, 'Igor', 19])
+     ],
+     [Class == callup_v]) :-
+   db_select(people,  [name, class], ['Igor', Class]).
 
 test(db_select_list1,
      [setup(model_db),
@@ -834,9 +840,9 @@ model_db :-
                      [sex, name, weight], [woman, 'Eva', 64]),
 
         db_construct(people, citizen_v,
-                      [sex, name, surname, country],
+                      [sex, name, surname, country, id],
                       [man, 'Vladimir', 'Mayakovsky',
-                       ['Soviet Union']]).
+                       ['Soviet Union'], 1]).
 
 setup :-
 

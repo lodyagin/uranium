@@ -679,7 +679,8 @@ named_args_unify_int(DB_Key, Option, Des, Field_Names, Values,
    % Field_Names = [db_key|Field_Names1],
    % Values = [DB_Key|Values1],
 
-   obj_construct_int(Local_Class_Id, Field_Names, Option, Values,
+   copy_term(Values, Values_Templ), % do not unify Values in construct, e.g. class
+   obj_construct_int(Local_Class_Id, Field_Names, Option, Values_Templ,
                      Term0),
    (  same_or_descendant(Local_Class_Id, _, db_object_v)
    -> Term = Term0
