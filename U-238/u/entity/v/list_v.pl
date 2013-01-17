@@ -53,6 +53,7 @@
 */
 
 :- use_module(library(error)).
+:- use_module(u(v)).
 
 new_class(list_v, http_result_v,
           [value_list

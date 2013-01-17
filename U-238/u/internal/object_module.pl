@@ -249,7 +249,9 @@ process_typedefs(Module) :-
 % dynamic_import(+Module_From, +Module_To, +Functor, +Arity, :Checking_Pred)
 % is det.
 % Import all predicates with head Functor as dynamic assert
-% with additional checking defined by Checking_Pred(+Term, +Clause)
+% with additional checking defined by Checking_Pred(:Clause)
+
+:- meta_predicate dynamic_import(+, +, +, +, 1).
 
 dynamic_import(Module_From, Module_To, Functor, Arity, Checking_Pred) :-
 
@@ -260,13 +262,16 @@ dynamic_import(Module_From, Module_To, Functor, Arity, Checking_Pred) :-
    ;  true
    ).
 
+% it's a trick to fight a warning
+true(_).
+
 
 %% assert_clause_int(:Clause, +Module_To, :Checking_Pred) is semidet.
 %
-% Assert a new Clause in a Module if Checking_Pred(Clause) succeeds.
+% Assert a new Clause in a Module if Checking_Pred(:Clause) succeeds.
 % Checking_Pred can be just `true'.
 
-:- meta_predicate assert_clause_int(:, +, 0).
+:- meta_predicate assert_clause_int(:, +, 1).
 
 assert_clause_int(Module_From:Clause, Module_To, Checking_Pred) :-
 

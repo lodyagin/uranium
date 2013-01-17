@@ -118,9 +118,9 @@
 :- use_module(u(internal/check_arg)).
 :- use_module(u(internal/decode_arg)).
 :- use_module(u(internal/class_create)).
+:- use_module(u(internal/object_module)).
 :- use_module(library(lists)).
 :- use_module(library(ordsets)).
-:- use_module(u(ur_lists)).
 :- use_module(u(logging)).
 :- use_module(u(util/lambda)).
 
@@ -163,7 +163,7 @@ class_can_downcast(From_Class, To_Class) :-
 class_can_downcast(From_Class, To_Class) :-
    objects:clause(downcast(From_Class, Class1, _, _), _),
    class_can_downcast(Class1, To_Class).
-                     
+
 %% class_create(+Class, +Parent, +Add_Fields)
 %
 % Assert the new Class definition into the objects module

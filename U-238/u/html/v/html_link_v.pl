@@ -29,6 +29,7 @@
 :- module(html_link_v, []).
 
 :- use_module(library(uri)).
+:- use_module(library(xpath)).
 :- use_module(u(v)).
 
 new_class(html_link_v, html_tag_a_v, [text], [www_address, '.href']).

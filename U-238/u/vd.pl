@@ -137,7 +137,7 @@
    $ nearest common keymaster of the classes: a common
    keymaster of the classes which has no another common keymaster
    of the same classes as a descendant
-  
+
   When it puts an object into Uranium database it always performs
   a key conflict check. A key conflict is defined as follows:
 
@@ -146,7 +146,7 @@
    1. There is another object in db which can be unified with
    this object by the non-empty key fields of the nearest common
    keymaster of both classes.
-  
+
   ---++ Key conflicts resolution policy
 
   When the system finds a key conflict it always resolve it
@@ -188,13 +188,6 @@
 :- use_module(u(logging)).
 :- use_module(u(ur_lists)).
 :- use_module(u(ur_terms)).
-
-:- meta_predicate db_iterate(+, +, 1, -).
-:- meta_predicate db_iterate_replace(+, 3, +).
-:- meta_predicate db_iterate_replace(+, 3, +, 1).
-:- meta_predicate db_iterate_replace(+, 3, +, 1, +).
-:- meta_predicate db_search(+, +, 1).
-:- meta_predicate db_put_objects(+, 1, +).
 
 %% db_clear(+DB_Key) is det.
 %
@@ -563,6 +556,8 @@ db_properties_hook(_, _, _).  % a hook should always succeed
 % When Options = [] will raise exception on key duplicates.
 %
 
+:- meta_predicate db_put_objects(+, 1, +).
+
 db_put_objects(DB_Key, Pred, Options) :-
 
    call(Pred, Object),
@@ -674,7 +669,9 @@ filter_on_db_cmn(DB_Key, Weak, Field_Names, Field_Values,
 %% db_search(+DB_In, +DB_Out, :Pred)
 %
 % Copy from DB_In to DB_Out all filtered by Pred
-%
+
+:- meta_predicate db_search(+, +, 1).
+
 db_search(DB_In, DB_Out, Pred) :-
 
    Ctx = context(db_search/3, _),
@@ -832,19 +829,17 @@ db_select_list_int(DB_Key, Functor, Weak, Fields, List, Ctx) :-
            List
           ).
 
+%%	db_iterate(+DB_Key, +Query, -Object) is nondet.
 %
-% DB search
-%
+% On BT return all objects from db DB_Key selected by Query.
+% Query is defined by expr.
+% ==
 % expr ::= expr \/ expr
 % expr ::= expr /\ expr
 % expr ::= ( expr )
 % expr ::= field(Value) | field(+bound) | field(+free) | true
 % expr ::= field(\+ Value)
-%
-
-%
-% On bt return all records selected by Query
-%
+% ==
 
 db_iterate(DB_Key, Query, Object) :-
 
@@ -853,6 +848,13 @@ db_iterate(DB_Key, Query, Object) :-
    check_db_key(DB_Key, Ctx),
 
    db_iterate2(DB_Key, Query, Object, Ctx).
+
+%%	db_iterate(+DB_Key, +Query, :Filter_Pred, -Object) is nondet.
+%
+% The same as db_iterate/3 but additional filter all objects through
+% Filter_Pred. Ignore objects for which Filter_Pred evaluates to false.
+
+:- meta_predicate db_iterate(+, +, 1, -).
 
 db_iterate(DB_Key, Query, Filter_Pred, Object) :-
 
@@ -908,27 +910,45 @@ check_bound_unbound([Value|TV], [Bound|TB], [Unbound|TU]) :-
 
 %% db_iterate_replace(+DB_Key, :Pred, +Query)
 %
-% Call Pred on all records meat the criteria
-% and replace object in DB
+% Call Pred(+Old_Obj, -New_Obj, -Is_Replaced) on all records meet the
+% criteria and replace objects in DB. Is_Replaced is for count records
+% only (Is_Replaced is analized only in db_iterate_replace/5 form). The
+% mode for adding new objects is =overwrite=.
 %
 % For prevent an infinite loop
 % Query must reject all new records!
 %
+
+:- meta_predicate db_iterate_replace(+, 3, +).
 
 db_iterate_replace(DB_Key, Pred, Query) :-
 
   db_iterate_replace2(DB_Key, Pred, Query, true).
 
 
-% Limit succesfull replaces by Lim
-% (it can speed-up the replacing)
+%% db_iterate_replace(+DB_Key, :Pred, +Query, :Filter_Pred)
+%
+% The same as db_iterate_replace/3 but also use Filter_Pred (see
+% db_iterate/4).
+
+:- meta_predicate db_iterate_replace(+, 3, +, 1).
 
 db_iterate_replace(DB_Key, Pred, Query, Filter_Pred) :-
 
   db_iterate_replace(DB_Key, Pred, Query, Filter_Pred, _).
 
-% Limit succesfull replaces by Lim
-% Succesfullnes is defined by the last parameter of Pred
+% it's a trick to fight a warning
+true(_).
+
+%%	db_iterate_replace(DB_Key, Pred, Query, Filter_Pred, Lim)
+%
+% Limit succesfull replaces by Lim.
+% Succesfullnes is defined by the last parameter of Pred (see
+% db_iterate_replace/3). The Lim is for purpose of speed-up the
+% replacing, because all new records will be at the end when using
+% prolog db, and no need to filter new objects in Query.
+
+:- meta_predicate db_iterate_replace(+, 3, +, 1, +).
 
 db_iterate_replace(DB_Key, Pred, Query, Filter_Pred, Lim) :-
 
@@ -938,8 +958,8 @@ db_iterate_replace(DB_Key, Pred, Query, Filter_Pred, Lim) :-
        nb_setval(db_iterate_replace_counter, 0),
        (   db_iterate(DB_Key, Query, Obj_In),
            once(call(Pred, Obj_In, Obj_Out, Is_Succ)),
-           db_erase(Obj_In),
-           db_put_object(DB_Key, overwrite, Obj_Out, _),
+           db_erase(Obj_In), %! do not use db_erase here, use replacing
+           db_put_object(DB_Key, overwrite, Obj_Out, _), %! do not imply overwrite policy
            (  Is_Succ
            -> nb_getval(db_iterate_replace_counter, Cnt),
 	      succ(Cnt, Cnt1),
