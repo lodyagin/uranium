@@ -89,9 +89,12 @@
 
            op(700, xfx, =^=),
            op(700, xfx, ^=),
+           % todo: move to u(vexpr)
+           op(200, fy, @),
 
            (=^=)/2,
-           (^=)/2
+           (^=)/2,
+           (@)/1
            ]).
 
 /** <module> Uranium object system.

@@ -380,10 +380,9 @@ test(db_select2,
           ).
 
 test(db_select3,
-     [setup(model_db),
-      db_construct(people, citizen_v, [id, sex, name, age], [2, man, 'Igor', 19])
-     ],
-     [Class == callup_v]) :-
+     [setup((model_db,
+      db_construct(people, citizen_v, [id, sex, name, age], [2, man, 'Igor', 19]))),
+     Class == callup_v]) :-
    db_select(people,  [name, class], ['Igor', Class]).
 
 test(db_select_list1,
@@ -455,6 +454,11 @@ test(named_args_unify_bug2, [setup(model_db)]) :-
    findall('.',
            named_args_unify(people, _, [], [], _),
            ['.', '.', '.']).
+
+test(eval_obj_expr,
+     [setup(model_db),
+     List == ['Adam', 'Eva', 'Vladimir']]) :-
+   findall(Name, @people / name ^= Name, List).
 
 test(store_and_retrieve1,
     [setup(db_clear(people)),
