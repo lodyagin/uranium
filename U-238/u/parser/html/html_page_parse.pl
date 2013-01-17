@@ -81,7 +81,6 @@ extract_element(Page, Class, Object) :-
             [www_address, root_node],
             [WWW_Address, Page]),
   % TODO move root_node setting into ixpath
-  gtrace,
   obj_downcast(Object1, Object),
   once(( functor(Object, Class, _)
        ; obj_is_descendant(Object, Class)
