@@ -74,9 +74,9 @@ downcast(http_header_v, http_header_content_type_v, From, To) :-
    ->
       atom_codes(Body, Codes),
       phrase(media_type(Type, Subtype, Parameters), Codes),
-      obj_unify(http_header_content_type_v,
+      obj_unify(To,
                 [type, subtype, parameters],
-                [Type, Subtype, Parameters], To)
+                [Type, Subtype, Parameters])
    ;  true
    ).
 
