@@ -93,8 +93,7 @@
            op(200, fy, @),
 
            (=^=)/2,
-           (^=)/2,
-           (@)/1
+           (^=)/2
            ]).
 
 /** <module> Uranium object system.
@@ -135,6 +134,9 @@
 
 :- reexport(u(internal/object_module),
             [reload_all_classes/0]).
+
+:- op(200, fy, @).
+
 
 % This is standard Weak arg values used in this module
 std_weak_arg_values([[throw, throws, strict, s],
