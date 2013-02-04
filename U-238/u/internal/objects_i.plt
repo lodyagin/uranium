@@ -7,7 +7,7 @@
 test(class_fields) :-
 
    class_id(Id, citizen_v), !,
-   
+
    class_fields(_:_, Id, false, false, F1),
    assertion(F1 = [height:_, name:_, sex:_, surname:_, weight:_]),
 
@@ -37,7 +37,7 @@ test(class_fields) :-
    class_fields(_:_, Id, _, _, F9),
    assertion(F9 = [age:_, birthday:_, class:_, country:_,
                    functor:_, height:_, id:_, name:_, sex:_,
-                   surname:_,weight:_]).   
+                   surname:_,weight:_]).
 
 test(list_inheritance_names1) :-
 
@@ -63,13 +63,13 @@ test(obj_unify_int_with_evals) :-
 
    class_primary_id(citizen_v, Class_Id),
    obj_construct(citizen_v, [], [], O),
-   obj_unify_int(Class_Id, 
+   obj_unify_int(Class_Id,
                  [functor, class, birthday], throw,
                  O,
                  [citizen_v, citizen_v, 1994], _),
    obj_field(O, class, Class1),
    assertion(Class1 == citizen_v),
-   
+
    obj_unify_int(Class_Id,
                  [functor, class, sex], throw,
                  O,
@@ -91,13 +91,13 @@ test(obj_unify_int_with_evals_rebased) :-
    obj_construct(citizen_v, [], [], O0),
    obj_rebase((object_v -> db_object_v), O0, O),
    arg(1, O, Class_Id),
-   obj_unify_int(Class_Id, 
+   obj_unify_int(Class_Id,
                  [functor, class, birthday], throw,
                  O,
                  [citizen_v, citizen_v, 1994], _),
    obj_field(O, class, Class1),
    assertion(Class1 == citizen_v),
-   
+
    obj_unify_int(Class_Id,
                  [functor, class, sex], throw,
                  O,
@@ -191,13 +191,13 @@ test(same_class) :-
    assertion(Class2 == man_v),
    \+ same_class(Id2, true, man_v),
    \+ same_class(Id2, true, _),
-   
+
    findall([NR, Class], same_class(Id1, NR, Class), L1),
    findall([NR, Class], same_class(Id3, NR, Class), L3),
 
    assertion(L1 == [[true, man_v]]),
    assertion(L3 == [[false, man_v]]).
-   
+
 test(descendant_class1) :-
 
    obj_construct(callup_v, [], [], Obj1),
@@ -209,10 +209,10 @@ test(descendant_class1) :-
    findall(Class, descendant_class(Id1, true, Class), L1U),
    msort(L1U, L1),
    assertion(L1 = [citizen_v, man_v, object_base_v, object_v]),
-   
+
    \+ descendant_class(Id1, false, man_v),
    \+ descendant_class(Id1, false, _),
-   
+
    descendant_class(Id3, false, man_v),
    findall(Class, descendant_class(Id3, false, Class), L2U),
    msort(L2U, L2),
@@ -222,7 +222,7 @@ test(descendant_class1) :-
 
    \+ descendant_class(Id3, true, man_v),
    \+ descendant_class(Id3, true, _),
-   
+
    findall(p(NR, Class), descendant_class(Id1, NR, Class), PL4),
    findall(p(NR, Class), descendant_class(Id3, NR, Class), PL5),
 
@@ -230,7 +230,7 @@ test(descendant_class1) :-
    maplist(arg(2), PL4, L4U), msort(L4U, L4),
    maplist(arg(1), PL5, BL5U), sort(BL5U, B5),
    maplist(arg(2), PL5, L5U), msort(L5U, L5),
-   
+
    assertion(B4 == [true]),
    assertion(L4 == L1),
    assertion(B5 == [false]),
@@ -267,11 +267,11 @@ test(same_or_descendant1) :-
    findall(Class, same_or_descendant(Id1, true, Class), L1U),
    msort(L1U, L1),
    assertion(L1 = [callup_v, citizen_v, man_v, object_base_v, object_v]),
-   
+
    \+ same_or_descendant(Id1, false, object_base_v),
    \+ same_or_descendant(Id1, false, callup_v),
    \+ same_or_descendant(Id1, false, _),
-   
+
    same_or_descendant(Id3, false, object_base_v),
    same_or_descendant(Id3, false, db_object_v),
    same_or_descendant(Id3, false, tarjan_vertex_v),
@@ -285,7 +285,7 @@ test(same_or_descendant1) :-
    \+ same_or_descendant(Id3, true, callup_v),
    \+ same_or_descendant(Id3, true, man_v),
    \+ same_or_descendant(Id3, true, _),
-   
+
    findall(p(NR, Class), same_or_descendant(Id1, NR, Class), PL4),
    findall(p(NR, Class), same_or_descendant(Id3, NR, Class), PL5),
 
@@ -293,12 +293,12 @@ test(same_or_descendant1) :-
    maplist(arg(2), PL4, L4U), msort(L4U, L4),
    maplist(arg(1), PL5, BL5U), sort(BL5U, B5),
    maplist(arg(2), PL5, L5U), msort(L5U, L5),
-   
+
    assertion(B4 == [true]),
    assertion(L4 == L1),
    assertion(B5 == [false]),
    assertion(L5 == L2).
-   
+
 test(same_or_descendant2_1) :-
    class_primary_id(man_v, Man_Id),
    findall(Desc,
@@ -317,6 +317,10 @@ test(same_or_descendant2_2) :-
            Ancestors),
    assertion(Ancestors = [object_v, object_base_v, man_v]).
 
+test(same_or_descendant2_3) :-
+   Class_id = 1,
+   same_or_descendant(Class_id, Class_id).
+
 objects_i_test_v :-
 
    current_prolog_flag(verbose, Old_Verbose),
@@ -325,6 +329,6 @@ objects_i_test_v :-
    set_prolog_flag(verbose, Old_Verbose),
 
    class_create(objects_i_test_v, object_v, [a, b, c]).
-   
+
 
 :- end_tests(objects_i).
