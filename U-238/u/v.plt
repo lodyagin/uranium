@@ -451,6 +451,27 @@ test(obj_is_descendant2) :-
    obj_rebase((object_v -> db_object_v), Man, Man2),
    obj_is_descendant(Man2, db_object_v).
 
+test(obj_is_descendant3) :-
+	obj_construct(citizen_v, [], [], C),
+	obj_construct(object_v, [], [], M),
+	obj_is_descendant(C, M).
+
+test(obj_same_or_descendant1, [List == [ man_v, object_base_v, object_v]]) :-
+   obj_construct(man_v, [], [], Man),
+   findall(X, obj_same_or_descendant(Man, X), List0),
+   msort(List0, List).
+
+test(obj_same_or_descendant2) :-
+   obj_construct(man_v, [], [], Man),
+   \+ obj_same_or_descendant(Man, db_object_v),
+   obj_rebase((object_v -> db_object_v), Man, Man2),
+   obj_same_or_descendant(Man2, db_object_v).
+
+test(obj_same_or_descendant3) :-
+	obj_construct(citizen_v, [], [], C),
+	obj_same_or_descendant(C, C).
+
+
 test(obj_set_field1, [Surname =@= _]) :-
 
    obj_construct(man_v, [], [], Man),

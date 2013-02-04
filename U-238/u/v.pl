@@ -962,7 +962,13 @@ obj_is_descendant(Descendant, Class) :-
    Ctx = context(obj_is_descendant/2, _),
    check_inst(Descendant, Ctx),
    check_object_arg(Descendant, Ctx, Desc_Class_Id),
-   descendant_class(Desc_Class_Id, _, Class).
+   (  u_object(Class)
+   -> check_inst(Class, Ctx),
+      check_object_arg(Class, Ctx, Class_Id),
+      descendant_class(Desc_Class_Id, Class_Id), !
+   ;  descendant_class(Desc_Class_Id, _, Class)
+   ).
+
 
 
 %% obj_same_or_descendant(+Descendant, ?Class) is nondet.
@@ -977,7 +983,12 @@ obj_same_or_descendant(Descendant, Class) :-
    Ctx = context(obj_same_or_descendant/2, _),
    check_inst(Descendant, Ctx),
    check_object_arg(Descendant, Ctx, Desc_Class_Id),
-   same_or_descendant(Desc_Class_Id, _, Class).
+   (  u_object(Class)
+   -> check_inst(Class, Ctx),
+      check_object_arg(Class, Ctx, Class_Id),
+      same_or_descendant(Desc_Class_Id, Class_Id), !
+   ;  same_or_descendant(Desc_Class_Id, _, Class)
+   ).
 
 
 %% class_fields_new(+Class, -Field_Names)
