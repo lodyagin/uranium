@@ -1,32 +1,36 @@
-%% This file is a part of Uranium, a general-purpose functional test platform.
-%% Copyright (C) 2011  Sergei Lodyagin
-%%
-%% This library is free software; you can redistribute it and/or
-%% modify it under the terms of the GNU Lesser General Public
-%% License as published by the Free Software Foundation; either
-%% version 2.1 of the License, or (at your option) any later version.
-%%
-%% This library is distributed in the hope that it will be useful,
-%% but WITHOUT ANY WARRANTY; without even the implied warranty of
-%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-%% Lesser General Public License for more details.
+% -*- fill-column: 65; -*-
+%
+% This file is a part of Cohors Uranium, a general-purpose functional test platform.
+%
+% Copyright (C) 2011 Sergei Lodyagin
+% Copyright (C) 2013 Cohors LLC
+%
+% This library is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public
+% License as published by the Free Software Foundation; either
+% version 2.1 of the License, or (at your option) any later version.
+%
+% This library is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
 
-%% You should have received a copy of the GNU Lesser General Public
-%% License along with this library; if not, write to the Free Software
-%% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-%%
-%% e-mail: lodyagin@gmail.com
-%% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
-%% -------------------------------------------------------------------------------
-%%
+% You should have received a copy of the GNU Lesser General Public
+% License along with this library; if not, write to the Free Software
+% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+%
+% e-mail: lodyagin@gmail.com
+% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
+% -------------------------------------------------------------------------------
+%
 
 :- module(locales, [query_locale_info/0]).
 
-:- use_module(state/general/html_user_v).
 :- use_module(u(action/find)).
 :- use_module(u(v)).
 :- use_module(u(vd)).
 :- use_module(u(logging)).
+:- use_module(v(http_user_v)).
 
 query_locale_info :-
 
@@ -37,7 +41,7 @@ query_locale_info :-
    db_clear(db_language_v),
    db_clear(db_country_v),
 
-   new_html_user(U1),
+   new_http_user(U1),
    supported_lang_list(Langs),
    (
     member(Lang, Langs),
@@ -61,7 +65,7 @@ query_locale_info :-
       true
    ),
 
-   new_html_user(U2),
+   new_http_user(U2),
    find(msdn, U2, language, [], db_language_v),
    dump_db(db_language_v),
 
@@ -97,7 +101,7 @@ query_locale_info :-
    ),
 
    % add country info
-   new_html_user(U3),
+   new_http_user(U3),
    find(msdn, U3, country, [], db_country_v),
    dump_db(db_country_v),
 

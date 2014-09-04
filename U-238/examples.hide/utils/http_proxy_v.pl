@@ -1,29 +1,29 @@
-%% This file is a part of Uranium, a general-purpose functional test platform.
-%% Copyright (C) 2011  Sergei Lodyagin
-%%
-%% This library is free software; you can redistribute it and/or
-%% modify it under the terms of the GNU Lesser General Public
-%% License as published by the Free Software Foundation; either
-%% version 2.1 of the License, or (at your option) any later version.
-%% 
-%% This library is distributed in the hope that it will be useful,
-%% but WITHOUT ANY WARRANTY; without even the implied warranty of
-%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-%% Lesser General Public License for more details.
+% This file is a part of Uranium, a general-purpose functional test platform.
+% Copyright (C) 2011  Sergei Lodyagin
+%
+% This library is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public
+% License as published by the Free Software Foundation; either
+% version 2.1 of the License, or (at your option) any later version.
+%
+% This library is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
 
-%% You should have received a copy of the GNU Lesser General Public
-%% License along with this library; if not, write to the Free Software
-%% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-%%
-%% e-mail: lodyagin@gmail.com
-%% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
-%% -------------------------------------------------------------------------------
-%%
+% You should have received a copy of the GNU Lesser General Public
+% License along with this library; if not, write to the Free Software
+% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+%
+% e-mail: lodyagin@gmail.com
+% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
+% -------------------------------------------------------------------------------
+%
 
 :- module(http_proxy_v,
           []).
 
-:- use_module(parser/general/dcg_entities).
+:- use_module(u(parser/general/dcg_entities)).
 :- use_module(library(http/dcg_basics)).
 :- use_module(u(ur_lists)).
 
@@ -90,7 +90,7 @@ codes_bytea([92|T], [92, 92, 92, 92|ET]) :- codes_bytea(T, ET), !.
 % will be doubled later by ' PG EscQuoteToDbQ1'
 codes_bytea([39|T], [39|ET]) :- codes_bytea(T, ET), !.
 
-codes_bytea([NP|T], Bytea) :- 
+codes_bytea([NP|T], Bytea) :-
 
    nonvar(NP),
    (between(0, 31, NP); between(127, 255, NP)), !,
@@ -103,18 +103,18 @@ codes_bytea([NP|T], [92|OT]) :-
 
    var(NP),
    phrase(octet(NP), OT, ET),
-   codes_bytea(T, ET), !. 
-   
+   codes_bytea(T, ET), !.
+
 codes_bytea([H|T], [H|ET]) :- codes_bytea(T, ET), !.
 
 number_octet(Number, Octet) :-
 
-   format(codes(S), '~8r', Number), 
-   length(S, N), 
-   Low is N - 3, 
-   High is N - 1, 
-   findall(X, 
-           (between(Low, High, Y), (Y < 0 -> X = 48 ; nth0(Y, S, X))), 
+   format(codes(S), '~8r', Number),
+   length(S, N),
+   Low is N - 3,
+   High is N - 1,
+   findall(X,
+           (between(Low, High, Y), (Y < 0 -> X = 48 ; nth0(Y, S, X))),
            Octet).
 
 
@@ -126,12 +126,12 @@ octet(Number) -->
      length(L, N),
      Low is N - 3,
      High is N - 1,
-     findall(X, 
-             (between(Low, High, Y), (Y < 0 -> X = 48 ; nth0(Y, L, X))), 
+     findall(X,
+             (between(Low, High, Y), (Y < 0 -> X = 48 ; nth0(Y, L, X))),
              [O1, O2, O3]),
      Number is ((O1 - 48) << 3 + (O2 - 48)) << 3 + (O3 - 48)
    }.
-     
+
 
 timestamp_pretty_print(Stream, Value, _) :-
 
@@ -179,7 +179,7 @@ pg_timestamp(TS) -->
    integer(Off_Hours),
 
    { Off_Secs is Off_Hours * 3600,
-   
+
      date_time_stamp(date(Year, Month, Day, Hour, Min, Sec,
                           Off_Secs, -, -),
                      TS)
