@@ -1,5 +1,4 @@
-Uranium (mostly) is a test framework.
-Now it tested with SWI-Prolog only.
+Uranium (mostly) is a test framework written in SWI-Prolog.
 
 Before using Uranium you should define the Uranium path 
 in you .plrc like this:
