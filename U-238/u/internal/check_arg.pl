@@ -61,7 +61,7 @@
 
 :- use_module(library(error)).
 :- use_module(objects_i).
-:- use_module(db_i).
+%:- use_module(db_i).
 
 :- multifile error:has_type/2.
 
