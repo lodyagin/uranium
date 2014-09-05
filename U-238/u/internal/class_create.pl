@@ -306,8 +306,8 @@ assert_copy(Class_Id, Parent_Id) :-
    class_id(Class_Id, Class),
    %class_primary_id(Class, Primary_Id),
 
-   (   objects:clause(copy(Class_Id, Class, From, To),
-                      Body)
+   (   objects:clause(copy(Class_Id, Class, _, _),
+                      _)
    ->
        true % it is already asserted (e.g. by
             % object_module)

@@ -365,7 +365,7 @@ reload_all_classes :-
 
 install_v_portrays :-
 
-   (  clause(portray(X), object_module:_) -> true
+   (  clause(portray(_), object_module:_) -> true
    ;  user:assertz(portray(X) :- object_module:v_portray(X))
    ).
 

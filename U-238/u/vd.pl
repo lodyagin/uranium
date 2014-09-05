@@ -1253,7 +1253,7 @@ db_merge_cmn(DB1_Key, DB2_Key, Key, Ctx) :-
          write_log(['Found', Object2, 'in the second DB'],
                    [logger(db_merge), lf(1)]),
          most_narrowed(Class1, Class2, New_Class), %- need check with rebasing
-         arg1(1, Object2, Class2_Id),
+         arg1(1, Object2, _),
          obj_downcast_int(Object1, New_Class, Final_Obj1),
          obj_downcast_int(Object2, New_Class, Final_Obj2),
 
