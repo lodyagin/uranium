@@ -1,0 +1,2 @@
+:- assertz(file_search_path(u, '/usr/share/uranium/U-238/u')).
+

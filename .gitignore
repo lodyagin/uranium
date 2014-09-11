@@ -1,6 +1,7 @@
 TAGS
 .plrc*
 *~*
+*#*
 *.aux
 *.dvi
 *.log

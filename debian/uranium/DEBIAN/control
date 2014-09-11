@@ -1,0 +1,12 @@
+Package: uranium
+Version: 2.5.0
+Architecture: all
+Maintainer: Sergei Lodyagin <lodyagin@gmail.com>
+Installed-Size: 2598
+Depends: swi-prolog-nox (>= 7.1.21)
+Section: prolog
+Priority: optional
+Homepage: http://uranium-test.sf.net
+Description: The Uranium Test Engine
+ Uranium is a prolog library originally created as
+ a test framework.

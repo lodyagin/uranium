@@ -1,0 +1,15 @@
+Source: uranium
+Section: prolog
+Priority: optional
+Maintainer: Sergei Lodyagin <lodyagin@gmail.com>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.5
+Homepage: http://uranium-test.sf.net
+Vcs-Git: https://github.com/lodyagin/uranium.git
+
+Package: uranium
+Architecture: all
+Depends: swi-prolog-nox (>= 7.1.21), ${misc:Depends}
+Description: The Uranium Test Engine
+ Uranium is a prolog library originally created as
+ a test framework. 
