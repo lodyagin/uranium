@@ -10,4 +10,5 @@ TAGS
 *.pdf
 *.so
 *.toc
+debian/uranium/
 reports/

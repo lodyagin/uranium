@@ -1,6 +1,0 @@
-uranium for Debian
-------------------
-
-This library installs its own version of /usr/lib/swi-prolog/swipl.rc file. 
-
- -- Sergei Lodyagin <lodyagin@gmail.com>  Thu, 11 Sep 2014 11:31:34 +0000
