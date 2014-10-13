@@ -469,7 +469,7 @@ test(obj_same_or_descendant2) :-
 
 test(obj_same_or_descendant3) :-
 	obj_construct(citizen_v, [], [], C),
-	obj_same_or_descendant(C, C).
+	obj_same_or_descendant(C, citizen_v).
 
 
 test(obj_set_field1, [Surname =@= _]) :-

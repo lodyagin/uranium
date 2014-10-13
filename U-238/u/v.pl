@@ -973,7 +973,7 @@ obj_is_descendant(Descendant, Class) :-
 
 %% obj_same_or_descendant(+Descendant, ?Class) is nondet.
 %
-%  True if Descendant = Class or it is a descendant of Class.
+%  True if Descendant is of Class or it is a descendant of Class.
 %  Count rebased classes.
 %
 %  It is semidet if Class is bound.
