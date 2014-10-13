@@ -620,8 +620,8 @@ obj_reinterpret(From, Class_To, To) :-
    (  nonvar(Class_To) -> true ; Det = f ),
 
    functor(From, From_Class, _),
-   (  clause(objects:reinterpret(From_Class, To_Class, _, _), _),
-      class_primary_id(To_Class, To_Class_Id),
+   (  clause(objects:reinterpret(From_Class, Class_To, _, _), _),
+      class_primary_id(Class_To, To_Class_Id),
       obj_downcast_int(From_Class_Id, To_Class_Id, reinterpret,
                        From, To, Ctx)
    ;

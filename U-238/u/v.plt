@@ -87,6 +87,16 @@ test(class_create_key_inheritance,
 %   obj_rebase((object_v -> callup_v), V, _),
 %   findall(X, class_descendant(callup_v, X), List).
 
+test(obj_reinterpret1, L == [man_v]) :-
+  obj_construct(man_v, [], [], M),
+  findall(C, obj_reinterpret(M, C, _), L1),
+  sort(L1, L).
+
+test(obj_reinterpret2, L == [man_v, passport_v]) :-
+  obj_construct(man_v, [name, surname, sex], ['Sergei', 'Lodyagin', max], M),
+  findall(C, obj_reinterpret(M, C, _), L1),
+  sort(L1, L).
+
 test(class_name1) :-
 
    class_name(man_v).
