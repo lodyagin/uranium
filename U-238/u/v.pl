@@ -739,10 +739,12 @@ eval_obj_expr_cmn(_ / [], _, [], [], _) :- !.
 eval_obj_expr_cmn(Obj_Expr / Fields, Weak, Value, list, Ctx) :-
    Fields = [_|_], !,
    eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type1, Ctx),
-   ( memberchk(Type1, [object, db]) -> true
-   ; throw(error(invalid_object(Value1, ''), Ctx))
-   ),
-   eval_list_obj_expr(Fields, Value1, Weak, [], Value, Ctx).
+   (   Type1 == object
+   ->  eval_list_obj_expr(Fields, Value1, Weak, [], Value, Ctx)
+   ;   Type1 == db
+   ->  eval_list_db_expr(Fields, Value1, Weak, Value, Ctx)
+   ;   throw(error(invalid_object(Value1, ''), Ctx))
+   ).
 
 % NB with Weak = weak '/' is the same as '//'
 eval_obj_expr_cmn(Obj_Expr / Field, Weak, Value, Type, Ctx) :-
@@ -823,7 +825,8 @@ eval_obj_field(variable, Value, throw, _, _, Ctx) :-
 eval_obj_field(variable, _, fail, _, _, _) :-
    !, fail.
 
-% It is always called for Value / List
+% eval_list_obj_expr(+FieldsList, +Object, +Weak, -ValList0, -ValList1, +Ctx)
+% It is called for Object / List
 eval_list_obj_expr([], _, _, Value, Value, _).
 eval_list_obj_expr([Expr_Tail|Tail], Obj, Weak, Value0,
                    [V|Value1], Ctx) :-
@@ -838,6 +841,10 @@ eval_list_build_obj_expr(Obj, Part1 / Field, Expr1 / Field) :-
 eval_list_build_obj_expr(Obj, Part1 // Field, Expr1 // Field) :-
    eval_list_build_obj_expr(Obj, Part1, Expr1), !.
 
+% eval_list_obj_expr(+FieldsList, +DB, +Weak, -ValList, +Ctx)
+% It is called for @DB_Key / List
+eval_list_db_expr(FieldsList, @(DB_Key), _, ValList1, _) :-
+   db_select(DB_Key, FieldsList, ValList1).
 
 %% class_descendant(+Class, ?Descendant) is nondet.
 %
