@@ -713,7 +713,7 @@ obj_sort_parents(Obj0, Class_Order, Obj) :-
 % ==
 % expr ::= obj_expr | Value | Variable
 % obj_expr ::= obj_expr / Field | obj_expr // Field | obj_expr / [Fields] | element
-% element ::= (Object | list)
+% element ::= (Object | list | @DB_Key)
 % list ::= [obj_expr, ...] | []
 % ==
 
@@ -739,7 +739,7 @@ eval_obj_expr_cmn(_ / [], _, [], [], _) :- !.
 eval_obj_expr_cmn(Obj_Expr / Fields, Weak, Value, list, Ctx) :-
    Fields = [_|_], !,
    eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type1, Ctx),
-   ( Type1 == object -> true
+   ( memberchk(Type1, [object, db]) -> true
    ; throw(error(invalid_object(Value1, ''), Ctx))
    ),
    eval_list_obj_expr(Fields, Value1, Weak, [], Value, Ctx).
