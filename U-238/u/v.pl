@@ -1294,19 +1294,23 @@ obj_copy_int(Class_Id, From, To) :-
    ;  print_message(warning, undef_operation(copy, Class_Id))
    ).
 
-
 A =^= B :-
-
    Ctx = context((=^=)/2, _),
-   eval_obj_expr_cmn(A, throw, A1, _, Ctx),
-   eval_obj_expr_cmn(B, throw, B1, _, Ctx),
+   eval_obj_expr_both_sides(A, B, A1, B1, Ctx),
    A1 =@= B1.
 
 A ^= B :-
-
    Ctx = context((^=)/2, _),
-   eval_obj_expr_cmn(A, throw, A1, _, Ctx),
-   eval_obj_expr_cmn(B, throw, B1, _, Ctx),
+   eval_obj_expr_both_sides(A, B, A1, B1, Ctx),
    A1 = B1.
+
+eval_obj_expr_both_sides(A, B, A1, B1, Ctx) :-
+   eval_obj_expr_cmn(A, throw, A1, _, Ctx),
+   (  % prevent eval_obj_expr_cmn hangup when B is [...| Tail ] (incomplete)
+      ( A1 = [] ; A1 = [_|_] )
+   -> length(A1, AL), length(B, AL)
+   ;  true
+   ),
+   eval_obj_expr_cmn(B, throw, B1, _, Ctx).
 
 :- initialization clear_decode_arg.
