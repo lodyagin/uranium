@@ -54,6 +54,8 @@
            error:has_type/2
            ]).
 
+:- reexport(u(internal/db_i), [db_key_is_valid/1]).
+
 /** <module> Check arguments
 
   It is like library(error) of SWI-Prolog but also shows context.
