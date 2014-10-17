@@ -58,11 +58,16 @@ no_recurring_decimal(R, Pow2, Pow5, Cnt) :-
     
 
 write_fixed(Fix, Max_Digits) :-
+    Ctx = context(write_fixed/2, _),
     current_output(Output),
-    write_fixed(Output, Fix, Max_Digits).
+    write_fixed_cmn(Output, Fix, Max_Digits, Ctx).
 
 % rdiv case
 write_fixed(Stream, Fix, Max_Digits) :-
+    Ctx = context(write_fixed/3, _),
+    write_fixed_cmn(Stream, Fix, Max_Digits, Ctx).
+    
+write_fixed_cmn(Stream, Fix, Max_Digits, _) :-
     functor(Fix, rdiv, 2),
     (no_recurring_decimal(Fix, _, _, Cnt), !;
      % a case with (9) , like 0.999999...
@@ -71,9 +76,12 @@ write_fixed(Stream, Fix, Max_Digits) :-
     format(Stream, Format, Fix).
     
 %integer case
-write_fixed(Stream, Fix, _) :-
-    integer(Fix),
+write_fixed_cmn(Stream, Fix, _, _) :-
+    integer(Fix), !,
     format(Stream, "~d", Fix).
+
+write_fixed_cmn(_, Fix, _, Ctx) :-
+    throw(error(type_error(rational, Fix), Ctx)).
 
 test_write_fixed(N, From, To) :-
     From < To,
