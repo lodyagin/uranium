@@ -52,8 +52,8 @@
 
            db_put_object/2,  % +DB_Key, +Object
            db_put_object/3,  % +DB_Key, +Object0, -Object
-           db_put_object/4,  % +DB_Key,+Options,+Object0,-Object
-           db_put_object/5,  % +DB_Key,+Options,+Object0,-Object,
+           db_put_object/4,  % +DB_Key,+Option,+Object0,-Object
+           db_put_object/5,  % +DB_Key,+Option,+Object0,-Object,
                              % -Replaced
 
            db_recorda/2,     % +DB_Key, +Object
