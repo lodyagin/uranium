@@ -1307,7 +1307,7 @@ A ^= B :-
 eval_obj_expr_both_sides(A, B, A1, B1, Ctx) :-
    eval_obj_expr_cmn(A, throw, A1, _, Ctx),
    (  % prevent eval_obj_expr_cmn hangup when B is [...| Tail ] (incomplete)
-      ( A1 = [] ; A1 = [_|_] )
+      nonvar(A1), ( A1 = [] ; A1 = [_|_] )
    -> length(A1, AL), length(B, AL)
    ;  true
    ),
