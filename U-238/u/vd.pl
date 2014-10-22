@@ -58,13 +58,13 @@
 
            db_recorda/2,     % +DB_Key, +Object
            db_recorda/3,     % +DB_Key, +Object0, -Object
-           db_recorda/4,     % +DB_Key,+Options,+Object0,-Object
-           db_recorda/5,     % +DB_Key,+Options,+Object0,-Object,
+           db_recorda/4,     % +DB_Key,+Option,+Object0,-Object
+           db_recorda/5,     % +DB_Key,+Option,+Object0,-Object,
                              % -Replaced
 
            db_put_objects/3, % +DB_Key, :Pred, +Options
 
-	   db_recorded/2,    % +DB_Key, ?Object
+           db_recorded/2,    % +DB_Key, ?Object
 %           db_rewrite/5,     % +DB_Key, ?Functor, +Fields,
                              % @Old_Vals, +New_Vals
 
