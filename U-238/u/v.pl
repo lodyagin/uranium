@@ -711,7 +711,7 @@ obj_sort_parents(Obj0, Class_Order, Obj) :-
 % Calculate expressions in an operator form
 %
 % ==
-% expr ::= obj_expr | Value | Variable
+% expr ::= obj_expr | db_expr | Value | Variable
 % obj_expr ::= obj_expr / Field | obj_expr // Field | obj_expr / [Fields] | element
 % element ::= (Object | list | @DB_Key)
 % list ::= [obj_expr, ...] | []
@@ -1034,6 +1034,7 @@ obj_pretty_print(Object) :-
    Ctx = context(obj_pretty_print/1, _),
    obj_pretty_print_cmn([lf(1)], Object, Ctx).
 
+% Additional option available: hide_field(FieldName)
 obj_pretty_print(Options, Object) :-
 
    Ctx = context(obj_pretty_print/2, _),
