@@ -64,23 +64,22 @@ class_fields :-
 
    class_graph(Graph),
    top_sort(Graph, Order),
-   (  member(Class, Order),
-      class_fields(Class),
+   (  member(Class_Id, Order),
+      class_fields(Class_Id),
       fail ; true ).
 
-class_fields(Class) :-
-
-   format('~a:\t', Class),
-   class_fields2(Class),
+class_fields(Class_Id) :-
+   class_id(Class_Id, Class),
+   format('~a[~d]:\t', [Class, Class_Id]),
+   class_fields2(Class_Id),
    nl, nl.
 
-class_fields2(object_base_v) :- !.
+class_fields2(0) :- !.
 
-class_fields2(Class) :-
-
-   class_parent(Class, Parent),
-   class_fields2(Parent),
-   class_fields_new(Class, Fields),
+class_fields2(Class_Id) :-
+   objects:parent_(Class_Id, Parent_Id),
+   class_fields2(Parent_Id),
+   class_new_fields(Class_Id, Fields),
    maplist(format('~a|'), Fields),
    write('|').
 
