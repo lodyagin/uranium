@@ -33,9 +33,10 @@
            class_fields/0,
            class_graph/3,    % @Only_Class, ?Is_Primary,
                              % -Class_Graph
-           class_path/4      % ?From_Class-?From_Id,
-                             % ?To_Class-?To_Id,
+           class_path/4,     % ?From, ?To,
                              % ?Is_Primary, -Path
+           class_path/5      % ?From, ?To,
+                             % ?Is_Primary, Path0, Path
           ]).
 
 :- use_module(u(v)).
@@ -107,16 +108,33 @@ class_graph(Class, Is_Primary, Class_Graph) :-
          ), Edges),
    vertices_edges_to_ugraph([], Edges, Class_Graph).
 
-% class_path(?From_Class-?From_Id, ?To_Class-?To_Id, ?Is_Primary, -Path)
+% class_path(?From, ?To, ?Is_Primary, -Path)
 % is undet.
 %
-% @param Path inheritance From_Class To_Class if any.
+% @param Path inheritance From class To class if any. Both
+% From and To can be defined as class id, class name or a
+% pair of both. The result format (ids/names/pairs)
+% depends on the arguments.
 % @param Is_Primary {true,false,_} does consider only
 % primary (not rebased) classes.
 %
 % @see list_inheritance/2, list_inheritance_names/2
+class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary, Path) :-
+   !, class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary, [], Path).
+
+class_path(From0, To0, Is_Primary, Path) :-
+   class_path_unify_arg(From0, From, From_Mode),
+   class_path_unify_arg(To0, To, To_Mode),
+   class_path(From, To, Is_Primary, Path0),
+   class_path_extract_list(From_Mode, To_Mode, Path0, Path).
+   
+% class_path(?From_Class-?From_Id, ?To_Class-?To_Id,
+% ?Is_Primary, Path0, Path) is undet.
+%
+% A diff-list version.
+% @see class_path/4.
 class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary,
-           Path) :-
+           Path0, Path) :-
    !,
    Ctx = context(class_path/4, _),
    (  nonvar(From_Class)
@@ -131,14 +149,9 @@ class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary,
    !,
    class_id(From_Id, From_Class),
    class_id(To_Id, To_Class),
-   class_path_int(From_Class-From_Id, To_Class-To_Id, Is_Primary0, Is_Primary, Path).
+   class_path_int(From_Class-From_Id, To_Class-To_Id,
+                  Is_Primary0, Is_Primary, Path0, Path).
 
-class_path(From0, To0, Is_Primary, Path) :-
-   class_path_unify_arg(From0, From, From_Mode),
-   class_path_unify_arg(To0, To, To_Mode),
-   class_path(From, To, Is_Primary, Path0),
-   class_path_extract_list(From_Mode, To_Mode, Path0, Path).
-   
 class_path_unify_arg(Arg, Arg, _) :- var(Arg), !.
 class_path_unify_arg(Arg0, _-Arg0, id) :- integer(Arg0), !.
 class_path_unify_arg(Arg0, Arg0-_, name) :- atom(Arg0), !.
@@ -157,18 +170,21 @@ logic_accumulator(False, L0, L1, L) :-
    -> L  = L1
    ;  L  = False ).
 
-% class_path_int(+From_Id, +To_Id, +Is_Primary0, -Is_Primary, -Path) is undet.
-class_path_int(Class-Id, Class-Id, Is_Primary0, Is_Primary, [Class-Id]) :-
+% class_path_int(+From_Id, +To_Id, +Is_Primary0,
+% -Is_Primary, Path0, Path) is undet.
+class_path_int(Class-Id, Class-Id, Is_Primary0,
+               Is_Primary, Path0, [Class-Id|Path0]) :-
    objects:class_id(Id, Is_Primary1, Class),
    logic_accumulator(false, Is_Primary1, Is_Primary0, Is_Primary).
 
 class_path_int(From_Class-From_Id, To_Class-To_Id,
                Is_Primary0, Is_Primary,
-               [From_Class-From_Id|Path0]) :-
+               Path0, [From_Class-From_Id|Path1]) :-
    objects:class_id(Id, Is_Primary1, Class),
    logic_accumulator(false, Is_Primary1, Is_Primary0, Is_Primary2),
    objects:parent_(Id, From_Id),
-   class_path_int(Class-Id, To_Class-To_Id, Is_Primary2, Is_Primary, Path0).
+   class_path_int(Class-Id, To_Class-To_Id, Is_Primary2,
+                  Is_Primary, Path0, Path1).
 
 class_fields :-
    class_graph(_, true, Graph),
