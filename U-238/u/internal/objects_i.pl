@@ -45,10 +45,11 @@
            get_keymaster/2,     % +Class_Id, -Keymaster_Id
            is_rebased_class/1,  % +Class_Id
            no_rebased_class/2,  % ?Class_Id, ?No_Rebased
-           list_inheritance/2,
-           list_inheritance/3,
+           list_inheritance/2,       % +Class_Id, -List
+           list_inheritance/3,       % +From_Id, +To_Id, -List
+           list_inheritance/4,       % +From_Id, +To_Id, List0, List
            list_inheritance_names/2, % +Class_Id, -List
-           list_inheritance_names/3,
+           list_inheritance_names/3, % +From_Id, +To_Id, -List
            nearest_common_keymaster_int/3, % +Id1, +Id2, -Keymaster_Id
            obj_class_id/2,
            obj_construct_int/5,
@@ -193,7 +194,7 @@ common_parent(Class1_Id, Class2_Id, Cmn_Parent_Id) :-
    common_head_rev(List1, List2, [Cmn_Parent_Id|_]).
 
 
-%% list_inheritance(+Class_Id, -List)
+%% list_inheritance(+Class_Id, -List) is det.
 %
 % Represent inheritance as [class_id|...]
 % e.g. list_inheritance(1, [0, 1]).
@@ -205,7 +206,7 @@ list_inheritance(Class_Id, List) :-
    list_inheritance(0, Class_Id, [], List).
 
 
-%% list_inheritance(+From_Id, +To_Id, -List)
+%% list_inheritance(+From_Id, +To_Id, -List) is det.
 %
 %  It is like list_inheritance/2 but return only [From_Id
 %  .. To_Id] part. I.e. list_inheritance(Class_Id, List)
@@ -214,34 +215,28 @@ list_inheritance(Class_Id, List) :-
 % @see list_inheritance/2, class_path/4
 
 list_inheritance(From_Id, To_Id, List) :-
-
    list_inheritance(From_Id, To_Id, [], List).
 
-
+%% list_inheritance(+From_Id, +To_Id, List0, List) is det.
+%
+% A diff-list version.
 list_inheritance(Id, Id, List, [Id|List]) :- !.
-
 list_inheritance(From_Id, To_Id, List0, List) :-
-
    objects:parent_(To_Id, Parent_Id),
    list_inheritance(From_Id, Parent_Id, [To_Id|List0], List).
-
 
 %% list_inheritance_names(+Class_Id, -List)
 %
 % The same as list_inheritance/2 but return a list of class names.
 % @see class_path/4
-
 list_inheritance_names(Class_Id, List) :-
-
    list_inheritance(0, Class_Id, [], Id_List),
    maplist(class_id, Id_List, List).
 
+%% list_inheritance_names(+From_Class_Id, +To_Class_Id, -List)
 list_inheritance_names(From_Id, To_Id, List) :-
-
    list_inheritance(From_Id, To_Id, [], Id_List),
    maplist(class_id, Id_List, List).
-
-
 
 % fields_names_types(?Fields_Def, ?Names, ?Types)
 
