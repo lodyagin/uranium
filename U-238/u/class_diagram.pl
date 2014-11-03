@@ -125,17 +125,31 @@ class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary,
    (  nonvar(To_Class)
    -> check_class_arg(To_Class, Ctx)
    ;  true ),
+   (  nonvar(From_Id) -> must_be(nonneg, From_Id); true ),
+   (  nonvar(To_Id) -> must_be(nonneg, To_Id); true ),
    (  Is_Primary == true -> Is_Primary0 = true ; true ),
    !,
    class_id(From_Id, From_Class),
    class_id(To_Id, To_Class),
    class_path_int(From_Class-From_Id, To_Class-To_Id, Is_Primary0, Is_Primary, Path).
 
-class_path(From_Class, To_Class, Is_Primary, Path) :-
-   class_path(From_Class-_, To_Class-_, Is_Primary,
-              Path0),
-   findall(Class, member(Class-_, Path0), Path).
+class_path(From0, To0, Is_Primary, Path) :-
+   class_path_unify_arg(From0, From, From_Mode),
+   class_path_unify_arg(To0, To, To_Mode),
+   class_path(From, To, Is_Primary, Path0),
+   class_path_extract_list(From_Mode, To_Mode, Path0, Path).
    
+class_path_unify_arg(Arg, Arg, _) :- var(Arg), !.
+class_path_unify_arg(Arg0, _-Arg0, id) :- integer(Arg0), !.
+class_path_unify_arg(Arg0, Arg0-_, name) :- atom(Arg0), !.
+class_path_unify_arg(C0-I0, C0-I0, both).
+
+class_path_extract_list(id, id, List0, List) :- !,
+  findall(Id, member(_-Id, List0), List).
+class_path_extract_list(name, name, List0, List) :- !,
+  findall(Class, member(Class-_, List0), List).
+class_path_extract_list(_, _, List, List).
+
 % logic_accumulator(+False, +L0, ?L1, ?L).
 %
 logic_accumulator(False, L0, L1, L) :-
@@ -155,7 +169,7 @@ class_path_int(From_Class-From_Id, To_Class-To_Id,
    logic_accumulator(false, Is_Primary1, Is_Primary0, Is_Primary2),
    objects:parent_(Id, From_Id),
    class_path_int(Class-Id, To_Class-To_Id, Is_Primary2, Is_Primary, Path0).
-   
+
 class_fields :-
    class_graph(_, true, Graph),
    top_sort(Graph, Order),
