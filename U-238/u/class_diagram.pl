@@ -113,6 +113,8 @@ class_graph(Class, Is_Primary, Class_Graph) :-
 % @param Path inheritance From_Class To_Class if any.
 % @param Is_Primary {true,false,_} does consider only
 % primary (not rebased) classes.
+%
+% @see list_inheritance/2, list_inheritance_names/2
 class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary,
            Path) :-
    !,

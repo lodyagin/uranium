@@ -211,7 +211,7 @@ list_inheritance(Class_Id, List) :-
 %  .. To_Id] part. I.e. list_inheritance(Class_Id, List)
 %  === list_inheritance(0, Class_Id, List).
 %
-% @see list_inheritance/2
+% @see list_inheritance/2, class_path/4
 
 list_inheritance(From_Id, To_Id, List) :-
 
@@ -229,6 +229,7 @@ list_inheritance(From_Id, To_Id, List0, List) :-
 %% list_inheritance_names(+Class_Id, -List)
 %
 % The same as list_inheritance/2 but return a list of class names.
+% @see class_path/4
 
 list_inheritance_names(Class_Id, List) :-
 
