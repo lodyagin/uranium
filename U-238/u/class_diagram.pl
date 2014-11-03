@@ -35,8 +35,9 @@
                              % -Class_Graph
            class_path/4,     % ?From, ?To,
                              % ?Is_Primary, -Path
-           class_path/5      % ?From, ?To,
+           class_path/5,     % ?From, ?To,
                              % ?Is_Primary, Path0, Path
+           class_path_extract_list/3 %Mode, +List0, -List
           ]).
 
 :- use_module(u(v)).
@@ -162,6 +163,10 @@ class_path_extract_list(id, id, List0, List) :- !,
 class_path_extract_list(name, name, List0, List) :- !,
   findall(Class, member(Class-_, List0), List).
 class_path_extract_list(_, _, List, List).
+
+% class_path_extract_list(Mode, +List0, -List) is det.
+class_path_extract_list(Mode, List0, List) :-
+  class_path_extract_list(Mode, Mode, List0, List).
 
 % logic_accumulator(+False, +L0, ?L1, ?L).
 %
