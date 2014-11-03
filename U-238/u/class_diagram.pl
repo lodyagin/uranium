@@ -31,12 +31,17 @@
            class_diagram/1,  % +Options
            class_diagram/2,  % +Stream, +Options
            class_fields/0,
-           class_graph/3     % @Only_Class, ?Is_Primary, -Class_Graph
+           class_graph/3,    % @Only_Class, ?Is_Primary,
+                             % -Class_Graph
+           class_path/4      % ?From_Class-?From_Id,
+                             % ?To_Class-?To_Id,
+                             % ?Is_Primary, -Path
           ]).
 
 :- use_module(u(v)).
 :- use_module(u(ur_option)).
 :- use_module(u(internal/objects_i)).
+:- use_module(u(internal/check_arg)).
 :- use_module(library(ugraphs)).
 
 :- dynamic fields/3. %Name, Class, Prefix_Class
@@ -102,6 +107,46 @@ class_graph(Class, Is_Primary, Class_Graph) :-
          ), Edges),
    vertices_edges_to_ugraph([], Edges, Class_Graph).
 
+% class_path(?From_Class-?From_Id, ?To_Class-?To_Id, ?Is_Primary, -Path)
+% is undet.
+%
+% @param Path inheritance From_Class To_Class if any.
+% @param Is_Primary {true,false,_} does consider only
+% primary (not rebased) classes.
+class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary, Path) :-
+   Ctx = context(class_path/4, _),
+   (  nonvar(From_Class)
+   -> check_class_arg(From_Class, Ctx)
+   ;  true ),
+   (  nonvar(To_Class)
+   -> check_class_arg(To_Class, Ctx)
+   ;  true ),
+   (  Is_Primary == true -> Is_Primary0 = true ; true ),
+   !,
+   class_id(From_Id, From_Class),
+   class_id(To_Id, To_Class),
+   class_path_int(From_Class-From_Id, To_Class-To_Id, Is_Primary0, Is_Primary, Path).
+
+% logic_accumulator(+False, +L0, ?L1, ?L).
+%
+logic_accumulator(False, L0, L1, L) :-
+   (  L0 = L1
+   -> L  = L1
+   ;  L  = False ).
+
+% class_path_int(+From_Id, +To_Id, +Is_Primary0, -Is_Primary, -Path) is undet.
+class_path_int(Class-Id, Class-Id, Is_Primary0, Is_Primary, [Class-Id]) :-
+   objects:class_id(Id, Is_Primary1, Class),
+   logic_accumulator(false, Is_Primary1, Is_Primary0, Is_Primary).
+
+class_path_int(From_Class-From_Id, To_Class-To_Id,
+               Is_Primary0, Is_Primary,
+               [From_Class-From_Id|Path0]) :-
+   objects:class_id(Id, Is_Primary1, Class),
+   logic_accumulator(false, Is_Primary1, Is_Primary0, Is_Primary2),
+   objects:parent_(Id, From_Id),
+   class_path_int(Class-Id, To_Class-To_Id, Is_Primary2, Is_Primary, Path0).
+   
 class_fields :-
    class_graph(_, true, Graph),
    top_sort(Graph, Order),
