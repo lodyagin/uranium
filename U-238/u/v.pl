@@ -124,6 +124,7 @@
 :- use_module(library(lists)).
 :- use_module(library(ordsets)).
 :- use_module(u(logging)).
+:- use_module(u(class_diagram)).
 :- use_module(u(util/lambda)).
 
 :- reexport(u(internal/objects_i),
@@ -460,7 +461,13 @@ obj_downcast(From, To_Class, To) :-
    ->
       To = From
    ;
-      class_primary_id(To_Class, To_Class_Id),
+      % Get the path (From_Class, To_Class]
+      class_path(From_Class-_, To_Class-_, true, [From_Class-_|Path_End]),
+      % Get the path [object_base_v..From_Class] + (From_Class, To_Class]
+      class_path(_-0, _-From_Class_Id, _, Path_End, Path1), !,
+      class_path_extract_list(name, Path1, Path2),
+      reverse(Path2, Path),
+      class_rebase_int(Path, [To_Class_Id|_], _, Ctx),
       obj_downcast_int(From_Class_Id, To_Class_Id, downcast,
                        From, To, Ctx)
    ).
@@ -947,15 +954,11 @@ class_parent(Class, Parent) :-
 % ==
 
 class_parents(Class, Parents) :-
-
    Ctx = context(class_parents/2, _),
    check_inst(Class, Ctx),
-   check_existing_class_arg(Class, Ctx, Class_Id),
-
-   list_inheritance(Class_Id, Id_List_Rev),
-   reverse(Id_List_Rev, Id_List),
-   maplist(class_id, Id_List, Parents).
-
+   check_existing_class_arg(Class, Ctx),
+   class_path(object_base_v, Class, true, Parents0), !,
+   reverse(Parents0, Parents).
 
 %% obj_is_descendant(+Descendant, ?Class) is nondet.
 %
