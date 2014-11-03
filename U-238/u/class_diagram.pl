@@ -1,3 +1,5 @@
+% -*- fill-column: 58; -*-
+%
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
 %
@@ -26,37 +28,56 @@
 :- module(class_diagram,
           [all_fields/0,
            class_diagram/0,
+           class_diagram/1,
+           class_diagram/2,
            class_fields/0
           ]).
 
 :- use_module(u(v)).
+:- use_module(u(ur_option)).
 :- use_module(u(internal/objects_i)).
 :- use_module(library(ugraphs)).
 
 :- dynamic fields/3. %Name, Class, Prefix_Class
 
 class_diagram :-
+   class_diagram([]).
 
-   class_graph(Graph),
-   top_sort(Graph, Order),
-   (  member(Parent_Id, Order),
-      class_id(Parent_Id, Parent),
-      format('~a[~d] ->\t', [Parent, Parent_Id]),
-      (  objects:parent_(Class_Id, Parent_Id),
-         class_id(Class_Id, Class),
-         class_new_fields(Class_Id, New_Fields),
-         format('~a[~d] (+~w)\t', [Class, Class_Id, New_Fields]),
-         fail ; true ),
-      nl,
+class_diagram(Options) :-
+   current_output(Out),
+   class_diagram(Out, Options).
+
+class_diagram(Stream, Options) :-
+   options_object(class_diagram, Options, Opt),
+   obj_field(Opt, is_primary, is_primary(Is_Primary)), !,
+   (  class_graph(Is_Primary, Graph),
+      format(Stream, 'is_primary(~a):\n', [Is_Primary]),
+      top_sort(Graph, Order),
+      (  member(Parent_Id, Order),
+         class_id(Parent_Id, Parent),
+         format(Stream, '~a[~d] ->\t', [Parent, Parent_Id]),
+         (  memberchk(Parent_Id - Children_Ids, Graph),
+            member(Class_Id, Children_Ids),
+            class_id(Class_Id, Class),
+            class_new_fields(Class_Id, New_Fields),
+            format(Stream, '~a[~d] (+~w)\t', [Class, Class_Id, New_Fields]),
+            fail ; true ),
+         nl,
+         fail ; true
+      ),
       fail ; true
    ).
 
-class_graph(Class_Graph) :-
-   findall(Parent_Id - Class_Id,
-           (objects:parent_(Class_Id, Parent_Id),
-            nonvar(Parent_Id)),
-           Edges
-          ),
+% class_graph(?Is_Primary, -Class_Graph) is undet.
+% Is_Primary is {true, false} --> it is det.  In other
+% case return graphs for different values of Is_Primary.
+class_graph(Is_Primary, Class_Graph) :-
+   bagof(Parent_Id - Class_Id,
+         Class^(objects:parent_(Class_Id, Parent_Id),
+          nonvar(Parent_Id),
+          objects:class_id(Class_Id, Is_Primary, Class)
+         ),
+         Edges),
    vertices_edges_to_ugraph([], Edges, Class_Graph).
 
 

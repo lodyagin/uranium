@@ -5,6 +5,8 @@
 
 setup_options :-
 
+   ur_options(class_diagram:class_diagram,
+              [[option(is_primary/1), default(is_primary(_))]]),
    ur_options(object_v:nonneg_set_gen,
               [[option(range/2), default(range(1, 100000))],
                [meta_option(generator/1),
