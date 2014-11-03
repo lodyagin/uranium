@@ -39,27 +39,22 @@ class_diagram :-
 
    class_graph(Graph),
    top_sort(Graph, Order),
-   (  member(Parent, Order),
-      format('~a ->\t', Parent),
-      class_primary_id(Parent, Parent_Id),
+   (  member(Parent_Id, Order),
+      class_id(Parent_Id, Parent),
+      format('~a[~d] ->\t', [Parent, Parent_Id]),
       (  objects:parent_(Class_Id, Parent_Id),
          class_id(Class_Id, Class),
          class_new_fields(Class_Id, New_Fields),
-         format('~a (+~w)\t', [Class, New_Fields]),
+         format('~a[~d] (+~w)\t', [Class, Class_Id, New_Fields]),
          fail ; true ),
       nl,
       fail ; true
    ).
 
 class_graph(Class_Graph) :-
-
-   findall(Parent - Class,
-
+   findall(Parent_Id - Class_Id,
            (objects:parent_(Class_Id, Parent_Id),
-            nonvar(Parent_Id),
-            class_id(Class_Id, Class),
-            class_id(Parent_Id, Parent)),
-
+            nonvar(Parent_Id)),
            Edges
           ),
    vertices_edges_to_ugraph([], Edges, Class_Graph).
