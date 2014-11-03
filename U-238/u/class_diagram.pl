@@ -113,7 +113,9 @@ class_graph(Class, Is_Primary, Class_Graph) :-
 % @param Path inheritance From_Class To_Class if any.
 % @param Is_Primary {true,false,_} does consider only
 % primary (not rebased) classes.
-class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary, Path) :-
+class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary,
+           Path) :-
+   !,
    Ctx = context(class_path/4, _),
    (  nonvar(From_Class)
    -> check_class_arg(From_Class, Ctx)
@@ -127,6 +129,11 @@ class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary, Path) :-
    class_id(To_Id, To_Class),
    class_path_int(From_Class-From_Id, To_Class-To_Id, Is_Primary0, Is_Primary, Path).
 
+class_path(From_Class, To_Class, Is_Primary, Path) :-
+   class_path(From_Class-_, To_Class-_, Is_Primary,
+              Path0),
+   findall(Class, member(Class-_, Path0), Path).
+   
 % logic_accumulator(+False, +L0, ?L1, ?L).
 %
 logic_accumulator(False, L0, L1, L) :-
