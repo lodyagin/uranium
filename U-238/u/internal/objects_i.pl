@@ -36,7 +36,7 @@
 
            class_id/2,          % ?Class_Id, ?Class_Name
            class_new_fields/2,  % +Class_Id, -Fields
-           class_primary_id/2,
+           class_primary_id/2,  % +Class, ?Class_Id
            common_parent/3,
            fields_names_types/3,
            gen_class_id/2,
