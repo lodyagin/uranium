@@ -43,7 +43,7 @@ class_diagram :-
       format('~a ->\t', Parent),
       class_primary_id(Parent, Parent_Id),
       (  objects:parent_(Class_Id, Parent_Id),
-         class_primary_id(Class, Class_Id),
+         class_id(Class_Id, Class),
          class_new_fields(Class_Id, New_Fields),
          format('~a (+~w)\t', [Class, New_Fields]),
          fail ; true ),
@@ -57,8 +57,8 @@ class_graph(Class_Graph) :-
 
            (objects:parent_(Class_Id, Parent_Id),
             nonvar(Parent_Id),
-            class_primary_id(Class, Class_Id),
-            class_primary_id(Parent, Parent_Id)),
+            class_id(Class_Id, Class),
+            class_id(Parent_Id, Parent)),
 
            Edges
           ),
