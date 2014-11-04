@@ -31,14 +31,15 @@
            class_diagram/1,  % +Options
            class_diagram/2,  % +Stream, +Options
            class_fields/0,
-           class_graph/3,    % @Only_Class, ?Is_Primary,
+           class_graph/3     % @Only_Class, ?Is_Primary,
                              % -Class_Graph
-           class_path/4,     % ?From, ?To,
-                             % ?Is_Primary, -Path
-           class_path/5,     % ?From, ?To,
-                             % ?Is_Primary, Path0, Path
-           class_path_extract_list/3 %Mode, +List0, -List
           ]).
+
+:- reexport(u(internal/objects_i),
+            [class_path/4,
+             class_path/5,
+             class_path_extract_list/3
+            ]).
 
 :- use_module(u(v)).
 :- use_module(u(ur_option)).

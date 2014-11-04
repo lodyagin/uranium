@@ -36,6 +36,11 @@
 
            class_id/2,          % ?Class_Id, ?Class_Name
            class_new_fields/2,  % +Class_Id, -Fields
+           class_path/4,     % ?From, ?To,
+                             % ?Is_Primary, -Path
+           class_path/5,     % ?From, ?To,
+                             % ?Is_Primary, Path0, Path
+           class_path_extract_list/3, %Mode, +List0, -List
            class_primary_id/2,  % +Class, ?Class_Id
            common_parent/3,
            fields_names_types/3,
@@ -80,6 +85,7 @@
 */
 
 :- use_module(u(internal/objects)).
+:- use_module(u(internal/check_arg)).
 :- use_module(library(lists)).
 :- use_module(library(error)).
 :- use_module(library(pairs)).
