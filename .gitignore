@@ -10,5 +10,6 @@ TAGS
 *.pdf
 *.so
 *.toc
+Queries.pl
 debian/uranium/
 reports/
