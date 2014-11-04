@@ -433,6 +433,19 @@ test(obj_downcast_rebased,
    arg(1, CC, CC_Class_Id),
    assertion(C2_Class_Id =\= CC_Class_Id).
    
+% Downcast of rebased object
+test(obj_downcast2_rebased,
+     [% birthday, country, db_key, db_ref, fit_..., height, id, name, sex, surname, weight
+      true(C2 =@= callup_v(C2_Class_Id, 1994, _, _, _, _, _, _, _, man, _, _))
+     ]) :-
+   obj_construct(citizen_v, [sex, birthday], [man, 1994], C0),
+   obj_rebase((object_v -> db_object_v), C0, C1),
+   obj_downcast(C1, C2),
+   obj_construct(callup_v, [], [], CC),
+   arg(1, C2, C2_Class_Id), 
+   arg(1, CC, CC_Class_Id),
+   assertion(C2_Class_Id =\= CC_Class_Id).
+   
 test(obj_field1, [Flds == Vals]) :-
 
    class_fields(citizen_v, Flds),

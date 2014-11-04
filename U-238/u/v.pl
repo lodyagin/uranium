@@ -417,37 +417,33 @@ obj_downcast(Parent, Descendant) :-
 
 
 obj_auto_downcast_int(Parent, Descendant, Ctx) :-
-
    functor(Parent, Parent_Class, _),
-   class_primary_id(Parent_Class, Parent_Class_Id),
-   (  obj_field(Parent, class, Class),
+   arg(1, Parent, Parent_Class_Id),
+   (  obj_field(Parent, class, To_Class),
       % check the result of the user-defined predicate
-      nonvar(Class),
-      u_class(Class),
-      class_primary_id(Class, To_Class_Id)
+      nonvar(To_Class),
+      u_class(To_Class)
    ->
-      (  Parent_Class_Id =\= To_Class_Id
-      -> obj_downcast_int(Parent_Class_Id, To_Class_Id, downcast,
+      (  class_id(Parent_Class_Id, To_Class)
+      ->
+         % the same class downcast
+         Parent = Descendant
+      ;
+         obj_downcast_int(Parent_Class-Parent_Class_Id, To_Class-_, downcast,
                           Parent, Descendant1, Ctx),
          % recursion till no cast
          obj_auto_downcast_int(Descendant1, Descendant, Ctx)
-      ;
-         % the same class downcast
-         Parent = Descendant
       )
    ;
       print_message(warning, bad_eval_result(Parent, class)),
       Parent = Descendant
    ).
 
-
 % obj_downcast(+From, +To_Class, -To)
 %
 % downcast to Class
 %
-
 obj_downcast(From, To_Class, To) :-
-
    % TODO check To_Class below From_Class
    Ctx = context(obj_downcast/3, _),
    (  (var(From); var(To_Class))
@@ -461,35 +457,22 @@ obj_downcast(From, To_Class, To) :-
    ->
       To = From
    ;
-      % Get the path (From_Class, To_Class]
+      obj_downcast_int(From_Class-From_Class_Id, To_Class-_,
+                       downcast, From, To, Ctx)
+   ).
+
+obj_downcast_int(From_Class-From_Class_Id, To_Class-To_Class_Id,
+                 Mode, From, To, Ctx) :-
+   (  % Get the path (From_Class, To_Class]
       class_path(From_Class-_, To_Class-_, true, [From_Class-_|Path_End]),
       % Get the path [object_base_v..From_Class] + (From_Class, To_Class]
       class_path(_-0, _-From_Class_Id, _, Path_End, Path1), !,
       class_path_extract_list(name, Path1, Path2),
       reverse(Path2, Path),
       class_rebase_int(Path, [To_Class_Id|_], _, Ctx),
-      obj_downcast_int(From_Class_Id, To_Class_Id, downcast,
-                       From, To, Ctx)
-   ).
-
-
-obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To,
-                 Ctx) :-
-
-   From_Class_Id \== To_Class_Id,
-
-   %  Check the downcast condition
-   class_id(From_Class_Id, From_Class),
-   class_id(To_Class_Id, To_Class),
-   (   Mode == downcast
-   ->  (  same_or_descendant(To_Class_Id, _,
-                             From_Class) % TODO optimize?
-                                % This check can be in
-                                % callers. 
-       -> true
-       ;  throw(not_downcast(From_Class, To_Class))
-       )
-   ;   true
+      From_Class_Id \== To_Class_Id % is it needed?
+   -> true 
+   ;  throw(not_downcast(From_Class, To_Class))
    ),
 
    % Construct To object with all fields unbounded
