@@ -127,7 +127,10 @@ class_path(From0, To0, Is_Primary, Path) :-
    class_path_unify_arg(From0, From, From_Mode),
    class_path_unify_arg(To0, To, To_Mode),
    class_path(From, To, Is_Primary, Path0),
-   class_path_extract_list(From_Mode, To_Mode, Path0, Path).
+   class_path_extract_list(From_Mode, To_Mode, Path0, Path),
+   % unify back
+   class_path_unify_arg(From0, From, From_Mode),
+   class_path_unify_arg(To0, To, To_Mode).
    
 % class_path(?From_Class-?From_Id, ?To_Class-?To_Id,
 % ?Is_Primary, Path0, Path) is undet.
@@ -153,7 +156,7 @@ class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary,
    class_path_int(From_Class-From_Id, To_Class-To_Id,
                   Is_Primary0, Is_Primary, Path0, Path).
 
-class_path_unify_arg(Arg, Arg, _) :- var(Arg), !.
+class_path_unify_arg(Arg, _, Mode) :- var(Mode), var(Arg), !.
 class_path_unify_arg(Arg0, _-Arg0, id) :- integer(Arg0), !.
 class_path_unify_arg(Arg0, Arg0-_, name) :- atom(Arg0), !.
 class_path_unify_arg(C0-I0, C0-I0, both).
