@@ -188,6 +188,25 @@ test(db_put_object4, [setup(model_db)]) :-
    db_size(people2, N),
    assertion(N =:= 1).
 
+test(db_put_object4_1, [setup(model_db)]) :-
+% replacing rebased
+
+   db_construct(people2, man_v, [name], ['Moses']),
+   db_recorded(people2, Man0), !,
+   obj_rewrite(Man0, [name], ['Moses'], [_], Man1),
+   obj_rebase((object_v -> tarjan_vertex_v), Man1, Man2),
+   db_put_object(people2, throw, Man2, Man3, Replaced),
+   named_args_unify(Man3,
+                    [name, db_key, db_ref],
+                    [New_Name, DB_Key, DB_Ref]),
+   assertion(New_Name =@= _),
+   assertion(Replaced == replaced),
+   assertion(nonvar(DB_Ref)),
+   assertion(DB_Key == people2),
+
+   db_size(people2, N),
+   assertion(N =:= 1).
+
 test(db_put_object5,
      [setup(model_db),
       error(domain_error(unbound_db_ref, DB_Ref))]) :-
