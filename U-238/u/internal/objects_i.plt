@@ -315,7 +315,7 @@ test(same_or_descendant2_2) :-
               class_id(Anc_Id, Anc)
            ),
            Ancestors),
-   assertion(Ancestors = [object_v, object_base_v, man_v]).
+   assertion(Ancestors = [object_base_v, object_v, man_v]).
 
 test(same_or_descendant2_3) :-
    Class_id = 1,

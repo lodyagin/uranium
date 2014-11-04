@@ -423,7 +423,7 @@ test(obj_downcast1,
 % Downcast of rebased object
 test(obj_downcast_rebased,
      [% birthday, country, db_key, db_ref, fit_..., height, id, name, sex, surname, weight
-      true(C2 =@= callup_v(C2_Class_Id, 1294, _, _, _, _, _, _, _, man, _, _))
+      true(C2 =@= callup_v(C2_Class_Id, 1994, _, _, _, _, _, _, _, man, _, _))
      ]) :-
    obj_construct(citizen_v, [sex, birthday], [man, 1994], C0),
    obj_rebase((object_v -> db_object_v), C0, C1),

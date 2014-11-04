@@ -482,7 +482,10 @@ obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To,
    class_id(From_Class_Id, From_Class),
    class_id(To_Class_Id, To_Class),
    (   Mode == downcast
-   ->  (  same_or_descendant(To_Class_Id, true, From_Class)
+   ->  (  same_or_descendant(To_Class_Id, _,
+                             From_Class) % TODO optimize?
+                                % This check can be in
+                                % callers. 
        -> true
        ;  throw(not_downcast(From_Class, To_Class))
        )
