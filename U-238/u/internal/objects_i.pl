@@ -190,6 +190,8 @@ class_new_fields(Class_Id, Fields) :-
 % @see list_inheritance/2, list_inheritance_names/2
 class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary, Path) :-
    !, class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary, [], Path).
+class_path(From_Class:From_Id, To_Class:To_Id, Is_Primary, Path) :-
+   !, class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary, [], Path).
 
 class_path(From0, To0, Is_Primary, Path) :-
    class_path_unify_arg(From0, From, From_Mode),
