@@ -119,12 +119,11 @@ db_key_policy(DB_Key, Old, New) :-
 
 %% db_set_callbacks(+DB_Key, :After_Put_Callback) is det.
 
-:- meta_predicate db_set_callback(+, 1).
+:- meta_predicate db_set_callbacks(+, 1).
 
 db_set_callbacks(DB_Key, After_Put_Callback) :-
-
    must_be(ground, DB_Key),
-
+   must_be(callable, After_Put_Callback),
    retractall(db_after_put_callback(DB_Key, _)),
    assertz(db_after_put_callback(DB_Key, After_Put_Callback)).
 
