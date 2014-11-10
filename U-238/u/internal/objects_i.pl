@@ -46,7 +46,7 @@
            fields_names_types/3,
            gen_class_id/2,
            gen_new_class_id/1,
-           get_key/2,
+           get_key/2,           % +Class_Id, -Key_Set
            get_keymaster/2,     % +Class_Id, -Keymaster_Id
            is_rebased_class/1,  % +Class_Id
            no_rebased_class/2,  % ?Class_Id, ?No_Rebased
@@ -389,12 +389,18 @@ get_key(Class_Id, Key) :-
 %
 %  Return ID of the keymaster for Class Id.
 %
-%  It is det if Class_Id is id of an existing class.
+%  It is det if Class_Id is id of an existing class which is
+%  a descendant of db_object_v
 
 get_keymaster(Class_Id, Keymaster_Id) :-
-
    must_be(nonneg, Class_Id),
-   objects:key(Class_Id, Keymaster_Id, _).
+   objects:key(Class_Id, Class_With_Key_Id, _),
+   class_path(db_object_v-DB_Object_Class_Id, _-Class_Id, _, _),
+   (  class_path(db_object_v-DB_Object_Class_Id, _-Class_With_Key_Id, _, _)
+   -> Keymaster_Id = Class_With_Key_Id
+   ;  % I didn't found the way get it without cycle in a class diagram
+      fail %Keymaster_Id = DB_Object_Class_Id
+   ), !.
 
 %% nearest_common_keymaster_int(+Id1, +Id2, -Keymaster_Id) is det.
 %

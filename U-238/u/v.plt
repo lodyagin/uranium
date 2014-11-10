@@ -588,7 +588,7 @@ test(obj_parents2_1) :-
                  [sex, surname, country, birthday],
                  [man, 'Mayakovsky', ['Soviet Union'], 1994],
                  Man1),
-   New_Parents_Order = [man_v, citizen_v, object_v, object_base_v],
+   New_Parents_Order = [man_v, tarjan_vertex_v, object_v, object_base_v],
    obj_parents(Man1, New_Parents_Order, Man2),
    obj_parents(Man1, P1),
    assertion(P1 == [citizen_v, man_v, object_v, object_base_v]),
@@ -667,6 +667,11 @@ test(obj_rebase_keymaster) :-
    get_keymaster(CiId, K1_Id),
    get_keymaster(CaId, K2_Id),
    assertion(K1_Id == K2_Id).
+
+test(obj_rebase_cycle, error(cycle_in_parents([man_v,citizen_v,object_v,object_base_v],man_v,citizen_v))) :-
+   obj_construct(tarjan_vertex_v, [], [], O1),
+   obj_rebase((object_v -> db_object_v), O1, O2),
+   obj_rebase((object_v -> man_v), O2, _).
 
 test(obj_rebase_bug1) :-
    obj_construct(man_v, [sex, name], [man, 'Adam'], Obj1_0),

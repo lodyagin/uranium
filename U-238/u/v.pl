@@ -549,11 +549,12 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
 
    % Check the Old_Base and New_Base
    % convert it to the rebased base id if needed
-   (  rebased_base(Orig_Id, Old_Base, Old_Base_Id) -> true
+   (  class_path(Old_Base-Old_Base_Id, _-Orig_Id, _, _)
+   -> true
    ;  throw(error(old_base_is_invalid(Old_Base, Orig_Id), Ctx))
    ),
 
-   (  rebased_base(Orig_Id, New_Base, New_Base_Id)
+   (  class_path(New_Base-New_Base_Id, _-Orig_Id, _, _)
    -> New_Base_Is_Ancestor = true
    ;  class_primary_id(New_Base, New_Base_Id),
       New_Base_Is_Ancestor = false
@@ -581,20 +582,6 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
 
       obj_parents_int(Object0, New_Parents, Object, Ctx)
    ).
-
-% If Base is a same or ancestor return its id
-% (it will be rebased if it is rebased already)
-rebased_base(Id, Base, Id) :-
-
-   class_id(Id, Base), !.
-
-rebased_base(Id, Base, Base_Id) :-
-
-   parent(Id, Parent_Id),
-   rebased_base(Parent_Id, Base, Base_Id).
-
-
-
 
 %% obj_reinterpret(+From, ?Class_To, -To) is nondet
 %

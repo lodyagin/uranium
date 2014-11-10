@@ -39,6 +39,26 @@ test(class_fields) :-
                    functor:_, height:_, id:_, name:_, sex:_,
                    surname:_,weight:_]).
 
+test(get_keymaster1, fail) :-
+   class_primary_id(tarjan_vertex_v, CI),
+   get_keymaster(CI, _).
+  
+test(get_keymaster2, fail) :-
+   class_primary_id(man_v, CI),
+   get_keymaster(CI, _).
+  
+test(get_keymaster3, fail) :-
+   obj_construct(tarjan_vertex_v, [], [], TV1),
+   obj_rebase((object_v -> db_object_v), TV1, TV),
+   arg(1, TV, CI),
+   get_keymaster(CI, _).
+  
+test(get_keymaster4, [CI == KI]) :-
+   obj_construct(man_v, [], [], Man1),
+   obj_rebase((object_v -> db_object_v), Man1, Man),
+   arg(1, Man, CI),
+   get_keymaster(CI, KI).
+  
 test(list_inheritance_names1) :-
 
    class_primary_id(callup_v, Id),

@@ -129,7 +129,7 @@
   Let's make 2 definitions:
 
    $ keymaster : a class which introduce a new key (it can be []
-   - no key also)
+   - no key also). Can be only db_object_v or its descendant.
 
    $ keymaster of the class : the class ancestor (or the same
    class) which is a keymaster
@@ -508,8 +508,7 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
 
 is_db_ready(Object) :-
    arg(1, Object, Class_Id),
-   list_inheritance_names(Class_Id,
-                          [object_base_v, object_v, db_object_v|_]).
+   class_path(db_object_v-_, _-Class_Id, _, _), !.
 
 make_db_ready(DB_Key, Object0, Object, Ctx) :-
    arg(1, Object0, Class_Id),
