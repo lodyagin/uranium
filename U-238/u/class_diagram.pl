@@ -72,12 +72,22 @@ class_diagram(Stream, Options) :-
       top_sort(Graph, Order),
       (  member(Parent_Id, Order),
          class_id(Parent_Id, Parent),
-         format(Stream, '~a[~d] ->\t', [Parent, Parent_Id]),
+         format(Stream, '~a[~d]', [Parent, Parent_Id]),
+         (  get_key(Parent_Id, PKey), PKey \== []
+         -> format(Stream, ' (K~w)', [PKey])
+         ;  true
+         ),
+         write(Stream, ' ->\n'),
          (  memberchk(Parent_Id - Children_Ids, Graph),
             member(Class_Id, Children_Ids),
             class_id(Class_Id, Class),
             class_new_fields(Class_Id, New_Fields),
-            format(Stream, '~a[~d] (+~w)\t', [Class, Class_Id, New_Fields]),
+            format(Stream, '\t~a[~d] (+~w', [Class, Class_Id, New_Fields]),
+            (  get_key(Class_Id, CKey), CKey \== []
+            -> format(Stream, ', K~w', [CKey])
+            ;  true
+            ),
+            write(Stream, ')\n'),
             fail ; true ),
          nl,
          fail ; true
