@@ -40,25 +40,25 @@ test(db_next_class_id, [setup(setup)]) :-
 
 % test local class id -> db class id conversion
 test(db_conv_local_db1, [setup(setup)]) :-
-
 	obj_construct(man_v, [], [], Man1),
 	obj_rebase((object_v -> db_object_v), Man1, Man),
 	arg(1, Man, Man_Local_Id),
-
 	db_i:db_add_class(db_i_test, Man_Local_Id, Man_DB_Id, _),
-
 	db_conv_local_db(db_i_test, Man_Local_Id,
 			 Man_DB_Id1,_),
+	assertion(Man_DB_Id =:= Man_DB_Id1).
 
-	assertion(Man_DB_Id =:= Man_DB_Id1),
-
-	% object_v
+test(db_conv_local_db2, [setup(setup), fail]) :-
+        % object_v
 	class_id(Object_Local_Id, object_v), !,
 	db_conv_local_db(db_i_test, Object_Local_Id,
-			 Object_DB_Id, _),
+			 _, _).
 
-	assertion(Object_DB_Id =:= 1), % always 1
-	assertion(Man_DB_Id =\= Object_DB_Id).
+test(db_conv_local_db3, [setup(setup), fail]) :-
+        % not db_object_v descendant
+	class_primary_id(man_v, Object_Local_Id), !,
+	db_conv_local_db(db_i_test, Object_Local_Id,
+			 _, _).
 
 test(db_key_policy, [setup(setup)]) :-
 
