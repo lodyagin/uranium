@@ -55,7 +55,7 @@
            list_inheritance/4,       % +From_Id, +To_Id, List0, List
            list_inheritance_names/2, % +Class_Id, -List
            list_inheritance_names/3, % +From_Id, +To_Id, -List
-%           nearest_common_keymaster_int/3, % +Id1, +Id2, -Keymaster_Id
+           nearest_common_keymaster_int/3, % +Id1, +Id2, -Keymaster_Id
            obj_class_id/2,
            obj_construct_int/5,
            obj_field_int/7,
@@ -399,16 +399,17 @@ get_keymaster(Class_Id, Keymaster_Id) :-
    class_path(db_object_v-DB_Object_Class_Id, _-Class_Id, _, _),
    (  class_path(db_object_v-DB_Object_Class_Id, _-Class_With_Key_Id, _, _)
    -> Keymaster_Id = Class_With_Key_Id
-   ;  Keymaster_Id = DB_Object_Class_Id
+   ;  % I didn't found the way get it without cycle in a class diagram
+      fail %Keymaster_Id = DB_Object_Class_Id
    ), !.
 
 %% nearest_common_keymaster_int(+Id1, +Id2, -Keymaster_Id) is det.
 %
 
-%nearest_common_keymaster_int(Id1, Id2, Keymaster_Id) :-
+nearest_common_keymaster_int(Id1, Id2, Keymaster_Id) :-
 
-%   common_parent(Id1, Id2, Parent_Id),
-%   get_keymaster(Parent_Id, Keymaster_Id).
+   common_parent(Id1, Id2, Parent_Id),
+   get_keymaster(Parent_Id, Keymaster_Id).
 
 
 %% is_rebased_class(+Class_Id)

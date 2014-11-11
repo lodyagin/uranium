@@ -317,7 +317,10 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
        %FIXME on fail prev pred make the appropriate rebasing here
 
        % Check the parent
-       db_conv_local_db(DB_Key, _, DB_Parent_Id, _),
+       (  DB_Parent_Id =\= 0
+       -> db_conv_local_db(DB_Key, _, DB_Parent_Id, _)
+       ;  true
+       ),
        ! % no more BT
    ),
    db_vocab_local_db_add(DB_Key, Local_Class_Id, DB_Class_Id).
