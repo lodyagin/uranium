@@ -583,12 +583,11 @@ test(obj_parents1_1,
    obj_parents(V, P).
 
 test(obj_parents2_1) :-
-
    obj_construct(citizen_v,
                  [sex, surname, country, birthday],
                  [man, 'Mayakovsky', ['Soviet Union'], 1994],
                  Man1),
-   New_Parents_Order = [man_v, tarjan_vertex_v, object_v, object_base_v],
+   New_Parents_Order = [citizen_v, tarjan_vertex_v, man_v, object_v, object_base_v],
    obj_parents(Man1, New_Parents_Order, Man2),
    obj_parents(Man1, P1),
    assertion(P1 == [citizen_v, man_v, object_v, object_base_v]),
@@ -601,7 +600,7 @@ test(obj_parents2_1) :-
    obj_field(Man2, class, C2),
    obj_field(Man1, functor, F1),
    obj_field(Man2, functor, F2),
-   assertion([F1, F2, C1, C2] == [citizen_v, man_v, callup_v, callup_v]).
+   assertion([F1, F2, C1, C2] == [citizen_v, citizen_v, callup_v, callup_v]).
 
 test(obj_parents2_bug1) :-
 
@@ -668,7 +667,7 @@ test(obj_rebase_keymaster) :-
    get_keymaster(CaId, K2_Id),
    assertion(K1_Id == K2_Id).
 
-test(obj_rebase_cycle, error(cycle_in_parents([man_v,citizen_v,object_v,object_base_v],man_v,citizen_v))) :-
+test(obj_rebase_cycle, error(cycle_in_parents([tarjan_vertex_v,db_object_v,man_v,object_v,object_base_v],db_object_v,man_v))) :-
    obj_construct(tarjan_vertex_v, [], [], O1),
    obj_rebase((object_v -> db_object_v), O1, O2),
    obj_rebase((object_v -> man_v), O2, _).
