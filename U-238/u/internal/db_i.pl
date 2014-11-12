@@ -169,13 +169,11 @@ db_next_class_id(DB_Key, Id) :-
 
 % Store class information in db and return new id
 db_add_class(DB_Key, Local_Id, DB_Id, Des) :-
+
    nonvar(Local_Id), var(DB_Id), !,
-   (   class_id(Local_Id, db_object_v)
-   ->  DB_Parent_Id = 0
-   ;   % need to get the parent converted (for proper key checking)
-       parent(Local_Id, Local_Parent_Id),
-       db_conv_local_db(DB_Key, Local_Parent_Id, DB_Parent_Id, _)
-   ),
+   parent(Local_Id, Local_Parent_Id),
+   db_conv_local_db(DB_Key, Local_Parent_Id, DB_Parent_Id, _),
+
    db_next_class_id(DB_Key, DB_Id),
    class_arity(Local_Id, Arity), % arity = num fields+1
    class_all_fields(Local_Id, Fields),
@@ -234,14 +232,13 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
 
    db_vocab_local_db(DB_Key, Local_Class_Id, DB_Class_Id),
    !,
-%   (   DB_Class_Id =:= 1
-%   ->  % object_v is not stored in db
-%       Des = db_class_des(1, 0, object_v, 0, [], [], [])
-%   ;
+   (   DB_Class_Id =:= 1
+   ->  % object_v is not stored in db
+       Des = db_class_des(1, 0, object_v, 0, [], [], [])
+   ;
        db_class_des(DB_Key, DB_Class_Id, A, B, C, D, E, F), !,
        Des = db_class_des(DB_Class_Id, A, B, C, D, E, F)
-%   ).
-       .
+   ).
 
 %db_conv_local_db(+DB_Key, ?(+)Local_Class_Id, ?(-)DB_Class_Id,
 %                 -Des)
@@ -252,16 +249,24 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
 
    class_id(Local_Class_Id, Class),
    (
-%       Class = object_v
-%   ->
-%       DB_Class_Id = 1,  % DB_Class_Id for object_v is always 1
-%       Des = db_class_des(1, 0, object_v, 0, [], [], [])
-%   ;
+       Class = object_v
+   ->
+       DB_Class_Id = 1,  % DB_Class_Id for object_v is always 1
+       Des = db_class_des(1, 0, object_v, 0, [], [], [])
+   ;
        (   db_class_des(DB_Key, DB_Class_Id, A1, Class, A2,
-                        DB_Fields, A3, Parents),
-           % a descriptor of this class is already in db
+                        DB_Fields, A3, Parents)
+       ->  % a descriptor of this class is already in db
+
            class_parents_as_names(Local_Class_Id, Local_Parents),
-           Local_Parents == Parents, !,
+           (   Local_Parents == Parents
+           ->  true
+           ;
+               print_message(warning,
+                             class_parents_mismatch(DB_Key, Class,
+                                   Local_Parents, Parents)),
+               fail
+           ),
            class_all_fields(Local_Class_Id, Local_Fields),
            (   Local_Fields == DB_Fields
 	   ->  true
@@ -271,7 +276,7 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
 	   ),
 
            Des = db_class_des(DB_Class_Id, A1, Class, A2,
-			      DB_Fields, A3, Parents), !
+			      DB_Fields, A3, Parents)
        ;
            db_add_class(DB_Key, Local_Class_Id, DB_Class_Id, Des)
        )
@@ -280,13 +285,13 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
 
 % db -> local
 db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
+
    var(Local_Class_Id), integer(DB_Class_Id), !,
-   (
-%       DB_Class_Id =:= 1,   % object_v
-%       Des = db_class_des(1, 0, object_v, 0, [], [], [])
-%   ->  class_primary_id(object_v, Local_Class_Id)
-%   ;
-       Des = db_class_des(DB_Class_Id, DB_Parent_Id, Class, DBF1,
+
+   (   DB_Class_Id =:= 1,   % object_v
+       Des = db_class_des(1, 0, object_v, 0, [], [], [])
+   ->  class_primary_id(object_v, Local_Class_Id)
+   ;   Des = db_class_des(DB_Class_Id, DB_Parent_Id, Class, DBF1,
 		       DB_Fields, DBF2, DB_Parents),
        !,
 
