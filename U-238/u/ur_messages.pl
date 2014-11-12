@@ -125,6 +125,10 @@ prolog:message(class_definition_error(Module, Term)) -->
    ['Invalid term in the class definition module ~a: ~p'
    - [Module, Term]].
 
+prolog:message(must_be_descendant_of(Class, Parent)) -->
+   ['The class ~a must be a descendant of ~a'
+   - [Class, Parent]].
+
 % ixpath
 prolog:message(ixpath_not_implemented(What, Expr)) -->
 

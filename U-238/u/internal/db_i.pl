@@ -144,17 +144,15 @@ db_name_int(DB_Key) :-
 % db_next_class_id(Id).
 
 db_erase_int(DB_Key, Object) :-
-
    atom(DB_Key), !,
    Ctx = context(db_erase_int/2, _),
-
    arg(1, Object, Local_Id),
+   obj_field(Object, db_class, DB_Class_Id),
    class_all_fields(Local_Id, All_Fields),
    ord_del_element(All_Fields, db_ref, Reset_Fields),
    obj_reset_fields_int(Local_Id, Reset_Fields, Object, Object1,
                         throw, Ctx),
-
-   object_local_db(DB_Key, Object1, DB_Object),
+   object_local_db(DB_Key, Local_Id-Object1, DB_Class_Id-DB_Object),
    retract(DB_Object), !.
 
 db_next_class_id(DB_Key, Id) :-
@@ -247,7 +245,13 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
 
    var(DB_Class_Id), integer(Local_Class_Id), !,
 
-   class_id(Local_Class_Id, Class),
+   (  class_path(db_object_v-_, Class-Local_Class_Id, _, _)
+   -> true
+   ;  class_id(Local_Class_Id, Class),
+      (  Class == object_v -> true
+      ;  throw(error(must_be_descendant_of(Class, db_object_v), _))
+      )
+   ),
    (
        Class = object_v
    ->
@@ -262,17 +266,15 @@ db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id, Des) :-
            (   Local_Parents == Parents
            ->  true
            ;
-               print_message(warning,
-                             class_parents_mismatch(DB_Key, Class,
-                                   Local_Parents, Parents)),
-               fail
+               throw(error(class_parents_mismatch(DB_Key, Class,
+                                   Local_Parents, Parents), _))
            ),
            class_all_fields(Local_Class_Id, Local_Fields),
            (   Local_Fields == DB_Fields
 	   ->  true
 	   ;
 	       throw(error(class_fields_mismatch(
-	          DB_Key, Class, Local_Fields, DB_Fields)))
+	          DB_Key, Class, Local_Fields, DB_Fields), _))
 	   ),
 
            Des = db_class_des(DB_Class_Id, A1, Class, A2,
@@ -334,7 +336,7 @@ db_clear_int(DB_Key) :-
    (  db_des(DB_Key, db_class_des(DB_Id, _, _, _, _, _, _)),
       db_conv_local_db(DB_Key, Local_Id, DB_Id, _),
       obj_construct_int(Local_Id, [db_key], throw, [DB_Key], Obj0),
-      object_local_db(DB_Key, Obj0, Obj),
+      object_local_db(DB_Key, Local_Id-Obj0, DB_Id-Obj),
       retractall(Obj),
       fail ; true
    ),
@@ -376,12 +378,12 @@ db_recorded_int(DB_Key, L_Object) :-
     obj_rewrite_int(Local_Class_Id, L_Object, throw,
                     [db_key], _, [DB_Key], L_Object1, Ctx),
 
-    object_local_db(DB_Key, L_Object1, DB_Object),
+    object_local_db(DB_Key, Local_Class_Id-L_Object1, DB_Class_Id-DB_Object),
 
     % find the matched record
     call(DB_Object),
 
-    object_local_db(DB_Key, L_Object2, DB_Object),
+    object_local_db(DB_Key, Local_Class_Id-L_Object2, DB_Class_Id-DB_Object),
 
     % populate values from db
     L_Object = L_Object2.
@@ -404,14 +406,13 @@ db_recorded_int(DB_Key, L_Object) :-
     % BT on all class records
     functor(DB_Object0, Class, Arity),
     arg(1, DB_Object0, DB_Class_Id),
-    object_local_db(DB_Key, L_Object0, DB_Object0),
-    arg(1, L_Object0, Local_Id),
+    object_local_db(DB_Key, Local_Id-L_Object0, DB_Class_Id-DB_Object0),
     obj_unify_int(Local_Id, [db_key], throw, L_Object0, [DB_Key],
                   Ctx),
-    object_local_db(DB_Key, L_Object0, DB_Object),
+    object_local_db(DB_Key, Local_Id-L_Object0, DB_Class_Id-DB_Object),
     call(DB_Object),
 
-    object_local_db(DB_Key, L_Object, DB_Object).
+    object_local_db(DB_Key, Local_Id-L_Object, DB_Class_Id-DB_Object).
 
     % inplant the db key and reference
     %arg(1, L_Object, Local_Class_Id),
@@ -440,8 +441,8 @@ db_record_int(DB_Key, Order, Object0, Ctx) :-
     atom(DB_Key), !, % this is prolog DB version
     arg(1, Object0, Class_Id),
     obj_unify_int(Class_Id,
-                  [db_key, db_ref], throw, Object0,
-                  [DB_Key_Val, DB_Ref], Ctx),
+                  [db_key, db_ref, db_class], throw, Object0,
+                  [DB_Key_Val, DB_Ref, DB_Class_Id], Ctx),
 
     (   DB_Key_Val = DB_Key -> true
     ;   throw(error(domain_error(unbound_or_same_db_key,
@@ -451,7 +452,7 @@ db_record_int(DB_Key, Order, Object0, Ctx) :-
     ;   throw(error(domain_error(unbound_db_ref, DB_Ref),Ctx))
     ),
 
-    object_local_db(DB_Key, Object0, Object),
+    object_local_db(DB_Key, Class_Id-Object0, DB_Class_Id-Object),
 
     next_db_ref(DB_Ref),
     (   Order = recordz
@@ -471,22 +472,26 @@ next_db_ref(Ref) :-
    succ(Old_Ref, Ref),
    flag(db_ref, _, Ref).
 
-%object_local_db(+DB_Key, ?Local_Object, ?DB_Object)
+%object_local_db(+DB_Key, ?Local_Class_Id-?Local_Object, ?DB_Class_Id-?DB_Object)
 % Convert between local and db object term
-object_local_db(DB_Key, Local_Object, DB_Object) :-
-
-    % TODO: db_key and db_ref can not be included
+object_local_db(DB_Key, Local_Class_Id-Local_Object, DB_Class_Id-DB_Object) :-
+    % TODO: db_key, db_ref and db_class can not be included
     % in a db object
 
     % it is from Local to DB case
     nonvar(Local_Object), var(DB_Object), !,
     Ctx = context(object_local_db/3, _),
 
-    % get db id (and store service predicates if necessary)
     arg(1, Local_Object, Local_Class_Id),
-    db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id,
-		     Des),
-    Des = db_class_des(_, _, Class, _, Fields, _, _),
+    obj_field(Local_Object, db_class, DB_Class_Id0),
+    copy_term(DB_Class_Id0, DB_Class_Id),
+    (  nonvar(DB_Class_Id)
+    -> db_class_des(DB_Key, DB_Class_Id, _, Class, _, Fields, _, _), !
+    ;  % get db id (and store service predicates if necessary)
+       db_conv_local_db(DB_Key, Local_Class_Id, DB_Class_Id,
+                        Des),
+       Des = db_class_des(_, _, Class, _, Fields, _, _)
+    ),
 
     % replace the id
     obj_unify_int(Local_Class_Id, Fields, throw,
@@ -495,8 +500,7 @@ object_local_db(DB_Key, Local_Object, DB_Object) :-
     DB_Object =.. [Class, DB_Class_Id | DB_Field_Vals].
 
 
-object_local_db(DB_Key, Local_Object, DB_Object) :-
-
+object_local_db(DB_Key, Local_Class_Id-Local_Object, DB_Class_Id-DB_Object) :-
     % it is from DB to Local case
     var(Local_Object), nonvar(DB_Object), !,
     Ctx = context(object_local_db/3, _),
@@ -607,8 +611,11 @@ key_conflict(DB_Key, Class_Id, Object, Conflicting) :-
    % are in the DB
    db_conv_local_db(DB_Key, Class_Id, _, _),
 
+   class_path(db_object_v-_, _-Class_Id, _, Path1), !,
+   class_path_extract_list(name, Path1, Path2),
+   reverse(Path2, Path),
    % BT keymasters up to the hierarchy
-   same_or_descendant(Class_Id, _, Key_Class_Name),
+   member(Key_Class_Name, Path),
    db_keymaster(DB_Key, Key_Class_Name),
 
    % get the key of keymaster

@@ -756,6 +756,9 @@ eval_obj_expr_cmn(List, _, Value, list, Ctx) :-
 eval_obj_expr_cmn(@(DB_Key), _, @(DB_Key), db, Ctx) :- !,
    check_db_key(DB_Key, Ctx).
 
+eval_obj_expr_cmn(@(DB_Key)->Object, _, @(DB_Key)->Object, db, Ctx) :- !,
+   check_db_key(DB_Key, Ctx).
+
 eval_obj_expr_cmn(Object, _, Object, object, _) :-
    u_object(Object), !.
 
@@ -767,8 +770,10 @@ eval_obj_expr_cmn(Compound, _, Value, compound, Ctx) :-
 
 eval_obj_expr_cmn(Value, _, Value, value, _) :- !.
 
+eval_obj_field(db, @(DB_Key)->Object, _, Field, Value, _) :-
+   named_args_unify(DB_Key, _, [Field], [Value], Object).
 eval_obj_field(db, @(DB_Key), _, Field, Value, _) :-
-   db_select(DB_Key, [Field], [Value]).
+   eval_obj_field(db, @(DB_Key)->_, _, Field, Value, _).
 
 eval_obj_field(object, Var, weak, _, Var, _) :- var(Var), !.
 eval_obj_field(object, Var, fail, _, Var, _) :- var(Var), !, fail.
