@@ -242,8 +242,8 @@ db_copy(DB_In, DB_Out) :-
        arg(1, Obj0, Class_Id),
 
        obj_rewrite_int(Class_Id, Obj0, throw,
-                       [db_key, db_ref], _,
-                       [_, _], Obj1, Ctx),
+                       [db_key, db_ref, db_class], _,
+                       [_, _, _], Obj1, Ctx),
 
        db_put_object_int(DB_Out, Class_Id, _, recordz, Obj1, _,
                          false, Ctx),
@@ -255,9 +255,9 @@ db_copy(DB_In, DB_Out) :-
 %% db_erase(?Obj) is semidet.
 %
 % Erase the object Obj from DB. Obj should be Uranium object with
-% ground _db_key_ and _db_ref_ fields (usually a _db_object_v_
-% descendant, see db_object_v.pl), i.e., these fields idenitify
-% the database and object to be erased.
+% ground _db_key_, _db_ref_ and _db_class_ fields (usually a
+% _db_object_v_ descendant, see db_object_v.pl), i.e., these
+% fields idenitify the database and object to be erased.
 %
 % Fail if Obj is absent in DB.
 %
@@ -266,6 +266,7 @@ db_copy(DB_In, DB_Out) :-
 %
 % @error domain_error(bound_db_key, Obj) db_key should be ground
 % @error domain_error(bound_db_ref, Obj) db_ref should be ground
+% @error domain_error(bound_db_class, Obj) db_class should be ground
 
 db_erase(Obj) :-
 
@@ -274,14 +275,17 @@ db_erase(Obj) :-
    check_object_arg(Obj, Ctx, Class_Id),
 
    obj_unify_int(Class_Id,
-                 [db_key, db_ref], throw, Obj,
-                 [DB_Key, DB_Ref], Ctx),
+                 [db_key, db_ref, db_class], throw, Obj,
+                 [DB_Key, DB_Ref, DB_Class], Ctx),
 
     (   ground(DB_Key) -> true
     ;   throw(error(domain_error(bound_db_key, Obj), Ctx))
     ),
     (   ground(DB_Ref) -> true
     ;   throw(error(domain_error(bound_db_ref, Obj),Ctx))
+    ),
+    (   ground(DB_Class) -> true
+    ;   throw(error(domain_error(bound_db_class, Obj),Ctx))
     ),
 
    db_erase_int(DB_Key, Obj), !.
