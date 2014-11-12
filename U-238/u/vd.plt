@@ -225,6 +225,15 @@ test(db_put_object4_2, [setup(db_clear(people2))]) :-
    db_size(people2, N),
    assertion(N =:= 1).
 
+% replace with incorrect db_key
+test(db_put_object4_3,
+     [setup((db_clear(people), db_clear(people2))),
+      error(_)]) :-
+   db_construct(people, man_v, [name, surname], [1,2], M1),
+   db_construct(people2, man_v, [name,surname], [1,2]),
+   obj_rewrite(M1, [db_key, deb_ref], [_, _], [people2, _], MM1),
+   db_put_object(people, throw, MM1, _, _).
+
 test(db_put_object5,
      [setup(model_db),
       error(domain_error(unbound_db_ref, DB_Ref))]) :-
