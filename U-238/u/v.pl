@@ -958,8 +958,10 @@ obj_is_descendant(Descendant, Class) :-
 %
 %  True if Descendant is of Class or it is a descendant of Class.
 %  Count rebased classes.
-%
+%  Doesn't guarantee BT order.
 %  It is semidet if Class is bound.
+%
+%  @deprecated class_path/4
 
 obj_same_or_descendant(Descendant, Class) :-
 

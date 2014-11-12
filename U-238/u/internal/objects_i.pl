@@ -689,6 +689,7 @@ descendant_class_int(Desc_Id, Ancestor_Name) :-
    ).
 
 %% same_or_descendant(?Desc_Id, ?Ancestor_Id) is nondet.
+%  @deprecated class_path/4
 same_or_descendant(Desc_Id, Ancestor_Id) :-
    class_path_unify_arg(Desc_Id, Desc, id),
    class_path_unify_arg(Ancestor_Id, Ancestor, id),
@@ -701,6 +702,7 @@ same_or_descendant(Desc_Id, Ancestor_Id) :-
 %
 %  This predicate is semidet in the case of =|nonvar(Class_Name)|=
 %
+%  @deprecated class_path/4
 %  @see descendant_class/3
 %  @see same_class/3
 
