@@ -39,17 +39,17 @@ test(class_fields) :-
                    functor:_, height:_, id:_, name:_, sex:_,
                    surname:_,weight:_]).
 
-test(get_keymaster1, fail) :-
+test(get_keymaster1, [KI == 1]) :-
    class_primary_id(tarjan_vertex_v, CI),
    get_key(CI, Key),
    assertion(Key == []),
-   get_keymaster(CI, _).
+   get_keymaster(CI, KI).
   
-test(get_keymaster2, fail) :-
+test(get_keymaster2, [KI == CI]) :-
    class_primary_id(man_v, CI),
    get_key(CI, Key),
    assertion(Key = [name, surname]),
-   get_keymaster(CI, _).
+   get_keymaster(CI, KI).
   
 test(get_keymaster3, [CM == DO]) :-
    obj_construct(http_header_v, [], [], TV1),

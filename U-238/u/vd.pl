@@ -129,7 +129,7 @@
   Let's make 2 definitions:
 
    $ keymaster : a class which introduce a new key (it can be []
-   - no key also). Can be only db_object_v or its descendant.
+   - no key also)
 
    $ keymaster of the class : the class ancestor (or the same
    class) which is a keymaster
