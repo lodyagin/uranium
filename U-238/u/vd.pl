@@ -433,8 +433,8 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
 
       % Check the replace case
       obj_rewrite_int(Class_Id, Object0, throw,
-                      [db_key, db_ref],
-                      [Old_DB_Key, Old_DB_Ref],
+                      [db_key, db_ref, db_class],
+                      [Old_DB_Key, Old_DB_Ref, _],
                       [DB_Key, _],
                       Object1, Ctx),
       (  ground(Old_DB_Ref),

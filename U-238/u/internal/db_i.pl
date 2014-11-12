@@ -451,6 +451,9 @@ db_record_int(DB_Key, Order, Object0, Ctx) :-
     (   var(DB_Ref) -> true
     ;   throw(error(domain_error(unbound_db_ref, DB_Ref),Ctx))
     ),
+    (   var(DB_Class_Id) -> true
+    ;   throw(error(domain_error(unbound_db_class, DB_Class_Id),Ctx))
+    ),
 
     object_local_db(DB_Key, Class_Id-Object0, DB_Class_Id-Object),
 
