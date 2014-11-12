@@ -61,6 +61,16 @@ test(db_erase2, [setup(db_clear(people))]) :-
    db_size(people, S2),
    assertion(S2 == 0).
 
+test(db_erase_other_db, [setup((db_clear(people), db_clear(people2)))]) :-
+   db_construct(people, man_v, [], [], M1),
+   db_construct(people2, man_v, [], []),
+   obj_rewrite(M1, [db_key], [_], [people2], MM1),
+   db_erase(MM1),
+   db_size(people, S1),
+   db_size(people2, S2),
+   assertion(S1 == 1),
+   assertion(S2 == 0).
+   
 test(db_iterate1, [setup(model_db), N =:= 3]) :-
 
    findall('.', db_iterate(people, true, _), L),
