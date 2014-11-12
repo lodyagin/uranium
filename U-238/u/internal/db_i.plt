@@ -9,7 +9,7 @@ test(db_functor_des, [setup(model_db(_))]) :-
 
    findall(F, db_functor_des(people, F, _, _), List1_0),
    msort(List1_0, List1),
-   assertion(List1 == [callup_v, citizen_v, db_object_v, man_v]),
+   assertion(List1 == [citizen_v, db_object_v, man_v]),
 
    findall(F,
            (F = man_v, db_functor_des(people, F, _, _)),
@@ -26,7 +26,7 @@ test(db_functor_des, [setup(model_db(_))]) :-
    findall(F,
            (F = callup_v, db_functor_des(people, F, _, _)),
            List4),
-   assertion(List4 == [callup_v]).
+   assertion(List4 == []).
 
 
 test(db_next_class_id, [setup(setup)]) :-
@@ -46,15 +46,16 @@ test(db_conv_local_db1, [setup(setup)]) :-
 	db_i:db_add_class(db_i_test, Man_Local_Id, Man_DB_Id, _),
 	db_conv_local_db(db_i_test, Man_Local_Id,
 			 Man_DB_Id1,_),
-	assertion(Man_DB_Id =:= Man_DB_Id1).
+	assertion(Man_DB_Id =:= Man_DB_Id1),
+        assertion(Man_DB_Id =\= 1).
 
-test(db_conv_local_db2, [setup(setup), fail]) :-
+test(db_conv_local_db2, [setup(setup), Object_DB_Id == 1]) :-
         % object_v
 	class_id(Object_Local_Id, object_v), !,
 	db_conv_local_db(db_i_test, Object_Local_Id,
-			 _, _).
+			 Object_DB_Id, _).
 
-test(db_conv_local_db3, [setup(setup), fail]) :-
+test(db_conv_local_db3, [setup(setup)]) :-
         % not db_object_v descendant
 	class_primary_id(man_v, Object_Local_Id), !,
 	db_conv_local_db(db_i_test, Object_Local_Id,
