@@ -51,9 +51,11 @@ prolog:message(class_exists(Class)) -->
    ['The class ~a is defined already' - [Class]].
 
 prolog:message(class_inheritance_cycle(Graph)) -->
-
    ['There is a cycle in class inheritance: ~w'
     - Graph].
+prolog:message(class_inheritance_cycle(Inheritance, Inv_Child, Inv_Parent)) -->
+   ['There is a cycle in class inheritance: ~w (~d can not be child of ~d)'
+    - [Inheritance, Inv_Child, Inv_Parent]].
 
 prolog:message(type_redefined(Type, Orig_Class)) -->
 

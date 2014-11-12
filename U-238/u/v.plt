@@ -423,7 +423,7 @@ test(obj_downcast1,
 % Downcast of rebased object
 test(obj_downcast_rebased,
      [% birthday, country, db_key, db_ref, fit_..., height, id, name, sex, surname, weight
-      true(C2 =@= callup_v(C2_Class_Id, 1994, _, _, _, _, _, _, _, man, _, _))
+      true(C2 =@= callup_v(C2_Class_Id, 1994, _, _, _, _, _, _, _, _, man, _, _))
      ]) :-
    obj_construct(citizen_v, [sex, birthday], [man, 1994], C0),
    obj_rebase((object_v -> db_object_v), C0, C1),
@@ -436,7 +436,7 @@ test(obj_downcast_rebased,
 % Downcast of rebased object
 test(obj_downcast2_rebased,
      [% birthday, country, db_key, db_ref, fit_..., height, id, name, sex, surname, weight
-      true(C2 =@= callup_v(C2_Class_Id, 1994, _, _, _, _, _, _, _, man, _, _))
+      true(C2 =@= callup_v(C2_Class_Id, 1994, _, _, _, _, _, _, _, _, man, _, _))
      ]) :-
    obj_construct(citizen_v, [sex, birthday], [man, 1994], C0),
    obj_rebase((object_v -> db_object_v), C0, C1),
@@ -667,7 +667,7 @@ test(obj_rebase_keymaster) :-
    get_keymaster(CaId, K2_Id),
    assertion(K1_Id == K2_Id).
 
-test(obj_rebase_cycle, error(cycle_in_parents([tarjan_vertex_v,db_object_v,man_v,object_v,object_base_v],db_object_v,man_v))) :-
+test(obj_rebase_cycle, error(class_inheritance_cycle([tarjan_vertex_v,db_object_v,man_v,object_v,object_base_v],db_object_v,man_v))) :-
    obj_construct(tarjan_vertex_v, [], [], O1),
    obj_rebase((object_v -> db_object_v), O1, O2),
    obj_rebase((object_v -> man_v), O2, _).

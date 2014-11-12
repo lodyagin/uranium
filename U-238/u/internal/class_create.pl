@@ -361,7 +361,7 @@ class_rebase_int([Class|Parents],
                  New_Class, Ctx) :-
 
    (  cycle_in_parents([Class|Parents], Inv_Child, Inv_Parent)
-   -> throw(error(cycle_in_parents([Class|Parents], Inv_Child, Inv_Parent), Ctx))
+   -> throw(error(class_inheritance_cycle([Class|Parents], Inv_Child, Inv_Parent), Ctx))
    ;  true
    ),
    
