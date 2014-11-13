@@ -291,8 +291,9 @@ assert_clause_int(Module_From:Clause, Module_To, Checking_Pred) :-
 % Reload all class definitions.
 reload_all_classes :-
 
+   ch_vocab_clear,    % clear class hierarchy
    db_vocab_clear(_), % clear all current db class caches
-
+   
    % clear the db
    retractall_objects,
    retractall(db_pg:pl_pg_type(_, _, _)),

@@ -27,6 +27,9 @@
 
 :- module(objects_i,
           [
+           ch_vocab_clear/0,
+           ch_vocab_class_path/5,
+           ch_vocab_class_path_add/5,
            class_all_fields/2,  % +Class_Id, -Fields
                                 % nonevals only
            class_arity/2,
@@ -91,6 +94,33 @@
 :- use_module(library(pairs)).
 :- use_module(u(ur_lists)).
 :- use_module(u(internal/decode_arg)).
+
+% ch_class_path(From_Id, To_Id, Is_Primary, Path0, Path)
+:- dynamic ch_class_path/5.
+
+ch_vocab_clear :-
+   debug(ch_vocab, '~a', ch_vocab_clear),
+   retractall(ch_class_path(_, _, _, _, _)).
+
+ch_vocab_class_path(From_Id, To_Id, Is_Primary, Path0, Path) :-
+   ch_class_path(From_Id, To_Id, Is_Primary, Path0, Path),
+   debug(ch_vocab, '~w',
+         ch_vocab_class_path(From_Id, To_Id, Is_Primary, Path0, Path)).
+
+ch_vocab_class_path_add(From_Id, To_Id, Is_Primary, Path0, Path) :-
+   debug(ch_vocab, '~w',
+         ch_vocab_class_path_add(From_Id, To_Id, Is_Primary, Path0, Path)),
+   must_be(nonvar, From_Id),
+   must_be(nonvar, To_Id),
+   must_be(nonvar, Is_Primary),
+   (  ch_class_path(From_Id, To_Id, Is_Primary, Path0, Path)
+   -> throw(error(db_system_bad_state(
+        'ch_class_path(~w, ~w, ~w, ~w, ~w) already exists',
+        [From_Id, To_Id, Is_Primary, Path0, Path]),
+          ch_vocab_class_path_add/4))
+   ;  replace_tail(Path0, Path, Reset0, Reset), !,
+      assertz(ch_class_path(From_Id, To_Id, Is_Primary, Reset0, Reset))
+   ).
 
 class_all_fields(Class_Id, Fields) :-
 
@@ -188,7 +218,6 @@ class_new_fields(Class_Id, Fields) :-
 % primary (not rebased) classes.
 %
 % @see list_inheritance/2, list_inheritance_names/2
-% TODO cache
 class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary, Path) :-
    !, class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary, [], Path).
 class_path(From_Class:From_Id, To_Class:To_Id, Is_Primary, Path) :-
@@ -224,8 +253,12 @@ class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary,
    !,
    class_id(From_Id, From_Class),
    class_id(To_Id, To_Class),
-   class_path_int(From_Class-From_Id, To_Class-To_Id,
-                  Is_Primary0, Is_Primary, Path0, Path).
+   (  ch_vocab_class_path(From_Id, To_Id, Is_Primary, Path0, Path)
+   -> true
+   ;  class_path_int(From_Class-From_Id, To_Class-To_Id,
+                     Is_Primary0, Is_Primary, Path0, Path),
+      ch_vocab_class_path_add(From_Id, To_Id, Is_Primary, Path0, Path)
+   ).
 
 class_path_unify_arg(Arg, _, Mode) :- var(Mode), var(Arg), !.
 class_path_unify_arg(Arg, _-Arg, id) :- (integer(Arg); var(Arg)), !.
