@@ -35,37 +35,35 @@
 %
 
 :- module(ur_lists,
-	  [common_head/3,     % +List1, +List2, ?Head
+	  [
+           check_option_list/2,
+           common_head/3,     % +List1, +List2, ?Head
            common_head_rev/3, % +List1, +List2, ?Head
+           convert_prop_list/3, % +Prop_List, +Functor, -List2
            corteging/4,       % ?Functor, ?List1, ?List2, ?List3
+           count_el/3,
+           decode_prop_list/3,
+           extract_by_key_order/3,
            gen_memberchk/3,   % +Op, ?Member, +List
+           index_list/4,
            list_head/4,
            mapkeys/3,
            num_diff_list/2,
-           index_list/4,
-           extract_by_key_order/3,
            pairs_replace_functor/3,
-
-           replace_all_sublists/4,
+           prop_list_replace/4, % +In, -Out, +From, +To
            remove_options/3, % +List0, +Remove, -List
+           replace_all_sublists/4,
+           select_value/4, % +Selector, +Selectors, % ?Values,
+                           % ?Value (det)
 
-           select_value/4, % +Selector, +Selectors,
-                           % ?Values, ?Value (det)
-
-           select_value/6, % ?Selector, +Selectors,
-                           % -Selectors_Rest, ?Values,
+           select_value/6, % ?Selector, +Selectors, %
+                           % -Selectors_Rest, ?Values, %
                            % ?Values_Rest, ?Value (nondet)
-
            sort_linked/2,
            swap_keyed_list/2,
            switch_by_value/4,
            transpose_list_matrix/2,
-           check_option_list/2,
-           count_el/3,
            trim_list/4,
-           decode_prop_list/3,
-           convert_prop_list/3, % +Prop_List, +Functor, -List2
-           prop_list_replace/4, % +In, -Out, +From, +To
            weak_maplist/3,
            write_delimited/3     % +Write_Pred, +Delimiter, +List
 ]).
