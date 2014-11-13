@@ -126,7 +126,7 @@
 :- use_module(u(logging)).
 :- use_module(u(class_diagram)).
 :- use_module(u(util/lambda)).
-:- use_module(u(vd), [db_select/3]).
+:- use_module(u(vd), [db_select/3, named_args_unify/5]).
 
 :- reexport(u(internal/objects_i),
             [

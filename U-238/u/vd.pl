@@ -435,7 +435,7 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
       obj_rewrite_int(Class_Id, Object0, throw,
                       [db_key, db_ref, db_class],
                       [Old_DB_Key, Old_DB_Ref, _],
-                      [DB_Key, _],
+                      [DB_Key, _, _],
                       Object1, Ctx),
       (  ground(Old_DB_Ref),
          Old_DB_Key = DB_Key
