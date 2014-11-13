@@ -53,6 +53,7 @@
            prop_list_replace/4, % +In, -Out, +From, +To
            remove_options/3, % +List0, +Remove, -List
            replace_all_sublists/4,
+           reset_diff_tail/3, % Path0, Path, Reset
            select_value/4, % +Selector, +Selectors, % ?Values,
                            % ?Value (det)
 
@@ -252,19 +253,24 @@ replace_all_sublists(From, List0, To, List1) :-
    phrase(replace_all_sublists_dcg(From, To, List1, []), List0).
 
 replace_all_sublists_dcg(From, To, List0, List) -->
-
    From, !,
    { append(To, List1, List0) },
    replace_all_sublists_dcg(From, To, List1, List).
 
 replace_all_sublists_dcg(From, To, [C|List0], List) -->
-
    [C], !,
    replace_all_sublists_dcg(From, To, List0, List).
    
 replace_all_sublists_dcg(_, _, List, List) -->
-
    [].
+
+%% reset_diff_tail(Path0, Path, Reset) is undet.
+%  Replace the diff list Path = [... |Path0]
+%  with Reset = [...|_].
+%  Attention! Gives infinite number of solutions, use with cut.
+reset_diff_tail(Path0, Path0, _) :- acyclic_term(Path0).
+reset_diff_tail(Path0, [X|Path1], [X|Reset1]) :-
+   reset_diff_tail(Path0, Path1, Reset1).
 
 select_option_req(Option, List0, List) :-
 

@@ -32,7 +32,18 @@ test(replace_all_sublists2, [fail]) :-
 
    replace_all_sublists([], [a, b, c, a, d], [1], _).
    
-   
+test(reset_diff_tail1, [Z=@=_]) :-
+  reset_diff_tail(X, X, Z), !.
+
+test(reset_diff_tail2, [Z =@= [a,b,c|_]]) :-
+  reset_diff_tail(X, [a,b,c|X], Z), !.
+
+test(reset_diff_tail3, [Z =@= [a,b,c|_]]) :-
+  reset_diff_tail([d,e], [a,b,c,d,e], Z), !.
+
+test(reset_diff_tail4, fail) :-
+  reset_diff_tail([d], [a,b,c,d,e], _), !.
+
 test(select_value1, [fail]) :-
 
    select_value(_, [], _, [], _, _).
