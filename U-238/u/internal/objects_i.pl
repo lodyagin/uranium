@@ -39,9 +39,9 @@
 
            class_id/2,          % ?Class_Id, ?Class_Name
            class_new_fields/2,  % +Class_Id, -Fields
-           class_path/4,     % ?From, ?To,
+           class_path/4,     % ?Ancestor, ?Descendant,
                              % ?Is_Primary, -Path
-           class_path/5,     % ?From, ?To,
+           class_path/5,     % ?Ancestor, ?Descendant,
                              % ?Is_Primary, Path0, Path
            class_path_extract_list/3, %Mode, +List0, -List
            class_primary_id/2,  % +Class, ?Class_Id
@@ -95,31 +95,28 @@
 :- use_module(u(ur_lists)).
 :- use_module(u(internal/decode_arg)).
 
-% ch_class_path(From_Id, To_Id, Is_Primary, Path0, Path)
+% ch_class_path(Ancestor_Id, Descendant_Id, Is_Primary, Path0, Path)
 :- dynamic ch_class_path/5.
 
 ch_vocab_clear :-
    debug(ch_vocab, '~a', ch_vocab_clear),
    retractall(ch_class_path(_, _, _, _, _)).
 
-ch_vocab_class_path(From_Id, To_Id, Is_Primary, Path0, Path) :-
-   ch_class_path(From_Id, To_Id, Is_Primary, Path0, Path),
+ch_vocab_class_path(Ancestor_Id, Descendant_Id, Is_Primary, Path0, Path) :-
+   ch_class_path(Ancestor_Id, Descendant_Id, Is_Primary, Path0, Path),
    debug(ch_vocab, '~w',
-         ch_vocab_class_path(From_Id, To_Id, Is_Primary, Path0, Path)).
+         ch_vocab_class_path(Ancestor_Id, Descendant_Id, Is_Primary, Path0, Path)).
 
-ch_vocab_class_path_add(From_Id, To_Id, Is_Primary, Path0, Path) :-
+ch_vocab_class_path_add(Ancestor_Id, Descendant_Id, Is_Primary, Path0, Path) :-
    debug(ch_vocab, '~w',
-         ch_vocab_class_path_add(From_Id, To_Id, Is_Primary, Path0, Path)),
-   must_be(nonvar, From_Id),
-   must_be(nonvar, To_Id),
+         ch_vocab_class_path_add(Ancestor_Id, Descendant_Id, Is_Primary, Path0, Path)),
+   must_be(nonvar, Ancestor_Id),
+   must_be(nonvar, Descendant_Id),
    must_be(nonvar, Is_Primary),
-   (  ch_class_path(From_Id, To_Id, Is_Primary, Path0, Path)
-   -> throw(error(db_system_bad_state(
-        'ch_class_path(~w, ~w, ~w, ~w, ~w) already exists',
-        [From_Id, To_Id, Is_Primary, Path0, Path]),
-          ch_vocab_class_path_add/4))
+   (  ch_class_path(Ancestor_Id, Descendant_Id, Is_Primary, Path0, Path)
+   -> true % already added
    ;  replace_tail(Path0, Path, Reset0, Reset), !,
-      assertz(ch_class_path(From_Id, To_Id, Is_Primary, Reset0, Reset))
+      assertz(ch_class_path(Ancestor_Id, Descendant_Id, Is_Primary, Reset0, Reset))
    ).
 
 class_all_fields(Class_Id, Fields) :-
@@ -207,58 +204,57 @@ class_new_fields(Class_Id, Fields) :-
 
    class_fields(_, Class_Id, true, false, Fields).
 
-% class_path(?From, ?To, ?Is_Primary, -Path)
+% class_path(?Ancestor, ?Descendant, ?Is_Primary, -Path)
 % is nondet.
 %
-% @param Path inheritance From class To class if any. Both
-% From and To can be defined as class id, class name or a
+% @param Path inheritance Ancestor class Descendant class if any. Both
+% Ancestor and Descendant can be defined as class id, class name or a
 % pair of both. The result format (ids/names/pairs)
 % depends on the arguments.
 % @param Is_Primary {true,false,_} does consider only
 % primary (not rebased) classes.
 %
 % @see list_inheritance/2, list_inheritance_names/2
-class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary, Path) :-
-   !, class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary, [], Path).
-class_path(From_Class:From_Id, To_Class:To_Id, Is_Primary, Path) :-
-   !, class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary, [], Path).
+class_path(Ancestor_Class-Ancestor_Id, Descendant_Class-Descendant_Id, Is_Primary, Path) :-
+   !, class_path(Ancestor_Class-Ancestor_Id, Descendant_Class-Descendant_Id, Is_Primary, [], Path).
+class_path(Ancestor_Class:Ancestor_Id, Descendant_Class:Descendant_Id, Is_Primary, Path) :-
+   !, class_path(Ancestor_Class-Ancestor_Id, Descendant_Class-Descendant_Id, Is_Primary, [], Path).
 
-class_path(From0, To0, Is_Primary, Path) :-
-   class_path_unify_arg(From0, From, From_Mode),
-   class_path_unify_arg(To0, To, To_Mode),
-   class_path(From, To, Is_Primary, Path0),
-   class_path_extract_list(From_Mode, To_Mode, Path0, Path),
+class_path(Ancestor0, Descendant0, Is_Primary, Path) :-
+   class_path_unify_arg(Ancestor0, Ancestor, Ancestor_Mode),
+   class_path_unify_arg(Descendant0, Descendant, Descendant_Mode),
+   class_path(Ancestor, Descendant, Is_Primary, Path0),
+   class_path_extract_list(Ancestor_Mode, Descendant_Mode, Path0, Path),
    % unify back
-   class_path_unify_arg(From0, From, From_Mode),
-   class_path_unify_arg(To0, To, To_Mode).
+   class_path_unify_arg(Ancestor0, Ancestor, Ancestor_Mode),
+   class_path_unify_arg(Descendant0, Descendant, Descendant_Mode).
    
-% class_path(?From_Class-?From_Id, ?To_Class-?To_Id,
+% class_path(?Ancestor_Class-?Ancestor_Id, ?Descendant_Class-?Descendant_Id,
 % ?Is_Primary, Path0, Path) is undet.
 %
 % A diff-list version.
 % @see class_path/4.
-class_path(From_Class-From_Id, To_Class-To_Id, Is_Primary,
+class_path(Ancestor_Class-Ancestor_Id, Descendant_Class-Descendant_Id, Is_Primary,
            Path0, Path) :-
    !,
    Ctx = context(class_path/4, _),
-   (  nonvar(From_Class)
-   -> check_class_arg(From_Class, Ctx)
-   ;  true ),
-   (  nonvar(To_Class)
-   -> check_class_arg(To_Class, Ctx)
-   ;  true ),
-   (  nonvar(From_Id) -> must_be(nonneg, From_Id); true ),
-   (  nonvar(To_Id) -> must_be(nonneg, To_Id); true ),
+   (  nonvar(Ancestor_Id) -> must_be(nonneg, Ancestor_Id); true ),
+   (  nonvar(Descendant_Id) -> must_be(nonneg, Descendant_Id); true ),
+   (  nonvar(Ancestor_Class) -> check_class_arg(Ancestor_Class, Ctx) ;  true ),
+   (  nonvar(Descendant_Class) -> check_class_arg(Descendant_Class, Ctx) ;  true ),
    (  Is_Primary == true -> Is_Primary0 = true ; true ),
    !,
-   class_id(From_Id, From_Class),
-   class_id(To_Id, To_Class),
-   (  ch_vocab_class_path(From_Id, To_Id, Is_Primary, Path0, Path)
-   -> true
-   ;  class_path_int(From_Class-From_Id, To_Class-To_Id,
-                     Is_Primary0, Is_Primary, Path0, Path),
-      ch_vocab_class_path_add(From_Id, To_Id, Is_Primary, Path0, Path)
-   ).
+   (  nonvar(Ancestor_Id), nonvar(Descendant_Id) -> true ; Det = f ),
+   class_path_int(Ancestor_Class-Ancestor_Id, Descendant_Class-Descendant_Id,
+                  Is_Primary0, Is_Primary, Path0, Path),
+   (  Det = t -> ! ; true).
+   % % populate the cache
+   % forall(class_path_int(Ancestor_Class-Ancestor_Id, Descendant_Class-Descendant_Id,
+   %                       Is_Primary0, Is_Primary, Path0, Path),
+   %        ch_vocab_class_path_add(Ancestor_Id, Descendant_Id, Is_Primary, Path0, Path)
+   % ),
+   % !,
+   % ch_vocab_class_path(Ancestor_Id, Descendant_Id, Is_Primary, Path0, Path).
 
 class_path_unify_arg(Arg, _, Mode) :- var(Mode), var(Arg), !.
 class_path_unify_arg(Arg, _-Arg, id) :- (integer(Arg); var(Arg)), !.
@@ -284,21 +280,41 @@ logic_accumulator(False, L0, L1, L) :-
    -> L  = L1
    ;  L  = False ).
 
-% class_path_int(+From_Id, +To_Id, +Is_Primary0,
+% class_path_int(+Ancestor_Id, +Descendant_Id, +Is_Primary0,
 % -Is_Primary, Path0, Path) is undet.
 class_path_int(Class-Id, Class-Id, Is_Primary0,
                Is_Primary, Path0, [Class-Id|Path0]) :-
-   !,
+   debug(ch_vocab, 'class_path_int(1)', []),
    objects:class_id(Id, Is_Primary1, Class),
    logic_accumulator(false, Is_Primary1, Is_Primary0, Is_Primary).
 
-class_path_int(From_Class-From_Id, To_Class-To_Id,
+class_path_int(Ancestor_Class-Ancestor_Id, Descendant_Class-Descendant_Id,
                Is_Primary0, Is_Primary,
-               Path0, [From_Class-From_Id|Path1]) :-
-   objects:class_id(Id, Is_Primary1, Class),
+               Path0, Path) :-
+   debug(ch_vocab,
+         'class_path_int(~w-~w, ~w-~w, ~w, ~w, ~w, ~w)',
+         [Ancestor_Class, Ancestor_Id, Descendant_Class,
+          Descendant_Id, Is_Primary0, Is_Primary, Path0,
+          Path]),
+   nonvar(Descendant_Id), !, % looking up from a descendant is determinate
+   objects:class_id(Descendant_Id, Is_Primary1, Descendant_Class),
+   objects:parent_(Descendant_Id, Id),
    logic_accumulator(false, Is_Primary1, Is_Primary0, Is_Primary2),
-   objects:parent_(Id, From_Id),
-   class_path_int(Class-Id, To_Class-To_Id, Is_Primary2,
+   class_path_int(Ancestor_Class-Ancestor_Id, _-Id, Is_Primary2,
+                  Is_Primary, [Descendant_Class-Descendant_Id|Path0], Path).
+
+class_path_int(Ancestor_Class-Ancestor_Id, Descendant_Class-Descendant_Id,
+               Is_Primary0, Is_Primary,
+               Path0, [Ancestor_Class-Ancestor_Id|Path1]) :-
+   debug(ch_vocab,
+         'class_path_int(~w-~w, ~w-~w, ~w, ~w, ~w, ~w)',
+         [Ancestor_Class, Ancestor_Id, Descendant_Class,
+          Descendant_Id, Is_Primary0, Is_Primary, Path0,
+          [Ancestor_Class-Ancestor_Id|Path1]]),
+   objects:class_id(Ancestor_Id, Is_Primary1, Ancestor_Class),
+   objects:parent_(Id, Ancestor_Id),
+   logic_accumulator(false, Is_Primary1, Is_Primary0, Is_Primary2),
+   class_path_int(_-Id, Descendant_Class-Descendant_Id, Is_Primary2,
                   Is_Primary, Path0, Path1).
 
 %% class_primary_id(+Class, ?Class_Id) is semidet.
