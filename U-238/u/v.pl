@@ -124,7 +124,9 @@
 :- use_module(library(lists)).
 :- use_module(library(ordsets)).
 :- use_module(u(logging)).
+:- use_module(u(class_diagram)).
 :- use_module(u(util/lambda)).
+:- use_module(u(vd), [db_select/3, named_args_unify/5]).
 
 :- reexport(u(internal/objects_i),
             [
@@ -416,37 +418,33 @@ obj_downcast(Parent, Descendant) :-
 
 
 obj_auto_downcast_int(Parent, Descendant, Ctx) :-
-
    functor(Parent, Parent_Class, _),
-   class_primary_id(Parent_Class, Parent_Class_Id),
-   (  obj_field(Parent, class, Class),
+   arg(1, Parent, Parent_Class_Id),
+   (  obj_field(Parent, class, To_Class),
       % check the result of the user-defined predicate
-      nonvar(Class),
-      u_class(Class),
-      class_primary_id(Class, To_Class_Id)
+      nonvar(To_Class),
+      u_class(To_Class)
    ->
-      (  Parent_Class_Id =\= To_Class_Id
-      -> obj_downcast_int(Parent_Class_Id, To_Class_Id, downcast,
+      (  class_id(Parent_Class_Id, To_Class)
+      ->
+         % the same class downcast
+         Parent = Descendant
+      ;
+         obj_downcast_int(Parent_Class-Parent_Class_Id, To_Class-_, downcast,
                           Parent, Descendant1, Ctx),
          % recursion till no cast
          obj_auto_downcast_int(Descendant1, Descendant, Ctx)
-      ;
-         % the same class downcast
-         Parent = Descendant
       )
    ;
       print_message(warning, bad_eval_result(Parent, class)),
       Parent = Descendant
    ).
 
-
 % obj_downcast(+From, +To_Class, -To)
 %
 % downcast to Class
 %
-
 obj_downcast(From, To_Class, To) :-
-
    % TODO check To_Class below From_Class
    Ctx = context(obj_downcast/3, _),
    (  (var(From); var(To_Class))
@@ -460,26 +458,22 @@ obj_downcast(From, To_Class, To) :-
    ->
       To = From
    ;
-      class_primary_id(To_Class, To_Class_Id),
-      obj_downcast_int(From_Class_Id, To_Class_Id, downcast,
-                       From, To, Ctx)
+      obj_downcast_int(From_Class-From_Class_Id, To_Class-_,
+                       downcast, From, To, Ctx)
    ).
 
-
-obj_downcast_int(From_Class_Id, To_Class_Id, Mode, From, To,
-                 Ctx) :-
-
-   From_Class_Id \== To_Class_Id,
-
-   %  Check the downcast condition
-   class_id(From_Class_Id, From_Class),
-   class_id(To_Class_Id, To_Class),
-   (   Mode == downcast
-   ->  (  same_or_descendant(To_Class_Id, true, From_Class)
-       -> true
-       ;  throw(not_downcast(From_Class, To_Class))
-       )
-   ;   true
+obj_downcast_int(From_Class-From_Class_Id, To_Class-To_Class_Id,
+                 Mode, From, To, Ctx) :-
+   (  % Get the path (From_Class, To_Class]
+      class_path(From_Class-_, To_Class-_, true, [From_Class-_|Path_End]),
+      % Get the path [object_base_v..From_Class] + (From_Class, To_Class]
+      class_path(_-0, _-From_Class_Id, _, Path_End, Path1), !,
+      class_path_extract_list(name, Path1, Path2),
+      reverse(Path2, Path),
+      class_rebase_int(Path, [To_Class_Id|_], _, Ctx),
+      From_Class_Id \== To_Class_Id % is it needed?
+   -> true 
+   ;  throw(not_downcast(From_Class, To_Class))
    ),
 
    % Construct To object with all fields unbounded
@@ -556,11 +550,12 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
 
    % Check the Old_Base and New_Base
    % convert it to the rebased base id if needed
-   (  rebased_base(Orig_Id, Old_Base, Old_Base_Id) -> true
+   (  class_path(Old_Base-Old_Base_Id, _-Orig_Id, _, _)
+   -> true
    ;  throw(error(old_base_is_invalid(Old_Base, Orig_Id), Ctx))
    ),
 
-   (  rebased_base(Orig_Id, New_Base, New_Base_Id)
+   (  class_path(New_Base-New_Base_Id, _-Orig_Id, _, _)
    -> New_Base_Is_Ancestor = true
    ;  class_primary_id(New_Base, New_Base_Id),
       New_Base_Is_Ancestor = false
@@ -589,20 +584,6 @@ obj_rebase(Rebase_Rule, Object0, Object) :-
       obj_parents_int(Object0, New_Parents, Object, Ctx)
    ).
 
-% If Base is a same or ancestor return its id
-% (it will be rebased if it is rebased already)
-rebased_base(Id, Base, Id) :-
-
-   class_id(Id, Base), !.
-
-rebased_base(Id, Base, Base_Id) :-
-
-   parent(Id, Parent_Id),
-   rebased_base(Parent_Id, Base, Base_Id).
-
-
-
-
 %% obj_reinterpret(+From, ?Class_To, -To) is nondet
 %
 % Use reinterpret/4 rules (see Declaring object) to make various
@@ -620,8 +601,8 @@ obj_reinterpret(From, Class_To, To) :-
    (  nonvar(Class_To) -> true ; Det = f ),
 
    functor(From, From_Class, _),
-   (  clause(objects:reinterpret(From_Class, To_Class, _, _), _),
-      class_primary_id(To_Class, To_Class_Id),
+   (  clause(objects:reinterpret(From_Class, Class_To, _, _), _),
+      class_primary_id(Class_To, To_Class_Id),
       obj_downcast_int(From_Class_Id, To_Class_Id, reinterpret,
                        From, To, Ctx)
    ;
@@ -711,9 +692,9 @@ obj_sort_parents(Obj0, Class_Order, Obj) :-
 % Calculate expressions in an operator form
 %
 % ==
-% expr ::= obj_expr | Value | Variable
+% expr ::= obj_expr | db_expr | Value | Variable
 % obj_expr ::= obj_expr / Field | obj_expr // Field | obj_expr / [Fields] | element
-% element ::= (Object | list)
+% element ::= (Object | list | @DB_Key)
 % list ::= [obj_expr, ...] | []
 % ==
 
@@ -739,10 +720,12 @@ eval_obj_expr_cmn(_ / [], _, [], [], _) :- !.
 eval_obj_expr_cmn(Obj_Expr / Fields, Weak, Value, list, Ctx) :-
    Fields = [_|_], !,
    eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type1, Ctx),
-   ( Type1 == object -> true
-   ; throw(error(invalid_object(Value1, ''), Ctx))
-   ),
-   eval_list_obj_expr(Fields, Value1, Weak, [], Value, Ctx).
+   (   Type1 == object
+   ->  eval_list_obj_expr(Fields, Value1, Weak, [], Value, Ctx)
+   ;   Type1 == db
+   ->  eval_list_db_expr(Fields, Value1, Weak, Value, Ctx)
+   ;   throw(error(invalid_object(Value1, ''), Ctx))
+   ).
 
 % NB with Weak = weak '/' is the same as '//'
 eval_obj_expr_cmn(Obj_Expr / Field, Weak, Value, Type, Ctx) :-
@@ -773,6 +756,9 @@ eval_obj_expr_cmn(List, _, Value, list, Ctx) :-
 eval_obj_expr_cmn(@(DB_Key), _, @(DB_Key), db, Ctx) :- !,
    check_db_key(DB_Key, Ctx).
 
+eval_obj_expr_cmn(@(DB_Key)->Object, _, @(DB_Key)->Object, db, Ctx) :- !,
+   check_db_key(DB_Key, Ctx).
+
 eval_obj_expr_cmn(Object, _, Object, object, _) :-
    u_object(Object), !.
 
@@ -784,8 +770,10 @@ eval_obj_expr_cmn(Compound, _, Value, compound, Ctx) :-
 
 eval_obj_expr_cmn(Value, _, Value, value, _) :- !.
 
+eval_obj_field(db, @(DB_Key)->Object, _, Field, Value, _) :-
+   named_args_unify(DB_Key, _, [Field], [Value], Object).
 eval_obj_field(db, @(DB_Key), _, Field, Value, _) :-
-   db_select(DB_Key, [Field], [Value]).
+   eval_obj_field(db, @(DB_Key)->_, _, Field, Value, _).
 
 eval_obj_field(object, Var, weak, _, Var, _) :- var(Var), !.
 eval_obj_field(object, Var, fail, _, Var, _) :- var(Var), !, fail.
@@ -823,7 +811,8 @@ eval_obj_field(variable, Value, throw, _, _, Ctx) :-
 eval_obj_field(variable, _, fail, _, _, _) :-
    !, fail.
 
-% It is always called for Value / List
+% eval_list_obj_expr(+FieldsList, +Object, +Weak, -ValList0, -ValList1, +Ctx)
+% It is called for Object / List
 eval_list_obj_expr([], _, _, Value, Value, _).
 eval_list_obj_expr([Expr_Tail|Tail], Obj, Weak, Value0,
                    [V|Value1], Ctx) :-
@@ -838,6 +827,10 @@ eval_list_build_obj_expr(Obj, Part1 / Field, Expr1 / Field) :-
 eval_list_build_obj_expr(Obj, Part1 // Field, Expr1 // Field) :-
    eval_list_build_obj_expr(Obj, Part1, Expr1), !.
 
+% eval_list_obj_expr(+FieldsList, +DB, +Weak, -ValList, +Ctx)
+% It is called for @DB_Key / List
+eval_list_db_expr(FieldsList, @(DB_Key), _, ValList1, _) :-
+   db_select(DB_Key, FieldsList, ValList1).
 
 %% class_descendant(+Class, ?Descendant) is nondet.
 %
@@ -940,15 +933,11 @@ class_parent(Class, Parent) :-
 % ==
 
 class_parents(Class, Parents) :-
-
    Ctx = context(class_parents/2, _),
    check_inst(Class, Ctx),
-   check_existing_class_arg(Class, Ctx, Class_Id),
-
-   list_inheritance(Class_Id, Id_List_Rev),
-   reverse(Id_List_Rev, Id_List),
-   maplist(class_id, Id_List, Parents).
-
+   check_existing_class_arg(Class, Ctx),
+   class_path(object_base_v, Class, true, Parents0), !,
+   reverse(Parents0, Parents).
 
 %% obj_is_descendant(+Descendant, ?Class) is nondet.
 %
@@ -973,10 +962,12 @@ obj_is_descendant(Descendant, Class) :-
 
 %% obj_same_or_descendant(+Descendant, ?Class) is nondet.
 %
-%  True if Descendant = Class or it is a descendant of Class.
+%  True if Descendant is of Class or it is a descendant of Class.
 %  Count rebased classes.
-%
+%  Doesn't guarantee BT order.
 %  It is semidet if Class is bound.
+%
+%  @deprecated class_path/4
 
 obj_same_or_descendant(Descendant, Class) :-
 
@@ -1027,6 +1018,7 @@ obj_pretty_print(Object) :-
    Ctx = context(obj_pretty_print/1, _),
    obj_pretty_print_cmn([lf(1)], Object, Ctx).
 
+% Additional option available: hide_field(FieldName)
 obj_pretty_print(Options, Object) :-
 
    Ctx = context(obj_pretty_print/2, _),
@@ -1287,19 +1279,23 @@ obj_copy_int(Class_Id, From, To) :-
    ;  print_message(warning, undef_operation(copy, Class_Id))
    ).
 
-
 A =^= B :-
-
    Ctx = context((=^=)/2, _),
-   eval_obj_expr_cmn(A, throw, A1, _, Ctx),
-   eval_obj_expr_cmn(B, throw, B1, _, Ctx),
+   eval_obj_expr_both_sides(A, B, A1, B1, Ctx),
    A1 =@= B1.
 
 A ^= B :-
-
    Ctx = context((^=)/2, _),
-   eval_obj_expr_cmn(A, throw, A1, _, Ctx),
-   eval_obj_expr_cmn(B, throw, B1, _, Ctx),
+   eval_obj_expr_both_sides(A, B, A1, B1, Ctx),
    A1 = B1.
+
+eval_obj_expr_both_sides(A, B, A1, B1, Ctx) :-
+   eval_obj_expr_cmn(A, throw, A1, _, Ctx),
+   (  % prevent eval_obj_expr_cmn hangup when B is [...| Tail ] (incomplete)
+      nonvar(A1), ( A1 = [] ; A1 = [_|_] )
+   -> length(A1, AL), length(B, AL)
+   ;  true
+   ),
+   eval_obj_expr_cmn(B, throw, B1, _, Ctx).
 
 :- initialization clear_decode_arg.

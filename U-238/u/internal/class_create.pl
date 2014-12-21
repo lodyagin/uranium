@@ -306,8 +306,8 @@ assert_copy(Class_Id, Parent_Id) :-
    class_id(Class_Id, Class),
    %class_primary_id(Class, Primary_Id),
 
-   (   objects:clause(copy(Class_Id, Class, From, To),
-                      Body)
+   (   objects:clause(copy(Class_Id, Class, _, _),
+                      _)
    ->
        true % it is already asserted (e.g. by
             % object_module)
@@ -360,6 +360,11 @@ class_rebase_int([Class|Parents],
                  [Class_New_Id|Parents_Ids],
                  New_Class, Ctx) :-
 
+   (  cycle_in_parents([Class|Parents], Inv_Child, Inv_Parent)
+   -> throw(error(class_inheritance_cycle([Class|Parents], Inv_Child, Inv_Parent), Ctx))
+   ;  true
+   ),
+   
    % The recursion into parents
    class_rebase_int(Parents, Parents_Ids, New_Class_For_Parent, Ctx),
    Parents_Ids = [Parent_Id|_],
@@ -403,7 +408,10 @@ class_rebase_int([Class|Parents],
       )
    ).
 
-
+cycle_in_parents(PL, X, Y) :-
+   append(_, [X|L], PL),
+   member(Y, L),
+   class_path(X, Y, _, _), !.
 
 assert_new_class_id(Class_Id, Class_Name, Parent_Id, New_Fields,
                     Ctx) :-

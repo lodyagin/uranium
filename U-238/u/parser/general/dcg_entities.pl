@@ -33,7 +33,7 @@
            digits_any//1
            ]).
 
-:- use_module(library(http/dcg_basics)).
+:- use_module(library(dcg/basics)).
 
 %
 % Take as few as possible digits from the input, taking one more

@@ -87,6 +87,16 @@ test(class_create_key_inheritance,
 %   obj_rebase((object_v -> callup_v), V, _),
 %   findall(X, class_descendant(callup_v, X), List).
 
+test(obj_reinterpret1, L == [man_v]) :-
+  obj_construct(man_v, [], [], M),
+  findall(C, obj_reinterpret(M, C, _), L1),
+  sort(L1, L).
+
+test(obj_reinterpret2, L == [man_v, passport_v]) :-
+  obj_construct(man_v, [name, surname, sex], ['Sergei', 'Lodyagin', max], M),
+  findall(C, obj_reinterpret(M, C, _), L1),
+  sort(L1, L).
+
 test(class_name1) :-
 
    class_name(man_v).
@@ -410,6 +420,32 @@ test(obj_downcast1,
    obj_downcast(C0, C1),
    arg(1, C1, Class_Id).
 
+% Downcast of rebased object
+test(obj_downcast_rebased,
+     [% birthday, country, db_key, db_ref, fit_..., height, id, name, sex, surname, weight
+      true(C2 =@= callup_v(C2_Class_Id, 1994, _, _, _, _, _, _, _, _, man, _, _))
+     ]) :-
+   obj_construct(citizen_v, [sex, birthday], [man, 1994], C0),
+   obj_rebase((object_v -> db_object_v), C0, C1),
+   obj_downcast(C1, callup_v, C2),
+   obj_construct(callup_v, [], [], CC),
+   arg(1, C2, C2_Class_Id), 
+   arg(1, CC, CC_Class_Id),
+   assertion(C2_Class_Id =\= CC_Class_Id).
+   
+% Downcast of rebased object
+test(obj_downcast2_rebased,
+     [% birthday, country, db_key, db_ref, fit_..., height, id, name, sex, surname, weight
+      true(C2 =@= callup_v(C2_Class_Id, 1994, _, _, _, _, _, _, _, _, man, _, _))
+     ]) :-
+   obj_construct(citizen_v, [sex, birthday], [man, 1994], C0),
+   obj_rebase((object_v -> db_object_v), C0, C1),
+   obj_downcast(C1, C2),
+   obj_construct(callup_v, [], [], CC),
+   arg(1, C2, C2_Class_Id), 
+   arg(1, CC, CC_Class_Id),
+   assertion(C2_Class_Id =\= CC_Class_Id).
+   
 test(obj_field1, [Flds == Vals]) :-
 
    class_fields(citizen_v, Flds),
@@ -469,7 +505,7 @@ test(obj_same_or_descendant2) :-
 
 test(obj_same_or_descendant3) :-
 	obj_construct(citizen_v, [], [], C),
-	obj_same_or_descendant(C, C).
+	obj_same_or_descendant(C, citizen_v).
 
 
 test(obj_set_field1, [Surname =@= _]) :-
@@ -547,12 +583,11 @@ test(obj_parents1_1,
    obj_parents(V, P).
 
 test(obj_parents2_1) :-
-
    obj_construct(citizen_v,
                  [sex, surname, country, birthday],
                  [man, 'Mayakovsky', ['Soviet Union'], 1994],
                  Man1),
-   New_Parents_Order = [man_v, citizen_v, object_v, object_base_v],
+   New_Parents_Order = [citizen_v, tarjan_vertex_v, man_v, object_v, object_base_v],
    obj_parents(Man1, New_Parents_Order, Man2),
    obj_parents(Man1, P1),
    assertion(P1 == [citizen_v, man_v, object_v, object_base_v]),
@@ -565,7 +600,7 @@ test(obj_parents2_1) :-
    obj_field(Man2, class, C2),
    obj_field(Man1, functor, F1),
    obj_field(Man2, functor, F2),
-   assertion([F1, F2, C1, C2] == [citizen_v, man_v, callup_v, callup_v]).
+   assertion([F1, F2, C1, C2] == [citizen_v, citizen_v, callup_v, callup_v]).
 
 test(obj_parents2_bug1) :-
 
@@ -631,6 +666,11 @@ test(obj_rebase_keymaster) :-
    get_keymaster(CiId, K1_Id),
    get_keymaster(CaId, K2_Id),
    assertion(K1_Id == K2_Id).
+
+test(obj_rebase_cycle, error(class_inheritance_cycle([tarjan_vertex_v,db_object_v,man_v,object_v,object_base_v],db_object_v,man_v))) :-
+   obj_construct(tarjan_vertex_v, [], [], O1),
+   obj_rebase((object_v -> db_object_v), O1, O2),
+   obj_rebase((object_v -> man_v), O2, _).
 
 test(obj_rebase_bug1) :-
    obj_construct(man_v, [sex, name], [man, 'Adam'], Obj1_0),

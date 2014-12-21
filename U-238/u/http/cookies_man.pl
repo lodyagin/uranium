@@ -144,7 +144,7 @@ load_cookie(DB_Key, Request_Host, Uri_Path, Set_Cookie) :-
    (   named_args_unify(DB_Key, _,
                         [domain, path, host_only, set_cookie],
                         [Host_Can, Path, Host_Only, Set_Cookie],
-                        Obj1),
+                        _),
        must_be(oneof([true, false]), Host_Only), % check DB consistency
        Host_Only = true
    ;
@@ -152,7 +152,7 @@ load_cookie(DB_Key, Request_Host, Uri_Path, Set_Cookie) :-
        named_args_unify(DB_Key, _,
                         [domain, path, host_only, set_cookie],
                         [Domain, Path, Host_Only, Set_Cookie],
-                        Obj1),
+                        _),
        must_be(oneof([true, false]), Host_Only), % check DB consistency
        Host_Only = false,
        domain_match(Host_Can, Domain)

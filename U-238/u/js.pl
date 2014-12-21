@@ -30,7 +30,7 @@
           [js_decode_string/2
           ]).
 
-:- use_module(library(http/dcg_basics)).
+:- use_module(library(dcg/basics)).
 
 js_decode_string(Str_In, Str_Out) :-
 

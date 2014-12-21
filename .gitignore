@@ -1,6 +1,7 @@
 TAGS
 .plrc*
 *~*
+*#*
 *.aux
 *.dvi
 *.log
@@ -9,4 +10,6 @@ TAGS
 *.pdf
 *.so
 *.toc
+Queries.pl
+debian/uranium/
 reports/

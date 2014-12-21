@@ -31,6 +31,8 @@
            reload_all_classes/0
            ]).
 
+:- use_module(u(ur_lists)).
+:- use_module(u(util/lambda)).
 :- use_module(u(internal/objects)).
 :- use_module(u(internal/objects_i)).
 :- use_module(u(internal/class_create)).
@@ -289,8 +291,9 @@ assert_clause_int(Module_From:Clause, Module_To, Checking_Pred) :-
 % Reload all class definitions.
 reload_all_classes :-
 
+   ch_vocab_clear,    % clear class hierarchy
    db_vocab_clear(_), % clear all current db class caches
-
+   
    % clear the db
    retractall_objects,
    retractall(db_pg:pl_pg_type(_, _, _)),
@@ -365,17 +368,26 @@ reload_all_classes :-
 
 install_v_portrays :-
 
-   (  clause(portray(X), object_module:_) -> true
+   (  clause(portray(_), object_module:_) -> true
    ;  user:assertz(portray(X) :- object_module:v_portray(X))
    ).
 
-% v_portray(Obj) :-
-
-%    u_object(Obj), !,
-%    obj_pretty_print([], Obj).
-
+v_portray(Object) :-
+   compound(Object), u_object(Object), !,
+   obj_class_id(Object, Class_Id),
+   integer(Class_Id),
+   functor(Object, Class, _),
+   class_id(Class_Id, Class),
+   format('~a(~d, ', [Class, Class_Id]), 
+   findall(Field-Value,
+           (  objects:field_info(Class_Id, Field, _, _, false),
+              obj_field_int(Class_Id, Field, _, Object, Value, _, _)
+           ), List),
+   write_delimited(\FV^(F-V=FV -> format('~a:~p', [F, V]); write(FV)),
+                   ', ', List),
+   write(')').
+   
 v_portray(El) :-
-
    compound(El), functor(El, element, _), !,
    \+ dom_level(El, 0, 4), % Hide DOMs after 4 level
    write('<element/3>').

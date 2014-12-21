@@ -39,6 +39,43 @@ test(class_fields) :-
                    functor:_, height:_, id:_, name:_, sex:_,
                    surname:_,weight:_]).
 
+test(get_keymaster1, [KI == 1]) :-
+   class_primary_id(tarjan_vertex_v, CI),
+   get_key(CI, Key),
+   assertion(Key == []),
+   get_keymaster(CI, KI).
+  
+test(get_keymaster2, [KI == CI]) :-
+   class_primary_id(man_v, CI),
+   get_key(CI, Key),
+   assertion(Key = [name, surname]),
+   get_keymaster(CI, KI).
+  
+test(get_keymaster3, [CM == DO]) :-
+   obj_construct(http_header_v, [], [], TV1),
+   obj_rebase((object_v -> db_object_v), TV1, TV),
+   arg(1, TV, CI),
+   get_key(CI, Key),
+   assertion(Key == []),
+   get_keymaster(CI, CM),
+   parent(CI, DO),
+   class_id(DO, D),
+   assertion(D == db_object_v).
+  
+test(get_keymaster4, [CI == KI]) :-
+   obj_construct(man_v, [], [], Man1),
+   obj_rebase((object_v -> db_object_v), Man1, Man),
+   arg(1, Man, CI),
+   get_keymaster(CI, KI).
+
+test(get_keymaster5, [CI == KI]) :-
+   obj_construct(chrome_browser_v, [], [], B1),
+   obj_parents(B1,
+               [chrome_browser_v, db_object_v, browser_v, object_v, object_base_v],
+               B2),
+   arg(1, B2, CI),
+   get_keymaster(CI, KI).
+
 test(list_inheritance_names1) :-
 
    class_primary_id(callup_v, Id),
@@ -315,7 +352,7 @@ test(same_or_descendant2_2) :-
               class_id(Anc_Id, Anc)
            ),
            Ancestors),
-   assertion(Ancestors = [object_v, object_base_v, man_v]).
+   assertion(Ancestors = [man_v, object_v, object_base_v]).
 
 test(same_or_descendant2_3) :-
    Class_id = 1,

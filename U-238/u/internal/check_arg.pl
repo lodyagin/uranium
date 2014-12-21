@@ -27,10 +27,10 @@
 
 :- module(check_arg,
           [
-           check_class_arg/2,          % inst-
+           check_class_arg/2,          % +Class, Ctx (inst-)
            check_db_key/2,             % inc. inst (inst+)
-           check_existing_class_arg/2, % inst-
-           check_existing_class_arg/3, % +Class, +Ctx, -Class_Id
+           check_existing_class_arg/2, % +Class, Ctx (inst-)
+           check_existing_class_arg/3, % +Class, Ctx, -Class_Id
                                        % inst-
 
            check_existing_class_list_arg/3, % +Class_List, +Ctx,
@@ -54,6 +54,8 @@
            error:has_type/2
            ]).
 
+:- reexport(u(internal/db_i), [db_key_is_valid/1]).
+
 /** <module> Check arguments
 
   It is like library(error) of SWI-Prolog but also shows context.
@@ -61,7 +63,7 @@
 
 :- use_module(library(error)).
 :- use_module(objects_i).
-:- use_module(db_i).
+%:- use_module(db_i).
 
 :- multifile error:has_type/2.
 
@@ -85,7 +87,7 @@ check_inst(Arg, Ctx) :-
    ).
 
 
-%% check_class_arg(+Class, @Ctx) is semidet.
+%% check_class_arg(+Class, Ctx) is semidet.
 %
 % Check whether Class is valid Uranium class name. Doesn't
 % include the instantiation check (it will fail if Class is a

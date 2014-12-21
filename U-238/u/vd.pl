@@ -52,19 +52,19 @@
 
            db_put_object/2,  % +DB_Key, +Object
            db_put_object/3,  % +DB_Key, +Object0, -Object
-           db_put_object/4,  % +DB_Key,+Options,+Object0,-Object
-           db_put_object/5,  % +DB_Key,+Options,+Object0,-Object,
+           db_put_object/4,  % +DB_Key,+Option,+Object0,-Object
+           db_put_object/5,  % +DB_Key,+Option,+Object0,-Object,
                              % -Replaced
 
            db_recorda/2,     % +DB_Key, +Object
            db_recorda/3,     % +DB_Key, +Object0, -Object
-           db_recorda/4,     % +DB_Key,+Options,+Object0,-Object
-           db_recorda/5,     % +DB_Key,+Options,+Object0,-Object,
+           db_recorda/4,     % +DB_Key,+Option,+Object0,-Object
+           db_recorda/5,     % +DB_Key,+Option,+Object0,-Object,
                              % -Replaced
 
            db_put_objects/3, % +DB_Key, :Pred, +Options
 
-	   db_recorded/2,    % +DB_Key, ?Object
+           db_recorded/2,    % +DB_Key, ?Object
 %           db_rewrite/5,     % +DB_Key, ?Functor, +Fields,
                              % @Old_Vals, +New_Vals
 
@@ -189,6 +189,8 @@
 :- use_module(u(ur_lists)).
 :- use_module(u(ur_terms)).
 
+:- reexport(u(internal/db_i), [db_key_is_valid/1]).
+
 %% db_clear(+DB_Key) is det.
 %
 % Clear the DB identified by DB_Key if the DB exists.
@@ -240,8 +242,8 @@ db_copy(DB_In, DB_Out) :-
        arg(1, Obj0, Class_Id),
 
        obj_rewrite_int(Class_Id, Obj0, throw,
-                       [db_key, db_ref], _,
-                       [_, _], Obj1, Ctx),
+                       [db_key, db_ref, db_class], _,
+                       [_, _, _], Obj1, Ctx),
 
        db_put_object_int(DB_Out, Class_Id, _, recordz, Obj1, _,
                          false, Ctx),
@@ -253,9 +255,9 @@ db_copy(DB_In, DB_Out) :-
 %% db_erase(?Obj) is semidet.
 %
 % Erase the object Obj from DB. Obj should be Uranium object with
-% ground _db_key_ and _db_ref_ fields (usually a _db_object_v_
-% descendant, see db_object_v.pl), i.e., these fields idenitify
-% the database and object to be erased.
+% ground _db_key_, _db_ref_ and _db_class_ fields (usually a
+% _db_object_v_ descendant, see db_object_v.pl), i.e., these
+% fields idenitify the database and object to be erased.
 %
 % Fail if Obj is absent in DB.
 %
@@ -264,6 +266,7 @@ db_copy(DB_In, DB_Out) :-
 %
 % @error domain_error(bound_db_key, Obj) db_key should be ground
 % @error domain_error(bound_db_ref, Obj) db_ref should be ground
+% @error domain_error(bound_db_class, Obj) db_class should be ground
 
 db_erase(Obj) :-
 
@@ -272,14 +275,17 @@ db_erase(Obj) :-
    check_object_arg(Obj, Ctx, Class_Id),
 
    obj_unify_int(Class_Id,
-                 [db_key, db_ref], throw, Obj,
-                 [DB_Key, DB_Ref], Ctx),
+                 [db_key, db_ref, db_class], throw, Obj,
+                 [DB_Key, DB_Ref, DB_Class], Ctx),
 
     (   ground(DB_Key) -> true
     ;   throw(error(domain_error(bound_db_key, Obj), Ctx))
     ),
     (   ground(DB_Ref) -> true
     ;   throw(error(domain_error(bound_db_ref, Obj),Ctx))
+    ),
+    (   ground(DB_Class) -> true
+    ;   throw(error(domain_error(bound_db_class, Obj),Ctx))
     ),
 
    db_erase_int(DB_Key, Obj), !.
@@ -300,8 +306,8 @@ db_put_object(DB_Key, Object) :-
 %% db_put_object(+DB_Key, ?Object0, -Object) is semidet.
 %
 % Like db_put_object/2 but also return the object unified with DB
-% (it will be always db_object_v descendant with ground =db_key=
-% and =db_ref= fields (see db_object_v.pl)).
+% (it will be always db_object_v descendant with ground =db_key=,
+% =db_ref= and =db_class= fields (see db_object_v.pl)).
 %
 % In the case of =ignore= key policy Object is unified with the
 % first conflicting object from DB.
@@ -326,8 +332,8 @@ db_put_object(DB_Key, Option, Object0, Object) :-
 
 %% db_put_object(+DB_Key, +Option, +Object0, -Object, -Replaced)
 %
-% This version unifies the last argument with `replaced'
-% if the original object has the same db_ref as already
+% This version unifies the last argument with `replaced' if the
+% original object has the same db_ref and db_class as already
 % existing in the database DB_Key
 
 db_put_object(DB_Key, Option, Object0, Object, Replaced) :-
@@ -427,8 +433,9 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
 
       % Check the replace case
       obj_rewrite_int(Class_Id, Object0, throw,
-                      [db_key, db_ref],
-                      [Old_DB_Key, Old_DB_Ref], [DB_Key, _],
+                      [db_key, db_ref, db_class],
+                      [Old_DB_Key, Old_DB_Ref, _],
+                      [DB_Key, _, _],
                       Object1, Ctx),
       (  ground(Old_DB_Ref),
          Old_DB_Key = DB_Key
@@ -506,8 +513,7 @@ db_put_object_int(DB_Key, Class_Id0, Option, Order, Object0,
 
 is_db_ready(Object) :-
    arg(1, Object, Class_Id),
-   list_inheritance_names(Class_Id,
-                          [object_base_v, object_v, db_object_v|_]).
+   class_path(db_object_v-_, _-Class_Id, _, _), !.
 
 make_db_ready(DB_Key, Object0, Object, Ctx) :-
    arg(1, Object0, Class_Id),
@@ -681,7 +687,7 @@ db_search(DB_In, DB_Out, Pred) :-
 
    (   db_recorded(DB_In, Term),
        once(call(Pred, Term)),
-       obj_reset_fields([db_ref, db_key], Term, Term1),
+       obj_reset_fields([db_ref, db_key, db_class], Term, Term1),
        db_put_object(DB_Out, Term1),
        fail
    ;
@@ -1202,79 +1208,74 @@ check_record(\/(Expr1, Expr2), Record) :-
 
 %% db_merge(+DB1_Key, +DB2_Key)
 %
-% try unify DB1_Key x DB2_Key with key restrictions,
+% Try to unify DB1_Key x DB2_Key with key restrictions,
 % leave only unified in DB_Key1,
 % always cast to more narrowed type.
 % Drop all values with incomplete keys.
 % Don't unify if a key is empty (it is a performance restriction).
 %
-/*
-db_merge(DB1_Key, DB2_Key) :-
-
-   Ctx = context(db_merge/3, _),
-   db_merge_cmn(DB1_Key, DB2_Key, default, Ctx).
+%db_merge(DB1_Key, DB2_Key) :-
+%   Ctx = context(db_merge/2, _),
+%   db_merge_cmn(DB1_Key, DB2_Key, default, Ctx).
 
 %% db_merge(+DB1_Key, +DB2_Key, +Key)
 % Merge by Key fields
 
-db_merge(DB1_Key, DB2_Key, Key) :-
+%db_merge(DB1_Key, DB2_Key, Key) :-
+%   Ctx = context(db_merge/3, _),
+%   db_merge_cmn(DB1_Key, DB2_Key, Key, Ctx).
 
-   Ctx = context(db_merge/3, _),
-   db_merge_cmn(DB1_Key, DB2_Key, Key, Ctx).
+% db_merge_cmn(DB1_Key, DB2_Key, Key, Ctx) :-
+%    check_db_key(DB1_Key, Ctx),
+%    check_db_key(DB2_Key, Ctx),
+%    atom_concat(DB1_Key, '.#db_merge', DB_Tmp),
 
-db_merge_cmn(DB1_Key, DB2_Key, Key, Ctx) :-
+%    write_log(['Start db_merge ', DB1_Key, ' and ', DB2_Key],
+%              [logger(db_merge), lf(1, before), lf(1)]),
 
-   check_db_key(DB1_Key, Ctx),
-   check_db_key(DB2_Key, Ctx),
-   atom_concat(DB1_Key, '.db_merge', DB_Tmp),
-   write_log(['Start db_merge ', DB1_Key, ' and ', DB2_Key],
-             [logger(db_merge), lf(1, before), lf(1)]),
-   (
-   db_recorded_int(DB1_Key, Object1),
-   write_log(['Found', Object1, 'in the first DB'],
-             [logger(db_merge), lf(1, before), lf(1)]),
-   functor(Object1, Class1, _),
-   (  Key = default
-   -> get_key(Class1, Key1)
-   ;  Key1 = Key
-   ),
-   arg(1, Object1, Class1_Id),
-   obj_unify_int(Class1_Id, Key1, throw, Object1, Key1_Value, Ctx),
-   (
-    ground(Key1_Value),
-    write_log(['Got the key value', Key1_Value],
-              [logger(db_merge), lf(1)]),
-    named_args_unify(DB2_Key, Class2, Key1, Key1_Value, Object2)
-    -> %NB use only the first key-unified object from DB2
+%    (  db_recorded_int(DB1_Key, Object1),
 
-    write_log(['Found', Object2, 'in the second DB'],
-              [logger(db_merge), lf(1)]),
-    most_narrowed(Class1, Class2, New_Class), - need check with rebasing
-    arg1(1, Object2, Class2_Id),
-    obj_downcast_int(Object1, New_Class, Final_Obj1),
-    obj_downcast_int(Object2, New_Class, Final_Obj2),
+%       write_log(['Found', Object1, 'in the first DB'],
+%                 [logger(db_merge), lf(1, before), lf(1)]),
 
-    Final_Obj1 = Final_Obj2,
-    db_erase(Object2),
+%       functor(Object1, Class1, _),
+%       (  Key = default
+%       -> get_key(Class1, Key1)
+%       ;  Key1 = Key
+%       ),
+%       arg(1, Object1, Class1_Id),
+%       obj_unify_int(Class1_Id, Key1, throw, Object1, Key1_Value, Ctx),
+%       (
+%          ground(Key1_Value),
 
-    db_recordz(DB_Tmp, Final_Obj2),
-    write_log([Final_Obj2, 'is written into the first DB'],
-              [logger(db_merge), lf(1)])
-    ;
-    write_log('The corresponding object in the second DB is not found',
-              [logger(db_merge), lf(1)])
-   ),
-   fail
-   ;
-   true
-   ),
-   db_clear(DB1_Key),
-   db_clear(DB2_Key),
-   db_move_all_data(DB_Tmp, DB1_Key).
+%          write_log(['Got the key value', Key1_Value],
+%                    [logger(db_merge), lf(1)]),
 
-*/
+%          named_args_unify(DB2_Key, Class2, Key1, Key1_Value, Object2)
+%       -> %NB use only the first key-unified object from DB2
 
+%          write_log(['Found', Object2, 'in the second DB'],
+%                    [logger(db_merge), lf(1)]),
+%          most_narrowed(Class1, Class2, New_Class), %- need check with rebasing
+%          arg(1, Object2, _),
+%          obj_downcast_int(Object1, New_Class, Final_Obj1),
+%          obj_downcast_int(Object2, New_Class, Final_Obj2),
 
+%          Final_Obj1 = Final_Obj2,
+%          db_erase(Object2),
+
+%          db_recordz(DB_Tmp, Final_Obj2),
+%          write_log([Final_Obj2, 'is written into the first DB'],
+%                    [logger(db_merge), lf(1)])
+%       ;
+%          write_log('The corresponding object in the second DB is not found',
+%                    [logger(db_merge), lf(1)])
+%       ),
+%       fail ; true
+%    ),
+%    db_clear(DB1_Key),
+%    db_clear(DB2_Key),
+%    db_move_all_data(DB_Tmp, DB1_Key).
 
 
 %% named_args_unify(+DB_Key, ?Functor, +Field_Names, ?Values,

@@ -69,9 +69,7 @@
 :- use_module(u(vd)).
 :- use_module(u(internal/check_arg)).
 :- use_module(u(util/lambda)).
-
-:- meta_predicate db_auto_value(+, ?).
-:- meta_predicate new_db_auto_value(+, +, 2, +).
+:- use_module(u(class_diagram)).
 
 new_class(db_auto_value_v, db_object_v,
           [class_name, field_name,
@@ -139,15 +137,17 @@ add_bind_to_db(DB_Key, Class_Name, Field_Name, Pred, Seed) :-
 % try find db_auto_value_v for parents up to hierarchy.
 
 db_bind_auto(DB_Key, Obj) :-
-
    Ctx = context(db_bound_auto/3, _),
    check_db_key(DB_Key, Ctx),
    check_inst(Obj, Ctx),
-   check_object_arg(Obj, Ctx, _),
-
+   check_object_arg(Obj, Ctx, Class_Id),
+   class_path(object_v-_, _-Class_Id, _, Path1), !,
+   class_path_extract_list(name, Path1, Path2),
+   reverse(Path2, Path),
+   
    findall(p(Field, Value),
            (  % up to hierarchy
-              obj_same_or_descendant(Obj, Class_Name),
+              member(Class_Name, Path),
               named_args_unify(DB_Key, _,
                                [class_name, field_name, auto_value],
                                [Class_Name, Field, Value],

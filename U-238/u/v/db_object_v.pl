@@ -54,7 +54,8 @@
 
 new_class(db_object_v, object_v,
           [db_key, % uniq identify the db
-           db_ref  % "physical" address in db, it is opaque
+           db_ref, % "physical" address in db, it is opaque
+           db_class % DB class id
            ]).
 
 

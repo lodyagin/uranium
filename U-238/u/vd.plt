@@ -37,19 +37,40 @@ test(db_copy, [setup(model_db), N =:= 3]) :-
    findall('.', db_recorded(people2, _), L),
    length(L, N).
 
-test(db_erase, [setup(model_db)]) :-
-
+test(db_erase1, [setup(model_db)]) :-
    (  named_args_unify(people, _,
                        [weight, surname], [73, _], X),
       db_erase(X),
       fail ; true
    ),
-
    findall(Y,
            db_recorded(people, Y),
            LY),
-   assertion(LY = [man_v(_, _, _, _, 'Eva', woman, _, _)]).
+   assertion(LY = [man_v(_, _, _, _, _, 'Eva', woman, _, _)]).
 
+test(db_erase2, [setup(db_clear(people))]) :-
+   db_construct(people, citizen_v,
+                [birthday, sex],
+                [1994, man], C1),
+   db_size(people, S1),
+   assertion(S1 == 1),
+   obj_downcast(C1, C2),
+   functor(C2, CC, _),
+   assertion(CC == callup_v),
+   db_erase(C2),
+   db_size(people, S2),
+   assertion(S2 == 0).
+
+test(db_erase_other_db, [setup((db_clear(people), db_clear(people2)))]) :-
+   db_construct(people, man_v, [], [], M1),
+   db_construct(people2, man_v, [], []),
+   obj_rewrite(M1, [db_key], [_], [people2], MM1),
+   db_erase(MM1),
+   db_size(people, S1),
+   db_size(people2, S2),
+   assertion(S1 == 1),
+   assertion(S2 == 0).
+   
 test(db_iterate1, [setup(model_db), N =:= 3]) :-
 
    findall('.', db_iterate(people, true, _), L),
@@ -187,6 +208,41 @@ test(db_put_object4, [setup(model_db)]) :-
 
    db_size(people2, N),
    assertion(N =:= 1).
+
+% replacing rebased
+test(db_put_object4_1, [setup(model_db), error(class_parents_mismatch(_,_,_,_))]) :-
+   db_construct(people2, man_v, [name], ['Moses']),
+   db_recorded(people2, Man0), !,
+   obj_rewrite(Man0, [name], ['Moses'], [_], Man1),
+   obj_parents(Man1, [man_v, tarjan_vertex_v, db_object_v, object_v, object_base_v], Man2),
+   db_put_object(people2, throw, Man2, _, _).
+
+% replacing downcasted
+test(db_put_object4_2, [setup(db_clear(people2))]) :-
+   db_construct(people2, citizen_v,
+                [birthday, sex, name, surname, id],
+                [1994, man, l, k, 199442]),
+   db_recorded(people2, Man1), !,
+   obj_downcast(Man1, callup_v, Man2),
+   db_put_object(people2, throw, Man2, Man3, Replaced),
+   named_args_unify(Man3,
+                    [name, db_key, db_ref],
+                    [New_Name, DB_Key, DB_Ref]),
+   assertion(New_Name == l),
+   assertion(Replaced == replaced),
+   assertion(nonvar(DB_Ref)),
+   assertion(DB_Key == people2),
+   db_size(people2, N),
+   assertion(N =:= 1).
+
+% replace with incorrect db_key
+test(db_put_object4_3,
+     [setup((db_clear(people), db_clear(people2))),
+      error(_)]) :-
+   db_construct(people, man_v, [name, surname], [1,2], M1),
+   db_construct(people2, man_v, [name,surname], [1,2]),
+   obj_rewrite(M1, [db_key, deb_ref], [_, _], [people2, _], MM1),
+   db_put_object(people, throw, MM1, _, _).
 
 test(db_put_object5,
      [setup(model_db),
@@ -382,8 +438,8 @@ test(db_select2,
 test(db_select3,
      [setup((model_db,
       db_construct(people, citizen_v, [id, sex, name, age], [2, man, 'Igor', 19]))),
-     Class == callup_v]) :-
-   db_select(people,  [name, class], ['Igor', Class]).
+     Classes == [callup_v]]) :-
+   findall(Class, db_select(people,  [name, class], ['Igor', Class]), Classes).
 
 test(db_select_list1,
      [setup(model_db),
@@ -461,8 +517,8 @@ test(eval_obj_expr1,
    findall(Name, @people / name ^= Name, List).
 
 test(eval_obj_expr2, [setup(model_db)]) :-
-   (@people -> Object) / functor ^= citizen_v,
-   assertion(Object / surname =^= 'Mayakovsky').
+   findall(Object, ((@people -> Object) / functor ^= citizen_v), Os),
+   assertion(Os / surname =^= ['Mayakovsky']).
 
 test(store_and_retrieve1,
     [setup(db_clear(people)),

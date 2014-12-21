@@ -9,7 +9,7 @@ test(db_functor_des, [setup(model_db(_))]) :-
 
    findall(F, db_functor_des(people, F, _, _), List1_0),
    msort(List1_0, List1),
-   assertion(List1 == [citizen_v, db_object_v, man_v]),
+   assertion(List1 == [callup_v, citizen_v, db_object_v, man_v]),
 
    findall(F,
            (F = man_v, db_functor_des(people, F, _, _)),
@@ -26,7 +26,7 @@ test(db_functor_des, [setup(model_db(_))]) :-
    findall(F,
            (F = callup_v, db_functor_des(people, F, _, _)),
            List4),
-   assertion(List4 == []).
+   assertion(List4 == [callup_v]).
 
 
 test(db_next_class_id, [setup(setup)]) :-
@@ -40,25 +40,27 @@ test(db_next_class_id, [setup(setup)]) :-
 
 % test local class id -> db class id conversion
 test(db_conv_local_db1, [setup(setup)]) :-
-
 	obj_construct(man_v, [], [], Man1),
 	obj_rebase((object_v -> db_object_v), Man1, Man),
 	arg(1, Man, Man_Local_Id),
-
 	db_i:db_add_class(db_i_test, Man_Local_Id, Man_DB_Id, _),
-
 	db_conv_local_db(db_i_test, Man_Local_Id,
 			 Man_DB_Id1,_),
-
 	assertion(Man_DB_Id =:= Man_DB_Id1),
+        assertion(Man_DB_Id =\= 1).
 
-	% object_v
+test(db_conv_local_db2, [setup(setup), Object_DB_Id == 1]) :-
+        % object_v
 	class_id(Object_Local_Id, object_v), !,
 	db_conv_local_db(db_i_test, Object_Local_Id,
-			 Object_DB_Id, _),
+			 Object_DB_Id, _).
 
-	assertion(Object_DB_Id =:= 1), % always 1
-	assertion(Man_DB_Id =\= Object_DB_Id).
+test(db_conv_local_db3,
+     [setup(setup), error(must_be_descendant_of(man_v, db_object_v))]) :-
+        % not db_object_v descendant
+	class_primary_id(man_v, Object_Local_Id), !,
+	db_conv_local_db(db_i_test, Object_Local_Id,
+			 _, _).
 
 test(db_key_policy, [setup(setup)]) :-
 
@@ -102,8 +104,7 @@ test(db_recorded_int3, [setup(setup)]) :-
    db_put_object(db_i_test, Obj1, Obj),
    db_recorded(db_i_test, Obj).
 
-test(db_recorded_int4, [setup(setup)]) :-
-
+test(db_recorded_int4, [setup(setup), error(_)]) :-
    obj_construct(man_v, [sex, name], [man, 'Adam'], Obj0),
    obj_rebase((object_v -> db_object_v), Obj0, Obj1),
    obj_rebase((object_v -> tarjan_vertex_v), Obj1, Obj2),

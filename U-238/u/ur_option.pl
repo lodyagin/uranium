@@ -34,9 +34,11 @@
 
 :- use_module(library(option)).
 :- use_module(library(error)).
+:- use_module(library(ordsets)).
 :- use_module(u(v)).
 :- use_module(u(vd)).
 :- use_module(u(internal/decode_arg)).
+:- use_module(u(internal/objects_i)).
 :- use_module(v(ur_options_v)).
 
 :- meta_predicate ur_options(:, :).
@@ -84,6 +86,15 @@ ur_options(Pred, _:Options) :-
            )),
      setof(Field, db_select(Class, [group_name], [Field]),
            Fields),
+     class_primary_id(ur_options_v, Ur_Options_Class_Id),
+     class_fields(_, Ur_Options_Class_Id, _, _, Parent_Fields),
+     ord_intersection(Parent_Fields, Fields, Overriding),
+     (  Overriding == [] -> true
+     ;  format(atom(Details),
+               'the option name(s) ~p override ur_options_v class fields',
+               [Overriding]),
+        throw(error(invalid_option_definition(Options), Ctx))
+     ),
      class_create(Class, ur_options_v, Fields)
    ).
 

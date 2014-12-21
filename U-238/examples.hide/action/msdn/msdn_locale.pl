@@ -1,24 +1,24 @@
-%% This file is a part of Uranium, a general-purpose functional test platform.
-%% Copyright (C) 2011  Sergei Lodyagin
-%%
-%% This library is free software; you can redistribute it and/or
-%% modify it under the terms of the GNU Lesser General Public
-%% License as published by the Free Software Foundation; either
-%% version 2.1 of the License, or (at your option) any later version.
-%% 
-%% This library is distributed in the hope that it will be useful,
-%% but WITHOUT ANY WARRANTY; without even the implied warranty of
-%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-%% Lesser General Public License for more details.
+% This file is a part of Uranium, a general-purpose functional test platform.
+% Copyright (C) 2011  Sergei Lodyagin
+%
+% This library is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public
+% License as published by the Free Software Foundation; either
+% version 2.1 of the License, or (at your option) any later version.
+%
+% This library is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
 
-%% You should have received a copy of the GNU Lesser General Public
-%% License along with this library; if not, write to the Free Software
-%% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-%%
-%% e-mail: lodyagin@gmail.com
-%% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
-%% -------------------------------------------------------------------------------
-%%
+% You should have received a copy of the GNU Lesser General Public
+% License along with this library; if not, write to the Free Software
+% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+%
+% e-mail: lodyagin@gmail.com
+% post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
+% -------------------------------------------------------------------------------
+%
 
 :- module(msdn_locale, []).
 
@@ -27,29 +27,19 @@
 :- use_module(u(ur_lists)).
 :- use_module(u(ur_atoms)).
 :- use_module(u(html/http_page)).
-:- use_module(u(html/http_ops)).
-:- use_module(parser/html/html_page_parse).
-:- use_module(parser/html/html_page_find).
-:- use_module(parser/html/table_v_parse).
+:- use_module(u(action/click_url)).
+:- use_module(u(parser/html/html_page_parse)).
+:- use_module(u(parser/html/html_page_find)).
+:- use_module(u(parser/html/table_v_parse)).
 :- use_module(u(logging)).
 
 :- use_module(u(action/templates/find_all_table_rows)).
 
-find_all_locales(DB_Key, User) :-
-
-    obj_field(User, cookie_db_key, Cookies_DB),
-
-    ground(Cookies_DB),
-
-    http_page(http_ops:http_get_html([], Cookies_DB),
-              'http://msdn.microsoft.com/en-us/goglobal/bb896001.aspx',
-              _
-             ),
-
-    http_page(http_ops:http_get_html([], Cookies_DB),
-              'http://www.microsoft.com/resources/msdn/goglobal/default.mspx',
-              Page
-             ),
+find_all_locales(DB_Key, User0, User) :-
+	 click_url('http://msdn.microsoft.com/en-us/goglobal/bb896001.aspx', 
+	           _, User0, User1, _),
+    click_url('http://www.microsoft.com/resources/msdn/goglobal/default.mspx',
+              _, User1, User, Page).
 
     find_all_table_rows:find_all_table_rows(DB_Key,
 			Page,
@@ -113,7 +103,7 @@ fill_full_data_locale(DB_Key, DB_Key2, User, Locale) :-
     html_page_parse(DB_Key3, Page, [table_v]),
     write_log('after html_page_parse:', [logger(dump_db), lf(1)]),
     dump_db(DB_Key3),
-    
+
     atom_concat(DB_Key2, '.table', DB_Key4),
     db_clear(DB_Key4),
     tolower(LCID, LCID_L),
@@ -135,7 +125,7 @@ fill_full_data_locale(DB_Key, DB_Key2, User, Locale) :-
      corteging('-', Field_Names1, Field_Values, L2),
 
      maplist(normalize_row_name, Field_Names1, Field_Names),
-     
+
      obj_construct(number_formatting_v,
                    Field_Names, Field_Values,
                    Number_Formatting, weak),
@@ -155,7 +145,7 @@ fill_full_data_locale(DB_Key, DB_Key2, User, Locale) :-
      obj_construct(calendar_v,
                    Field_Names, Field_Values,
                    Calendar, weak),
-     
+
      obj_copy(Locale, Full_Locale),
 
      named_args_unify(Full_Locale,
@@ -164,7 +154,7 @@ fill_full_data_locale(DB_Key, DB_Key2, User, Locale) :-
                        time_formatting,
                        date_formatting,
                        calendar],
-                      
+
                       [Number_Formatting,
                        Currency_Formatting,
                        Time_Formatting,
@@ -176,10 +166,10 @@ fill_full_data_locale(DB_Key, DB_Key2, User, Locale) :-
     ;
      true
     ),
-    
+
     write_log('after all:', [logger(dump_db), lf(1)]),
     dump_db(DB_Key2).
-    
+
 
 
 

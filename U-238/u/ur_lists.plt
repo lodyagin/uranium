@@ -32,7 +32,18 @@ test(replace_all_sublists2, [fail]) :-
 
    replace_all_sublists([], [a, b, c, a, d], [1], _).
    
-   
+test(replace_tail1, [Y == Z]) :-
+  replace_tail(X, X, Y, Z), !.
+
+test(replace_tail2, [Z == [a,b,c|Y]]) :-
+  replace_tail(X, [a,b,c|X], Y, Z), !.
+
+test(replace_tail3, [Z == [a,b,c|Y]]) :-
+  replace_tail([d,e], [a,b,c,d,e], Y, Z), !.
+
+test(replace_tail4, fail) :-
+  replace_tail([d], [a,b,c,d,e], _, _), !.
+
 test(select_value1, [fail]) :-
 
    select_value(_, [], _, [], _, _).
