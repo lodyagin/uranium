@@ -1,7 +1,91 @@
 :- use_module(ur_option).
+:- use_module(library(assoc)).
 :- use_module(u(v)).
 
 :- begin_tests(ur_option, [setup(setup_options)]).
+
+test(options_to_assoc1) :-
+   options_to_assoc([], Type, Assoc),
+   assertion(Type == list),
+   assertion(Assoc == []).
+
+test(options_to_assoc2) :-
+   options_to_assoc([a], Type, Assoc),
+   assertion(Type == list),
+   assertion(Assoc == [a]).
+
+test(options_to_assoc3) :-
+   options_to_assoc([a, b(4)], Type, Assoc),
+   assertion(Type == list),
+   assertion(Assoc == [a, b(4)]).
+
+test(options_to_assoc4) :-
+   options_to_assoc([a-1], Type, Assoc),
+   assertion(Type == assoc),
+   get_assoc(a, Assoc, Value),
+   assertion(Value == 1).
+
+test(options_to_assoc5) :-
+   options_to_assoc([a-1, b-3], Type, Assoc),
+   assertion(Type == assoc),
+   get_assoc(a, Assoc, Value1),
+   get_assoc(b, Assoc, Value2),
+   assertion(Value1 == 1),
+   assertion(Value2 == 3).
+
+test(options_to_assoc6) :-
+   list_to_assoc([a-1, b-3], Opts),
+   options_to_assoc(Opts, Type, Assoc),
+   assertion(Type == assoc),
+   get_assoc(a, Assoc, Value1),
+   get_assoc(b, Assoc, Value2),
+   assertion(Value1 == 1),
+   assertion(Value2 == 3).
+
+test(options_to_assoc7) :-
+   options_to_assoc(mod1:[a-1, b-3], Type, Mod2:Assoc),
+   assertion(Type == assoc),
+   get_assoc(a, Assoc, Value1),
+   get_assoc(b, Assoc, Value2),
+   assertion(Value1 == 1),
+   assertion(Value2 == 3),
+   assertion(Mod2 == mod1).
+
+test(filter_assoc1, [Opts == []]) :-
+   filter_assoc([], Opts).
+
+test(filter_assoc2, [Opts == [a]]) :-
+   filter_assoc([a], Opts).
+
+test(filter_assoc3, [Opts == [a, b(4)]]) :-
+   filter_assoc([a, b(4)], Opts).
+
+test(filter_assoc4, [Opts == []]) :-
+   filter_assoc([a-1], Opts).
+
+test(filter_assoc5, [Opts == []]) :-
+   filter_assoc([a-1, b-3], Opts).
+
+test(filter_assoc6, [Opts == []]) :-
+   list_to_assoc([a-1, b-3], A),
+   filter_assoc(A, Opts).
+
+test(filter_assoc7) :-
+   filter_assoc(mod1:[o1, o2], Mod2:Opts),
+   assertion(Opts == [o1, o2]),
+   assertion(Mod2 == mod1).
+
+test(filter_assoc8) :-
+   filter_assoc(mod1:[o1-1, o2-2], Mod2:Opts),
+   assertion(Opts == []),
+   assertion(Mod2 == mod1).
+
+test(filter_assoc9) :-
+   list_to_assoc([a-1, b-3], A),
+   filter_assoc(mod1:A, Mod2:Opts),
+   assertion(Opts == []),
+   assertion(Mod2 == mod1).
+
 
 test(single_option_nonrep, [setup(setup_options)]) :-
 

@@ -51,7 +51,9 @@
            check_rebase_rule/4,  % +Rule, +Ctx, -Old_Base, -New_Base
                                  % -inst+
 
-           error:has_type/2
+           error:has_type/2,
+           is_assoc_fast/1,
+           is_list_fast/1
            ]).
 
 :- reexport(u(internal/db_i), [db_key_is_valid/1]).
@@ -288,4 +290,10 @@ check_rebase_rule(Rebase_Rule, Ctx, Old_Base, New_Base) :-
    check_existing_class_arg(Old_Base, Ctx),
    check_existing_class_arg(New_Base, Ctx).
 
+
+is_assoc_fast(t) :- !.
+is_assoc_fast(t(_,_,_,_,_)).
+
+is_list_fast([]) :- !.
+is_list_fast([_|_]).
 

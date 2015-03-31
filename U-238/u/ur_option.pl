@@ -24,9 +24,11 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(ur_option,
-          [ur_options/2,
+          [filter_assoc/2,
+           ur_options/2,
            options_object/3,
-           options_object/4
+           options_object/4,
+           options_to_assoc/3
            ]).
 
 /** <module> Options processing
@@ -38,6 +40,7 @@
 :- use_module(u(v)).
 :- use_module(u(vd)).
 :- use_module(u(internal/decode_arg)).
+:- use_module(u(internal/check_arg)).
 :- use_module(u(internal/objects_i)).
 :- use_module(v(ur_options_v)).
 
@@ -294,6 +297,26 @@ check_rest(Rejected, Details, Err) :-
           'unknown parameters ~w in the definition',
           [Rejected]),
    throw(Err).
+
+% Assoc options are options in format [field_name - Options, ...].
+% It can be list or AVL tree for example.
+options_to_assoc(That:Options, Type, That:Assoc) :- !,
+   options_to_assoc(Options, Type, Assoc).
+options_to_assoc(Assoc, assoc, Assoc) :-
+   is_assoc_fast(Assoc), !.
+options_to_assoc(List, assoc, Assoc) :-
+   List = [_-_|_], !,
+   list_to_assoc(List, Assoc).
+options_to_assoc(List, list, List). % no assoc options
+
+% We need to filter assoc options in some cases.
+filter_assoc(That:Assoc, That:Not_Assoc) :- !, 
+   filter_assoc(Assoc, Not_Assoc).
+filter_assoc(Assoc, Not_Assoc) :-
+   (  ( is_assoc_fast(Assoc) ; Assoc = [_-_|_] )
+   -> Not_Assoc = []
+   ;  Not_Assoc = Assoc
+   ).
 
 :- meta_predicate options_object(:, :, -).
 
