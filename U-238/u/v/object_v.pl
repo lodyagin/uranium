@@ -114,3 +114,17 @@ nonneg_set_gen(Options, Value) :-
    Value in From .. To,
    call(Gen, Seed, _, Value).
 
+:- meta_predicate v_gen(+, :, -).
+
+v_gen(Class, Options, Obj) :-
+   obj_construct(Class, [], [], Obj0),
+   obj_fill_downcast_random(Options, Obj0, Obj).
+
+:- meta_predicate list_member_gen(+, +, +, :, -).
+
+list_member_gen(Class, Field, Options, Value) :-
+   format(atom(Id), '~a__~a', [Class, Field]),
+   options_object(Id, Options, Opt),
+   obj_field(Opt, list, Types),
+   random_member(Value, Types).
+   
