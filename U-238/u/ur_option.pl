@@ -332,9 +332,10 @@ options_object(Pred, Options, Weak0, Object) :-
    
 options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak, Object) :-
    format(atom(Class), '~a__~a_v', [Pred_Module, Pred]),
+   filter_assoc(Options, Options1),
    obj_construct(Class,
                  [options_in, options_out, context_module, weak],
-                 [Options, Object, Opts_Module, Weak],
+                 [Options1, Object, Opts_Module, Weak],
                  _).
 
 % TODO check all this functionality is realized in the new module ur_option:

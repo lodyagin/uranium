@@ -11,11 +11,13 @@
 
 :- meta_predicate obj_fill_random(:, ?).
 
-obj_fill_random(Options, Obj) :-
+obj_fill_random(That:Options, Obj) :-
 
    Ctx = context(obj_fill_random/2, _),
    check_inst(Obj, Ctx),
    check_object_arg(Obj, Ctx, Class_Id),
+
+   options_to_assoc(Options, Opt_Type, Options1),
    
    findall(v(Name,Value,Type),
            ( obj_field_int(Class_Id, Name, throw, Obj,
@@ -24,37 +26,34 @@ obj_fill_random(Options, Obj) :-
              nonvar(Type)
            ),
            Vs),
-   foreach(member(v(Name,Value,Type), Vs),
-           ignore(( objects:value_set(Type, Options, Value),
-                    obj_field(Obj, Name, Value)
-                  ))
-          ).
+
+   (  Opt_Type == list
+   -> foreach(member(v(Name,Value,Type), Vs),
+              ignore(( objects:value_set(Type, Options1, Value),
+                       obj_field(Obj, Name, Value)
+                    ))
+             )
+   ;  % assoc
+      foreach(member(v(Name,Value,Type), Vs),
+              ignore(( (  get_assoc(Name, Options1, O)
+                       -> objects:value_set(Type, That:O, Value)
+                       ;  objects:value_set(Type, That:Options1, Value)
+                       ),
+                       obj_field(Obj, Name, Value)
+                    ))
+             )
+   ).
 
 
-is_assoc_fast(t) :- !.
-is_assoc_fast(t(_,_,_,_,_)).
+:- meta_predicate obj_fill_downcast_random(:, +, -).
 
-is_list_fast([]) :- !.
-is_list_fast([_|_]).
-
-% Fills then downcasts till no more downcasts
 obj_fill_downcast_random(Options_List, Obj0, Obj) :-
-    is_assoc_fast(Options_List), !,
-    obj_fill_downcast_random_int(Options_List, Obj0, Obj).
-
-obj_fill_downcast_random(Options_List, Obj0, Obj) :-
-    is_list_fast(Options_List), !,
-    list_to_assoc(Options_List, Options_List1),
+    options_to_assoc(Options_List, _, Options_List1),
     obj_fill_downcast_random_int(Options_List1, Obj0, Obj).
 
 obj_fill_downcast_random_int(Options_List, Obj0, Obj) :-
-    functor(Obj0, New_Class, _),
-    % get options for the new object
-    (  get_assoc(New_Class, Options_List, Options) -> true
-    ;  Options = []
-    ),
     % fill
-    obj_fill_random(Options, Obj0),
+    obj_fill_random(Options_List, Obj0),
     % downcast
     obj_downcast(Obj0, Obj1),
     (  Obj0 == Obj1
