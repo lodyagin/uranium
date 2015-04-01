@@ -64,6 +64,7 @@
 :- use_module(u(v)).
 :- use_module(library(clpfd)).
 :- use_module(u(ur_option)).
+:- use_module(u(gt/gt_numbers)).
 
 %
 % the class evaluation can be overrided
@@ -96,7 +97,6 @@ new_class(object_v, object_base_v, []).
 
 typedef(nonneg, [value_set - nonneg_set_gen]).
 
-
 :- meta_predicate nonneg_set_gen(:, -).
 
 nonneg_set_gen(Options, Value) :-
@@ -117,14 +117,33 @@ nonneg_set_gen(Options, Value) :-
 :- meta_predicate v_gen(+, :, -).
 
 v_gen(Class, Options, Obj) :-
+   options_object(global:Class, Options, Options1),
    obj_construct(Class, [], [], Obj0),
-   obj_fill_downcast_random(Options, Obj0, Obj).
+   obj_fill_downcast_random(Options1, Obj0, Obj).
 
-:- meta_predicate list_member_gen(+, +, +, :, -).
+:- meta_predicate list_member_gen(+, :, -).
 
-list_member_gen(Class, Field, Options, Value) :-
-   format(atom(Id), '~a__~a', [Class, Field]),
-   options_object(Id, Options, Opt),
+list_member_gen(Field, Options, Value) :-
+   options_object(global:Field, Options, Opt),
    obj_field(Opt, list, Types),
-   random_member(Value, Types).
+   random_member(Value, Types). %TODO proper gen and seed
    
+:- meta_predicate vs_gen(+, :, -).
+
+% Generates list of homogenous objects of Class
+vs_gen(Field, Class, Options, Objs) :-
+   options_object(global:Field, Options, Opt),
+   obj_field(Opt, length, Lengths).
+   % Convert options
+%   findall(range(Range), member(length(Range), Lengths), Ranges),
+% ?  append(Ranges, Options, Options1),
+%   random_number([rangeOptions, 
+  
+
+
+
+
+
+
+
+

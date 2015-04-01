@@ -27,6 +27,7 @@
           []).
 
 :- use_module(library(error)).
+:- use_module(library(assoc)).
 :- use_module(u(v)).
 :- use_module(u(vd)).
 
@@ -35,7 +36,8 @@
 new_class(ur_options_v, object_v,
           [options_in,     % as passed by a user
            context_module, % the context module for meta-options
-           weak            % `strict` or whatever
+           weak,           % `strict` or whatever
+           nested          % nested (associative) options
           ]
          ).
 
@@ -79,6 +81,15 @@ set_defaults(DB, Obj) :-
           ).
 
 process_options([], _, _, Obj, Obj) :- !.
+
+process_options([K-V|T], DB, Weak, Obj0, Obj) :- !,
+   obj_rewrite(Obj0, [nested], [Nested0], [Nested], Obj1),
+   (  var(Nested0) -> empty_assoc(Nested1)
+   ;  Nested1 = Nested0
+   ),
+   put_assoc(K, Nested1, V, Nested), % accumulate assoc options
+   process_options(T, DB, Weak, Obj1, Obj).
+
 process_options([Option|T], DB, Weak, Obj0, Obj) :-
    must_be(nonvar, Option),
    (  db_iterate(DB,

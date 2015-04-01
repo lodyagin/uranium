@@ -24,11 +24,12 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(ur_option,
-          [filter_assoc/2,
+          [%split_assoc/3,
            ur_options/2,
            options_object/3,
            options_object/4,
-           options_to_assoc/3
+           %options_to_assoc/3,
+           options_to_object/3
            ]).
 
 /** <module> Options processing
@@ -300,23 +301,34 @@ check_rest(Rejected, Details, Err) :-
 
 % Assoc options are options in format [field_name - Options, ...].
 % It can be list or AVL tree for example.
-options_to_assoc(That:Options, Type, That:Assoc) :- !,
-   options_to_assoc(Options, Type, Assoc).
-options_to_assoc(Assoc, assoc, Assoc) :-
-   is_assoc_fast(Assoc), !.
-options_to_assoc(List, assoc, Assoc) :-
-   List = [_-_|_], !,
-   list_to_assoc(List, Assoc).
-options_to_assoc(List, list, List). % no assoc options
+%% options_to_assoc(That:Options, Type, That:Assoc) :- !,
+%%    options_to_assoc(Options, Type, Assoc).
+%% options_to_assoc(Assoc, assoc, Assoc) :-
+%%    is_assoc_fast(Assoc), !.
+%% options_to_assoc(List, assoc, Assoc) :-
+%%    List = [_-_|_], !,
+%%    list_to_assoc(List, Assoc).
+%% options_to_assoc(List, list, List). % no assoc options
 
-% We need to filter assoc options in some cases.
-filter_assoc(That:Assoc, That:Not_Assoc) :- !, 
-   filter_assoc(Assoc, Not_Assoc).
-filter_assoc(Assoc, Not_Assoc) :-
-   (  ( is_assoc_fast(Assoc) ; Assoc = [_-_|_] )
-   -> Not_Assoc = []
-   ;  Not_Assoc = Assoc
-   ).
+% Splits options to assoc and no-assoc parts
+%% split_assoc(M:Options, M:No_Assoc, M:Assoc) :- !,
+%%    split_assoc(Options, No_Assoc, Assoc).
+%% split_assoc([], [], []) :- !.
+%% split_assoc([K-V|T], No_Assoc, [K-V|Assoc]) :- !,
+%%    split_assoc(T, No_Assoc, Assoc).
+%% split_assoc([O|T], [O|No_Assoc], Assoc) :-
+%%    split_assoc(T, No_Assoc, Assoc).
+
+:- meta_predicate options_to_object(:, :, -).
+
+% Convert Options to options object if needed
+options_to_object(_, T:Object, T:Object) :-
+   u_object(Object), !.
+options_to_object(_, Object, Object) :-
+   u_object(Object), !.
+options_to_object(Pred, Options, Object) :-
+   options_object(Pred, Options, Object).
+   
 
 :- meta_predicate options_object(:, :, -).
 
@@ -332,10 +344,10 @@ options_object(Pred, Options, Weak0, Object) :-
    
 options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak, Object) :-
    format(atom(Class), '~a__~a_v', [Pred_Module, Pred]),
-   filter_assoc(Options, Options1),
+%   split_assoc(Options, Options1, Nested),
    obj_construct(Class,
                  [options_in, options_out, context_module, weak],
-                 [Options1, Object, Opts_Module, Weak],
+                 [Options, Object, Opts_Module, Weak],
                  _).
 
 % TODO check all this functionality is realized in the new module ur_option:

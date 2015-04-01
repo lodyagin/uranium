@@ -50,7 +50,7 @@ random_number(Options, Number) :-
    random_number_cmn(Options, Number, Ctx).
 
 random_number_cmn(Options, Num, _) :-
-   options_object(random_number, Options, Opt),
+   options_to_object(random_number, Options, Opt),
    obj_field(Opt, domain, Domains),
    random_member(Domain, Domains),
    (  Domain == integer

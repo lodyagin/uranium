@@ -54,7 +54,7 @@ random_string(Options, Str) :-
 
 random_string_cmn(Options, Str, _) :-
    
-   options_object(random_string, Options, Opt),
+   options_to_object(random_string, Options, Opt),
 
    % check options (TODO: move to ur_options_v)
    obj_unify(Opt,

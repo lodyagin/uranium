@@ -4,88 +4,74 @@
 
 :- begin_tests(ur_option, [setup(setup_options)]).
 
-test(options_to_assoc1) :-
-   options_to_assoc([], Type, Assoc),
-   assertion(Type == list),
-   assertion(Assoc == []).
+test(options_to_assoc1, [setup(setup_options)]) :-
+   options_object(test_pred1, [], O),
+   O / [options_in, nested] ^= [In, Nested],
+   assertion(In == []),
+   is_assoc(Nested),
+   assoc_to_list(Nested, NL),
+   assertion(NL == []).
 
 test(options_to_assoc2) :-
-   options_to_assoc([a], Type, Assoc),
-   assertion(Type == list),
-   assertion(Assoc == [a]).
+   options_object(test_pred1, [length(1)], O),
+   O / nested ^= Nested,
+   is_assoc(Nested),
+   assoc_to_list(Nested, NL),
+   assertion(NL == []).
 
 test(options_to_assoc3) :-
-   options_to_assoc([a, b(4)], Type, Assoc),
-   assertion(Type == list),
-   assertion(Assoc == [a, b(4)]).
+   options_object(test_pred10, [length(1), empty], O),
+   O / nested ^= Nested,
+   is_assoc(Nested),
+   assoc_to_list(Nested, NL),
+   assertion(NL == []).
 
 test(options_to_assoc4) :-
-   options_to_assoc([a-1], Type, Assoc),
-   assertion(Type == assoc),
-   get_assoc(a, Assoc, Value),
-   assertion(Value == 1).
+   options_object(test_pred10, [a-1], O),
+   O / nested ^= Nested,
+   is_assoc(Nested),
+   assoc_to_list(Nested, NL),
+   assertion(NL == [a-1]).
 
 test(options_to_assoc5) :-
-   options_to_assoc([a-1, b-3], Type, Assoc),
-   assertion(Type == assoc),
-   get_assoc(a, Assoc, Value1),
-   get_assoc(b, Assoc, Value2),
+   options_object(test_pred10, [a-1, b-3], O),
+   O / nested ^= Nested,
+   is_assoc(Nested),
+   get_assoc(a, Nested, Value1),
+   get_assoc(b, Nested, Value2),
    assertion(Value1 == 1),
    assertion(Value2 == 3).
 
 test(options_to_assoc6) :-
-   list_to_assoc([a-1, b-3], Opts),
-   options_to_assoc(Opts, Type, Assoc),
-   assertion(Type == assoc),
-   get_assoc(a, Assoc, Value1),
-   get_assoc(b, Assoc, Value2),
+   options_object(test_pred10, mod1:[a-1, b-3], O),
+   O / [context_module, nested] ^= [Module, Nested],
+   assertion(Module == mod1),
+   is_assoc(Nested),
+   get_assoc(a, Nested, Value1),
+   get_assoc(b, Nested, Value2),
    assertion(Value1 == 1),
    assertion(Value2 == 3).
 
 test(options_to_assoc7) :-
-   options_to_assoc(mod1:[a-1, b-3], Type, Mod2:Assoc),
-   assertion(Type == assoc),
-   get_assoc(a, Assoc, Value1),
-   get_assoc(b, Assoc, Value2),
+   options_object(test_pred10, [empty, a-1, b-3], O),
+   O / [nested, length] ^= [Nested, Length],
+   assertion(Length == [empty]),
+   is_assoc(Nested),
+   get_assoc(a, Nested, Value1),
+   get_assoc(b, Nested, Value2),
    assertion(Value1 == 1),
-   assertion(Value2 == 3),
-   assertion(Mod2 == mod1).
+   assertion(Value2 == 3).
 
-test(filter_assoc1, [Opts == []]) :-
-   filter_assoc([], Opts).
-
-test(filter_assoc2, [Opts == [a]]) :-
-   filter_assoc([a], Opts).
-
-test(filter_assoc3, [Opts == [a, b(4)]]) :-
-   filter_assoc([a, b(4)], Opts).
-
-test(filter_assoc4, [Opts == []]) :-
-   filter_assoc([a-1], Opts).
-
-test(filter_assoc5, [Opts == []]) :-
-   filter_assoc([a-1, b-3], Opts).
-
-test(filter_assoc6, [Opts == []]) :-
-   list_to_assoc([a-1, b-3], A),
-   filter_assoc(A, Opts).
-
-test(filter_assoc7) :-
-   filter_assoc(mod1:[o1, o2], Mod2:Opts),
-   assertion(Opts == [o1, o2]),
-   assertion(Mod2 == mod1).
-
-test(filter_assoc8) :-
-   filter_assoc(mod1:[o1-1, o2-2], Mod2:Opts),
-   assertion(Opts == []),
-   assertion(Mod2 == mod1).
-
-test(filter_assoc9) :-
-   list_to_assoc([a-1, b-3], A),
-   filter_assoc(mod1:A, Mod2:Opts),
-   assertion(Opts == []),
-   assertion(Mod2 == mod1).
-
+test(options_to_assoc8) :-
+   options_object(test_pred10, [a-1, length(4), b-3, length(5)], O),
+   O / [nested, length] ^= [Nested, Length1],
+   msort(Length1, Length),
+   assertion(Length == [length(4), length(5)]),
+   is_assoc(Nested),
+   get_assoc(a, Nested, Value1),
+   get_assoc(b, Nested, Value2),
+   assertion(Value1 == 1),
+   assertion(Value2 == 3).
 
 test(single_option_nonrep, [setup(setup_options)]) :-
 
