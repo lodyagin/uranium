@@ -78,7 +78,7 @@ typedef(http_method, [value_set - http_method_set_gen]).
 
 http_method_set_gen(Options, Value) :-
 
-   options_object(http_method_set_gen, Options, Opt),
+   options_to_object(http_method_set_gen, Options, Opt),
 
    obj_unify(Opt,
              [http_method_type, length, generator, seed],

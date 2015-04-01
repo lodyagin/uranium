@@ -101,7 +101,7 @@ typedef(nonneg, [value_set - nonneg_set_gen]).
 
 nonneg_set_gen(Options, Value) :-
 
-   options_object(nonneg_set_gen, Options, Opt),
+   options_to_object(nonneg_set_gen, Options, Opt),
 
    obj_unify(Opt,
              [range, generator, seed],
@@ -117,14 +117,13 @@ nonneg_set_gen(Options, Value) :-
 :- meta_predicate v_gen(+, :, -).
 
 v_gen(Class, Options, Obj) :-
-   options_object(global:Class, Options, Options1),
    obj_construct(Class, [], [], Obj0),
-   obj_fill_downcast_random(Options1, Obj0, Obj).
+   obj_fill_downcast_random(Options, Obj0, Obj).
 
 :- meta_predicate list_member_gen(+, :, -).
 
 list_member_gen(Field, Options, Value) :-
-   options_object(global:Field, Options, Opt),
+   options_to_object(global:Field, Options, Opt),
    obj_field(Opt, list, Types),
    random_member(Value, Types). %TODO proper gen and seed
    
@@ -132,7 +131,7 @@ list_member_gen(Field, Options, Value) :-
 
 % Generates list of homogenous objects of Class
 vs_gen(Field, Class, Options, Objs) :-
-   options_object(global:Field, Options, Opt),
+   options_to_object(global:Field, Options, Opt),
    obj_field(Opt, length, Lengths).
    % Convert options
 %   findall(range(Range), member(length(Range), Lengths), Ranges),

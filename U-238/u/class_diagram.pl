@@ -65,7 +65,7 @@ class_diagram(Options) :-
 % only_class(_|ClassName) - if ClassName nonvar show only
 % inheritance where ClassName is either a parent or a child.
 class_diagram(Stream, Options) :-
-   options_object(class_diagram, Options, Opt),
+   options_to_object(class_diagram, Options, Opt),
    Opt / [is_primary, only_class] ^= [is_primary(Is_Primary), only_class(Only_Class)], !,
    (  class_graph(Only_Class, Is_Primary, Graph),
       format(Stream, 'is_primary(~p):\n', [Is_Primary]),

@@ -24,11 +24,9 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(ur_option,
-          [%split_assoc/3,
-           ur_options/2,
+          [ur_options/2,
            options_object/3,
            options_object/4,
-           %options_to_assoc/3,
            options_to_object/3
            ]).
 
@@ -88,8 +86,11 @@ ur_options(Pred, _:Options) :-
                         Ctx),
              throw(Err)
            )),
-     setof(Field, db_select(Class, [group_name], [Field]),
-           Fields),
+     (  setof(Field, db_select(Class, [group_name], [Field]),
+              Fields1)
+     -> Fields = Fields1
+     ;  Fields = []
+     ),
      class_primary_id(ur_options_v, Ur_Options_Class_Id),
      class_fields(_, Ur_Options_Class_Id, _, _, Parent_Fields),
      ord_intersection(Parent_Fields, Fields, Overriding),
@@ -299,35 +300,14 @@ check_rest(Rejected, Details, Err) :-
           [Rejected]),
    throw(Err).
 
-% Assoc options are options in format [field_name - Options, ...].
-% It can be list or AVL tree for example.
-%% options_to_assoc(That:Options, Type, That:Assoc) :- !,
-%%    options_to_assoc(Options, Type, Assoc).
-%% options_to_assoc(Assoc, assoc, Assoc) :-
-%%    is_assoc_fast(Assoc), !.
-%% options_to_assoc(List, assoc, Assoc) :-
-%%    List = [_-_|_], !,
-%%    list_to_assoc(List, Assoc).
-%% options_to_assoc(List, list, List). % no assoc options
-
-% Splits options to assoc and no-assoc parts
-%% split_assoc(M:Options, M:No_Assoc, M:Assoc) :- !,
-%%    split_assoc(Options, No_Assoc, Assoc).
-%% split_assoc([], [], []) :- !.
-%% split_assoc([K-V|T], No_Assoc, [K-V|Assoc]) :- !,
-%%    split_assoc(T, No_Assoc, Assoc).
-%% split_assoc([O|T], [O|No_Assoc], Assoc) :-
-%%    split_assoc(T, No_Assoc, Assoc).
-
 :- meta_predicate options_to_object(:, :, -).
 
 % Convert Options to options object if needed
-options_to_object(_, T:Object, T:Object) :-
+options_to_object(_, M:Object, M:Object) :-
    u_object(Object), !.
-options_to_object(_, Object, Object) :-
-   u_object(Object), !.
-options_to_object(Pred, Options, Object) :-
-   options_object(Pred, Options, Object).
+options_to_object(Pred, M:Options, Object) :-
+   must_be(list, Options),
+   options_object(Pred, M:Options, Object).
    
 
 :- meta_predicate options_object(:, :, -).

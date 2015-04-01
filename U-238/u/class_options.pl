@@ -56,7 +56,7 @@ setup_options :-
               [[group(v),
                 option(v/0),
                 option(vx/0), option(vix/0), option(vixc/0)]]),
-   ur_options(object_v:simple_value_v__simple_value_type,
+   ur_options(global:simple_value_type,
               [[multi_group(list),
                 option(quotedstring/0),
                 option(date/0),
@@ -66,13 +66,13 @@ setup_options :-
                 option(datetime/0),
                 default([quotedstring, number])]
               ]),
-   ur_options(object_v:value_v__value_token_type,
+   ur_options(global:value_token_type,
               [[multi_group(list),
                 option(simple_value/0),
                 option(assignment/0),
                 default([simple_value, assignment])]
               ]),
-    ur_options(object_v:operation_v__operation_type,
+    ur_options(global:operation_type,
                [[multi_group(type),
                  option(insert/0),
                  option(update/0),
@@ -84,6 +84,19 @@ setup_options :-
                  option(validate/0),
                  option(check/0),
                  default([add])]
-                ]).
+                ]),
+    ur_options(global:values,
+               [[multi_group(length),
+                 option(length/1),
+                 default([length(1..10)])],
+                [meta_option(generator/1),
+                 default(generator(randgen:fd_random(lcq, gnu)))],
+                [group(seed),
+                 option(seed/1), option(seed/2), 
+                 default(seed(-1))]
+               ]),
+    ur_options(global:value_v, []),
+    ur_options(global:simple_value_v, []),
+    ur_options(global:assignment_v, []).
 
 :- initialization setup_options.
