@@ -127,22 +127,28 @@ list_member_gen(Field, Options, Value) :-
    obj_field(Opt, list, Types),
    random_member(Value, Types). %TODO proper gen and seed
    
-:- meta_predicate vs_gen(+, :, -).
+:- meta_predicate vs_gen(+, +, :, -).
 
-% Generates list of homogenous objects of Class
+% Generates list of homogeneous objects of Class
 vs_gen(Field, Class, Options, Objs) :-
-   options_to_object(global:Field, Options, Opt),
-   obj_field(Opt, length, Lengths).
-   % Convert options
-%   findall(range(Range), member(length(Range), Lengths), Ranges),
-% ?  append(Ranges, Options, Options1),
-%   random_number([rangeOptions, 
+   options_to_object(global:Field, Options, Opt0),
+   options_predicate_to_options_class_name(global:Field, OptClass0),
+   options_predicate_to_options_class_name(gt_numbers:random_number, OptClass1),
+   obj_rebase((OptClass0 -> OptClass1), Opt0, Opt1),
+   % Convert options length(Range) -> range(Range)
+   obj_field(Opt0, length, Lengths),
+   obj_unify(Opt1, [pattern, domain], [Ranges, [integer]]),
+   findall(range(Range), member(length(Range), Lengths), Ranges),
+   % Get the number of objects
+   random_number(Opt1, N),
+   % Generate N random objects
+   findall(V, 
+           ( length(L, N), 
+             member(V0, L), 
+             obj_construct(Class, [], [], V0), 
+             obj_fill_downcast_random(Opt0, V0, V) 
+           ),
+           Objs).
   
-
-
-
-
-
-
 
 

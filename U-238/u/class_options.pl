@@ -96,6 +96,7 @@ setup_options :-
                  default(seed(-1))]
                ]),
     ur_options(global:value_v, []),
+    ur_options(global:values_v, []),
     ur_options(global:simple_value_v, []),
     ur_options(global:assignment_v, []).
 

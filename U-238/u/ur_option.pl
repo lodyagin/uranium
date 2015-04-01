@@ -27,6 +27,7 @@
           [ur_options/2,
            options_object/3,
            options_object/4,
+           options_predicate_to_options_class_name/2,
            options_to_object/3
            ]).
 
@@ -42,6 +43,14 @@
 :- use_module(u(internal/check_arg)).
 :- use_module(u(internal/objects_i)).
 :- use_module(v(ur_options_v)).
+
+
+:- meta_predicate options_predicate_to_options_class_name(:, -).
+
+% Defines the option class naming rule
+options_predicate_to_options_class_name(Module:Pred, Class) :-
+   format(atom(Class), '~a__~a_v', [Module, Pred]).
+
 
 :- meta_predicate ur_options(:, :).
 
@@ -68,10 +77,8 @@
 % ==
 
 ur_options(Pred, _:Options) :-
-
    Ctx = context(ur_options/3, Details),
-   strip_module(Pred, Pred_Module, Pred1),
-   format(atom(Class), '~a__~a_v', [Pred_Module, Pred1]),
+   options_predicate_to_options_class_name(Pred, Class),
    ( class_name(Class) -> true
    ; db_clear(Class),
      catch(
@@ -303,7 +310,7 @@ check_rest(Rejected, Details, Err) :-
 :- meta_predicate options_to_object(:, :, -).
 
 % Convert Options to options object if needed
-options_to_object(_, M:Object, M:Object) :-
+options_to_object(_, _:Object, Object) :-
    u_object(Object), !.
 options_to_object(Pred, M:Options, Object) :-
    must_be(list, Options),
@@ -323,8 +330,7 @@ options_object(Pred, Options, Weak0, Object) :-
    options_object_cmn(Pred, Options, Weak, Object).
    
 options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak, Object) :-
-   format(atom(Class), '~a__~a_v', [Pred_Module, Pred]),
-%   split_assoc(Options, Options1, Nested),
+   options_predicate_to_options_class_name(Pred_Module:Pred, Class),
    obj_construct(Class,
                  [options_in, options_out, context_module, weak],
                  [Options, Object, Opts_Module, Weak],
