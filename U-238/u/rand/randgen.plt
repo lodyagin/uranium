@@ -1,5 +1,6 @@
 :- begin_tests(randgen).
 :- use_module(randgen).
+:- use_module(library(clpfd)).
 
 test(fd_random1_gnu) :-
 
