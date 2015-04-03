@@ -88,8 +88,12 @@ random_string_int(Opt, Str) :-
 
    % TODO always use passed generators instead of library(random)
    % NB Lengths and Patterns are always non-empty due to defaults
-   random_member(Length, Lengths),
    random_member(Pattern1, Patterns),
+
+   (  Pattern1 = static(Str) -> true % Just return static value
+   ;  
+
+   random_member(Length, Lengths),
 
    % regex/1, range/1 -> pattern/1
    context_module(That),
@@ -110,6 +114,7 @@ random_string_int(Opt, Str) :-
    (   nonvar(Str), Str = atom(Atom)
    ->  atom_codes(Atom, Codes)
    ;   Str = Codes
+   )
    ).
 
 random_string_int(Pattern, Generator, Seed, Length, Str) :-
