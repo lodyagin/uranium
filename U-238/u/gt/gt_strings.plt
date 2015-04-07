@@ -43,6 +43,18 @@ test(regex1) :-
    assertion(CC == "bc"),
    assertion(X3 == d).
 
+test(randsel, 
+     [LL == [[3,2,1],[3,1,2],[2,2,1],[2,3,1],[2,1,1],[2,1,3],[2,1,2],[1,2,3],[1,2,1],
+             [1,2,2],[1,3,2],[1,1,2]
+            ]]
+) :-
+
+   N1 #>= 1, 
+   N2 #>= 1, 
+   length(L, 3), 
+   global_cardinality(L, [1-N1, 2-N2, 3-_], []), 
+   findall(L, randsel(L, randgen:test_sequence1, 1, _), LL).
+
 % add test on only one lenth option
 
 % on all length options
