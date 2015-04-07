@@ -11,7 +11,7 @@ test(all_different_full) :-
   numlist(First, Last, Etalon),
   random_string([pattern(all_different_pat(First..Last)),
                  length(Length)],
-		Codes),
+		Codes), !,
   perm_check(Codes, Etalon).
   % Codes must be always a permutation of the Etalon
 
@@ -31,7 +31,7 @@ test(one_length_one_char) :-
 
 test(regex1) :-
 
-   random_string([regex("a(b|c)*d"), length(100)], atom(Str)),
+   random_string([regex("a(b|c)*d"), length(100)], atom(Str)), !,
    atom_length(Str, N),
    assertion(N == 100),
    sub_atom(Str, 0, 1, _, X1),

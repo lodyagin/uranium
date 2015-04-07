@@ -24,7 +24,8 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(randgen,
-          [fd_random/5,         % +Family, +Name, +Seed0, -Seed, -X
+          [fd_random/4,         % :Generator, +Seed0, -Seed, -X
+           %fd_random/5,         % +GenFamily, +GenName, +Seed0, -Seed, -X
            lcq_gnu/2,
            lcq_knuth/2,
            random_generator/4,
@@ -36,9 +37,26 @@
 
 :- use_module(library(error)).
 :- use_module(library(clpfd)).
-:- use_module(u(clpfd_adds)).
 
 :- multifile random_generator/4.
+
+:- meta_predicate fd_random(:, +, -, -).
+
+%% fd_random(:Generator, +Seed0, -Seed, -X) is nondet,
+%
+% Random distribution over possible values of the finite domain
+% variable X. Randomly choose another random value on backtracing.
+%
+% @param Generator predicate with arity 2: Generator(Seed, Seed0)
+% @param Seed0 previous seed
+% @param Seed used for X calculation (to pass as Seed0 in the next call)
+% @param X variable with finite domain attributes
+
+fd_random(Generator, Seed0, Seed, X) :-
+   must_be(integer, Seed0),
+   findall(X, label([X]), All_Possible_Values), !,
+   random_select(X, All_Possible_Values, Generator, Seed0, Seed).
+
 
 %% fd_random(+Family, +Name, +Seed0, -Seed, -X) is nondet,
 %
@@ -51,16 +69,14 @@
 % @param Seed used for X calculation (to pass as Seed0 in the next call)
 % @param X variable with finite domain attributes
 
-fd_random(Family, Name, Seed0, Seed, X) :-
-   Ctx = context(fd_random/5, _),
-   must_be(atom, Family),
-   must_be(atom, Name),
-   must_be(integer, Seed0),
-   (  random_generator(Family, Name, Generator, _) -> true
-   ;  throw(error(unknown_random_generator(Family, Name), Ctx))
-   ), 
-   findall(X, label([X]), All_Possible_Values), !,
-   random_select(X, All_Possible_Values, Generator, Seed0, Seed).
+%% fd_random(Family, Name, Seed0, Seed, X) :-
+%%    Ctx = context(fd_random/5, _),
+%%    must_be(atom, Family),
+%%    must_be(atom, Name),
+%%    (  random_generator(Family, Name, Generator, _) -> true
+%%    ;  throw(error(unknown_random_generator(Family, Name), Ctx))
+%%    ),
+%%    fd_random(Generator, Seed0, Seed, X).
 
 
 :- meta_predicate random_select(-, +, :, +, -).

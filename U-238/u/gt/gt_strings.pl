@@ -29,6 +29,7 @@
 :- module(gt_strings,
           [random_string/1,
 	   random_string/2,
+           randsel/4,       % +List, :Gen, +Seed0, -Seed
 	   range_pattern/2
            ]).
 
@@ -53,7 +54,7 @@ random_string(Options, Str) :-
    random_string_cmn(Options, Str, Ctx).
 
 random_string_cmn(Options, Str, _) :-
-   
+
    options_to_object(random_string, Options, Opt),
 
    % check options (TODO: move to ur_options_v)
@@ -68,7 +69,7 @@ random_string_cmn(Options, Str, _) :-
    must_be(callable, Generator),
    must_be(callable, Pattern),
    must_be(integer, Seed),
-   
+
    random_string_int(Opt, Str).
 
 
@@ -91,7 +92,7 @@ random_string_int(Opt, Str) :-
    random_member(Pattern1, Patterns),
 
    (  Pattern1 = static(Str) -> true % Just return static value
-   ;  
+   ;
 
    random_member(Length, Lengths),
 
@@ -132,14 +133,16 @@ random_string_int(Pattern, Generator, Seed, Length, Str) :-
       randsel(Str, Generator, Seed, _)
   ).
 
-% TODO make recursive with a seed through-passing
+:- meta_predicate randsel(+, :, +, -).
+
+%% randsel(+List, :Gen, +Seed0, -Seed) is nondet.
+%
+% Random labelling list members on BT.
+% @see labelling/2
+%
 randsel([], _, Seed, Seed) :- !.
-
 randsel([X|L], Gen, Seed0, Seed) :-
-
-  fd_size(X, Size),
-  Size > 0,
-  call(Gen, Seed0, Seed1, X),
+  fd_random(Gen, Seed0, Seed1, X),
   randsel(L, Gen, Seed1, Seed).
 
 
