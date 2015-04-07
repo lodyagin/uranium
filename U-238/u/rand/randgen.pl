@@ -54,6 +54,8 @@
 
 fd_random(Generator, Seed0, Seed, X) :-
    must_be(integer, Seed0),
+   fd_size(X, N_),
+   debug(rand, 'labelling the domain of ~d elements', [N_]),
    findall(X, label([X]), All_Possible_Values), !,
    random_select(X, All_Possible_Values, Generator, Seed0, Seed).
 
@@ -69,14 +71,14 @@ fd_random(Generator, Seed0, Seed, X) :-
 % @param Seed used for X calculation (to pass as Seed0 in the next call)
 % @param X variable with finite domain attributes
 
-%% fd_random(Family, Name, Seed0, Seed, X) :-
-%%    Ctx = context(fd_random/5, _),
-%%    must_be(atom, Family),
-%%    must_be(atom, Name),
-%%    (  random_generator(Family, Name, Generator, _) -> true
-%%    ;  throw(error(unknown_random_generator(Family, Name), Ctx))
-%%    ),
-%%    fd_random(Generator, Seed0, Seed, X).
+% fd_random(Family, Name, Seed0, Seed, X) :-
+%    Ctx = context(fd_random/5, _),
+%    must_be(atom, Family),
+%    must_be(atom, Name),
+%    (  random_generator(Family, Name, Generator, _) -> true
+%    ;  throw(error(unknown_random_generator(Family, Name), Ctx))
+%    ),
+%    fd_random(Generator, Seed0, Seed, X).
 
 
 :- meta_predicate random_select(-, +, :, +, -).

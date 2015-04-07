@@ -90,7 +90,7 @@ random_number_integer(Opt, Num) :-
    ;  Seed1 is random(4294967295) % TODO
    ),
    call(Pattern, Num),
-   call(Generator, Seed1, Seed, Num).
+   fd_random(Generator, Seed1, Seed, Num), !.
 
 
 range_pattern(Set, Num) :-

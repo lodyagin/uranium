@@ -30,6 +30,7 @@
           [random_string/1,
 	   random_string/2,
            randsel/4,       % +List, :Gen, +Seed0, -Seed
+           randselchk/4,    % +List, :Gen, +Seed0, -Seed
 	   range_pattern/2
            ]).
 
@@ -143,6 +144,15 @@ random_string_int(Pattern, Generator, Seed, Length, Str) :-
 randsel([], _, Seed, Seed) :- !.
 randsel([X|L], Gen, Seed0, Seed) :-
   fd_random(Gen, Seed0, Seed1, X),
+  randsel(L, Gen, Seed1, Seed).
+
+%% randselchk(+List, :Gen, +Seed0, -Seed) is semidet.
+%
+% Random labelling list members. It is semidet version of randsel/4.
+%
+randselchk([], _, Seed, Seed) :- !.
+randselchk([X|L], Gen, Seed0, Seed) :-
+  fd_random(Gen, Seed0, Seed1, X), !,
   randsel(L, Gen, Seed1, Seed).
 
 
