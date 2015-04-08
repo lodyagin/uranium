@@ -102,7 +102,8 @@ random_string_cmn(Options, Str, _) :-
      -> regex_pattern(Reg, Pattern)
      ;  Pattern1 = range(Drep)
      -> Pattern = That:range_pattern(Drep)
-     ;  pattern(Pattern) = Pattern1
+     ;  pattern(Pattern) = Pattern1,
+        must_be(callable, Pattern)
      ),
 
      random_string_int(Pattern, Generator, Seed3, Seed, Length,
