@@ -72,7 +72,7 @@ random_string_cmn(Options, Str, _) :-
               Det]
             ),
    must_be(callable, Generator),
-   ( SeedOpt = seed(Seed0) ; SeedOpt = seed(Seed0, Seed) ), !,
+   memberchk(SeedOpt, [seed(Seed0), seed(Seed0, Seed)]),
    must_be(integer, Seed0),
    (  var(Det) -> Det = semidet ; true ),
 
