@@ -37,7 +37,9 @@ new_class(ur_options_v, object_v,
           [options_in,     % as passed by a user
            context_module, % the context module for meta-options
            weak,           % `strict` or whatever
-           nested          % nested (associative) options
+           nested          % nested (associative) options (when passed
+                           % to ac class this part is for fields, it
+                           % is a list of field_name - options_list pairs)
           ]
          ).
 
