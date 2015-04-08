@@ -42,7 +42,7 @@
 
 :- meta_predicate fd_random(:, +, -, -).
 
-%% fd_random(:Generator, +Seed0, -Seed, -X) is nondet,
+%% fd_random(:Generator, +Seed0, -Seed, -X) is nondet.
 %
 % Random distribution over possible values of the finite domain
 % variable X. Randomly choose another random value on backtracing.
