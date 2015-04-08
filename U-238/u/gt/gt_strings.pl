@@ -36,65 +36,35 @@
 
 :- use_module(library(error)).
 :- use_module(library(clpfd)).
-:- use_module(library(random)). % TODO always use passed generators
 :- use_module(u(regex/regex)).
 :- use_module(u(rand/randgen)).
 :- use_module(u(ur_option)).
 :- use_module(u(v)).
 
 random_string(Str) :-
-
    Ctx = context(random_string/1, _),
    random_string_cmn([], Str, Ctx).
 
 :- meta_predicate random_string(:, -).
 
 random_string(Options, Str) :-
-
    Ctx = context(random_string/2, _),
    random_string_cmn(Options, Str, Ctx).
 
 random_string_cmn(Options, Str, _) :-
-
-   options_to_object(random_string, Options, Opt),
+   random_options(random_string, Options, Det, Generator, Seed1, Seed, Opt),
 
    % check options (TODO: move to ur_options_v)
-   obj_unify(Opt, weak,
-             [length,
-              generator,
-              seed,
-              pattern,
-              det],
-             [Lengths,
-              generator(Generator),
-              SeedOpt,
-              Patterns,
-              Det]
-            ),
-   must_be(callable, Generator),
-   memberchk(SeedOpt, [seed(Seed0), seed(Seed0, Seed)]),
-   must_be(integer, Seed0),
-   (  var(Det) -> Det = semidet ; true ),
-
-   (  Seed0 >= 0
-   -> Seed1 = Seed0
-   ;  Seed1 is random(4294967295) % TODO
-   ),
+   obj_unify(Opt, weak, [length, pattern], [Lengths, Patterns]),
 
    % NB Lengths and Patterns are always non-empty due to defaults
-   (  Det == nondet 
-   -> random_select(Pattern1, Patterns, _, Generator, Seed1, Seed2)
-   ;  random_member(Pattern1, Patterns, Generator, Seed1, Seed2)
-   ),
+   random_member(Pattern1, Patterns, Det, Generator, Seed1, Seed2),
 
    (  Pattern1 = static(Str) 
    -> Seed = Seed2 % Just return a static value
    ;
 
-     (  Det == nondet 
-     -> random_select(Length, Lengths, _, Generator, Seed2, Seed3)
-     ;  random_member(Length, Lengths, Generator, Seed2, Seed3)
-     ),
+     random_member(Length, Lengths, Det, Generator, Seed2, Seed3),
 
      % regex/1, range/1 -> pattern/1
      context_module(That),

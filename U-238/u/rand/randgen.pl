@@ -28,8 +28,11 @@
            lcq_gnu/2,
            lcq_knuth/2,
            random_generator/4,
-           random_member/5,    % -X, +List, :Generator, +Seed0, -Seed
-           random_select/6     % -X, +List, -Rest, :Generator, +Seed0, -Seed
+           random_member/5,  % -X, +List, :Generator, +Seed0, -Seed
+           random_member/6,  % -X, +List, +Det, :Generator, +Seed0, -Seed
+           random_options/7, % :Pred, +Options, -Det, -Generator, -Seed0, 
+                             % -Seed, -Opt
+           random_select/6   % -X, +List, -Rest, :Generator, +Seed0, -Seed
           ]).
 
 /** <module>  clpfd-compatible random number generators
@@ -60,8 +63,23 @@ fd_random(Generator, Seed0, Seed, X) :-
    random_select(X, All_Possible_Values, _, Generator, Seed0, Seed).
 
 
-:- meta_predicate random_select(-, +, :, +, -).
+:- meta_predicate random_member(-, +, +, :, +, -).
 
+%% random_member(-X, +List, +Det, :Generator, +Seed0, -Seed).
+%
+% X is a random member of List.
+% @param Det nondet or semidet. It selects random_member/5 or 
+%   random_select/6 internally depending on this parameter.
+%
+random_member(X, List, Det, Generator, Seed0, Seed) :-
+   length(List, N),
+   N > 0,
+   (  Det == nondet
+   -> random_select_int(X, N, List, _, Generator, Seed0, Seed)
+   ;  random_member_int(X, N, List, Generator, Seed0, Seed)
+   ).
+
+:- meta_predicate random_member(-, +, :, +, -).
 
 %% random_member(-X, +List, :Generator, +Seed0, -Seed) is semidet.
 %
@@ -70,14 +88,46 @@ fd_random(Generator, Seed0, Seed, X) :-
 %
 random_member(X, List, Generator, Seed0, Seed) :-
    length(List, N),
-   N > 0,
    random_member_int(X, N, List, Generator, Seed0, Seed).
 
 random_member_int(X, 1, [X], _, Seed, Seed) :- !.
 random_member_int(X, N, List, Generator, Seed0, Seed) :-
+   N > 0,
    call(Generator, Seed0, Seed),
    Idx is Seed mod N,
    nth0(Idx, List, X).
+
+
+:- meta_predicate random_options(:, +, -, -, -, -, -).
+
+%% random_options(:Pred, +Options, -Det, -Generator, -Seed0, -Seed, -Opt) 
+%%   is det.
+%
+% Extracts common random options.
+% @param Options it is a list or an option object
+%
+random_options(Pred, Options, Det, Generator, Seed0, Seed, Opt) :-
+   options_to_object(Pred, Options, Opt),
+   obj_unify(Opt,
+             [generator,
+              seed,
+              det
+              ],
+             [generator(Generator),
+              Seed_Opt,
+              Det
+             ]),
+   must_be(callable, Generator),
+   memberchk(Seed_Opt, [seed(Seed1), seed(Seed1, Seed)]),
+   must_be(integer, Seed1),
+   (  var(Det) -> Det = semidet ; true ),
+   (  Seed1 >= 0
+   -> Seed0 = Seed1
+   ;  Seed0 is random(4294967295) % TODO
+   ).
+
+
+:- meta_predicate random_select(-, +, -, :, +, -).
 
 %% random_select(-X, +List, -Rest, :Generator, +Seed0, -Seed) is nondet.
 %
@@ -86,11 +136,11 @@ random_member_int(X, N, List, Generator, Seed0, Seed) :-
 %
 random_select(X, List, Rest, Generator, Seed0, Seed) :-
    length(List, N),
-   N > 0,
    random_select_int(X, N, List, Rest, Generator, Seed0, Seed).
 
 random_select_int(X, 1, [X], [], _, Seed, Seed) :- !.
 random_select_int(X, N, List, Rest, Generator, Seed0, Seed) :-
+   N > 0,
    call(Generator, Seed0, Seed1),
    Idx is Seed1 mod N,
    nth0(Idx, List, X1, Rest1),
