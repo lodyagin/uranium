@@ -50,44 +50,20 @@ random_number(Options, Number) :-
    random_number_cmn(Options, Number, Ctx).
 
 random_number_cmn(Options, Num, _) :-
-   options_to_object(random_number, Options, Opt),
+   random_options(random_number, Options, Det, Generator, Seed0, Seed, Opt),
    obj_field(Opt, domain, Domains),
-   random_member(Domain, Domains),
+   random_member(Domain, Domains, Det, Generator, Seed0, Seed1),
    (  Domain == integer
-   -> random_number_integer(Opt, Num)
+   -> random_number_integer(Opt, Det, Generator, Seed1, Seed, Num)
    % TODO implement others
    ;  must_be(oneof([integer, rational, real]), Domain)
    ).
 
-random_number_integer(Opt, Num) :-
-   obj_unify(Opt, weak,
-             [pattern,
-              generator,
-              seed,
-              det
-              ],
-             [Patterns,
-              generator(Generator),
-              Seed_Opt,
-              Det
-             ]),
-
-   must_be(callable, Generator),
-   must_be(list, Patterns),
-   memberchk(Seed_Opt, [seed(Seed0), seed(Seed0, Seed)]),
-   must_be(integer, Seed0),
-   (  var(Det) -> Det = semidet ; true ),
-
-   (  Seed0 >= 0
-   -> Seed1 = Seed0
-   ;  Seed1 is random(4294967295) % TODO
-   ),
+random_number_integer(Opt, Det, Generator, Seed1, Seed, Num) :-
+   obj_field(Opt, pattern, Patterns),
 
    % NB Patterns is always non-empty due to defaults
-   (  Det == nondet 
-   -> random_select(Pattern1, Patterns, _, Generator, Seed1, Seed2)
-   ;  random_member(Pattern1, Patterns, Generator, Seed1, Seed2)
-   ),
+   random_member(Pattern1, Patterns, Det, Generator, Seed1, Seed2),
 
    (  Pattern1 = range(Drep)
    -> context_module(That),
@@ -101,7 +77,6 @@ random_number_integer(Opt, Num) :-
 
 
 range_pattern(Set, Num) :-
-
   Num in Set.
 
 
