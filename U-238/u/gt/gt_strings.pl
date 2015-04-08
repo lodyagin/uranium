@@ -59,79 +59,76 @@ random_string_cmn(Options, Str, _) :-
    options_to_object(random_string, Options, Opt),
 
    % check options (TODO: move to ur_options_v)
-   obj_unify(Opt,
-             [generator,
-              seed,
-              pattern],
-             [generator(Generator),
-              seed(Seed),
-              Pattern]
-            ),
-   must_be(callable, Generator),
-   must_be(callable, Pattern),
-   must_be(integer, Seed),
-
-   random_string_int(Opt, Str).
-
-
-random_string_int(Opt, Str) :-
-
    obj_unify(Opt, weak,
              [length,
-              pattern,
               generator,
-              seed
-              ],
+              seed,
+              pattern,
+              det],
              [Lengths,
-              Patterns,
               generator(Generator),
-              seed(Seed0)
-             ]),
-
-   % TODO always use passed generators instead of library(random)
-   % NB Lengths and Patterns are always non-empty due to defaults
-   random_member(Pattern1, Patterns),
-
-   (  Pattern1 = static(Str) -> true % Just return static value
-   ;
-
-   random_member(Length, Lengths),
-
-   % regex/1, range/1 -> pattern/1
-   context_module(That),
-   (  Pattern1 = regex(Reg)
-   -> regex_pattern(Reg, Pattern)
-   ;  Pattern1 = range(Drep)
-   -> Pattern = That:range_pattern(Drep)
-   ;  pattern(Pattern) = Pattern1
-   ),
+              SeedOpt,
+              Patterns,
+              Det]
+            ),
+   must_be(callable, Generator),
+   ( SeedOpt = seed(Seed0) ; SeedOpt = seed(Seed0, Seed) ), !,
+   must_be(integer, Seed0),
+   (  var(Det) -> Det = semidet ; true ),
 
    (  Seed0 >= 0
-   -> Seed = Seed0
-   ;  Seed is random(4294967295) % TODO
+   -> Seed1 = Seed0
+   ;  Seed1 is random(4294967295) % TODO
    ),
 
-   random_string_int(Pattern, Generator, Seed, Length,
-                     Codes),
-   (   nonvar(Str), Str = atom(Atom)
-   ->  atom_codes(Atom, Codes)
-   ;   Str = Codes
-   )
+   % NB Lengths and Patterns are always non-empty due to defaults
+   (  Det == nondet 
+   -> random_select(Pattern1, Patterns, _, Generator, Seed1, Seed2)
+   ;  random_member(Pattern1, Patterns, Generator, Seed1, Seed2)
+   ),
+
+   (  Pattern1 = static(Str) 
+   -> Seed = Seed2 % Just return a static value
+   ;
+
+     (  Det == nondet 
+     -> random_select(Length, Lengths, _, Generator, Seed2, Seed3)
+     ;  random_member(Length, Lengths, Generator, Seed2, Seed3)
+     ),
+
+     % regex/1, range/1 -> pattern/1
+     context_module(That),
+     (  Pattern1 = regex(Reg)
+     -> regex_pattern(Reg, Pattern)
+     ;  Pattern1 = range(Drep)
+     -> Pattern = That:range_pattern(Drep)
+     ;  pattern(Pattern) = Pattern1
+     ),
+
+     random_string_int(Pattern, Generator, Seed3, Seed, Length,
+                       Codes),
+     (  Det == semidet -> ! ; true  ),
+
+     (   nonvar(Str), Str = atom(Atom)
+     ->  atom_codes(Atom, Codes)
+     ;   Str = Codes
+     )
    ).
 
-random_string_int(Pattern, Generator, Seed, Length, Str) :-
+random_string_int(Pattern, Generator, Seed0, Seed, Length, Str) :-
 
-   choose_length(Generator, Length, N),
+   choose_length(Generator, Seed0, Seed1, Length, N),
    (  N =:= 0
    ->
-      Str = []
+      Str = [], 
+      Seed = Seed1
    ;
       % Generate a string equation
       length(Str, N),
       call(Pattern, Str),
 
       % Make a selection
-      randsel(Str, Generator, Seed, _)
+      randsel(Str, Generator, Seed1, Seed)
   ).
 
 :- meta_predicate randsel(+, :, +, -).
@@ -157,11 +154,12 @@ randselchk([X|L], Gen, Seed0, Seed) :-
 
 
 % Randomly choose length with proper distribution
-choose_length(_, empty, 0) :- !.
-choose_length(_, length(N), N) :- !.
-choose_length(_, length(From, To), N) :-
-   % TODO use Gen
-   N is From + random(To - From + 1).
+choose_length(_, Seed, Seed, empty, 0) :- !.
+choose_length(_, Seed, Seed, length(N), N) :- !.
+choose_length(_, Seed, Seed, length(N, N), N) :- !.
+choose_length(Gen, Seed0, Seed, length(From, To), N) :-
+   call(Gen, Seed0, Seed),
+   N is From + Seed mod (To - From + 1).
 
 range_pattern(Drep, Str) :-
 

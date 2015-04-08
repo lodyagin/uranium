@@ -12,7 +12,7 @@ setup_options :-
    ur_options(object_v:nonneg_set_gen,
               [[option(range/2), default(range(1, 100000))],
                [meta_option(generator/1),
-                default(generator(randgen:fd_random(lcq, gnu)))],
+                default(generator(randgen:lcq_gnu))],
                [option(seed/1), default(seed(-1))]
               ]),
    ur_options(http_request_v:http_method_set_gen,
@@ -22,11 +22,12 @@ setup_options :-
                 default([http_method_standard])],
                [option(length/2), default(length(1, 100))],
                [meta_option(generator/1),
-                default(generator(randgen:fd_random(lcq, gnu)))],
+                default(generator(randgen:lcq_gnu))],
                [option(seed/1), default(seed(-1))]
               ]),
    ur_options(gt_strings:random_string,
-              [[multi_group(length), %not_empty,
+              [[group(det), option(semidet/0), option(nondet/0)],
+               [multi_group(length), %not_empty,
                 option(empty/0), option(length/1), option(length/2),
                 default([empty, length(1, 80)])],
                [multi_group(pattern),
@@ -36,8 +37,8 @@ setup_options :-
                 option(static/1),
                 default([range(32..126)])],
                [meta_option(generator/1),
-                default(generator(randgen:fd_random(lcq, gnu)))],
-               [option(seed/1), default(seed(-1))]
+                default(generator(randgen:lcq_gnu))],
+               [group(seed), option(seed/1), option(seed/2), default(seed(-1))]
               ]),
    ur_options(gt_numbers:random_number,
               [[multi_group(domain), 
@@ -48,7 +49,7 @@ setup_options :-
                 meta_option(pattern/1),
                 default([range(-100..100)])],
                [meta_option(generator/1),
-                default(generator(randgen:fd_random(lcq, gnu)))],
+                default(generator(randgen:lcq_gnu))],
                [group(seed),
                 option(seed/1), option(seed/2), 
                 default(seed(-1))]
@@ -120,8 +121,11 @@ setup_options :-
                  option(process_info/0),
                  option(logging/0),
                  option(attribute_formula/0),
-                 default([staticattribute, staticattribute_enum,
-                          staticattribute_code, staticattribute_dep])]
+                 default([staticattribute%, 
+                          %staticattribute_enum,
+                          %staticattribute_code, 
+                          %staticattribute_dep
+                         ])]
                 ]),
     ur_options(global:transaction_type,
                [[multi_group(list),
@@ -134,18 +138,12 @@ setup_options :-
                  option(nofail/0),
                  default([nofail])]
                ]),
-    ur_options(global:name_in_assignment_type,
-               [[multi_group(list), 
-                 option(free_form/0),
-                 option(predefined/0),
-                 default([free_form, predefined])]
-               ]),
     ur_options(global:values,
                [[multi_group(length),
                  option(length/1),
                  default([length(1..10)])],
                 [meta_option(generator/1),
-                 default(generator(randgen:fd_random(lcq, gnu)))],
+                 default(generator(randgen:lcq_gnu))],
                 [group(seed),
                  option(seed/1), option(seed/2), 
                  default(seed(-1))]
@@ -155,7 +153,7 @@ setup_options :-
                  option(length/1),
                  default([length(1..10)])],
                 [meta_option(generator/1),
-                 default(generator(randgen:fd_random(lcq, gnu)))],
+                 default(generator(randgen:lcq_gnu))],
                 [group(seed),
                  option(seed/1), option(seed/2), 
                  default(seed(-1))]
@@ -165,7 +163,7 @@ setup_options :-
                  option(length/1),
                  default([length(1..3)])],
                 [meta_option(generator/1),
-                 default(generator(randgen:fd_random(lcq, gnu)))],
+                 default(generator(randgen:lcq_gnu))],
                 [group(seed),
                  option(seed/1), option(seed/2), 
                  default(seed(-1))]
