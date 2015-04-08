@@ -25,11 +25,11 @@
 
 :- module(randgen,
           [fd_random/4,         % :Generator, +Seed0, -Seed, -X
-           %fd_random/5,         % +GenFamily, +GenName, +Seed0, -Seed, -X
            lcq_gnu/2,
            lcq_knuth/2,
            random_generator/4,
-           random_select/5      % -X, +List, :Generator, +Seed0, -Seed
+           random_member/5,    % -X, +List, :Generator, +Seed0, -Seed
+           random_select/6     % -X, +List, -Rest, :Generator, +Seed0, -Seed
           ]).
 
 /** <module>  clpfd-compatible random number generators
@@ -57,41 +57,37 @@ fd_random(Generator, Seed0, Seed, X) :-
    fd_size(X, N_),
    debug(rand, 'labelling the domain of ~d elements', [N_]),
    findall(X, label([X]), All_Possible_Values), !,
-   random_select(X, All_Possible_Values, Generator, Seed0, Seed).
-
-
-%% fd_random(+Family, +Name, +Seed0, -Seed, -X) is nondet,
-%
-% Random distribution over possible values of the finite domain
-% variable X. Randomly choose another random value on backtracing.
-%
-% @param Family random generator family
-% @param Name random generator name
-% @param Seed0 previous seed
-% @param Seed used for X calculation (to pass as Seed0 in the next call)
-% @param X variable with finite domain attributes
-
-% fd_random(Family, Name, Seed0, Seed, X) :-
-%    Ctx = context(fd_random/5, _),
-%    must_be(atom, Family),
-%    must_be(atom, Name),
-%    (  random_generator(Family, Name, Generator, _) -> true
-%    ;  throw(error(unknown_random_generator(Family, Name), Ctx))
-%    ),
-%    fd_random(Generator, Seed0, Seed, X).
+   random_member(X, All_Possible_Values, Generator, Seed0, Seed).
 
 
 :- meta_predicate random_select(-, +, :, +, -).
 
-%% random_select(-X, +List, :Generator, +Seed0, -Seed) is nondet.
+
+%% random_member(-X, +List, :Generator, +Seed0, -Seed) is semidet.
+%
+% X is a random member of List. It is like random_member/2 but uses the
+% defined Generator and Seed.
+%
+random_member(X, List, Generator, Seed0, Seed) :-
+   length(List, N),
+   N > 0,
+   random_member_int(X, N, List, Generator, Seed0, Seed).
+
+random_member_int(X, 1, [X], _, Seed, Seed) :- !.
+random_member_int(X, N, List, Generator, Seed0, Seed) :-
+   call(Generator, Seed0, Seed),
+   Idx is Seed mod N,
+   nth0(Idx, List, X).
+
+%% random_select(-X, +List, -Rest, :Generator, +Seed0, -Seed) is nondet.
 %
 % Randomly select an element. It selects other elements randomly on
 % BT. Fails if List is the empty list.
 %
-random_select(X, List, Generator, Seed0, Seed) :-
+random_select(X, List, Rest, Generator, Seed0, Seed) :-
    length(List, N),
    N > 0,
-   random_select_int(X, N, List, _, Generator, Seed0, Seed).
+   random_select_int(X, N, List, Rest, Generator, Seed0, Seed).
 
 random_select_int(X, 1, [X], [], _, Seed, Seed) :- !.
 random_select_int(X, N, List, Rest, Generator, Seed0, Seed) :-

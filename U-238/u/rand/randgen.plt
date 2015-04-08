@@ -18,16 +18,32 @@ test(fd_random1_knuth) :-
    assertion(S1 == 1442695040888963407),
    assertion(X == 12).
 
+test(random_member1, [fail]) :-
+   random_generator(test, sequence1, G, _), 
+   random_member(_, "", G, 0, _).
+
+test(random_member2) :-
+   random_generator(test, sequence1, G, _), 
+   random_member(X, "a", G, 0, S),
+   assertion(S == 0), %NB seed is unchanged
+   assertion(X == 0'a).
+
+test(random_member3) :-
+   random_generator(test, sequence1, G, _), 
+   random_member(X, "aBcDeFgHiJkLmNoPqRsTuVwXyZ", G, 0, S),
+   assertion(S == 1), 
+   assertion(X == 0'B).
+
 test(random_select1, [L == ""]) :-
    random_generator(test, sequence1, G, _), 
-   findall(X, random_select(X, "", G, 0, _), L).
+   findall(X, random_select(X, "", _, G, 0, _), L).
 
-test(random_select1, [L == "a"]) :-
+test(random_select2, [L == [p(0'a, [])]]) :-
    random_generator(test, sequence1, G, _), 
-   findall(X, random_select(X, "a", G, 0, _), L).
+   findall(p(X, R), random_select(X, "a", R, G, 0, _), L).
 
-test(random_select1, [L == "BDFHJLNPRTVXZciouamyqkwesg"]) :-
+test(random_select3, [L == "BDFHJLNPRTVXZciouamyqkwesg"]) :-
    random_generator(test, sequence1, G, _), 
-   findall(X, random_select(X, "aBcDeFgHiJkLmNoPqRsTuVwXyZ", G, 0, _), L).
+   findall(X, random_select(X, "aBcDeFgHiJkLmNoPqRsTuVwXyZ",_,G, 0, _), L).
 
 :- end_tests(randgen).
