@@ -57,7 +57,7 @@ fd_random(Generator, Seed0, Seed, X) :-
    fd_size(X, N_),
    debug(rand, 'labelling the domain of ~d elements', [N_]),
    findall(X, label([X]), All_Possible_Values), !,
-   random_member(X, All_Possible_Values, Generator, Seed0, Seed).
+   random_select(X, All_Possible_Values, _, Generator, Seed0, Seed).
 
 
 :- meta_predicate random_select(-, +, :, +, -).
