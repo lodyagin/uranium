@@ -38,10 +38,12 @@ setup_options :-
                 default([range(32..126)])],
                [meta_option(generator/1),
                 default(generator(randgen:lcq_gnu))],
-               [group(seed), option(seed/1), option(seed/2), default(seed(-1))]
+               [group(seed), option(seed/1), option(seed/2), 
+                default(seed(-1))]
               ]),
    ur_options(gt_numbers:random_number,
-              [[multi_group(domain), 
+              [[group(det), option(semidet/0), option(nondet/0)],
+               [multi_group(domain), 
                 option(integer/0), option(rational/0), option(real/0),
                 default([integer])],
                [multi_group(pattern),

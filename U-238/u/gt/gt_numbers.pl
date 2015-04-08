@@ -63,34 +63,41 @@ random_number_integer(Opt, Num) :-
    obj_unify(Opt, weak,
              [pattern,
               generator,
-              seed
+              seed,
+              det
               ],
              [Patterns,
               generator(Generator),
-              Seed_Opt
+              Seed_Opt,
+              Det
              ]),
 
    must_be(callable, Generator),
    must_be(list, Patterns),
    memberchk(Seed_Opt, [seed(Seed0), seed(Seed0, Seed)]),
    must_be(integer, Seed0),
-   
-   % TODO always use passed generators instead of library(random)
-   random_member(Pattern1, Patterns),
+   (  var(Det) -> Det = semidet ; true ),
 
-   must_be(callable, Pattern1),
-
-   (  Pattern1 = range(Drep)
-   -> context_module(That),
-      Pattern = That:range_pattern(Drep)
-   ;  pattern(Pattern) = Pattern1
-   ),
    (  Seed0 >= 0
    -> Seed1 = Seed0
    ;  Seed1 is random(4294967295) % TODO
    ),
+
+   % NB Patterns is always non-empty due to defaults
+   (  Det == nondet 
+   -> random_select(Pattern1, Patterns, _, Generator, Seed1, Seed2)
+   ;  random_member(Pattern1, Patterns, Generator, Seed1, Seed2)
+   ),
+
+   (  Pattern1 = range(Drep)
+   -> context_module(That),
+      Pattern = That:range_pattern(Drep)
+   ;  pattern(Pattern) = Pattern1,
+      must_be(callable, Pattern)
+   ),
    call(Pattern, Num),
-   fd_random(Generator, Seed1, Seed, Num), !.
+   fd_random(Generator, Seed2, Seed, Num),
+   (  Det == semidet -> ! ; true ).
 
 
 range_pattern(Set, Num) :-
