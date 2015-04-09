@@ -901,6 +901,10 @@ test(obj_rewrite_with_evals4) :-
    obj_construct(citizen_v, [sex, birthday], [man, 1994], O),
    obj_rewrite(O, [class], [_], [_], _).
 
+test(obj_rewrite_old_new_unify, Man0 == Man) :-
+   obj_construct(man_v, [], [], Man0),
+   obj_rewrite(Man0, [name], [A], [A], Man).
+
 test(obj_sort_parents1,
      [P4 == [http_invalid_mixed_headers_v,
              http_invalid_headers_v,
