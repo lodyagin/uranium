@@ -87,12 +87,12 @@ test(class_create_key_inheritance,
 %   obj_rebase((object_v -> callup_v), V, _),
 %   findall(X, class_descendant(callup_v, X), List).
 
-test(obj_reinterpret1, L == [man_v]) :-
+test(obj_reinterpret1, [L == [man_v]]) :-
   obj_construct(man_v, [], [], M),
   findall(C, obj_reinterpret(M, C, _), L1),
   sort(L1, L).
 
-test(obj_reinterpret2, L == [man_v, passport_v]) :-
+test(obj_reinterpret2, [L == [man_v, passport_v], blocked(rebase_family)]) :-
   obj_construct(man_v, [name, surname, sex], ['Sergei', 'Lodyagin', max], M),
   findall(C, obj_reinterpret(M, C, _), L1),
   sort(L1, L).
@@ -907,7 +907,8 @@ test(obj_sort_parents1,
              http_request_headers_v,
              http_response_headers_v,
              http_headers_v,
-             object_v, object_base_v]]
+             object_v, object_base_v],
+      blocked(rebase_family)]
      ) :-
 
    obj_construct(http_request_headers_v, [], [], V1),
@@ -953,7 +954,7 @@ test(obj_sort_parents2,
    obj_sort_parents(V3, Order, _).
 
 
-test(obj_sort_parents_bug1) :-
+test(obj_sort_parents_bug1, blocked(rebase_family)) :-
 
    new_http_user(HTTP_User),
    obj_rebase((object_v -> citizen_v),
@@ -1018,7 +1019,7 @@ test(eval_fields1, [Class == callup_v]) :-
    obj_field(C, class, Class).
 
 
-test(eval_fields2) :-
+test(eval_fields2, blocked(rebase_family)) :-
 
    % man_v doesn't define class eval, so in this example
    % the eval from citizen_v is always used.
