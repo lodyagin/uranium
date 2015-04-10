@@ -24,14 +24,15 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(randgen,
-          [fd_random/4,         % :Generator, +Seed0, -Seed, -X
+          [fd_random/4,      % :Generator, +Seed0, -Seed, -X
+           fd_random/5,      % +Opts, :Generator, +Seed0, -Seed, -X
            lcq_gnu/2,
            lcq_knuth/2,
            random_generator/4,
            random_member/5,  % -X, +List, :Generator, +Seed0, -Seed
            random_member/6,  % -X, +List, +Det, :Generator, +Seed0, -Seed
-           random_options/7, % :Pred, +Options, -Det, -Generator, -Seed0, 
-                             % -Seed, -Opt
+           random_options/6, % +Options0, -Options, -Det,
+                             % -Generator, -Seed0, -Seed
            random_select/6   % -X, +List, -Rest, :Generator, +Seed0, -Seed
           ]).
 
@@ -40,10 +41,13 @@
 
 :- use_module(library(error)).
 :- use_module(library(clpfd)).
+:- use_module(u(v)).
+:- use_module(u(logging)).
 
 :- multifile random_generator/4.
 
 :- meta_predicate fd_random(:, +, -, -).
+:- meta_predicate fd_random(:, :, +, -, -).
 
 %% fd_random(:Generator, +Seed0, -Seed, -X) is nondet.
 %
@@ -56,9 +60,14 @@
 % @param X variable with finite domain attributes
 
 fd_random(Generator, Seed0, Seed, X) :-
+   fd_random_cmn([], Generator, Seed0, Seed, X).
+fd_random(Opts, Generator, Seed0, Seed, X) :-
+   fd_random_cmn(Opts, Generator, Seed0, Seed, X).
+
+fd_random_cmn(Opts, Generator, Seed0, Seed, X) :-
    must_be(integer, Seed0),
    fd_size(X, N_),
-   debug(rand, 'labelling the domain of ~d elements', [N_]),
+   log_piece(['labelling the domain of ', N_, ' elements'], Opts),
    findall(X, label([X]), All_Possible_Values), !,
    random_select(X, All_Possible_Values, _, Generator, Seed0, Seed).
 
@@ -68,7 +77,7 @@ fd_random(Generator, Seed0, Seed, X) :-
 %% random_member(-X, +List, +Det, :Generator, +Seed0, -Seed).
 %
 % X is a random member of List.
-% @param Det nondet or semidet. It selects random_member/5 or 
+% @param Det nondet or semidet. It selects random_member/5 or
 %   random_select/6 internally depending on this parameter.
 %
 random_member(X, List, Det, Generator, Seed0, Seed) :-
@@ -98,34 +107,80 @@ random_member_int(X, N, List, Generator, Seed0, Seed) :-
    nth0(Idx, List, X).
 
 
-:- meta_predicate random_options(:, +, -, -, -, -, -).
+:- meta_predicate random_options(+, -, -, -, -, -).
 
-%% random_options(:Pred, +Options, -Det, -Generator, -Seed0, -Seed, -Opt) 
-%%   is det.
+%% random_options(+Options0, -Options,
+%%                -Det, -Generator, -Seed0, -Seed) is det.
 %
-% Extracts common random options.
-% @param Options it is a list or an option object
+% Extracts common random options. It combines Options0 and Options0 /
+% global_options / rand_options values. Options0 (local) values
+% overwrites the globals.
+% @param Options0 is an options object
+% @param Options is an options object corresponding to Options0 but if
+%   Options0/global_options/rand_options contains seed/1,2 Options
+%   will contain the rewritten seed value: seed(Seed0) -> seed(Seed),
+%   seed(Seed0, Seed) -> seed(Seed, Seed1)
 %
-random_options(Pred, Options, Det, Generator, Seed0, Seed, Opt) :-
-   options_to_object(Pred, Options, Opt),
-   obj_unify(Opt,
-             [generator,
-              seed,
-              det
-              ],
-             [generator(Generator),
-              Seed_Opt,
-              Det
-             ]),
+random_options(Options0, Options, Det, Generator, Seed0, Seed) :-
+   obj_rewrite(Options0, weak,
+               [generator, seed, det, global_options],
+               [Generator_Opt0, Seed_Opt0, Det0, GO0],
+               [Generator_Opt0, Seed_Opt0, Det0, GO], % NB all local
+                                                      % opts values
+                                                      % are repeated
+               Options
+               ),
+   % Get the global random options
+   (  nonvar(GO0) -> GO1 = GO0
+   ;  obj_construct(global_options_v, [], [], GO1)
+   ),
+   obj_rewrite(GO1, [rand_options], [RO1], [RO_GlobOut], GO),
+   ( nonvar(RO1) -> RO2 = RO1 ; RO2 = [] ),
+   options_to_object(random_options, RO2, RO3), % the opt def. must
+                                                % contain no defaults
+                                                % The overwrite rule:
+                                                % locals have more
+                                                % priority
+   obj_rewrite(RO3,
+               [generator, seed, det],
+               [Generator_Opt3, Seed_Opt3, Det3],
+               [Generator_Opt3, Seed_Opt_GlobOut, Det3], % NB rewrite
+                                                         % only seed
+               RO_GlobOut),
+   % generator
+   (  nonvar(Generator_Opt0)
+   -> Generator_Opt0 = generator(Generator)
+   ;  nonvar(Generator_Opt3)
+   -> Generator_Opt3 = generator(Generator)
+   ;  Generator = randgen:lcq_gnu % the default
+   ),
    must_be(callable, Generator),
+   % seed
+   (  nonvar(Seed_Opt0)
+   -> Seed_Opt = Seed_Opt0
+   ;  nonvar(Seed_Opt3)
+   -> Seed_Opt = Seed_Opt3
+   ;  Seed_Opt = seed(-1)
+   ),
    memberchk(Seed_Opt, [seed(Seed1), seed(Seed1, Seed)]),
    must_be(integer, Seed1),
-   (  var(Det) -> Det = semidet ; true ),
    (  Seed1 >= 0
    -> Seed0 = Seed1
    ;  Seed0 is random(4294967295) % TODO
+   ),
+   % det
+   (  nonvar(Det0)
+   -> Det = Det0
+   ;  nonvar(Det3)
+   -> Det = Det3
+   ;  Det = semidet % the default
+   ),
+   % make the new options object
+   functor(Seed_Opt, _, Seed_Arity),
+   (  Seed_Arity == 1
+   -> Seed_Opt_GlobOut = seed(Seed)
+   ;  Seed_Opt_GlobOut = seed(Seed, _)
    ).
-
 
 :- meta_predicate random_select(-, +, -, :, +, -).
 

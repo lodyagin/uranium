@@ -33,15 +33,22 @@
 
 :- discontiguous new_class/3, new_class/4.
 
+% When passing to class these options go down to each field.
+% Can be modified during this process (like seed value or log indent).
+new_class(global_options_v, object_v,
+          [rand_options,
+           log_options
+          ]).
+
 new_class(ur_options_v, object_v,
           [options_in,     % as passed by a user
            context_module, % the context module for meta-options
            weak,           % `strict` or whatever
-           nested          % nested (associative) options (when passed
+           nested,         % nested (associative) options (when passed
                            % to ac class this part is for fields, it
                            % is a list of field_name - options_list pairs)
-          ]
-         ).
+           global_options
+          ]).
 
 new_class(gt_strings__random_string_options_v,
           ur_options_v,

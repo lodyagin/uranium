@@ -27,8 +27,8 @@
 % for random strings generation.
 
 :- module(gt_strings,
-          [random_string/1,
-	   random_string/2,
+          [random_string/1, % -Str
+	   random_string/3, % +Options0, -Options, -Str
            randsel/4,       % +List, :Gen, +Seed0, -Seed
            randselchk/4,    % +List, :Gen, +Seed0, -Seed
 	   range_pattern/2
@@ -43,19 +43,21 @@
 
 random_string(Str) :-
    Ctx = context(random_string/1, _),
-   random_string_cmn([], Str, Ctx).
+   random_string_cmn([], _, Str, Ctx).
 
-:- meta_predicate random_string(:, -).
+:- meta_predicate random_string(:, -, -).
 
-random_string(Options, Str) :-
-   Ctx = context(random_string/2, _),
-   random_string_cmn(Options, Str, Ctx).
+%% random_string(+Options0, -Options, -Str) is nondet/semidet.
+random_string(Options0, Options, Str) :-
+   Ctx = context(random_string/3, _),
+   random_string_cmn(Options0, Options, Str, Ctx).
 
-random_string_cmn(Options, Str, _) :-
-   random_options(random_string, Options, Det, Generator, Seed1, Seed, Opt),
+random_string_cmn(Options0, Options, Str, _) :-
+   options_to_object(random_string, Options0, Options1),
+   random_options(Options1, Options, Det, Generator, Seed1, Seed),
 
    % check options (TODO: move to ur_options_v)
-   obj_unify(Opt, weak, [length, pattern], [Lengths, Patterns]),
+   obj_unify(Options1, weak, [length, pattern], [Lengths, Patterns]),
 
    % NB Lengths and Patterns are always non-empty due to defaults
    random_member(Pattern1, Patterns, Det, Generator, Seed1, Seed2),

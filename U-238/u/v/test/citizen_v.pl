@@ -9,7 +9,7 @@
 'citizen_v?'(Term, class, callup_v) :-
 
         obj_field(Term, sex, Sex),
-        Sex == man,
+        memberchk(Sex, [man, male]),
         obj_field(Term, age, Age),
         integer(Age),
         between(18, 25, Age), !.
@@ -33,4 +33,23 @@
         ).
         
 
-new_class(citizen_v, man_v, [country, id, birthday], [id]).
+new_class(citizen_v, man_v, 
+          [country, 
+           id, 
+           birthday : citizen_v_birthday_t
+          ], 
+          [id]).
+
+typedef(citizen_v_birthday_t, [value_set - (gt_numbers:random_number)]).
+
+setup_options :-
+   Random = [[meta_option(generator/1)], 
+             [group(seed), option(seed/1), option(seed/2)],
+             [group(det), option(semidet/0), option(nondet/0)]
+            ],
+   ur_options(global:birthday, 
+            [ [multi_group(domain), option(integer/0), default([integer])],
+              [multi_group(pattern), option(range/1), default([range(1903..2015)])]
+            | Random 
+            ]),
+   ur_options(global:citizen_v, Random).

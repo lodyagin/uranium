@@ -27,8 +27,8 @@
 % for random numbers generation.
 
 :- module(gt_numbers,
-          [random_number/1,
-	   random_number/2
+          [random_number/1, % -Number
+	   random_number/3  % +Options0, -Options, -Number
            ]).
 
 :- use_module(library(error)).
@@ -38,23 +38,28 @@
 :- use_module(u(v)).
 
 random_number(Number) :-
-
    Ctx = context(random_number/1, _),
-   random_number_cmn([], Number, Ctx).
+   random_number_cmn([], _, Number, Ctx).
 
-:- meta_predicate random_number(:, -).
+:- meta_predicate random_number(:, -, -).
 
-random_number(Options, Number) :-
+%% random_number(+Options0, -Options, -Number) is nondet.
+%
+%  Generates a random number for clpfd constrained Number.
+%  Example: X in 1..10, random_number([semidet], _, X).
+%  It is semidet if the semidet option passed.
+%
+random_number(Options0, Options, Number) :-
+   Ctx = context(random_number/3, _),
+   random_number_cmn(Options0, Options, Number, Ctx).
 
-   Ctx = context(random_number/2, _),
-   random_number_cmn(Options, Number, Ctx).
-
-random_number_cmn(Options, Num, _) :-
-   random_options(random_number, Options, Det, Generator, Seed0, Seed, Opt),
-   obj_field(Opt, domain, Domains),
+random_number_cmn(Options0, Options, Num, _) :-
+   options_to_object(random_number, Options0, Options1),
+   random_options(Options1, Options, Det, Generator, Seed0, Seed),
+   obj_field(Options, domain, Domains),
    random_member(Domain, Domains, Det, Generator, Seed0, Seed1),
    (  Domain == integer
-   -> random_number_integer(Opt, Det, Generator, Seed1, Seed, Num)
+   -> random_number_integer(Options1, Det, Generator, Seed1, Seed, Num)
    % TODO implement others
    ;  must_be(oneof([integer, rational, real]), Domain)
    ).
@@ -62,7 +67,7 @@ random_number_cmn(Options, Num, _) :-
 random_number_integer(Opt, Det, Generator, Seed1, Seed, Num) :-
    obj_field(Opt, pattern, Patterns),
 
-   % NB Patterns is always non-empty due to defaults
+   % NB Patterns are always non-empty due to defaults
    random_member(Pattern1, Patterns, Det, Generator, Seed1, Seed2),
 
    (  Pattern1 = range(Drep)

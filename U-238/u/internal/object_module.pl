@@ -229,9 +229,10 @@ process_typedefs(Module) :-
         ; VS_Head0 = VS_Head, VS_Module = Module
         ),
         VS_Head =.. VS_Head_List,
-        append(VS_Head_List, [VS_Opt, VS_Value], VS_Pred_List),
+        append(VS_Head_List, [VS_Opt0, VS_Opt, VS_Value], VS_Pred_List),
         VS_Pred =.. VS_Pred_List,
-        Pred = (value_set(TD_Type, VS_Opt, VS_Value) :- VS_Module:VS_Pred),
+        Pred = (value_set(TD_Type, VS_Opt0, VS_Opt, VS_Value) :- 
+                VS_Module:VS_Pred),
         objects:assertz(Pred),
         debug(classes, 'objects:assertz(~p)', [Pred])
      ;  true

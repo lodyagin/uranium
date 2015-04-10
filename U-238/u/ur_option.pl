@@ -28,7 +28,7 @@
            options_object/3,
            options_object/4,
            options_predicate_to_options_class_name/2,
-           options_to_object/3
+           options_to_object/3   % :Pred, +Options, -Opt
            ]).
 
 /** <module> Options processing
@@ -309,7 +309,10 @@ check_rest(Rejected, Details, Err) :-
 
 :- meta_predicate options_to_object(:, :, -).
 
-% Convert Options to options object if needed
+%% options_to_object(:Pred, +Options, -Opt) is det.
+%
+% Converts Options to options object if needed
+%
 options_to_object(_, _:Object, Object) :-
    u_object(Object), !.
 options_to_object(Pred, M:Options, Object) :-

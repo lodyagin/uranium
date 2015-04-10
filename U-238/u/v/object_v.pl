@@ -64,7 +64,9 @@
 :- use_module(u(v)).
 :- use_module(library(clpfd)).
 :- use_module(u(ur_option)).
+:- use_module(u(rand/randgen)).
 :- use_module(u(gt/gt_numbers)).
+:- use_module(u(logging)).
 
 %
 % the class evaluation can be overrided
@@ -97,58 +99,65 @@ new_class(object_v, object_base_v, []).
 
 typedef(nonneg, [value_set - nonneg_set_gen]).
 
-:- meta_predicate nonneg_set_gen(:, -).
+:- meta_predicate nonneg_set_gen(:, -, -).
 
-nonneg_set_gen(Options, Value) :-
-
-   options_to_object(nonneg_set_gen, Options, Opt),
-
-   obj_unify(Opt,
-             [range, generator, seed],
-             [range(From, To), generator(Gen), seed(Seed0)]),
-
-   (  Seed0 < 0
-   -> Seed is random(4 * 10**9)
-   ;  Seed = Seed0
-   ),
+nonneg_set_gen(Options0, Options, Value) :-
+   options_to_object(nonneg_set_gen, Options0, Options1),
+   obj_field(Options1, range, range(From, To)),
    Value in From .. To,
-   call(Gen, Seed, _, Value).
+   random_number(Options1, Options, Value).
 
-:- meta_predicate v_gen(+, :, -).
+:- meta_predicate v_gen(+, :, -, -).
 
-v_gen(Class, Options, Obj) :-
+v_gen(Class, _:Opts, Options, Obj) :-
+   options_to_object(global:Class, Opts, Options0),
+   obj_rewrite(Options0, [global_options], [GO0], [GO2], Options1),
+   obj_rewrite(GO0, [log_options], [LogOpts0], [LogOpts2], GO2),
+   (  nonvar(LogOpts0) -> LogOpts1 = LogOpts0 ; LogOpts1 = [] ),
+   log_piece(['v_gen(', Class, ', ..., ...)'], LogOpts1),
+   change_indent(LogOpts1, LogOpts2, 2),
    obj_construct(Class, [], [], Obj0),
-   obj_fill_downcast_random(Options, Obj0, Obj).
+   obj_fill_downcast_random(Options1, Options2, Obj0, Obj),
+   obj_rewrite(Options2, [log_options], LogOpts3, LogOpts4, Options),
+   change_indent(LogOpts3, LogOpts4, -2).
 
-:- meta_predicate list_member_gen(+, :, -).
+:- meta_predicate list_member_gen(+, :, -, -).
 
-list_member_gen(Field, Options, Value) :-
-   options_to_object(global:Field, Options, Opt),
-   obj_field(Opt, list, Types),
-   random_member(Value, Types). %TODO proper gen and seed
-   
-:- meta_predicate vs_gen(+, +, :, -).
+% TODO add Class parameter
+list_member_gen(Field, Options0, Options, Value) :-
+   options_to_object(global:Field, Options0, Options1),
+   Options1 // global_options // log_options ^= LogOpts,
+   (   nonvar(LogOpts) -> LogOpts1 = LogOpts ; LogOpts1 = [lf(1)] ),
+   log_piece(['list_member_gen(', Field, ', ..., ...)'], LogOpts1),
+   random_options(Options1, Options, Det, Gen, Seed0, Seed),
+   obj_field(Options1, list, Types),
+   random_member(Value, Types, Det, Gen, Seed0, Seed).
+
+:- meta_predicate vs_gen(+, +, :, -, -).
 
 % Generates list of homogeneous objects of Class
-vs_gen(Field, Class, Options, Objs) :-
-   options_to_object(global:Field, Options, Opt0),
-   options_predicate_to_options_class_name(global:Field, OptClass0),
-   options_predicate_to_options_class_name(gt_numbers:random_number, OptClass1),
-   obj_rebase((OptClass0 -> OptClass1), Opt0, Opt1),
+vs_gen(Field, Class, Options0, Options, Objs) :-
+   options_to_object(global:Field, Options0, Options1),
+   Options1 / global_options / log_options ^= LogOpts,
+   log_piece(['vs_gen(', Field, ', ', Class, ', ..., ...)'], LogOpts),
+   options_predicate_to_options_class_name(global:Field, OptClass1),
+   options_predicate_to_options_class_name(gt_numbers:random_number, OptClass2),
+   obj_rebase((OptClass1 -> OptClass2), Options1, Options2),
    % Convert options length(Range) -> range(Range)
-   obj_field(Opt0, length, Lengths),
-   obj_unify(Opt1, [pattern, domain], [Ranges, [integer]]),
+   obj_field(Options1, length, Lengths),
+   obj_unify(Options2, [pattern, domain], [Ranges, [integer]]),
    findall(range(Range), member(length(Range), Lengths), Ranges),
    % Get the number of objects
-   random_number(Opt1, N),
+   random_number(Options2, Options, N),
    % Generate N random objects
-   findall(V, 
-           ( length(L, N), 
-             member(V0, L), 
-             obj_construct(Class, [], [], V0), 
-             obj_fill_downcast_random(Opt0, V0, V) 
+   gtrace, % FIXME need to return Options from the iteration
+   findall(V,
+           ( length(L, N),
+             member(V0, L),
+             obj_construct(Class, [], [], V0),
+             obj_fill_downcast_random(Options, _, V0, V) %FIXME options
            ),
            Objs).
-  
+
 
 

@@ -9,25 +9,25 @@ test(all_different_full) :-
   Length is Last - First + 1,
   numlist(First, Last, Etalon),
   random_string([pattern(all_different_pat(First..Last)),
-                 length(Length)],
+                 length(Length)], _,
 		Codes),
   perm_check(Codes, Etalon).
   % Codes must be always a permutation of the Etalon
 
 test(empty_atom) :-
   findall(A, (between(1, 100, _),
-	      random_string([empty], atom(A))),
+	      random_string([empty], _, atom(A))),
 	  AL),
   sort(AL, ['']).
 
 test(one_length_one_char) :-
   findall(A, (between(1, 100, _),
-	      random_string([length(5), range(0'a)], atom(A))), %'
+	      random_string([length(5), range(0'a)], _, atom(A))), %'
 	      AL),
   sort(AL, ['aaaaa']).
 
 test(regex1) :-
-   random_string([regex("a(b|c)*d"), length(100)], atom(Str)), 
+   random_string([regex("a(b|c)*d"), length(100)], _, atom(Str)), 
    atom_length(Str, N),
    assertion(N == 100),
    sub_atom(Str, 0, 1, _, X1),
@@ -57,7 +57,7 @@ test(random_string_nondet,
 ) :-
    findall([Str, S], 
            random_string([length(3), range(0'a..0'c), nondet, seed(0, S), 
-                          generator(randgen:test_sequence1)], 
+                          generator(randgen:test_sequence1)], _,
                          atom(Str)), 
            L), 
    flatten(L, SL),
