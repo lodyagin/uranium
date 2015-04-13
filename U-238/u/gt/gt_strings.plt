@@ -56,7 +56,7 @@ test(random_string_nondet,
      [Atom == bca3bcb4bcc4bbb4bbc5bba5bab4bac5baa5aab4aac5aaa5abc5aba6abb6acc5aca6acb6cab4cac5caa5cbc5cba6cbb6ccc5cca6ccb6]
 ) :-
    findall([Str, S], 
-           random_string([length(3), range(0'a..0'c), nondet, seed(0, S), 
+           random_string([length(3), range(0'a..0'c), nondet, rand_state(0, S), 
                           generator(randgen:test_sequence1)], _,
                          atom(Str)), 
            L), 

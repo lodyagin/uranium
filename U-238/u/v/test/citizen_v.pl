@@ -44,7 +44,7 @@ typedef(citizen_v_birthday_t, [value_set - (gt_numbers:random_number)]).
 
 setup_options :-
    Random = [[meta_option(generator/1)], 
-             [group(seed), option(seed/1), option(seed/2)],
+             [group(rand_state), option(rand_state/1), option(rand_state/2)],
              [group(det), option(semidet/0), option(nondet/0)]
             ],
    ur_options(global:birthday, 

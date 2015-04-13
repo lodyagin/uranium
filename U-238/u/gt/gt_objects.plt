@@ -7,7 +7,7 @@
 test(obj_fill_random1_semidet) :-
     obj_construct(man_v, [], [], M),
     options_object(randgen:random_options, [sex-[male, female]], Opts),
-    obj_construct(global_options_v, [rand_options], [[seed(2)]], GO),
+    obj_construct(global_options_v, [rand_options], [[rand_state(2)]], GO),
     Opts / global_options ^= GO,
     obj_fill_random(Opts, _, M),
     assertion(M / sex =^= male).
@@ -15,7 +15,7 @@ test(obj_fill_random1_semidet) :-
 test(obj_fill_random1_nondet) :-
     obj_construct(man_v, [], [], M),
     options_object(randgen:random_options, [sex-[male, female, nondet]], Opts),
-    obj_construct(global_options_v, [rand_options], [[seed(2)]], GO),
+    obj_construct(global_options_v, [rand_options], [[rand_state(2)]], GO),
     Opts / global_options ^= GO,
     findall(Sex, (obj_fill_random(Opts, _, M), M / sex ^= Sex), SexList),
     assertion(SexList == [male, female]).
@@ -33,21 +33,21 @@ test(obj_fill_dowcast_random1_nondet,
             citizen_v,citizen_v,callup_v,citizen_v,
             citizen_v,citizen_v ]
     ) :-
-    options_object(randgen:random_options, 
-                   [sex-[male, female, nondet], 
+    options_object(randgen:random_options,
+                   [sex-[male, female, nondet],
                     birthday-[nondet, range(1980..2000)]
-                   ], 
-                   Opts), 
-    obj_construct(global_options_v, 
-                  [rand_options], 
-                  [[seed(2), generator(randgen:test_sequence1)]], 
-                  GO), 
-    Opts / global_options ^= GO, 
-    findall(F, 
-            ( obj_construct(citizen_v, [], [], M), 
-              obj_fill_downcast_random(Opts, _, M, M1), 
+                   ],
+                   Opts),
+    obj_construct(global_options_v,
+                  [rand_options],
+                  [[rand_state(2), generator(randgen:test_sequence1)]],
+                  GO),
+    Opts / global_options ^= GO,
+    findall(F,
+            ( obj_construct(citizen_v, [], [], M),
+              obj_fill_downcast_random(Opts, _, M, M1),
               functor(M1, F, _)
-            ), 
+            ),
             FL).
 
 % This test differs from the previous one because now a seed is transmitted
@@ -65,18 +65,17 @@ test(obj_fill_dowcast_random_list1_nondet,
             citizen_v,citizen_v,callup_v,citizen_v,
             citizen_v,citizen_v ]
     ) :-
-    gtrace,
-    options_object(randgen:random_options, 
-                   [sex-[male, female, nondet], 
+    options_object(randgen:random_options,
+                   [sex-[male, female, nondet],
                     birthday-[nondet, range(1980..2000)]
-                   ], 
-                   Opts), 
-    obj_construct(global_options_v, 
-                  [rand_options], 
-                  [[seed(2)]], 
-                  GO), 
-    Opts / global_options ^= GO, 
-    length(L, 16), 
+                   ],
+                   Opts),
+    obj_construct(global_options_v,
+                  [rand_options],
+                  [[rand_state(2)]],
+                  GO),
+    Opts / global_options ^= GO,
+    length(L, 16),
     bagof(M, L^(member(M, L), obj_construct(citizen_v, [], [], M)), LM0),
     gtrace,
     obj_fill_downcast_random_list(Opts, _, LM0, LM),
@@ -84,7 +83,7 @@ test(obj_fill_dowcast_random_list1_nondet,
     writeln(FL).
 
 
-setup_options :- 
+setup_options :-
     man_v:setup_options,
     citizen_v:setup_options.
 

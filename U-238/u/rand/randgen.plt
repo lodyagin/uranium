@@ -4,6 +4,15 @@
 :- use_module(library(clpfd)).
 :- use_module(u(v)).
 
+% http://codegolf.stackexchange.com/questions/42343/implement-a-pcg
+test(pcg32_1test1, blocked(pcg)) :-
+   prepare_random_state(randgen:pcg32_1, pcg32_init(42, 52), State1),
+   random_integer(State1, 0x100000000, Value1),
+   assertion(Value1 == 2380307335),
+   pcg32_1(State1, State2),
+   random_integer(State2, 0x100000000, Value2),
+   assertion(Value2 == 2380307335).
+
 test(fd_random1_gnu) :-
    X in 5..15,
    fd_random(lcq_gnu, 0, S1, X), !,
@@ -78,17 +87,17 @@ test(random_select3, [L == "BDFHJLNPRTVXZciouamyqkwesg"]) :-
    findall(X, random_select(X, "aBcDeFgHiJkLmNoPqRsTuVwXyZ",_,G, 0, _), L).
 
 test(random_options1_local_only) :-
-    options_object(test_pred1, [seed(5, Seed2), nondet,
+    options_object(test_pred1, [rand_state(5, Seed2), nondet,
                                 generator(randgen:test_sequence1)], O1),
     random_options(O1, O2, Det, Gen, Seed0, Seed),
     assertion(Det == nondet),
     assertion(Gen == randgen:test_sequence1),
     assertion(Seed0 == 5),
     assertion(Seed2 == Seed),
-    O1 / [det, generator, seed] ^= [O1Det, O1Gen, O1Seed],
-    O2 / [det, generator, seed] ^= [O2Det, O2Gen,
-                                    seed(O2SeedVal1, O2SeedVal2)],
-    assertion([O1Det, O1Gen, O1Seed] == [Det,generator(Gen),seed(5, Seed)]),
+    O1 / [det, generator, rand_state] ^= [O1Det, O1Gen, O1Seed],
+    O2 / [det, generator, rand_state] ^= [O2Det, O2Gen,
+                                    rand_state(O2SeedVal1, O2SeedVal2)],
+    assertion([O1Det, O1Gen, O1Seed] == [Det,generator(Gen),rand_state(5, Seed)]),
     assertion([O1Det, O1Gen] == [O2Det, O2Gen]),
     assertion(O2SeedVal1 == 5),
     assertion(Seed2 == O2SeedVal2).
@@ -98,30 +107,30 @@ test(random_options1_global_only) :-
     O1 / global_options ^= GlobalOpts,
     obj_construct(global_options_v,
                   [rand_options],
-                  [[seed(5, Seed2), nondet, generator(randgen:test_sequence1)]],
+                  [[rand_state(5, Seed2), nondet, generator(randgen:test_sequence1)]],
                   GlobalOpts),
     random_options(O1, O2, Det, Gen, Seed0, Seed),
     assertion(Det == nondet),
     assertion(Gen == randgen:test_sequence1),
     assertion(Seed0 == 5),
     assertion(Seed2 == Seed),
-    O1 / [det, generator, seed] ^= [O1Det, O1Gen, O1Seed],
-    O2 / [det, generator, seed] ^= [O2Det, O2Gen, O2Seed],
-    O2 / global_options / rand_options / [det, generator, seed] ^= [GODet, GOGen, GOSeed],
+    O1 / [det, generator, rand_state] ^= [O1Det, O1Gen, O1Seed],
+    O2 / [det, generator, rand_state] ^= [O2Det, O2Gen, O2Seed],
+    O2 / global_options / rand_options / [det, generator, rand_state] ^= [GODet, GOGen, GOSeed],
     assertion([O1Det, O1Gen, O1Seed] =@= [_,_,_]),
-    GOSeed = seed(SV1, SV2),
+    GOSeed = rand_state(SV1, SV2),
     assertion([GODet, GOGen, SV1] == [Det,generator(Gen), Seed]),
     assertion(SV2 =@= _),
     assertion([O1Det, O1Gen, O2Seed] =@= [O2Det, O2Gen, O2Seed]).
 
 test(random_options1_local_overwrite) :-
     options_object(test_pred1,
-                   [seed(5, Seed1), generator(randgen:test_sequence1), semidet],
+                   [rand_state(5, Seed1), generator(randgen:test_sequence1), semidet],
                    O1),
     O1 / global_options ^= GlobalOpts,
     obj_construct(global_options_v,
                   [rand_options],
-                  [[seed(15, Seed2), nondet]],
+                  [[rand_state(15, Seed2), nondet]],
                   GlobalOpts),
     random_options(O1, O2, Det, Gen, Seed0, Seed),
     assertion(Det == semidet),
@@ -129,11 +138,11 @@ test(random_options1_local_overwrite) :-
     assertion(Seed0 == 5),
     assertion(Seed1 == Seed),
     assertion(Seed1 \== Seed2),
-    O1 / [det, generator, seed] ^= [O1Det, O1Gen, O1Seed],
-    O2 / [det, generator, seed] ^= [O2Det, O2Gen,
-                                    seed(O2SeedVal1, O2SeedVal2)],
+    O1 / [det, generator, rand_state] ^= [O1Det, O1Gen, O1Seed],
+    O2 / [det, generator, rand_state] ^= [O2Det, O2Gen,
+                                    rand_state(O2SeedVal1, O2SeedVal2)],
     O2 / global_options ^= GlobalOptsOut,
-    assertion([O1Det, O1Gen, O1Seed] == [Det,generator(Gen),seed(5, Seed)]),
+    assertion([O1Det, O1Gen, O1Seed] == [Det,generator(Gen),rand_state(5, Seed)]),
     assertion([O1Det, O1Gen] == [O2Det, O2Gen]),
     assertion(O2SeedVal1 == 5),
     assertion(O2SeedVal2 == Seed1),
@@ -141,8 +150,8 @@ test(random_options1_local_overwrite) :-
     obj_rewrite(GlobalOptsOut, [rand_options], [ROOut], [_], GlobalOptsOutC),
     assertion(GlobalOptsC =@= GlobalOptsOutC),
     options_object(randgen:random_options, randgen:RO0, RO),
-    assertion(seed(Seed, _) =^= ROOut/seed),
-    ROOut/seed ^= RO/seed,
+    assertion(rand_state(Seed, _) =^= ROOut/rand_state),
+    ROOut/rand_state ^= RO/rand_state,
     assertion(RO =@= ROOut).
 
 test(random_options2_global_only) :-
@@ -150,18 +159,18 @@ test(random_options2_global_only) :-
     O1 / global_options ^= GlobalOpts,
     obj_construct(global_options_v,
                   [rand_options],
-                  [[seed(5), nondet, generator(randgen:test_sequence1)]],
+                  [[rand_state(5), nondet, generator(randgen:test_sequence1)]],
                   GlobalOpts),
     random_options(O1, O2, Det, Gen, Seed0, Seed),
     assertion(Det == nondet),
     assertion(Gen == randgen:test_sequence1),
     assertion(Seed0 == 5),
     assertion(var(Seed)),
-    O1 / [det, generator, seed] ^= [O1Det, O1Gen, O1Seed],
-    O2 / [det, generator, seed] ^= [O2Det, O2Gen, O2Seed],
-    O2 / global_options / rand_options / [det, generator, seed] ^= [GODet, GOGen, GOSeed],
+    O1 / [det, generator, rand_state] ^= [O1Det, O1Gen, O1Seed],
+    O2 / [det, generator, rand_state] ^= [O2Det, O2Gen, O2Seed],
+    O2 / global_options / rand_options / [det, generator, rand_state] ^= [GODet, GOGen, GOSeed],
     assertion([O1Det, O1Gen, O1Seed] =@= [_,_,_]),
-    GOSeed = seed(SV1),
+    GOSeed = rand_state(SV1),
     assertion([GODet, GOGen, SV1] == [Det,generator(Gen), Seed]),
     assertion([O1Det, O1Gen, O2Seed] =@= [O2Det, O2Gen, O2Seed]).
 
@@ -173,7 +182,7 @@ setup_options :-
    class_options:setup_options,
    ur_options(test_pred1,
               [[meta_option(generator/1)],
-               [group(seed), option(seed/1), option(seed/2)],
+               [group(rand_state), option(rand_state/1), option(rand_state/2)],
                [group(det), option(semidet/0), option(nondet/0)]
               ]).
 
