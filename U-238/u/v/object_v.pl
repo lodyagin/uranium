@@ -112,13 +112,17 @@ nonneg_set_gen(Options0, Options, Value) :-
 v_gen(Class, _:Opts, Options, Obj) :-
    options_to_object(global:Class, Opts, Options0),
    obj_rewrite(Options0, [global_options], [GO0], [GO2], Options1),
-   obj_rewrite(GO0, [log_options], [LogOpts0], [LogOpts2], GO2),
+   (   var(GO0) -> obj_construct(global_options_v, [], [], GO1)
+   ;   GO1 = GO0
+   ),
+   obj_rewrite(GO1, [log_options], [LogOpts0], [LogOpts2], GO2),
    (  nonvar(LogOpts0) -> LogOpts1 = LogOpts0 ; LogOpts1 = [] ),
    log_piece(['v_gen(', Class, ', ..., ...)'], LogOpts1),
    change_indent(LogOpts1, LogOpts2, 2),
    obj_construct(Class, [], [], Obj0),
    obj_fill_downcast_random(Options1, Options2, Obj0, Obj),
-   obj_rewrite(Options2, [log_options], LogOpts3, LogOpts4, Options),
+   obj_rewrite(Options2, [global_options], [GO3], [GO4], Options),
+   obj_rewrite(GO3, [log_options], [LogOpts3], [LogOpts4], GO4),
    change_indent(LogOpts3, LogOpts4, -2).
 
 :- meta_predicate list_member_gen(+, :, -, -).

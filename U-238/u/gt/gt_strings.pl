@@ -47,7 +47,10 @@ random_string(Str) :-
 
 :- meta_predicate random_string(:, -, -).
 
-%% random_string(+Options0, -Options, -Str) is nondet/semidet.
+%% random_string(+Options0, -Options, -Str) is nondet.
+%
+% Generates a random string. It is semidet if `semidet' option passed.
+%
 random_string(Options0, Options, Str) :-
    Ctx = context(random_string/3, _),
    random_string_cmn(Options0, Options, Str, Ctx).
@@ -57,12 +60,12 @@ random_string_cmn(Options0, Options, Str, _) :-
    random_options(Options1, Options, Det, Generator, Seed1, Seed),
 
    % check options (TODO: move to ur_options_v)
-   obj_unify(Options1, weak, [length, pattern], [Lengths, Patterns]),
+   obj_unify(Options1, [length, pattern], [Lengths, Patterns]),
 
    % NB Lengths and Patterns are always non-empty due to defaults
    random_member(Pattern1, Patterns, Det, Generator, Seed1, Seed2),
 
-   (  Pattern1 = static(Str) 
+   (  Pattern1 = static(Str)
    -> Seed = Seed2 % Just return a static value
    ;
 
@@ -93,7 +96,7 @@ random_string_int(Pattern, Generator, Seed0, Seed, Length, Str) :-
    choose_length(Generator, Seed0, Seed1, Length, N),
    (  N =:= 0
    ->
-      Str = [], 
+      Str = [],
       Seed = Seed1
    ;
       % Generate a string equation
