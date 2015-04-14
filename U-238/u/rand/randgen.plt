@@ -15,17 +15,27 @@ test(pcg32_1test1) :-
 
 test(fd_random1_gnu) :-
    X in 5..15,
-   fd_random(lcq_gnu, 0, S1, X), !,
-   fd_random(lcq_gnu, 0, S1, X), !,
+   fd_random(randgen:lcq_gnu, 0, S1, X), !,
+   fd_random(randgen:lcq_gnu, 0, S1, X), !,
    assertion(S1 == 12345),
    assertion(X == 8).
 
 test(fd_random1_knuth) :-
    X in 5..15,
-   fd_random(lcq_knuth, 0, S1, X), !,
-   fd_random(lcq_knuth, 0, S1, X), !,
+   fd_random(randgen:lcq_knuth, 0, S1, X), !,
+   fd_random(randgen:lcq_knuth, 0, S1, X), !,
    assertion(S1 == 1442695040888963407),
    assertion(X == 12).
+
+test(fd_random1_pcg32_1) :-
+   X1 in 5..15,
+   X2 in 5..15,
+   fd_random(randgen:pcg32_1, pcg32_init(42, 52), S1, X1), !,
+   fd_random(randgen:pcg32_1, S1, S2, X2), !,
+   fd_random(randgen:pcg32_1, pcg32_init(42, 52), S1, X1), !,
+   fd_random(randgen:pcg32_1, S1, S2, X2), !,
+   assertion(X1 == 12),
+   assertion(X2 == 10).
 
 test(fd_random2, [L == "bdfhjlnprtvxzciouamyqkwesg"]) :-
    random_generator(test, sequence1, G, _),

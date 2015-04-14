@@ -14,7 +14,8 @@ test(obj_fill_random1_semidet) :-
 
 test(obj_fill_random1_nondet) :-
     obj_construct(man_v, [], [], M),
-    options_object(randgen:random_options, [sex-[male, female, nondet]], Opts),
+    options_object(randgen:random_options, 
+                   [sex-[male, female, nondet]], Opts),
     obj_construct(global_options_v, [rand_options], [[rand_state(2)]], GO),
     Opts / global_options ^= GO,
     findall(Sex, (obj_fill_random(Opts, _, M), M / sex ^= Sex), SexList),
@@ -53,17 +54,10 @@ test(obj_fill_dowcast_random1_nondet,
 % This test differs from the previous one because now a seed is transmitted
 % from random function to random function in sequence.
 test(obj_fill_dowcast_random_list1_nondet,
-     FL == [citizen_v,citizen_v,citizen_v,citizen_v,
-            citizen_v,citizen_v,citizen_v,citizen_v,
-            citizen_v,callup_v,callup_v,citizen_v,
-            citizen_v,callup_v,callup_v,citizen_v,
-            citizen_v,citizen_v,citizen_v,citizen_v,
-            citizen_v,citizen_v,callup_v,citizen_v,
-            citizen_v,callup_v,citizen_v,citizen_v,
-            citizen_v,callup_v,citizen_v,citizen_v,
-            citizen_v,citizen_v,citizen_v,citizen_v,
-            citizen_v,citizen_v,callup_v,citizen_v,
-            citizen_v,citizen_v ]
+     FL == [ callup_v,citizen_v,citizen_v,citizen_v,
+             citizen_v,citizen_v,callup_v,citizen_v,
+             citizen_v,citizen_v,citizen_v,citizen_v,
+             citizen_v,citizen_v,callup_v,callup_v ]
     ) :-
     options_object(randgen:random_options,
                    [sex-[male, female, nondet],
@@ -72,15 +66,14 @@ test(obj_fill_dowcast_random_list1_nondet,
                    Opts),
     obj_construct(global_options_v,
                   [rand_options],
-                  [[rand_state(2)]],
+                  [[rand_state(pcg32_init(42,52)), 
+                    generator(randgen:pcg32_1)]],
                   GO),
     Opts / global_options ^= GO,
     length(L, 16),
     bagof(M, L^(member(M, L), obj_construct(citizen_v, [], [], M)), LM0),
-    gtrace,
-    obj_fill_downcast_random_list(Opts, _, LM0, LM),
-    findall(F, (member(M, LM), functor(M, F, _)), FL),
-    writeln(FL).
+    obj_fill_downcast_random_list(Opts, _, LM0, LM), !,
+    findall(F, (member(M, LM), functor(M, F, _)), FL).
 
 
 setup_options :-

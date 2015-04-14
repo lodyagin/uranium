@@ -74,11 +74,11 @@ fd_random(Opts, Generator, Rand_State0, Rand_State, X) :-
    fd_random_cmn(Opts, Generator, Rand_State0, Rand_State, X).
 
 fd_random_cmn(Opts, Generator, Rand_State0, Rand_State, X) :-
-   must_be(integer, Rand_State0),
+   prepare_random_state(Generator, Rand_State0, Rand_State1),
    fd_size(X, N_),
    log_piece(['labelling the domain of ', N_, ' elements'], Opts),
    findall(X, label([X]), All_Possible_Values), !,
-   random_select(X, All_Possible_Values, _, Generator, Rand_State0, Rand_State).
+   random_select(X, All_Possible_Values, _, Generator, Rand_State1, Rand_State).
 
 
 :- meta_predicate random_member(-, +, +, :, +, -).
@@ -204,7 +204,7 @@ random_select_int(X, 1, [X], [], _, Rand_State, Rand_State) :- !.
 random_select_int(X, N, List, Rest, Generator, Rand_State0, Rand_State) :-
    N > 0,
    call(Generator, Rand_State0, Rand_State1),
-   Idx is Rand_State1 mod N,
+   random_integer(Rand_State1, N, Idx),
    nth0(Idx, List, X1, Rest1),
    (  X = X1, Rest = Rest1, Rand_State1 = Rand_State
    ;  succ(N1, N),
