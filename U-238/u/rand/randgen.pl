@@ -241,7 +241,7 @@ test_sequence1(X0, X) :-
   X #= (X0 + 1) mod 1000000000.
 
 pcg32_1(pcg32_state(State0, Inc), pcg32_state(State, Inc)) :-
-  State is (State0 * 6364136223846793005) /\ 0xffffffffffffffff + Inc \/ 1.
+  State is ((State0 * 6364136223846793005) /\ 0xffffffffffffffff) + (Inc \/ 1).
 
 %% random_integer(State, End, Value) is det.
 %
@@ -250,9 +250,9 @@ pcg32_1(pcg32_state(State0, Inc), pcg32_state(State, Inc)) :-
 random_integer(random_seed, _, _) :-
   throw(error(random_seed_in_evaluation, context(random_integer/3, _))).
 random_integer(pcg32_state(State, _), End, Value) :- !,
-  Xor_Shifted is ((State >> 18) xor State) >> 27,
+  Xor_Shifted is (((State >> 18) xor State) >> 27) /\ 0xffffffff,
   Rot is State >> 59,
-  Value0 is (Xor_Shifted >> Rot) \/ (Xor_Shifted << ((-Rot) /\ 31)),
+  Value0 is ((Xor_Shifted >> Rot) \/ (Xor_Shifted << ((-Rot) /\ 31))) /\ 0xffffffff,
   Value is Value0 mod End.
 random_integer(State, End, Value) :-
   integer(State), !,

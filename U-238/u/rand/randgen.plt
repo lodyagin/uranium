@@ -5,13 +5,13 @@
 :- use_module(u(v)).
 
 % http://codegolf.stackexchange.com/questions/42343/implement-a-pcg
-test(pcg32_1test1, blocked(pcg)) :-
+test(pcg32_1test1) :-
    prepare_random_state(randgen:pcg32_1, pcg32_init(42, 52), State1),
    random_integer(State1, 0x100000000, Value1),
    assertion(Value1 == 2380307335),
    pcg32_1(State1, State2),
    random_integer(State2, 0x100000000, Value2),
-   assertion(Value2 == 2380307335).
+   assertion(Value2 == 948027835).
 
 test(fd_random1_gnu) :-
    X in 5..15,
