@@ -8,11 +8,12 @@ setup_options :-
              [group(rand_state), 
               option(rand_state/1), option(rand_state/2)
              ],
-             [group(det), option(semidet/0), option(nondet/0)]
+             [group(det), option(semidet/0), option(nondet/0)],
+             [group(phase), option(phase/1)]
             ],
    ur_options(randgen:random_options,  % NB no defaults (to overwrite
                                        % possibility in
-                                       % random_options/6
+                                       % random_options/7
               Random),
    ur_options(class_diagram:class_diagram,
               [[option(is_primary/1), default(is_primary(_))],

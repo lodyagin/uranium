@@ -83,7 +83,7 @@ copy(www_address_v, From, To) :-
 
 typedef(www_address, [pretty_print - www_address_print]).
 
-www_address_print(_, Field, Options) :-
+www_address_print(_, _, Field, Options) :-
 
    u_object(Field), !,
 

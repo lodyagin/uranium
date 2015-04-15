@@ -98,8 +98,8 @@ test(random_select3, [L == "BDFHJLNPRTVXZciouamyqkwesg"]) :-
 
 test(random_options1_local_only) :-
     options_object(test_pred1, [rand_state(5, Seed2), nondet,
-                                generator(randgen:test_sequence1)], O1),
-    random_options(O1, O2, Det, Gen, Seed0, Seed),
+                                generator(randgen:test_sequence1), phase(4)], O1),
+    random_options(O1, O2, Det, Gen, Seed0, Seed, Phase_Match),
     assertion(Det == nondet),
     assertion(Gen == randgen:test_sequence1),
     assertion(Seed0 == 5),
@@ -110,16 +110,18 @@ test(random_options1_local_only) :-
     assertion([O1Det, O1Gen, O1Seed] == [Det,generator(Gen),rand_state(5, Seed)]),
     assertion([O1Det, O1Gen] == [O2Det, O2Gen]),
     assertion(O2SeedVal1 == 5),
-    assertion(Seed2 == O2SeedVal2).
+    assertion(Seed2 == O2SeedVal2),
+    assertion(var(Phase_Match)).
 
 test(random_options1_global_only) :-
     options_object(test_pred1, [], O1),
     O1 / global_options ^= GlobalOpts,
     obj_construct(global_options_v,
                   [rand_options],
-                  [[rand_state(5, Seed2), nondet, generator(randgen:test_sequence1)]],
+                  [[rand_state(5, Seed2), nondet, generator(randgen:test_sequence1),
+                    phase(3)]],
                   GlobalOpts),
-    random_options(O1, O2, Det, Gen, Seed0, Seed),
+    random_options(O1, O2, Det, Gen, Seed0, Seed, Phase_Match),
     assertion(Det == nondet),
     assertion(Gen == randgen:test_sequence1),
     assertion(Seed0 == 5),
@@ -131,7 +133,8 @@ test(random_options1_global_only) :-
     GOSeed = rand_state(SV1, SV2),
     assertion([GODet, GOGen, SV1] == [Det,generator(Gen), Seed]),
     assertion(SV2 =@= _),
-    assertion([O1Det, O1Gen, O2Seed] =@= [O2Det, O2Gen, O2Seed]).
+    assertion([O1Det, O1Gen, O2Seed] =@= [O2Det, O2Gen, O2Seed]),
+    assertion(var(Phase_Match)).
 
 test(random_options1_local_overwrite) :-
     options_object(test_pred1,
@@ -140,9 +143,9 @@ test(random_options1_local_overwrite) :-
     O1 / global_options ^= GlobalOpts,
     obj_construct(global_options_v,
                   [rand_options],
-                  [[rand_state(15, Seed2), nondet]],
+                  [[rand_state(15, Seed2), nondet, phase(3)]],
                   GlobalOpts),
-    random_options(O1, O2, Det, Gen, Seed0, Seed),
+    random_options(O1, O2, Det, Gen, Seed0, Seed, Phase_Match),
     assertion(Det == semidet),
     assertion(Gen == randgen:test_sequence1),
     assertion(Seed0 == 5),
@@ -162,7 +165,8 @@ test(random_options1_local_overwrite) :-
     options_object(randgen:random_options, randgen:RO0, RO),
     assertion(rand_state(Seed, _) =^= ROOut/rand_state),
     ROOut/rand_state ^= RO/rand_state,
-    assertion(RO =@= ROOut).
+    assertion(RO =@= ROOut),
+    assertion(var(Phase_Match)).
 
 test(random_options2_global_only) :-
     options_object(test_pred1, [], O1),
@@ -171,18 +175,80 @@ test(random_options2_global_only) :-
                   [rand_options],
                   [[rand_state(5), nondet, generator(randgen:test_sequence1)]],
                   GlobalOpts),
-    random_options(O1, O2, Det, Gen, Seed0, Seed),
+    random_options(O1, O2, Det, Gen, Seed0, Seed, Phase_Match),
     assertion(Det == nondet),
     assertion(Gen == randgen:test_sequence1),
     assertion(Seed0 == 5),
     assertion(var(Seed)),
     O1 / [det, generator, rand_state] ^= [O1Det, O1Gen, O1Seed],
     O2 / [det, generator, rand_state] ^= [O2Det, O2Gen, O2Seed],
-    O2 / global_options / rand_options / [det, generator, rand_state] ^= [GODet, GOGen, GOSeed],
+    O2 / global_options / rand_options / [det, generator, rand_state] 
+            ^= [GODet, GOGen, GOSeed],
     assertion([O1Det, O1Gen, O1Seed] =@= [_,_,_]),
     GOSeed = rand_state(SV1),
     assertion([GODet, GOGen, SV1] == [Det,generator(Gen), Seed]),
-    assertion([O1Det, O1Gen, O2Seed] =@= [O2Det, O2Gen, O2Seed]).
+    assertion([O1Det, O1Gen, O2Seed] =@= [O2Det, O2Gen, O2Seed]),
+    assertion(var(Phase_Match)).
+
+test(random_options_phase_match_match) :-
+    options_object(test_pred1, [phase(1)], O1),
+    O1 / global_options ^= GlobalOpts,
+    obj_construct(global_options_v,
+                  [rand_options],
+                  [[phase(1)]],
+                  GlobalOpts),
+    random_options(O1, _, _, _, _, _, Phase_Match),
+    assertion(Phase_Match == phase_match),
+    random_options(O1, _, _, _, _, _, phase_match),
+    random_options(O1, _, _, _, _, _, true).
+
+test(random_options_phase_match_mismatch) :-
+    options_object(test_pred1, [phase(2)], O1),
+    O1 / global_options ^= GlobalOpts,
+    obj_construct(global_options_v,
+                  [rand_options],
+                  [[phase(1)]],
+                  GlobalOpts),
+    random_options(O1, _, _, _, _, _, Phase_Match),
+    assertion(Phase_Match == phase_mismatch),
+    random_options(O1, _, _, _, _, _, phase_mismatch),
+    random_options(O1, _, _, _, _, _, false).
+
+test(random_options_phase_match_unbound1) :-
+    options_object(test_pred1, [phase(2)], O1),
+    O1 / global_options ^= GlobalOpts,
+    obj_construct(global_options_v,
+                  [rand_options],
+                  [[]],
+                  GlobalOpts),
+    random_options(O1, _, _, _, _, _, Phase_Match),
+    assertion(var(Phase_Match)),
+    random_options(O1, _, _, _, _, _, phase_mismatch),
+    random_options(O1, _, _, _, _, _, phase_match).
+
+test(random_options_phase_match_unbound2) :-
+    options_object(test_pred1, [], O1),
+    O1 / global_options ^= GlobalOpts,
+    obj_construct(global_options_v,
+                  [rand_options],
+                  [[phase(1)]],
+                  GlobalOpts),
+    random_options(O1, _, _, _, _, _, Phase_Match),
+    assertion(var(Phase_Match)),
+    random_options(O1, _, _, _, _, _, phase_mismatch),
+    random_options(O1, _, _, _, _, _, phase_match).
+
+test(random_options_phase_match_unbound3) :-
+    options_object(test_pred1, [], O1),
+    O1 / global_options ^= GlobalOpts,
+    obj_construct(global_options_v,
+                  [rand_options],
+                  [[]],
+                  GlobalOpts),
+    random_options(O1, _, _, _, _, _, Phase_Match),
+    assertion(var(Phase_Match)),
+    random_options(O1, _, _, _, _, _, phase_mismatch),
+    random_options(O1, _, _, _, _, _, phase_match).
 
 setup_options :-
    current_prolog_flag(verbose, Old_Verbose),
@@ -193,7 +259,8 @@ setup_options :-
    ur_options(test_pred1,
               [[meta_option(generator/1)],
                [group(rand_state), option(rand_state/1), option(rand_state/2)],
-               [group(det), option(semidet/0), option(nondet/0)]
+               [group(det), option(semidet/0), option(nondet/0)],
+               [group(phase), option(phase/1)]
               ]).
 
 test_pred1(_).

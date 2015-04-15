@@ -212,13 +212,19 @@ process_typedefs(Module) :-
      ),
 
      % pretty_print
-     (  memberchk(pretty_print - TD_PP_Head, TD_List)
-     -> TD_PP_Pred =.. [TD_PP_Head, TD_Stream, TD_Value, TD_Opt],
+     (  memberchk(pretty_print - TD_PP_Head0, TD_List)
+     -> ( TD_PP_Head0 = TD_PP_Module:TD_PP_Head -> true
+        ; TD_PP_Head0 = TD_PP_Head, TD_PP_Module = Module
+        ),
+        TD_PP_Head =.. TD_PP_Head_List,
+        append(TD_PP_Head_List, 
+               [TD_Stream, TD_Value, TD_Opt], TD_PP_Pred_List),
+        TD_PP_Pred =.. TD_PP_Pred_List,
         objects:assertz(pretty_print(TD_Type, TD_Stream, TD_Value, TD_Opt)
-                        :- Module:TD_PP_Pred),
+                        :- TD_PP_Module:TD_PP_Pred),
         debug(classes,
               'objects:assertz(pretty_print(~p, ~p, ~p, ~p) :- ~a:~p',
-              [TD_Type, TD_Stream, TD_Value, TD_Opt, Module,
+              [TD_Type, TD_Stream, TD_Value, TD_Opt, TD_PP_Module,
                TD_PP_Pred])
      ;  true
      ),

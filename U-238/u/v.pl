@@ -1085,9 +1085,19 @@ field_pretty_print(Options, Object, Field) :-
      %exclude_lf(Options, O2),
      obj_pretty_print(O2, Pretty_Value)
      %log_piece([], Options)
+  ;  Pretty_Value = [_|_] 
+  -> log_piece([Field, ':'], Options),
+     change_indent(Options, O2, 2),
+     maplist(type_pretty_print(O2), Pretty_Value)
   ;  log_piece([Field, ':', Pretty_Value], Options)
   ).
 
+
+type_pretty_print(Opts, T) :-
+  u_object(T), !,
+  obj_pretty_print(Opts, T).
+type_pretty_print(Opts, T) :-
+  log_piece(T, Opts).
 
 % C = A unify B
 

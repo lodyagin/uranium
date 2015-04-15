@@ -32,8 +32,8 @@
            random_integer/3, % +State, +End, -Value
            random_member/5,  % -X, +List, :Generator, +Rand_State0, -Rand_State
            random_member/6,  % -X, +List, +Det, :Generator, +Rand_State0, -Rand_State
-           random_options/6, % +Options0, -Options, -Det,
-                             % -Generator, -Rand_State0, -Rand_State
+           random_options/7, % +Options0, -Options, -Det,
+                             % -Generator, -Rand_State0, -Rand_State, -Phase_Match
            random_select/6,  % -X, +List, -Rest, :Generator,
                              % +Rand_State0, -Rand_State
 
@@ -63,6 +63,7 @@
 % Random distribution over possible values of the finite domain
 % variable X. Randomly choose another random value on backtracing.
 %
+% @param LogOpts logging options
 % @param Generator predicate with arity 2: Generator(Rand_State, Rand_State0)
 % @param Rand_State0 previous rand_state
 % @param Rand_State used for X calculation (to pass as Rand_State0 in the next call)
@@ -70,13 +71,13 @@
 
 fd_random(Generator, Rand_State0, Rand_State, X) :-
    fd_random_cmn([], Generator, Rand_State0, Rand_State, X).
-fd_random(Opts, Generator, Rand_State0, Rand_State, X) :-
-   fd_random_cmn(Opts, Generator, Rand_State0, Rand_State, X).
+fd_random(LogOpts, Generator, Rand_State0, Rand_State, X) :-
+   fd_random_cmn(LogOpts, Generator, Rand_State0, Rand_State, X).
 
-fd_random_cmn(Opts, Generator, Rand_State0, Rand_State, X) :-
+fd_random_cmn(LogOpts, Generator, Rand_State0, Rand_State, X) :-
    prepare_random_state(Generator, Rand_State0, Rand_State1),
    fd_size(X, N_),
-   log_piece(['labelling the domain of ', N_, ' elements'], Opts),
+   log_piece(['labelling the domain of ', N_, ' elements'], LogOpts),
    findall(X, label([X]), All_Possible_Values), !,
    random_select(X, All_Possible_Values, _, Generator, Rand_State1, Rand_State).
 
@@ -116,10 +117,10 @@ random_member_int(X, N, List, Generator, Rand_State0, Rand_State) :-
    nth0(Idx, List, X).
 
 
-:- meta_predicate random_options(+, -, -, -, -, -).
+:- meta_predicate random_options(+, -, -, -, -, -, -).
 
-%% random_options(+Options0, -Options,
-%%                -Det, -Generator, -Rand_State0, -Rand_State) is det.
+%% random_options(+Options0, -Options, -Det, -Generator, -Rand_State0, -Rand_State,
+%%                ?Phase_Match) is det.
 %
 % Extracts common random options. It combines Options0 and Options0 /
 % global_options / rand_options values. Options0 (local) values
@@ -127,16 +128,24 @@ random_member_int(X, N, List, Generator, Rand_State0, Rand_State) :-
 % @param Options0 is an options object
 % @param Options is an options object corresponding to Options0 but if
 %   Options0/global_options/rand_options contains rand_state/1,2 Options
-%   will contain the rewritten rand_state value: rand_state(Rand_State0) -> rand_state(Rand_State),
-%   rand_state(Rand_State0, Rand_State) -> rand_state(Rand_State, Rand_State1)
+%   will contain the rewritten rand_state value:
+%     rand_state(Rand_State0) -> rand_state(Rand_State),
+%     rand_state(Rand_State0, Rand_State) -> rand_state(Rand_State, Rand_State1)
+% @param Phase_Match bound to {phase_match,
+%   phase_mismatch, true, false} or is unbound. phase_match means
+%   that phase in global options matches that one in local
+%   options. It is unbound if phase is not specified
+%   either in global or in local options.
 %
-random_options(Options0, Options, Det, Generator, Rand_State0, Rand_State) :-
+random_options(Options0, Options, Det, Generator,
+               Rand_State0, Rand_State, Phase_Match
+              ) :-
+
    obj_rewrite(Options0, weak,
-               [generator, rand_state, det, global_options],
-               [Generator_Opt0, Rand_State_Opt0, Det0, GO0],
-               [Generator_Opt0, Rand_State_Opt0, Det0, GO], % NB all local
-                                                      % opts values
-                                                      % are repeated
+               [generator, rand_state, det, global_options, phase],
+               [Generator_Opt0, Rand_State_Opt0, Det0, GO0, Req_Phase],
+               [Generator_Opt0, Rand_State_Opt0, Det0, GO, Req_Phase],
+               % NB all local opts values are repeated
                Options
                ),
    % Get the global random options
@@ -151,11 +160,23 @@ random_options(Options0, Options, Det, Generator, Rand_State0, Rand_State) :-
                                                 % locals have more
                                                 % priority
    obj_rewrite(RO3,
-               [generator, rand_state, det],
-               [Generator_Opt3, Rand_State_Opt3, Det3],
-               [Generator_Opt3, Rand_State_Opt_GlobOut, Det3], % NB rewrite
-                                                         % only rand_state
+               [generator, rand_state, det, phase],
+               [Generator_Opt3, Rand_State_Opt3, Det3, Cur_Phase],
+               [Generator_Opt3, Rand_State_Opt_GlobOut, Det3, Cur_Phase],
+               % NB rewrite only rand_state
                RO_GlobOut),
+   % phase match checker
+   (  ( var(Req_Phase) ; var(Cur_Phase) )
+   -> true
+   ;  Req_Phase = phase(Req_Phase_Val),
+      Cur_Phase = phase(Cur_Phase_Val),
+      must_be(integer, Req_Phase_Val),
+      must_be(integer, Cur_Phase_Val),
+      (  Req_Phase_Val == Cur_Phase_Val
+      -> memberchk(Phase_Match, [phase_match, true])
+      ;  memberchk(Phase_Match, [phase_mismatch, false])
+      )
+   ),
    % generator
    (  nonvar(Generator_Opt0)
    -> Generator_Opt0 = generator(Generator)

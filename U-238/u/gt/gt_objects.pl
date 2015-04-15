@@ -1,5 +1,6 @@
 :- module(gt_objects,
           [obj_fill_random/3,              % +Options0, -Options, +Obj
+           obj_fill_random_list/3,         % +Options0, -Options, +ObjList
            obj_fill_downcast_random/4,     % +Options0, -Options, +Obj0, -Obj
            obj_fill_downcast_random_list/4 % +Options0, -Options, +ObjList0, -ObjList
           ]
@@ -10,6 +11,7 @@
 :- use_module(u(internal/objects_i)).
 :- use_module(u(ur_option)).
 :- use_module(u(v)).
+:- use_module(u(logging)).
 
 :- meta_predicate obj_fill_random(:, -, +).
 
@@ -28,11 +30,16 @@ obj_fill_random_int(Options0, Options, Class_Id, Obj, Ctx) :-
                [Assoc, Module, GlobalOpts],
                Options
                ),
+   % Log assoc options defined for this level
+   (   var(Assoc) -> true % wouldn't log empty assocs
+   ;   assoc_to_keys(Assoc, AssocKeys),
+       LogOpts ^= GlobalOpts0 / log_options,
+       log_piece(['assoc-options:'|AssocKeys], LogOpts)
+   ),
    % Select options matching object fields
    findall(v(Name,Value,Type),
            ( obj_field_int(Class_Id, Name, throw, Obj,
                            Value, Type, Ctx),
-             var(Value),
              nonvar(Type)
            ),
            Vs),
@@ -44,9 +51,10 @@ obj_fill_random_req([v(Name,Value,Type)|T], Assoc, Module, GO0, GO, Obj) :-
    -> O1 = O0
    ;  O1 = []
    ),
-   options_to_object(global:Name, O1, O2),
-   obj_rewrite(O2, [global_options], [GO0], [GO1], O),
-   objects:value_set(Type, Module:O2, O, Value),
+   options_to_object(global:Name, Module:O1, O2),
+   obj_field(O2, global_options, GO0),
+   objects:value_set(Type, Module:O2, Module:O, Value),
+   obj_field(O, global_options, GO1),
    obj_field(Obj, Name, Value),
    obj_fill_random_req(T, Assoc, Module, GO1, GO, Obj).
 
@@ -78,7 +86,31 @@ obj_fill_downcast_random_int(Options0, Options, Class_Id, Obj0, Obj, Ctx) :-
 
 :- meta_predicate obj_fill_downcast_random_list(:, -, +, -).
 
-% obj_fill_downcast_random_list(Options0, Options, ObjList0, ObjList) is nondet.
+%% obj_fill_random_list(+Options0, -Options, +ObjList) is nondet.
+%
+%  Works like obj_fill_random/3 for all members
+%  of ObjList and passing Options as Options0 to the next
+%  call.
+%  It is semidet/nondet depending on options.
+%
+obj_fill_random_list(Options0, Options, ObjList) :-
+   Ctx = context(obj_fill_random_list/3, _),
+   obj_fill_random_list_int(Options0, Options, _, ObjList, Ctx).
+
+obj_fill_random_list_int(Options, Options, _, [], _):- !.
+obj_fill_random_list_int(Options0, Options, OptionsClass, [Obj|T], Ctx) :-
+   check_inst(Obj, Ctx),
+   check_object_arg(Obj, Ctx, Class_Id),
+   (  nonvar(OptionsClass)
+   -> Options1 = Options0
+   ;  class_id(Class_Id, OptionsClass),
+      options_to_object(global:OptionsClass, Options0, Options1)
+      % NB only first object class used
+   ),
+   obj_fill_random_int(Options1, Options2, Class_Id, Obj, Ctx),
+   obj_fill_random_list_int(Options2, Options, OptionsClass, T, Ctx).
+
+%% obj_fill_downcast_random_list(+Options0, -Options, +ObjList0, -ObjList) is nondet.
 %
 %  Works like obj_fill_downcast_random/4 for all members
 %  of ObjList0 and passing Options as Options0 to the next

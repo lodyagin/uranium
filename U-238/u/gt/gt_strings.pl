@@ -29,8 +29,8 @@
 :- module(gt_strings,
           [random_string/1, % -Str
 	   random_string/3, % +Options0, -Options, -Str
-           randsel/4,       % +List, :Gen, +Seed0, -Seed
-           randselchk/4,    % +List, :Gen, +Seed0, -Seed
+           randsel/5,       % +LogOpts, +List, :Gen, +Seed0, -Seed
+           randselchk/5,    % +LogOpts, +List, :Gen, +Seed0, -Seed
 	   range_pattern/2
            ]).
 
@@ -51,47 +51,54 @@ random_string(Str) :-
 %
 % Generates a random string. It is semidet if `semidet' option passed.
 %
-random_string(Options0, Options, Str) :-
+random_string(OM:Options0, OM:Options, Str) :- !,
    Ctx = context(random_string/3, _),
-   random_string_cmn(Options0, Options, Str, Ctx).
+   (  nonvar(Options), Options = OM:Options1
+   -> true
+   ;  Options = Options1
+   ),
+   random_string_cmn(OM:Options0, Options1, Str, Ctx).
 
-random_string_cmn(Options0, Options, Str, _) :-
-   options_to_object(random_string, Options0, Options1),
-   random_options(Options1, Options, Det, Generator, Seed1, Seed),
-
-   % check options (TODO: move to ur_options_v)
-   obj_unify(Options1, [length, pattern], [Lengths, Patterns]),
-
-   % NB Lengths and Patterns are always non-empty due to defaults
-   random_member(Pattern1, Patterns, Det, Generator, Seed1, Seed2),
-
-   (  Pattern1 = static(Str)
-   -> Seed = Seed2 % Just return a static value
+random_string_cmn(OM:Options0, Options, Str, _) :-
+   (   nonvar(Str) -> Options0 = Options % skip string generation
    ;
+   options_to_object(random_string, OM:Options0, Options1),
+   (  random_options(Options1, Options, Det, Generator, Seed1, Seed, phase_match)
+   ->
+      obj_unify(Options1, [length, pattern], [Lengths, Patterns]),
+      % NB Lengths and Patterns are always non-empty due to defaults
+      random_member(Pattern1, Patterns, Det, Generator, Seed1, Seed2),
 
-     random_member(Length, Lengths, Det, Generator, Seed2, Seed3),
+      (  Pattern1 = static(Str)
+      -> Seed = Seed2 % Just return a static value
+      ;
+         random_member(Length, Lengths, Det, Generator, Seed2, Seed3),
 
-     % regex/1, range/1 -> pattern/1
-     context_module(That),
-     (  Pattern1 = regex(Reg)
-     -> regex_pattern(Reg, Pattern)
-     ;  Pattern1 = range(Drep)
-     -> Pattern = That:range_pattern(Drep)
-     ;  pattern(Pattern) = Pattern1,
-        must_be(callable, Pattern)
-     ),
+         % regex/1, range/1 -> pattern/1
+         context_module(That),
+         (  Pattern1 = regex(Reg)
+         -> regex_pattern(Reg, Pattern)
+         ;  Pattern1 = range(Drep)
+         -> Pattern = That:range_pattern(Drep)
+         ;  pattern(Pattern) = Pattern1,
+            must_be(callable, Pattern)
+         ),
 
-     random_string_int(Pattern, Generator, Seed3, Seed, Length,
-                       Codes),
-     (  Det == semidet -> ! ; true  ),
+	 LogOpts ^= Options / global_options / log_options,
+         random_string_int(LogOpts, Pattern, Generator, Seed3, Seed, Length,
+                           Codes),
+         (  Det == semidet -> ! ; true  ),
 
-     (   nonvar(Str), Str = atom(Atom)
-     ->  atom_codes(Atom, Codes)
-     ;   Str = Codes
-     )
+         (   nonvar(Str), Str = atom(Atom)
+         ->  atom_codes(Atom, Codes)
+         ;   Str = Codes
+         )
+      )
+   ;  Options0 = Options
+   )
    ).
 
-random_string_int(Pattern, Generator, Seed0, Seed, Length, Str) :-
+random_string_int(LogOpts, Pattern, Generator, Seed0, Seed, Length, Str) :-
 
    choose_length(Generator, Seed0, Seed1, Length, N),
    (  N =:= 0
@@ -104,29 +111,29 @@ random_string_int(Pattern, Generator, Seed0, Seed, Length, Str) :-
       call(Pattern, Str),
 
       % Make a selection
-      randsel(Str, Generator, Seed1, Seed)
+      randsel(LogOpts, Str, Generator, Seed1, Seed)
   ).
 
-:- meta_predicate randsel(+, :, +, -).
+:- meta_predicate randsel(:, +, :, +, -).
 
-%% randsel(+List, :Gen, +Seed0, -Seed) is nondet.
+%% randsel(+LogOpts, +List, :Gen, +Seed0, -Seed) is nondet.
 %
 % Random labelling list members on BT.
 % @see labelling/2
 %
-randsel([], _, Seed, Seed) :- !.
-randsel([X|L], Gen, Seed0, Seed) :-
-  fd_random(Gen, Seed0, Seed1, X),
-  randsel(L, Gen, Seed1, Seed).
+randsel(_, [], _, Seed, Seed) :- !.
+randsel(LogOpts, [X|L], Gen, Seed0, Seed) :-
+  fd_random(LogOpts, Gen, Seed0, Seed1, X),
+  randsel(LogOpts, L, Gen, Seed1, Seed).
 
-%% randselchk(+List, :Gen, +Seed0, -Seed) is semidet.
+%% randselchk(+LogOpts, +List, :Gen, +Seed0, -Seed) is semidet.
 %
 % Random labelling list members. It is semidet version of randsel/4.
 %
-randselchk([], _, Seed, Seed) :- !.
-randselchk([X|L], Gen, Seed0, Seed) :-
-  fd_random(Gen, Seed0, Seed1, X), !,
-  randsel(L, Gen, Seed1, Seed).
+randselchk(_, [], _, Seed, Seed) :- !.
+randselchk(LogOpts, [X|L], Gen, Seed0, Seed) :-
+  fd_random(LogOpts, Gen, Seed0, Seed1, X), !,
+  randsel(LogOpts, L, Gen, Seed1, Seed).
 
 
 % Randomly choose length with proper distribution
