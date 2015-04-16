@@ -28,7 +28,8 @@
            options_object/3,
            options_object/4,
            options_predicate_to_options_class_name/2,
-           options_to_object/3   % :Pred, +Options, -Opt
+           options_to_object/3,  % :Pred, +Options, -Opt
+           options_to_object/4   % :Pred, +Options, +Weak, -Opt
            ]).
 
 /** <module> Options processing
@@ -310,16 +311,24 @@ check_rest(Rejected, Details, Err) :-
    throw(Err).
 
 :- meta_predicate options_to_object(:, :, -).
+:- meta_predicate options_to_object(:, :, +, -).
 
 %% options_to_object(:Pred, +Options, -Opt) is det.
 %
 % Converts Options to options object if needed
 %
-options_to_object(_, _:Object, Object) :-
+options_to_object(Pred, Options, Opt) :-
+   options_to_object(Pred, Options, strict, Opt).
+
+%% options_to_object(:Pred, +Options, +Weak, -Opt) is det.
+%
+% Converts Options to options object if needed
+%
+options_to_object(_, _:Object, _, Object) :-
    u_object(Object), !.
-options_to_object(Pred, M:Options, Object) :-
+options_to_object(Pred, M:Options, Weak, Object) :-
    must_be(list, Options),
-   options_object(Pred, M:Options, Object).
+   options_object(Pred, M:Options, Weak, Object).
    
 
 :- meta_predicate options_object(:, :, -).
