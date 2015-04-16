@@ -24,12 +24,14 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(ur_option,
-          [ur_options/2,
+          [options_group_list/3, % :Pred, +GroupName, -List
+           ur_options/2,
            options_object/3,
            options_object/4,
            options_predicate_to_options_class_name/2,
            options_to_object/3,  % :Pred, +Options, -Opt
-           options_to_object/4   % :Pred, +Options, +Weak, -Opt
+           options_to_object/4,  % :Pred, +Options, +Weak, -Opt
+           retract_options/1     % :Pred
            ]).
 
 /** <module> Options processing
@@ -46,12 +48,35 @@
 :- use_module(v(ur_options_v)).
 
 
+:- meta_predicate options_group_list(:, +, -).
+
+%% options_group_list(:Pred, ?GroupName, -List) is nondet.
+%
+% If Pred has an option with {multi_}group GroupName returns all
+% members of that group as a List.
+%
+options_group_list(Pred, GroupName, List) :-
+   options_predicate_to_options_class_name(Pred, Class),
+   bagof(E,
+         O^( db_iterate(Class, group_name(GroupName), O),
+           obj_field(O, pattern, E) ),
+         List).
+
 :- meta_predicate options_predicate_to_options_class_name(:, -).
 
 % Defines the option class naming rule
 options_predicate_to_options_class_name(Module:Pred, Class) :-
    format(atom(Class), '~a__~a_v', [Module, Pred]).
 
+:- meta_predicate retract_options(:).
+
+%% retract_options(:Pred) is det.
+%
+% Remove all options registered for Pred.
+%
+retract_options(Pred) :-
+   options_predicate_to_options_class_name(Pred, Class),
+   db_clear(Class).
 
 :- meta_predicate ur_options(:, :).
 
@@ -119,7 +144,7 @@ assert_rules([Rule0|T], DB, Ctx, Details) :-
    must_be(list, Rule0),
    Err = error(invalid_option_definition(Rule0), Ctx),
    assert_rule(Rule0, DB, Details, Err),
-   assert_rules(T, DB, Details, Err).
+   assert_rules(T, DB, Ctx, Details).
 
 % single group
 assert_rule(Rule0, DB, Details, Err) :-
@@ -329,20 +354,20 @@ options_to_object(_, _:Object, _, Object) :-
 options_to_object(Pred, M:Options, Weak, Object) :-
    must_be(list, Options),
    options_object(Pred, M:Options, Weak, Object).
-   
+
 
 :- meta_predicate options_object(:, :, -).
 
 options_object(Pred, Options, Object) :-
    options_object_cmn(Pred, Options, strict, Object).
-   
+
 options_object(Pred, Options, Weak0, Object) :-
    Ctx = context(options_object/4, _),
    decode_arg([[strict],
                [_, weak]],
               Weak0, Weak, Ctx),
    options_object_cmn(Pred, Options, Weak, Object).
-   
+
 options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak, Object) :-
    options_predicate_to_options_class_name(Pred_Module:Pred, Class),
    obj_construct(Class,

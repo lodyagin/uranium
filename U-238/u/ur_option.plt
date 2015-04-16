@@ -4,7 +4,7 @@
 
 :- begin_tests(ur_option, [setup(setup_options)]).
 
-test(options_to_assoc1, [setup(setup_options)]) :-
+test(options_to_assoc1) :-
    options_object(test_pred1, [], O),
    O / [options_in, nested] ^= [In, Nested],
    assertion(In == []),
@@ -193,7 +193,7 @@ test(group_option1) :-
 
 test(group_option2,
     [error(domain_error(one_option_per_group, _), _)]) :-
-   
+
    options_object(test_pred9,
                   [empty, generator(test_pred1),
                    length(1)], _).
@@ -201,7 +201,7 @@ test(group_option2,
 test(group_option3) :-
    options_object(test_pred9, [], Obj),
    assertion(Obj / length =^= _).
-   
+
 test(multi_group_option1) :-
 
    OL = [empty, length(5), length(5), length(9)],
@@ -242,6 +242,24 @@ test(multi_group_option5,
         option(empty/0), option(length/1),
         default([length/1, width/2])],
    ur_options(test_pred14, [O]).
+
+test(options_group_list1, [List =@= [length(_)]]) :-
+   options_group_list(test_pred1, length, List1),
+   msort(List1, List).
+
+test(options_group_list2, List =@= [generator(_)]) :-
+   options_group_list(test_pred2, generator, List1),
+   msort(List1, List).
+
+test(options_group_list3,
+     List =@= [empty, length(_), length_pred(_), length(_, _)]) :-
+   options_group_list(test_pred9, length, List1),
+   msort(List1, List).
+
+test(options_group_list4,
+     List =@= [empty, length(_), length_pred(_), length(_, _)]) :-
+   options_group_list(test_pred10, length, List1),
+   msort(List1, List).
 
 setup_options :-
 
