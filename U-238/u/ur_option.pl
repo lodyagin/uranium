@@ -76,9 +76,11 @@ options_predicate_to_options_class_name(Module:Pred, Class) :-
 %           ]).
 % ==
 
-ur_options(Pred, _:Options) :-
-   Ctx = context(ur_options/3, Details),
+ur_options(Pred, _:Options0) :-
+   Ctx = context(ur_options/2, Details),
    options_predicate_to_options_class_name(Pred, Class),
+   % Add default options
+   Options = [[group(gtrace), option(gtrace/0)] | Options0],
    ( class_name(Class) -> true
    ; db_clear(Class),
      catch(
@@ -337,7 +339,10 @@ options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak, Object) :-
    obj_construct(Class,
                  [options_in, options_out, context_module, weak],
                  [Options, Object, Opts_Module, Weak],
-                 _).
+                 _),
+   % process gtrace option
+   obj_field(Object, gtrace, GTrace),
+   (  nonvar(GTrace) -> gtrace ; true ).
 
 % TODO check all this functionality is realized in the new module ur_option:
 

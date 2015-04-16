@@ -48,6 +48,13 @@ new_class(ur_options_v, object_v,
                            % to ac class this part is for fields, it
                            % is a list of field_name - options_list pairs)
            global_options
+           %gtrace         % if bound we will start gtrace in some
+                           % places (like random generation
+                           % procedures). This definition is silently
+                           % added to each ur_options: [group(gtrace),
+                           % option(gtrace/0)]. This field really
+                           % absent in ur_options_v but will be added
+                           % to classes generated with ur_options/2.
           ]).
 
 new_class(gt_strings__random_string_options_v,
