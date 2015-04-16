@@ -68,6 +68,7 @@
 :- use_module(u(gt/gt_numbers)).
 :- use_module(u(logging)).
 :- use_module(u(internal/objects_i)).
+:- use_module(u(ur_enums)).
 
 %
 % the class evaluation can be overrided
@@ -99,6 +100,7 @@ new_class(object_v, object_base_v, []).
 
 
 typedef(nonneg, [value_set - nonneg_set_gen]).
+typedef(string, [pretty_print - string_pretty_print(string)]). % TODO string
 
 :- meta_predicate nonneg_set_gen(:, -, -).
 
@@ -144,6 +146,33 @@ list_member_gen(Field, OM:Options0, OM:Options, Value) :-
    -> obj_field(Options1, list, Types),
       random_member(Value, Types, Det, Gen, Seed0, Seed)
    ;  Options0 = Options
+   )
+   ).
+
+:- meta_predicate enum_member_gen(+, :, -, -).
+
+enum_member_gen(Field, OM:Options0, OM:Options, enum(Integer, Enum)) :-
+   (   ( nonvar(Integer) ; nonvar(Enum) ) -> Options = Options0
+   ;
+   options_to_object(global:Field, Options0, Options1),
+   Options1 // global_options // log_options ^= LogOpts,
+   (   nonvar(LogOpts) -> LogOpts1 = LogOpts ; LogOpts1 = [lf(1)] ),
+   log_piece(['list_member_gen(', Field, ', ..., ...)'], LogOpts1),
+   (  random_options(Options1, Options, Det, Gen, Seed0, Seed, phase_match)
+   -> functor(Options1, OptionsClass, _),
+      (  enum_size(OptionsClass:N)  % OptionsClass as a pseudo module
+      -> true % this enum is registered already
+      ;  options_group_list(global:Field, list, Enums),
+         assert_enum(OptionsClass:Enums),
+         length(Enums, N)
+      ),
+      succ(N1, N),
+      Integer in 0..N1,
+      fd_random(LogOpts, Gen, Seed0, Seed, Integer),
+      (  Det == semidet -> ! ; true ),
+      enum_integer(OptionsClass:Enum, OptionsClass:Integer)
+   ;
+      Options0 = Options
    )
    ).
 
