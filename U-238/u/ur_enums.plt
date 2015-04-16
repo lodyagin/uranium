@@ -10,4 +10,7 @@ test(test1) :-
    enum_integer(Colour, 4),
    assertion(Colour == blue), !.
 
+test(test2, fail) :-
+   enum_size(nonexisting_module:_).
+
 :- end_tests(ur_enums).

@@ -38,8 +38,13 @@ enum_integer(Module:Enum, Module:Integer) :-
 %
 enum_size(Module:Size) :-
    must_be(atom, Module),
-   aggregate_all(count, enum_integer(Module, _, _), Size).
+   aggregate(count, A^B^enum_integer(Module, A, B), Size).
 
 
-%  global_cardinality_enum/2  % +Vs, +Pairs
+%% global_cardinality_enum(+Vs, +Pairs) is det.
+%
+% It is the same as global_cardinality/2 but for enums instead of
+% integers.
+%
+%global_cardinality_enum(Vs, Pairs) :-
 
