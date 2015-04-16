@@ -142,7 +142,9 @@ choose_length(_, Seed, Seed, length(N), N) :- !.
 choose_length(_, Seed, Seed, length(N, N), N) :- !.
 choose_length(Gen, Seed0, Seed, length(From, To), N) :-
    call(Gen, Seed0, Seed),
-   N is From + Seed mod (To - From + 1).
+   End is To - From + 1,
+   random_integer(Seed, End, N1),
+   N is From + N1.
 
 range_pattern(Drep, Str) :-
 
