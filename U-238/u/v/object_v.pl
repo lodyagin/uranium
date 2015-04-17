@@ -162,16 +162,8 @@ enum_member_gen(Field, OM:Options0, OM:Options, enum(Enum, Integer)) :-
    (   nonvar(LogOpts) -> LogOpts1 = LogOpts ; LogOpts1 = [lf(1)] ),
    log_piece(['list_member_gen(', Field, ', ..., ...)'], LogOpts1),
    (  random_options(Options1, Options, Det, Gen, Seed0, Seed, phase_match)
-   -> (  enum_size(OptionsClass:N)  % OptionsClass as a pseudo module
-      -> true % this enum is registered already
-      ;  options_group_list(global:Field, list, Enums),
-         assert_enum(OptionsClass:Enums),
-         length(Enums, N)
-      ),
-      succ(N1, N),
-      Integer in 0..N1,
-      fd_random(LogOpts, Gen, Seed0, Seed, Integer),
-      (  Det == semidet -> ! ; true ),
+   -> obj_field(Options1, list, Types),
+      random_member(Enum, Types, Det, Gen, Seed0, Seed),
       enum_integer(OptionsClass:Enum, OptionsClass:Integer), !
    ;
       Options0 = Options
