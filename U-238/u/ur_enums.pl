@@ -7,6 +7,8 @@
 
 :- use_module(library(aggregate)).
 :- use_module(library(error)).
+:- use_module(library(pairs)).
+:- use_module(u(util/lambda)).
 
 % enum_integer(Module, Enum, Integer)
 :- dynamic enum_integer/3.
@@ -28,7 +30,7 @@ assert_enum(Module:List) :-
 
 %% enum_integer(?Enum, ?Integer) is nondet.
 %
-enum_integer(Module:Enum, Module:Integer) :- 
+enum_integer(Module:Enum, Module:Integer) :-
    must_be(atom, Module),
    enum_integer(Module, Enum, Integer).
 
@@ -41,10 +43,26 @@ enum_size(Module:Size) :-
    aggregate(count, A^B^enum_integer(Module, A, B), Size).
 
 
+:- meta_predicate global_cardinality_enum(+, :).
+
 %% global_cardinality_enum(+Vs, +Pairs) is det.
 %
-% It is the same as global_cardinality/2 but for enums instead of
-% integers.
+% It is the same as global_cardinality/2 but Pairs contains enums as
+% keys. Vs are list of enum(Enum, Integer).
+% @see enum_integer/2
 %
-%global_cardinality_enum(Vs, Pairs) :-
+global_cardinality_enum(Vs, M:Pairs) :-
+   maplist(\Pair^IPair^( Pair=Key-V, IPair=IKey-V,enum_integer(M:Key, M:IKey), !), 
+           Pairs, IPairs),
+   maplist(\EnumC^Integer^( EnumC=enum(_,Integer) ), Vs, Vs1),
+   global_cardinality(Vs1, IPairs),
+   maplist(\EnumC^(  EnumC=enum(Enum,Integer), 
+                     integer(Integer) 
+                  -> enum_integer(M:Enum,M:Integer), !
+                  ;  true ),
+           Vs).
+
+
+
+
 
