@@ -56,7 +56,9 @@
 % members of that group as a List.
 %
 options_group_list(Pred, GroupName, List) :-
-   options_predicate_to_options_class_name(Pred, Class),
+   (  Pred = _:class(Class) -> true
+   ; options_predicate_to_options_class_name(Pred, Class)
+   ),
    bagof(E,
          O^( db_iterate(Class, group_name(GroupName), O),
            obj_field(O, pattern, E) ),
@@ -136,6 +138,11 @@ ur_options(Pred, _:Options0) :-
         throw(error(invalid_option_definition(Options), Ctx))
      ),
      class_create(Class, ur_options_v, Fields)
+   ),
+   % Assert enums if group(list) exists
+   (  options_group_list(class(Class), list, Enums)
+   -> assert_enum(Class:Enums)
+   ;  true
    ).
 
 assert_rules([], _, _, _) :- !.
