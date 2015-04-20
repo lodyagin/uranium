@@ -77,8 +77,8 @@ fd_random(LogOpts, Generator, Rand_State0, Rand_State, X) :-
 fd_random_cmn(LogOpts, Generator, Rand_State0, Rand_State, X) :-
    prepare_random_state(Generator, Rand_State0, Rand_State1),
    fd_size(X, N_),
-   log_piece(['labelling the domain of ', N_, ' elements'], LogOpts),
-   findall(X, label([X]), All_Possible_Values), !,
+   log_piece(['enumerating the domain of ', N_, ' elements'], LogOpts),
+   findall(X, indomain(X), All_Possible_Values), !,
    random_select(X, All_Possible_Values, _, Generator, Rand_State1, Rand_State).
 
 
