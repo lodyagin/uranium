@@ -380,10 +380,7 @@ options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak, Object) :-
    obj_construct(Class,
                  [options_in, options_out, context_module, weak],
                  [Options, Object, Opts_Module, Weak],
-                 _),
-   % process gtrace option
-   obj_field(Object, gtrace, GTrace),
-   (  nonvar(GTrace) -> gtrace ; true ).
+                 _).
 
 % TODO check all this functionality is realized in the new module ur_option:
 

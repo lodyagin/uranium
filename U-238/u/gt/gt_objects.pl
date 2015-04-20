@@ -53,6 +53,10 @@ obj_fill_random_req([v(Name,Value,Type)|T], Assoc, Module, GO0, GO, Obj) :-
    ),
    options_to_object(global:Name, Module:O1, O2),
    obj_field(O2, global_options, GO0),
+   % process gtrace option
+   obj_field(O2, gtrace, GTrace),
+   (  nonvar(GTrace) -> gtrace ; true ),
+   % set the value of the field
    objects:value_set(Type, Module:O2, Module:O, Value),
    obj_field(O, global_options, GO1),
    obj_field(Obj, Name, Value),
