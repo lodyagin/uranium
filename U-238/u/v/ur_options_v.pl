@@ -98,11 +98,12 @@ set_defaults(DB, Obj) :-
 
 process_options([], _, _, Obj, Obj) :- !.
 
-process_options([K-V|T], DB, Weak, Obj0, Obj) :- !,
-   obj_rewrite(Obj0, [nested], [Nested0], [Nested], Obj1),
+process_options([K-V0|T], DB, Weak, Obj0, Obj) :- !,
+   obj_rewrite(Obj0, [nested, context_module], [Nested0, OptsModule], [Nested, OptsModule], Obj1),
    (  var(Nested0) -> empty_assoc(Nested1)
    ;  Nested1 = Nested0
    ),
+   options_to_object(global:K, OptsModule:V0, V),
    put_assoc(K, Nested1, V, Nested), % accumulate assoc options
    process_options(T, DB, Weak, Obj1, Obj).
 
