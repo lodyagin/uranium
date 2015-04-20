@@ -31,11 +31,11 @@ obj_fill_random_int(Options0, Options, Class_Id, Obj, Ctx) :-
                Options
                ),
    % Log assoc options defined for this level
-   (   var(Assoc) -> true % wouldn't log empty assocs
-   ;   assoc_to_keys(Assoc, AssocKeys),
-       LogOpts ^= GlobalOpts0 / log_options,
-       log_piece(['assoc-options:'|AssocKeys], LogOpts)
-   ),
+   %(   var(Assoc) -> true % wouldn't log empty assocs
+   %;   assoc_to_keys(Assoc, AssocKeys)
+       %LogOpts ^= GlobalOpts0 / log_options,
+       %log_piece(['assoc-options:'|AssocKeys], LogOpts)
+   %),
    % Select options matching object fields
    findall(v(Name,Value,Type),
            ( obj_field_int(Class_Id, Name, throw, Obj,
@@ -48,7 +48,7 @@ obj_fill_random_int(Options0, Options, Class_Id, Obj, Ctx) :-
 obj_fill_random_req([], _, _, GO, GO, _) :- !.
 obj_fill_random_req([v(Name,Value,Type)|T], Assoc, Module, GO0, GO, Obj) :-
    (  nonvar(Assoc), get_assoc(Name, Assoc, O0)
-   -> O1 = O0
+   -> copy_term(O0, O1, _)
    ;  O1 = []
    ),
    options_to_object(global:Name, Module:O1, O2),
@@ -80,7 +80,11 @@ obj_fill_downcast_random_int(Options0, Options, Class_Id, Obj0, Obj, Ctx) :-
     (  Obj0 == Obj1
     -> Obj = Obj1,  % no more downcasts
        Options1 = Options
-    ;  obj_class_id(Obj1, Class_Id1),
+    ;  Options1 / global_options / log_options ^= LogOpts,
+       functor(Obj0, Class0, _),
+       functor(Obj1, Class1, _),
+       log_piece(['DC', Class0, '->', Class1], LogOpts),
+       obj_class_id(Obj1, Class_Id1),
        obj_fill_downcast_random_int(Options1, Options, Class_Id1, Obj1, Obj, Ctx)
     ).
 
@@ -119,10 +123,10 @@ obj_fill_random_list_int(Options0, Options, OptionsClass, [Obj|T], Ctx) :-
 %
 obj_fill_downcast_random_list(Options0, Options, ObjList0, ObjList) :-
    Ctx = context(obj_fill_downcast_random_list/4, _),
-   obj_fill_downcast_random_list_int(Options0, Options, _, ObjList0, ObjList, Ctx).
+   obj_fill_downcast_random_list_int(1, Options0, Options, _, ObjList0, ObjList, Ctx).
 
-obj_fill_downcast_random_list_int(Options, Options, _, [], [], _):- !.
-obj_fill_downcast_random_list_int(Options0, Options, OptionsClass, [Obj0|T0],
+obj_fill_downcast_random_list_int(_, Options, Options, _, [], [], _):- !.
+obj_fill_downcast_random_list_int(I, Options0, Options, OptionsClass, [Obj0|T0],
                                   [Obj|T], Ctx) :-
    check_inst(Obj0, Ctx),
    check_object_arg(Obj0, Ctx, Class_Id),
@@ -132,6 +136,9 @@ obj_fill_downcast_random_list_int(Options0, Options, OptionsClass, [Obj0|T0],
       options_to_object(global:OptionsClass, Options0, Options1)
       % NB only first object class used
    ),
+   Options1 / global_options / log_options ^= LogOpts,
+   log_piece([I, ']'], LogOpts),
    obj_fill_downcast_random_int(Options1, Options2, Class_Id, Obj0, Obj, Ctx),
-   obj_fill_downcast_random_list_int(Options2, Options, OptionsClass, T0, T, Ctx).
+   succ(I, I1),
+   obj_fill_downcast_random_list_int(I1, Options2, Options, OptionsClass, T0, T, Ctx).
 

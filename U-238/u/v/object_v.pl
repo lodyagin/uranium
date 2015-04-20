@@ -141,10 +141,10 @@ list_member_gen(Field, OM:Options0, OM:Options, Value) :-
    options_to_object(global:Field, Options0, Options1),
    Options1 // global_options // log_options ^= LogOpts,
    (   nonvar(LogOpts) -> LogOpts1 = LogOpts ; LogOpts1 = [lf(1)] ),
-   log_piece(['list_member_gen(', Field, ', ..., ...)'], LogOpts1),
    (  random_options(Options1, Options, Det, Gen, Seed0, Seed, phase_match)
    -> obj_field(Options1, list, Types),
-      random_member(Value, Types, Det, Gen, Seed0, Seed)
+      random_member(Value, Types, Det, Gen, Seed0, Seed),
+      log_piece(['list_member_gen(', Field, ', ...,', Value, ')'], LogOpts1)
    ;  Options0 = Options
    )
    ).
@@ -154,7 +154,7 @@ list_member_gen(Field, OM:Options0, OM:Options, Value) :-
 enum_member_gen(Field, OM:Options0, OM:Options, enum(Enum, Integer)) :-
    options_to_object(global:Field, Options0, Options1),
    functor(Options1, OptionsClass, _),
-   (   ( nonvar(Integer) ; nonvar(Enum) ) 
+   (   ( nonvar(Integer) ; nonvar(Enum) )
    ->  enum_integer(OptionsClass:Enum, OptionsClass:Integer),
        Options = Options1
    ;
@@ -188,6 +188,7 @@ vs_gen(Field, Class, OM:Options0, OM:Options, Objs) :-
        findall(range(Range), member(length(Range), Lengths), Ranges),
        % Get the number of objects
        random_number(Options2, Options3, N),
+       log_piece([N, ':'], LogOpts),
        % Copy fields left in Options1
        obj_rebase((OptClass2 -> OptClass1), Options3, Options4),
        unbounded_fields(Options4, FieldsToRestore),
