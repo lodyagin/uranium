@@ -32,7 +32,11 @@ assert_enum(Module:List) :-
 %
 enum_integer(Module:Enum, Module:Integer) :-
    must_be(atom, Module),
-   enum_integer(Module, Enum, Integer).
+   (   enum_integer(Module, Enum, Integer)
+   *-> true
+   ;   throw(error(existence_error(enum, Module), 
+                   context(enum_integer/2, _)))
+   ).
 
 :- meta_predicate enum_size(:).
 
