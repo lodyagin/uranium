@@ -32,11 +32,15 @@ assert_enum(Module:List) :-
 %
 enum_integer(Module:Enum, Module:Integer) :-
    must_be(atom, Module),
-   (   enum_integer(Module, Enum, Integer)
-   *-> true
+   % check the enum existence
+   % NB can't be combined with value retriv. because of 
+   % clp can cause fail in enum_integer/3
+   (   enum_integer(Module, _, _) -> true
    ;   throw(error(existence_error(enum, Module), 
                    context(enum_integer/2, _)))
-   ).
+   ),
+   % do the main work
+   enum_integer(Module, Enum, Integer).
 
 :- meta_predicate enum_size(:).
 
