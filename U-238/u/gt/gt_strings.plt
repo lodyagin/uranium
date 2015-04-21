@@ -15,6 +15,7 @@ test(all_different_full) :-
   % Codes must be always a permutation of the Etalon
 
 test(empty_atom) :-
+  gtrace,
   findall(A, (between(1, 100, _),
 	      random_string([empty], _, atom(A))),
 	  AL),
@@ -50,7 +51,7 @@ test(randsel,
    N2 #>= 1, 
    length(L, 3), 
    global_cardinality(L, [1-N1, 2-N2, 3-_], []), 
-   findall(L, randsel(L, randgen:test_sequence1, 1, _), LL).
+   findall(L, randsel([], L, randgen:test_sequence1, 1, _), LL).
 
 test(random_string_nondet, 
      [Atom == bca3bcb4bcc4bbb4bbc5bba5bab4bac5baa5aab4aac5aaa5abc5aba6abb6acc5aca6acb6cab4cac5caa5cbc5cba6cbb6ccc5cca6ccb6]

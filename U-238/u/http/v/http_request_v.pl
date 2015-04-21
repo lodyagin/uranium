@@ -74,9 +74,9 @@ new_class(http_connect_request_v, http_request_v, []).
 
 typedef(http_method, [value_set - http_method_set_gen]).
 
-:- meta_predicate http_method_set_gen(:, -, -).
+:- meta_predicate http_method_set_gen(:, -, ?, -).
 
-http_method_set_gen(Options, Options, Value) :-
+http_method_set_gen(Options, Options, Value, Value) :-
 
    options_to_object(http_method_set_gen, Options, Opt),
 

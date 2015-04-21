@@ -29,6 +29,7 @@
 :- module(gt_strings,
           [random_string/1, % -Str
 	   random_string/3, % +Options0, -Options, -Str
+	   random_string/4, % +Options0, -Options, ?Str0, -Str
            randsel/5,       % +LogOpts, +List, :Gen, +Seed0, -Seed
            randselchk/5,    % +LogOpts, +List, :Gen, +Seed0, -Seed
 	   range_pattern/2
@@ -43,7 +44,7 @@
 
 random_string(Str) :-
    Ctx = context(random_string/1, _),
-   random_string_cmn([], _, Str, Ctx).
+   random_string_cmn([], _, Str, Str, Ctx).
 
 :- meta_predicate random_string(:, -, -).
 
@@ -51,16 +52,31 @@ random_string(Str) :-
 %
 % Generates a random string. It is semidet if `semidet' option passed.
 %
-random_string(OM:Options0, OM:Options, Str) :- !,
+random_string(OM:Options0, OM:Options, Str) :- 
    Ctx = context(random_string/3, _),
    (  nonvar(Options), Options = OM:Options1
    -> true
    ;  Options = Options1
    ),
-   random_string_cmn(OM:Options0, Options1, Str, Ctx).
+   random_string_cmn(OM:Options0, Options1, Str, Str, Ctx).
 
-random_string_cmn(OM:Options0, Options, Str, _) :-
-   (   nonvar(Str) -> Options0 = Options % skip string generation
+%% random_string(+Options0, -Options, ?Str0, -Str) is nondet.
+%
+% Generates a random string. If Str0 is nonvar then Str = Str0.
+% It is semidet if `semidet' option passed.
+%
+random_string(OM:Options0, OM:Options, Str0, Str) :- 
+   Ctx = context(random_string/4, _),
+   (  nonvar(Options), Options = OM:Options1
+   -> true
+   ;  Options = Options1
+   ),
+   random_string_cmn(OM:Options0, Options1, Str0, Str, Ctx).
+
+random_string_cmn(OM:Options0, Options, Str, Str, _) :-
+   (   nonvar(Str), ( Str = [_|_] ; Str = [] )
+   ->  
+       Options0 = Options % skip string generation
    ;
    options_to_object(random_string, OM:Options0, Options1),
    (  random_options(Options1, Options, Det, Generator, Seed1, Seed, phase_match)

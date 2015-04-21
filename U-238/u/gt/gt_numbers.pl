@@ -28,7 +28,8 @@
 
 :- module(gt_numbers,
           [random_number/1, % -Number
-	   random_number/3  % +Options0, -Options, -Number
+	   random_number/3, % +Options0, -Options, -Number
+	   random_number/4  % +Options0, -Options, ?Number0, -Number
            ]).
 
 :- use_module(library(error)).
@@ -39,7 +40,7 @@
 
 random_number(Number) :-
    Ctx = context(random_number/1, _),
-   random_number_cmn([], _, Number, Ctx).
+   random_number_cmn([], _, Number, Number, Ctx).
 
 :- meta_predicate random_number(:, -, -).
 
@@ -55,22 +56,41 @@ random_number(OM:Options0, Options, Number) :-
    -> true
    ;  Options = Options1
    ),
-   random_number_cmn(OM:Options0, Options1, Number, Ctx).
+   random_number_cmn(OM:Options0, Options1, Number, Number, Ctx).
 
-random_number_cmn(OM:Options0, Options, Num, _) :-
-   (  nonvar(Num) -> Options0 = Options
+%% random_number(+Options0, -Options, ?Number0, -Number) is nondet.
+%
+%  Generates a random Number for clpfd constrained Number0.
+%  Example: X in 1..10, random_number([semidet], _, X, X).
+%  If Number0 is bound then Number = Number0.
+%  It is semidet if the semidet option passed.
+%
+random_number(OM:Options0, Options, Number0, Number) :-
+   Ctx = context(random_number/4, _),
+   (  nonvar(Options), Options = OM:Options1
+   -> true
+   ;  Options = Options1
+   ),
+   random_number_cmn(OM:Options0, Options1, Number0, Number, Ctx).
+
+random_number_cmn(OM:Options0, Options, Num, Num, _) :-
+   (   nonvar(Num)
+   ->  Options0 = Options
    ;
-   options_to_object(random_number, OM:Options0, Options1),
-   (  random_options(Options1, Options, Det, Generator, Seed0, Seed, phase_match)
-   -> obj_field(Options, domain, Domains),
-      random_member(Domain, Domains, Det, Generator, Seed0, Seed1),
-      (  Domain == integer
-      -> random_number_integer(Options1, Det, Generator, Seed1, Seed, Num)
-      % TODO implement others
-      ;  must_be(oneof([integer, rational, real]), Domain)
-      )
-   ; Options = Options0
-   )
+       options_to_object(random_number, OM:Options0, Options1),
+       (  random_options(Options1, Options, Det, Generator,
+                         Seed0, Seed, phase_match)
+       -> obj_field(Options, domain, Domains),
+          random_member(Domain, Domains, Det, Generator, Seed0, Seed1),
+          (  Domain == integer
+          -> random_number_integer(Options1, Det, Generator, Seed1, Seed,
+                                   Num)
+          % TODO implement others
+
+          ;  must_be(oneof([integer, rational, real]), Domain)
+          )
+       ; Options = Options0
+       )
    ).
 
 random_number_integer(Opt, Det, Generator, Seed1, Seed, Num) :-
@@ -86,7 +106,7 @@ random_number_integer(Opt, Det, Generator, Seed1, Seed, Num) :-
       must_be(callable, Pattern)
    ),
    call(Pattern, Num),
-   LogOpts ^= Opt / global_options / log_options,
+   LogOpts ^= Opt // global_options // log_options,
    fd_random(LogOpts, Generator, Seed2, Seed, Num),
    (  Det == semidet -> ! ; true ).
 

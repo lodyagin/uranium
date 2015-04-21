@@ -102,17 +102,17 @@ new_class(object_v, object_base_v, []).
 typedef(nonneg, [value_set - nonneg_set_gen]).
 typedef(string, [pretty_print - string_pretty_print(string)]). % TODO string
 
-:- meta_predicate nonneg_set_gen(:, -, -).
+:- meta_predicate nonneg_set_gen(:, -, ?, -).
 
-nonneg_set_gen(Options0, Options, Value) :-
+nonneg_set_gen(Options0, Options, Value, Value) :-
    options_to_object(nonneg_set_gen, Options0, Options1),
    obj_field(Options1, range, range(From, To)),
    Value in From .. To,
    random_number(Options1, Options, Value).
 
-:- meta_predicate v_gen(+, :, -, -).
+:- meta_predicate v_gen(+, :, -, ?, -).
 
-v_gen(Class, OM:Opts, OM:Options, Obj) :-
+v_gen(Class, OM:Opts, OM:Options, Obj0, Obj) :-
    options_to_object(global:Class, Opts, Options0),
    obj_rewrite(Options0, [global_options], [GO0], [GO2], Options1),
    (   var(GO0) -> obj_construct(global_options_v, [], [], GO1)
@@ -122,20 +122,19 @@ v_gen(Class, OM:Opts, OM:Options, Obj) :-
    (  nonvar(LogOpts0) -> LogOpts1 = LogOpts0 ; LogOpts1 = [] ),
    log_piece(['v_gen(', Class, ', ..., ...)'], LogOpts1),
    change_indent(LogOpts1, LogOpts2, 2),
-   (   var(Obj)
-   ->  obj_construct(Class, [], [], Obj0),
-       obj_fill_downcast_random(Options1, Options2, Obj0, Obj)
-   ;
-       obj_fill_random(Options1, Options2, Obj)
+   (   var(Obj0)
+   ->  obj_construct(Class, [], [], Obj0)
+   ;   true
    ),
+   obj_fill_downcast_random(Options1, Options2, Obj0, Obj),
    obj_rewrite(Options2, [global_options], [GO3], [GO4], Options),
    obj_rewrite(GO3, [log_options], [LogOpts3], [LogOpts4], GO4),
    change_indent(LogOpts3, LogOpts4, -2).
 
-:- meta_predicate list_member_gen(+, :, -, -).
+:- meta_predicate list_member_gen(+, :, -, ?, -).
 
 % TODO add Class parameter
-list_member_gen(Field, OM:Options0, OM:Options, Value) :-
+list_member_gen(Field, OM:Options0, OM:Options, Value, Value) :-
    (   nonvar(Value) -> Options = Options0
    ;
    options_to_object(global:Field, Options0, Options1),
@@ -149,9 +148,11 @@ list_member_gen(Field, OM:Options0, OM:Options, Value) :-
    )
    ).
 
-:- meta_predicate enum_member_gen(+, :, -, -).
+:- meta_predicate enum_member_gen(+, :, -, ?, -).
 
-enum_member_gen(Field, OM:Options0, OM:Options, enum(Enum, Integer)) :-
+enum_member_gen(Field, OM:Options0, OM:Options, 
+                enum(Enum, Integer), enum(Enum, Integer)) 
+:-
    options_to_object(global:Field, Options0, Options1),
    functor(Options1, OptionsClass, _),
    (   ( nonvar(Integer) ; nonvar(Enum) )
@@ -170,14 +171,14 @@ enum_member_gen(Field, OM:Options0, OM:Options, enum(Enum, Integer)) :-
    )
    ).
 
-:- meta_predicate vs_gen(+, +, :, -, -).
+:- meta_predicate vs_gen(+, +, :, -, ?, -).
 
 % Generates list of homogeneous objects of Class
-vs_gen(Field, Class, OM:Options0, OM:Options, Objs) :-
+vs_gen(Field, Class, OM:Options0, OM:Options, Objs0, Objs) :-
    options_to_object(global:Field, OM:Options0, Options1),
    Options1 / global_options / log_options ^= LogOpts,
    log_piece(['vs_gen(', Field, ', ', Class, ', ..., ...)'], LogOpts),
-   (   var(Objs)
+   (   var(Objs0)
    ->  % generate a list of random size
        options_predicate_to_options_class_name(global:Field, OptClass1),
        options_predicate_to_options_class_name(gt_numbers:random_number, OptClass2),
@@ -200,10 +201,10 @@ vs_gen(Field, Class, OM:Options0, OM:Options, Objs) :-
                  member(V, L),
                  obj_construct(Class, [], [], V)
                ),
-             Objs0),
-       obj_fill_downcast_random_list(Options4, Options, Objs0, Objs)
+             Objs1),
+       obj_fill_downcast_random_list(Options4, Options, Objs1, Objs)
    ;
-       obj_fill_random_list(Options1, Options, Objs)
+       obj_fill_random_list(Options1, Options, Objs0, Objs)
    ).
 
 string_pretty_print(Field, _, Value, Options) :-
