@@ -127,7 +127,6 @@
 :- use_module(library(ordsets)).
 :- use_module(u(logging)).
 :- use_module(u(class_diagram)).
-:- use_module(u(util/lambda)).
 :- use_module(u(vd), [db_select/3, named_args_unify/5]).
 
 :- reexport(u(internal/objects_i),
@@ -802,8 +801,7 @@ eval_obj_expr_cmn(List, _, List, list, _) :-
 
 eval_obj_expr_cmn(List, _, Value, list, Ctx) :-
    nonvar(List), List = [_|_], !,
-   maplist(Ctx+\Obj_Expr^V^eval_obj_expr_cmn(Obj_Expr, hold, V, _, Ctx),
-	   List, Value).
+   maplist(eval_obj_expr_cmn_p1(Ctx), List, Value).
 
 %TODO all evals to u(vexpr)
 eval_obj_expr_cmn(@(DB_Key), _, @(DB_Key), db, Ctx) :- !,
@@ -822,6 +820,9 @@ eval_obj_expr_cmn(Compound, _, Value, compound, Ctx) :-
    Value =.. [Fun|Value_List].
 
 eval_obj_expr_cmn(Value, _, Value, value, _) :- !.
+
+eval_obj_expr_cmn_p1(Ctx, Obj_Expr, Value) :- 
+   eval_obj_expr_cmn(Obj_Expr, hold, Value, _, Ctx).
 
 eval_obj_field(db, @(DB_Key)->Object, _, Field, Value, _) :-
    named_args_unify(DB_Key, _, [Field], [Value], Object).
@@ -843,9 +844,7 @@ eval_obj_field(object, Object, Weak, Field, Value, _) :- !,
 eval_obj_field(_, _, hold, _, _, _) :- !, fail.
 
 eval_obj_field(list, List, Weak, Field, Value, Ctx) :- !,
-   maplist(Field^Ctx+\Element^V^
-          eval_obj_expr_cmn(Element / Field, Weak, V, _, Ctx),
-           List, Value).
+   maplist(eval_obj_field_p1(Field, Weak, Ctx), List, Value).
 
 eval_obj_field(compound, Compound, Weak, Field, Value, Ctx) :- !,
    Compound =.. [Functor|Expr_List],
@@ -863,6 +862,9 @@ eval_obj_field(variable, Value, throw, _, _, Ctx) :-
    throw(error(invalid_object(Value, 'may be use `weak` option?'), Ctx)).
 eval_obj_field(variable, _, fail, _, _, _) :-
    !, fail.
+
+eval_obj_field_p1(Field, Weak, Ctx, Element, Value) :-
+   eval_obj_expr_cmn(Element / Field, Weak, Value, _, Ctx).
 
 % eval_list_obj_expr(+FieldsList, +Object, +Weak, -ValList0, -ValList1, +Ctx)
 % It is called for Object / List
