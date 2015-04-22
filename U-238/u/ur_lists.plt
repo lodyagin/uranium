@@ -1,5 +1,6 @@
 :- begin_tests(ur_lists).
 :- use_module(u(ur_lists)).
+:- use_module(u(util/lambda)).
 
 test(remove_options1,
      [List == [b(2), a(2, x), 3]]
@@ -86,5 +87,12 @@ test(select_value2_1, [Value == 5]) :-
 test(write_delimited1_atom, [A == 'a:b:c']) :-
 
    write_delimited(atom(A), ':', [a, b, c]).
+
+test(skip_maplists_arity5, L == [2, 4]) :-
+   skip_maplist(\A^B^C^D^(A=C, B=D), 
+                [1, 2, 3, 4], 
+                [1, 3, 2, 4], 
+                [2, 1, 3, 4], 
+                L).
 
 :- end_tests(ur_lists).

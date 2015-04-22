@@ -66,6 +66,9 @@
            transpose_list_matrix/2,
            trim_list/4,
            weak_maplist/3,
+           weak_maplist/4,
+           skip_maplist/4,       % :Pred, ?L1, ?L2, ?L3
+           skip_maplist/5,       % :Pred, ?L1, ?L2, ?L3, ?L4
            write_delimited/3     % +Write_Pred, +Delimiter, +List
 ]).
 
@@ -264,7 +267,7 @@ replace_all_sublists_dcg(From, To, [C|List0], List) -->
 replace_all_sublists_dcg(_, _, List, List) -->
    [].
 
-%% replace_tail(Tail1, List1, Tail, List) is undet.
+%% replace_tail(Tail1, List1, Tail, List) is nondet.
 %  List1 = [head |Tail1], List = [head |Tail]
 %  Attention! Gives infinite number of solutions, use with cut.
 replace_tail(Tail1, Tail1, Tail, Tail) :- acyclic_term(Tail1).
@@ -404,20 +407,75 @@ prop_list_replace([Prop_In|Tail_In],
         prop_list_replace(Tail_In, Tail_Out, From, To).
 
 
+:- meta_predicate weak_maplist(2, ?, ?).
+
 %
 % weak_maplist(:Pred, ?List1, ?List2)
 %
 % The same as standard maplist but if Pred fails don't
 % unify list elements.
 %
-
 weak_maplist(_, [], []) :- !.
-
 weak_maplist(Pred, [Head1|Tail1], [Head2|Tail2]) :-
-
   ignore(call(Pred, Head1, Head2)),
   weak_maplist(Pred, Tail1, Tail2).
 
+
+:- meta_predicate weak_maplist(3, ?, ?, ?).
+
+%
+% weak_maplist(:Pred, ?List1, ?List2, ?List3)
+%
+% The same as standard maplist but if Pred fails don't
+% unify list elements.
+%
+weak_maplist(_, [], [], []) :- !.
+weak_maplist(Pred, [Head1|Tail1], [Head2|Tail2], [Head3|Tail3]) :-
+  ignore(call(Pred, Head1, Head2, Head3)),
+  weak_maplist(Pred, Tail1, Tail2, Tail3).
+
+
+:- meta_predicate skip_maplist(3, ?, ?, ?).
+:- meta_predicate skip_maplist(4, ?, ?, ?, ?).
+
+%% skip_maplist(:Pred, ?List1, ?List2, ?List3)
+%
+% The same as standard maplist but if Pred fails skip this list element.
+%
+skip_maplist(_, [], [], []) :- !.
+skip_maplist(Pred, L1, L2, L3) :-
+  (  L1 = [H1|T1], 
+     L2 = [H2|T2],
+     L3 = [H3|T3],
+     call(Pred, H1, H2, H3)
+  -> skip_maplist(Pred, T1, T2, T3)
+  ;  skip_one_element(L1, M1),
+     skip_one_element(L2, M2),
+     skip_one_element(L3, M3),
+     skip_maplist(Pred, M1, M2, M3)
+  ).
+
+%% skip_maplist(:Pred, ?List1, ?List2, ?List3, ?List4)
+%
+% The same as standard maplist but if Pred fails skip this list element.
+%
+skip_maplist(_, [], [], [], []) :- !.
+skip_maplist(Pred, L1, L2, L3, L4) :-
+  (  L1 = [H1|T1], 
+     L2 = [H2|T2],
+     L3 = [H3|T3],
+     L4 = [H4|T4],
+     call(Pred, H1, H2, H3, H4)
+  -> skip_maplist(Pred, T1, T2, T3, T4)
+  ;  skip_one_element(L1, M1),
+     skip_one_element(L2, M2),
+     skip_one_element(L3, M3),
+     skip_one_element(L4, M4),
+     skip_maplist(Pred, M1, M2, M3, M4)
+  ).
+
+skip_one_element(L, L) :- var(L), !.
+skip_one_element([_|T], T).
 
 write_delimited(_:atom(Atom), Delimiter, List) :- !,
 
