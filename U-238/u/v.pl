@@ -63,6 +63,7 @@
            obj_downcast/3,     % +Parent, +Class_To, -Descendant
            obj_field/3,        % +Obj, ?Field, ?Value
            obj_field/4,        % +Obj, +Weak, ?Field, ?Value
+           findall_fields/4,   % +Obj, ?Native, ?Eval, -Fields
            obj_key/2,          % +Object, -Key
            obj_key_value/2,    % +Object, -Key_Value
            obj_list/2,         % +Object, -List
@@ -228,6 +229,26 @@ obj_field(Obj, Weak, Field_Name, Value) :-
    ),
 
    obj_field_int(Class_Id, Field_Name, Weak1, Obj, Value, _, Ctx).
+
+%% findall_fields(+Obj, ?Native, ?Eval, -Fields) is det.
+%
+% Returns the Fields = [v(Name, Value, Type), ...].
+%
+% @param Native see class_fields/5
+% @param Eval see class_fields/5
+%
+findall_fields(Obj, Native, Eval, Fields) :-
+   Ctx = context(findall_field/4, _),
+   check_inst(Obj, Ctx),
+   check_object_arg(Obj, Ctx, Class_Id),
+   % NB: we can't get values with attached attributes with findall.
+   class_fields(_, Class_Id, Native, Eval, Fields1),
+   findall_fields_int(Obj, Class_Id, Fields1, Fields, Ctx).
+   
+findall_fields_int(_, _, [], [], _) :- !.
+findall_fields_int(Obj, Class_Id, [Name|F], [v(Name, Value, Type)|V], Ctx) :-
+   obj_field_int(Class_Id, Name, throw, Obj, Value, Type, Ctx),
+   findall_fields_int(Obj, Class_Id, F, V, Ctx).
 
 
 named_arg(Obj, Field, Value) :-
@@ -1066,7 +1087,9 @@ field_pretty_print(_, _, functor) :- !.
 field_pretty_print(Options, Object, Field) :-
 
   named_arg(Object, Field, Value, Type),
-  (  ( var(Value) ; memberchk(hide_field(Field), Options))
+  (  ( var(Value), term_attvars(Value, []) 
+     ; memberchk(hide_field(Field), Options)
+     )
   -> true
   ;  var(Type)
   -> Pretty_Value = Value
@@ -1077,7 +1100,7 @@ field_pretty_print(Options, Object, Field) :-
   ),
 
   (  var(Pretty_Value)
-  -> true
+  -> term_attvars(Pretty_Value, Pretty_Value_Attr_Vars)
   ;  u_object(Pretty_Value)
   -> log_piece([Field, ':'], Options),
      change_indent(Options, O2, 2),
@@ -1091,6 +1114,25 @@ field_pretty_print(Options, Object, Field) :-
      maplist(type_pretty_print(O2), Pretty_Value)
   ;  log_piece([Field, ':', Pretty_Value], Options)
   ).
+  % print attributes
+  %(  nonvar(Pretty_Value_Attr_Vars),
+  %   Pretty_Value_Attr_Vars \== []
+  %-> log_piece('[attrs]', Options)
+  %; true
+  %-> writeln('Attrs found')
+%attrs_pretty_print(Options, Pretty_Value_Attr_Vars)
+  %;  true, writeln('!!!! attrs not found')
+  %).
+     
+attrs_pretty_print(Opts, Var) :-
+  var(Var), !,
+  (  get_attrs(Var, Attrs)
+  -> log_piece(Attrs, Opts)
+  ;  true
+  ).
+attrs_pretty_print(Opts, Term) :-
+  term_attvars(Term, Vars),
+  maplist(attrs_pretty_print(Opts), Vars).
 
 
 type_pretty_print(Opts, T) :-

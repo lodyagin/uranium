@@ -474,6 +474,18 @@ test(obj_field_bug1, [fail]) :-
    obj_construct(citizen_v, [sex], [woman], Obj),
    obj_field(Obj, sex, man).
 
+test(findall_fields, 
+     [Flds =@= [v(height, H, _), v(name, 'Vasia', _), v(sex, _, man_v_sex_t),
+             v(surname, 'Pupkin', _), v(weight, W, _)]]) 
+:-
+    obj_construct(man_v, 
+                  [name, surname, height, weight], 
+                  ['Vasia', 'Pupkin', H, W], 
+                  M), 
+    findall_fields(M, _, false, Flds), 
+    memberchk(v(height, F, _), Flds), 
+    assertion(F==H).
+
 test(obj_is_descendant1, [List == [object_base_v, object_v]]) :-
 
    obj_construct(man_v, [], [], Man),
