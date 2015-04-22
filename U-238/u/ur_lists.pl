@@ -65,8 +65,10 @@
            switch_by_value/4,
            transpose_list_matrix/2,
            trim_list/4,
-           weak_maplist/3,
-           weak_maplist/4,
+           weak_maplist/2,       % :Pred, ?L1
+           weak_maplist/3,       % :Pred, ?L1, ?L2
+           weak_maplist/4,       % :Pred, ?L1, ?L2, ?L3
+           skip_maplist/3,       % :Pred, ?L1, ?L2
            skip_maplist/4,       % :Pred, ?L1, ?L2, ?L3
            skip_maplist/5,       % :Pred, ?L1, ?L2, ?L3, ?L4
            write_delimited/3     % +Write_Pred, +Delimiter, +List
@@ -82,7 +84,7 @@
 :- meta_predicate gen_memberchk(2, ?, ?).
 :- meta_predicate write_delimited(1, +, +).
 
-:- module_transparent switch_by_value/4, weak_maplist/3.
+:- module_transparent switch_by_value/4.
 
 
 %% common_head(+List1, +List2, ?Head)
@@ -407,10 +409,20 @@ prop_list_replace([Prop_In|Tail_In],
         prop_list_replace(Tail_In, Tail_Out, From, To).
 
 
+:- meta_predicate weak_maplist(1, ?).
 :- meta_predicate weak_maplist(2, ?, ?).
 
+%% weak_maplist(:Pred, ?List1        )
 %
-% weak_maplist(:Pred, ?List1, ?List2)
+% The same as standard maplist but if Pred fails don't
+% unify list elements.
+%
+weak_maplist(_, []    ) :- !.
+weak_maplist(Pred, [Head1|Tail1]) :-
+  ignore(call(Pred, Head1)),
+  weak_maplist(Pred, Tail1).
+
+%% weak_maplist(:Pred, ?List1, ?List2)
 %
 % The same as standard maplist but if Pred fails don't
 % unify list elements.
@@ -435,8 +447,25 @@ weak_maplist(Pred, [Head1|Tail1], [Head2|Tail2], [Head3|Tail3]) :-
   weak_maplist(Pred, Tail1, Tail2, Tail3).
 
 
+% NB no skip_maplist/2, use weak_maplist/2 instead
+:- meta_predicate skip_maplist(2, ?, ?).
 :- meta_predicate skip_maplist(3, ?, ?, ?).
 :- meta_predicate skip_maplist(4, ?, ?, ?, ?).
+
+%% skip_maplist(:Pred, ?List1, ?List2)
+%
+% The same as standard maplist but if Pred fails skip this list element.
+%
+skip_maplist(_, [], []) :- !.
+skip_maplist(Pred, L1, L2) :-
+  (  L1 = [H1|T1], 
+     L2 = [H2|T2],
+     call(Pred, H1, H2)
+  -> skip_maplist(Pred, T1, T2)
+  ;  skip_one_element(L1, M1),
+     skip_one_element(L2, M2),
+     skip_maplist(Pred, M1, M2)
+  ).
 
 %% skip_maplist(:Pred, ?List1, ?List2, ?List3)
 %
