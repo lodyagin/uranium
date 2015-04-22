@@ -3,6 +3,7 @@
 :- use_module(u(gt/gt_objects)).
 :- use_module(u(v)).
 :- use_module(u(ur_option)).
+:- use_module(u(class_options)).
 
 test(obj_fill_random1_semidet) :-
     obj_construct(man_v, [], [], M),
@@ -14,7 +15,7 @@ test(obj_fill_random1_semidet) :-
 
 test(obj_fill_random1_nondet) :-
     obj_construct(man_v, [], [], M),
-    options_object(randgen:random_options, 
+    options_object(randgen:random_options,
                    [sex-[male, female, nondet]], Opts),
     obj_construct(global_options_v, [rand_options], [[rand_state(2)]], GO),
     Opts / global_options ^= GO,
@@ -66,7 +67,7 @@ test(obj_fill_dowcast_random_list1_nondet,
                    Opts),
     obj_construct(global_options_v,
                   [rand_options],
-                  [[rand_state(pcg32_init(42,52)), 
+                  [[rand_state(pcg32_init(42,52)),
                     generator(randgen:pcg32_1)]],
                   GO),
     Opts / global_options ^= GO,
@@ -77,6 +78,7 @@ test(obj_fill_dowcast_random_list1_nondet,
 
 
 setup_options :-
+    class_options:setup_options,
     man_v:setup_options,
     citizen_v:setup_options.
 
