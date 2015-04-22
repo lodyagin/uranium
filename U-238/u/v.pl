@@ -64,6 +64,7 @@
            obj_field/3,        % +Obj, ?Field, ?Value
            obj_field/4,        % +Obj, +Weak, ?Field, ?Value
            findall_fields/4,   % +Obj, ?Native, ?Eval, -Fields
+           findall_fields/5,   % :Filter, +Obj, ?Native, ?Eval, -Fields
            obj_key/2,          % +Object, -Key
            obj_key_value/2,    % +Object, -Key_Value
            obj_list/2,         % +Object, -List
@@ -245,10 +246,41 @@ findall_fields(Obj, Native, Eval, Fields) :-
    class_fields(_, Class_Id, Native, Eval, Fields1),
    findall_fields_int(Obj, Class_Id, Fields1, Fields, Ctx).
    
+:- meta_predicate findall_fields(3, +, ?, ?, -).
+
+%% findall_fields(:Filter, +Obj, ?Native, ?Eval, -Fields) is det.
+%
+% Returns the Fields = [v(Name, Value, Type), ...].  Calls
+% Filter(Name, Value, Type). Includes only those fields for which
+% Filter is passed.
+%
+% @param Native see class_fields/5
+% @param Eval see class_fields/5
+%
+% @see findall_fields/4
+%
+findall_fields(Filter, Obj, Native, Eval, Fields) :-
+   Ctx = context(findall_field/5, _),
+   check_inst(Obj, Ctx),
+   check_object_arg(Obj, Ctx, Class_Id),
+   % NB: we can't get values with attached attributes with findall.
+   class_fields(_, Class_Id, Native, Eval, Fields1),
+   findall_fields_int(Filter, Obj, Class_Id, Fields1, Fields, Ctx).
+   
 findall_fields_int(_, _, [], [], _) :- !.
-findall_fields_int(Obj, Class_Id, [Name|F], [v(Name, Value, Type)|V], Ctx) :-
+findall_fields_int(Obj, Class_Id, [Name|F], [v(Name, Value, Type)|V], Ctx):-
    obj_field_int(Class_Id, Name, throw, Obj, Value, Type, Ctx),
    findall_fields_int(Obj, Class_Id, F, V, Ctx).
+
+findall_fields_int(_, _, _, [], [], _) :- !.
+findall_fields_int(Pred, Obj, Class_Id, [Name|F], Vs, Ctx)
+:-
+   obj_field_int(Class_Id, Name, throw, Obj, Value, Type, Ctx),
+   (  call(Pred, Name, Value, Type)
+   -> Vs = [v(Name, Value, Type)|V]
+   ;  Vs = V
+   ),
+   findall_fields_int(Pred, Obj, Class_Id, F, V, Ctx).
 
 
 named_arg(Obj, Field, Value) :-
