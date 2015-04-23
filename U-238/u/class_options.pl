@@ -11,6 +11,12 @@ setup_options :-
              [group(det), option(semidet/0), option(nondet/0)],
              [group(phase), option(phase/1)]
             ],
+   Weak =   [[group(how_weak), option(throw/0), option(throws/0),
+              option(strict/0), option(s/0),
+              option(unbound/0), option(weak/0), option(w/0),
+              option(fail/0), option(false/0), option(f/0),
+              default(strict)]
+            ],
    ur_options(randgen:random_options,  % NB no defaults (to overwrite
                                        % possibility in
                                        % random_options/7
@@ -29,6 +35,17 @@ setup_options :-
                 default([http_method_standard])],
                [option(length/2), default(length(1, 100))]
               ]),
+   ur_options(ur_enums:enum_integer,
+              [[group(scope), option(module/1), option(field/1),
+                option(global/0), default(global)],
+               [group(scope_policy), 
+                option(strict_scope/0), % allow return enums only from
+                                        % one module
+                option(weak_scope/0), % allow to return enums from all
+                                      % module if value of Enum or
+                                      % Integer match
+                default(strict_scope)]
+               | Weak]),
    ur_options(gt_strings:random_string,
               [[multi_group(length), %not_empty,
                 option(empty/0), option(length/1), option(length/2),

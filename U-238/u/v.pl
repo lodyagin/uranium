@@ -88,6 +88,7 @@
            obj_pretty_print/2,
            obj_unify/3,
            obj_unify/4,
+           std_weak_arg_values/1,
 
            op(700, xfx, =^=),
            op(700, xfx, ^=),

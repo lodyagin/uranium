@@ -60,7 +60,7 @@
 %
 extract_weak(Pred, Options0, Options, Weak, Ctx) :-
    options_to_object(Pred, Options0, Options),
-   obj_field(Options, weak, Weak1),
+   obj_field(Options, how_weak, Weak1),
    std_weak_arg_values(LOL),
    decode_arg(LOL, Weak1, Weak, Ctx).
 
