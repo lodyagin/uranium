@@ -24,14 +24,16 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(ur_option,
-          [options_group_list/3, % :Pred, +GroupName, -List
-           ur_options/2,
+          [extract_weak/5,       % :Pred, +Options0, -Options, -Weak, +Ctx
+           options_group_list/3, % :Pred, +GroupName, -List
            options_object/3,
            options_object/4,
            options_predicate_to_options_class_name/2,
            options_to_object/3,  % :Pred, +Options, -Opt
            options_to_object/4,  % :Pred, +Options, +Weak, -Opt
-           retract_options/1     % :Pred
+           retract_options/1,    % :Pred
+           ur_options/2         % :Pred, +Options
+           %ur_options_clear/1    % :Pred
            ]).
 
 /** <module> Options processing
@@ -47,6 +49,20 @@
 :- use_module(u(internal/objects_i)).
 :- use_module(v(ur_options_v)).
 
+
+:- meta_predicate extract_weak(:, :, -, -, +).
+
+%% extract_weak(:Pred, +Options0, -Options, -Weak, +Ctx) is det.
+%
+% Extract weak options. As a side effect make sure that Options is an
+% option object corresponding to Options0.
+% @see std_weak_arg_values/1
+%
+extract_weak(Pred, Options0, Options, Weak, Ctx) :-
+   options_to_object(Pred, Options0, Options),
+   obj_field(Options, weak, Weak1),
+   std_weak_arg_values(LOL),
+   decode_arg(LOL, Weak1, Weak, Ctx).
 
 :- meta_predicate options_group_list(:, +, -).
 
@@ -144,6 +160,11 @@ ur_options(Pred, _:Options0) :-
    -> assert_enum(Class:Enums)
    ;  true
    ).
+
+%:- meta_predicate ur_options_clear(:).
+
+%ur_options_clear(Pred) :-
+%   options_predicate_to_options_class_name(Pred, Class),
 
 assert_rules([], _, _, _) :- !.
 assert_rules([Rule0|T], DB, Ctx, Details) :-
@@ -329,7 +350,7 @@ assert_group_options(_, _, _, _, _, Rule, Rule, _, _).
 select_default(Rule0, Rule, Default, Details, Err) :-
 
    (  select_option(default(Default), Rule0, Rule)
-   -> (  compound(Default) -> true
+   -> (  (compound(Default);atom(Default)) -> true
       ;  Details = 'invalid default value', throw(Err)
       )
    ;  Rule = Rule0
@@ -381,41 +402,6 @@ options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak, Object) :-
                  [options_in, options_out, context_module, weak],
                  [Options, Object, Opts_Module, Weak],
                  _).
-
-% TODO check all this functionality is realized in the new module ur_option:
-
-% override_(+Option0, +Value, +Options, -Option)
-%
-% @param Option0 can have one of these forms:
-%  $ default(Opt) : the default value for Opt
-%  $ default_to_multi(List) : the default for muli-option
-%  $ user(Opt) : user defined value for Opt
-%  $ multi(List) : list of options of one group
-%   (like [empty, length(4), length(6, 7)]).
-%
-% @param Value processed option (like length(1, 5))
-%
-% @param Options the full option list (for error reporting)
-%
-% @param Option will be one of [user(Opt), multi(List)]
-
-% process opt(match(Val)) expression, Val will be unified with
-% non-multy _(opt(Val)) option,
-/*
-override_(Prev_Stu, Stu, _, Prev_Stu) :-
-	functor(Prev_Stu, _, 1),      %e.g. user(opt(Val))
-	functor(Stu, _, 1),           %e.g. opt(match(Val))
-	arg(1, Stu, match(Val)),
-	!,
-	arg(1, Prev_Stu, Opt),
-	functor(Opt, _, 1),
-	arg(1, Opt, Val).
-
-override_(default_to_multi(_), Value, _, multi([Value])) :- !.
-override_(multi([]), Value, _, multi([Value])) :- !.
-override_(multi([V1|T]), Value, _, multi([Value, V1|T])) :- !.
-*/
-
 
 :- initialization clear_decode_arg.
 

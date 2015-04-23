@@ -27,51 +27,57 @@ test(options_to_assoc3) :-
    assertion(NL == []).
 
 test(options_to_assoc4) :-
-   options_object(test_pred10, [a-1], O),
+   options_object(test_pred10, [test_pred10_a-[z]], O),
    O / nested ^= Nested,
    is_assoc(Nested),
-   assoc_to_list(Nested, NL),
-   assertion(NL == [a-1]).
+   assoc_to_list(Nested, [test_pred10_a-NO]),
+   assertion(NO/z =^= z).
 
 test(options_to_assoc5) :-
-   options_object(test_pred10, [a-1, b-3], O),
+   options_object(test_pred10, [test_pred10_a-[z], test_pred10_b-[zz]], O),
    O / nested ^= Nested,
    is_assoc(Nested),
-   get_assoc(a, Nested, Value1),
-   get_assoc(b, Nested, Value2),
-   assertion(Value1 == 1),
-   assertion(Value2 == 3).
+   get_assoc(test_pred10_a, Nested, NO1),
+   get_assoc(test_pred10_b, Nested, NO2),
+   assertion(NO1/z =^= z),
+   assertion(NO2/zz =^= zz).
 
 test(options_to_assoc6) :-
-   options_object(test_pred10, mod1:[a-1, b-3], O),
+   options_object(test_pred10, 
+                  mod1:[test_pred10_a-[z], test_pred10_b-[zz]], 
+                  O),
    O / [context_module, nested] ^= [Module, Nested],
    assertion(Module == mod1),
    is_assoc(Nested),
-   get_assoc(a, Nested, Value1),
-   get_assoc(b, Nested, Value2),
-   assertion(Value1 == 1),
-   assertion(Value2 == 3).
+   get_assoc(test_pred10_a, Nested, NO1),
+   get_assoc(test_pred10_b, Nested, NO2),
+   assertion(NO1/z =^= z),
+   assertion(NO2/zz =^= zz).
 
 test(options_to_assoc7) :-
-   options_object(test_pred10, [empty, a-1, b-3], O),
+   options_object(test_pred10, 
+                  [empty, test_pred10_a-[z], test_pred10_b-[zz]], 
+                  O),
    O / [nested, length] ^= [Nested, Length],
    assertion(Length == [empty]),
    is_assoc(Nested),
-   get_assoc(a, Nested, Value1),
-   get_assoc(b, Nested, Value2),
-   assertion(Value1 == 1),
-   assertion(Value2 == 3).
+   get_assoc(test_pred10_a, Nested, NO1),
+   get_assoc(test_pred10_b, Nested, NO2),
+   assertion(NO1/z =^= z),
+   assertion(NO2/zz =^= zz).
 
 test(options_to_assoc8) :-
-   options_object(test_pred10, [a-1, length(4), b-3, length(5)], O),
+   options_object(test_pred10, 
+                  [test_pred10_a-[z], length(4), 
+                   test_pred10_b-[zz], length(5)], O),
    O / [nested, length] ^= [Nested, Length1],
    msort(Length1, Length),
    assertion(Length == [length(4), length(5)]),
    is_assoc(Nested),
-   get_assoc(a, Nested, Value1),
-   get_assoc(b, Nested, Value2),
-   assertion(Value1 == 1),
-   assertion(Value2 == 3).
+   get_assoc(test_pred10_a, Nested, NO1),
+   get_assoc(test_pred10_b, Nested, NO2),
+   assertion(NO1/z =^= z),
+   assertion(NO2/zz =^= zz).
 
 test(single_option_nonrep, [setup(setup_options)]) :-
 
@@ -284,7 +290,9 @@ setup_options :-
                 option(length/1), option(length/2),
                 default([empty, length(1, 80)]),
                 meta_option(length_pred/1)],
-               [meta_option(generator/1)]]).
+               [meta_option(generator/1)]]),
+   ur_options(global:test_pred10_a, [[option(z/0)]]),
+   ur_options(global:test_pred10_b, [[option(zz/0)]]).
 
 test_pred1(_).
 test_pred2(_).
