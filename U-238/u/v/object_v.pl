@@ -150,8 +150,8 @@ list_member_gen(Field, OM:Options0, OM:Options, Value, Value) :-
 
 :- meta_predicate enum_member_gen(+, :, -, ?, -).
 
-enum_member_gen(Field, OM:Options0, OM:Options, 
-                enum(Enum, Integer), enum(Enum, Integer)) 
+enum_member_gen(Field, OM:Options0, OM:Options,
+                enum(Enum, Integer), enum(Enum, Integer))
 :-
    options_to_object(global:Field, Options0, Options1),
    functor(Options1, OptionsClass, _),

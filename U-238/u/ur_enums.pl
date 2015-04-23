@@ -1,5 +1,6 @@
 :- module(ur_enums,
           [assert_enum/1,             % +List
+           basic_enum_field/2,        % ?Field0, ?Field
            enum_integer/2,            % ?Enum, ?Integer
            enum_size/1,               % -Size
            global_cardinality_enum/2  % +Vs, +Pairs
@@ -24,7 +25,19 @@ assert_enum(Module:List) :-
    must_be(list, List),
    forall(member(Enum, List), must_be(atom, Enum)),
    retractall(enum_integer(Module, _, _)), !,
-   forall(nth0(Integer, List, Enum), assertz(enum_integer(Module, Enum, Integer))).
+   forall(nth0(Integer, List, Enum), 
+          assertz(enum_integer(Module, Enum, Integer))).
+
+
+%% basic_enum_field(?Field0, ?Field)
+%
+% Basic enum field is that one which ends with '#'.
+% Add '#' iff Field0 doesn't contain it.
+%
+basic_enum_field(Field0, Field) :-
+   atom_concat(Field0, '#', Field),
+   \+ atom_concat(_, '#', Field0), !.
+basic_enum_field(Field, Field).
 
 :- meta_predicate enum_integer(:, :).
 

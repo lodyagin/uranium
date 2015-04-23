@@ -13,4 +13,13 @@ test(test1) :-
 test(test2, fail) :-
    enum_size(nonexisting_module:_).
 
+test(basic_enum_field) :-
+  basic_enum_field(a, X),
+  assertion(X == 'a#'),
+  basic_enum_field(a, 'a#'),
+  basic_enum_field('a#', Y),
+  assertion(Y == 'a#'),
+  basic_enum_field(Z, 'a#'),
+  assertion(Z == a).
+
 :- end_tests(ur_enums).
