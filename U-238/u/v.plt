@@ -230,7 +230,6 @@ test(eval_obj_expr4_compound1,
    (p(M1, A1) = p(M2, _)) / name ^= _.
 
 test(eval_obj_expr4_compound2) :-
-
    obj_construct(man_v, [name], ['Sergei'], M1),
    obj_construct(man_v, [name], ['Artemiy'], M2),
    obj_construct(www_address_v, [http_request_url],
@@ -336,6 +335,12 @@ test(eval_obj_expr11_1, [fail]) :-
 
 test(eval_obj_expr11_2, [fail]) :-
    eval_obj_expr(_ / fld, fail, _).
+
+test(eval_obj_expr12, L2 == [m1, m1, m1]) :-
+   length(L, 3), 
+   maplist(obj_construct(man_v, [name], [m1]), L), 
+   obj_construct(man_v, [sex], [L], M2), 
+   M2 / sex / name ^= L2.
 
 test(obj_construct_with_evals1) :-
 

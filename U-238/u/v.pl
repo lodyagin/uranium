@@ -245,7 +245,7 @@ findall_fields(Obj, Native, Eval, Fields) :-
    % NB: we can't get values with attached attributes with findall.
    class_fields(_, Class_Id, Native, Eval, Fields1),
    findall_fields_int(Obj, Class_Id, Fields1, Fields, Ctx).
-   
+
 :- meta_predicate findall_fields(3, +, ?, ?, -).
 
 %% findall_fields(:Filter, +Obj, ?Native, ?Eval, -Fields) is det.
@@ -266,7 +266,7 @@ findall_fields(Filter, Obj, Native, Eval, Fields) :-
    % NB: we can't get values with attached attributes with findall.
    class_fields(_, Class_Id, Native, Eval, Fields1),
    findall_fields_int(Filter, Obj, Class_Id, Fields1, Fields, Ctx).
-   
+
 findall_fields_int(_, _, [], [], _) :- !.
 findall_fields_int(Obj, Class_Id, [Name|F], [v(Name, Value, Type)|V], Ctx):-
    obj_field_int(Class_Id, Name, throw, Obj, Value, Type, Ctx),
@@ -525,7 +525,7 @@ obj_downcast_int(From_Class-From_Class_Id, To_Class-To_Class_Id,
       reverse(Path2, Path),
       class_rebase_int(Path, [To_Class_Id|_], _, Ctx),
       From_Class_Id \== To_Class_Id % is it needed?
-   -> true 
+   -> true
    ;  throw(not_downcast(From_Class, To_Class))
    ),
 
@@ -765,6 +765,14 @@ eval_obj_expr(Expr, Weak0, Value) :-
                [fail]], Weak0, Weak, Ctx),
    eval_obj_expr_cmn(Expr, Weak, Value, _, Ctx).
 
+value_type(Variable, variable) :- var(Variable), !.
+value_type([], list) :- !.
+value_type([_|_], list) :- !.
+value_type(Object, object) :- u_object(Object), !.
+value_type(Compound, compound) :- compound(Compound), !.
+value_type(_, value).
+
+% eval_obj_expr_cmn(?Variable, +Weak, -Variable, -Type, +Ctx)
 eval_obj_expr_cmn(Variable, _, Variable, variable, _) :-
    var(Variable), !.
 
@@ -783,9 +791,9 @@ eval_obj_expr_cmn(Obj_Expr / Fields, Weak, Value, list, Ctx) :-
 % NB with Weak = weak '/' is the same as '//'
 eval_obj_expr_cmn(Obj_Expr / Field, Weak, Value, Type, Ctx) :-
    !,
-   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type, Ctx),
-   (   eval_obj_field(Type, Value1, Weak, Field, Value, Ctx)
-   *-> true
+   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type1, Ctx),
+   (   eval_obj_field(Type1, Value1, Weak, Field, Value, Ctx)
+   *-> value_type(Value, Type)
    ;   Weak == hold
    ->  Value = Value1 / Field
    ;   fail
@@ -793,9 +801,10 @@ eval_obj_expr_cmn(Obj_Expr / Field, Weak, Value, Type, Ctx) :-
 
 eval_obj_expr_cmn(Obj_Expr // Field, Weak, Value, Type, Ctx) :-
    !,
-   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type, Ctx),
+   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type1, Ctx),
    (  Weak == hold -> Weak1 = hold ; Weak1 = weak ),
-   eval_obj_field(Type, Value1, Weak1, Field, Value, Ctx).
+   eval_obj_field(Type1, Value1, Weak1, Field, Value, Ctx),
+   value_type(Value, Type).
 
 eval_obj_expr_cmn(List, _, List, list, _) :-
    nonvar(List), List = [], !.
@@ -822,7 +831,7 @@ eval_obj_expr_cmn(Compound, _, Value, compound, Ctx) :-
 
 eval_obj_expr_cmn(Value, _, Value, value, _) :- !.
 
-eval_obj_expr_cmn_p1(Ctx, Obj_Expr, Value) :- 
+eval_obj_expr_cmn_p1(Ctx, Obj_Expr, Value) :-
    eval_obj_expr_cmn(Obj_Expr, hold, Value, _, Ctx).
 
 eval_obj_field(db, @(DB_Key)->Object, _, Field, Value, _) :-
@@ -1122,7 +1131,7 @@ field_pretty_print(_, _, functor) :- !.
 field_pretty_print(Options, Object, Field) :-
 
   named_arg(Object, Field, Value, Type),
-  (  ( var(Value), term_attvars(Value, []) 
+  (  ( var(Value), term_attvars(Value, [])
      ; memberchk(hide_field(Field), Options)
      )
   -> true
@@ -1143,7 +1152,7 @@ field_pretty_print(Options, Object, Field) :-
      %exclude_lf(Options, O2),
      obj_pretty_print(O2, Pretty_Value)
      %log_piece([], Options)
-  ;  Pretty_Value = [_|_] 
+  ;  Pretty_Value = [_|_]
   -> log_piece([Field, ':'], Options),
      change_indent(Options, O2, 2),
      maplist(type_pretty_print(O2), Pretty_Value)
@@ -1158,7 +1167,7 @@ field_pretty_print(Options, Object, Field) :-
 %attrs_pretty_print(Options, Pretty_Value_Attr_Vars)
   %;  true, writeln('!!!! attrs not found')
   %).
-     
+
 attrs_pretty_print(Opts, Var) :-
   var(Var), !,
   (  get_attrs(Var, Attrs)
