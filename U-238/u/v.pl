@@ -93,6 +93,7 @@
            op(700, xfx, =^=),
            op(700, xfx, ^=),
            % todo: move to u(vexpr)
+           op(400, yfx, /><),
            op(200, fy, @),
 
            (=^=)/2,
@@ -806,6 +807,18 @@ eval_obj_expr_cmn(Obj_Expr // Field, Weak, Value, Type, Ctx) :-
    eval_obj_field(Type1, Value1, Weak1, Field, Value, Ctx),
    value_type(Value, Type).
 
+% unfold list one level
+eval_obj_expr_cmn(Obj_Expr />< Field, Weak, Value, Type, Ctx) :-
+   !,
+   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type1, Ctx),
+   (   Type1 \== list -> Type2 = Type1 ; Type2 = list_to_unfold ),
+   (   eval_obj_field(Type2, Value1, Weak, Field, Value, Ctx)
+   *-> value_type(Value, Type)
+   ;   Weak == hold
+   ->  Value = Value1 / Field
+   ;   fail
+   ).
+
 eval_obj_expr_cmn(List, _, List, list, _) :-
    nonvar(List), List = [], !.
 
@@ -856,6 +869,9 @@ eval_obj_field(_, _, hold, _, _, _) :- !, fail.
 eval_obj_field(list, List, Weak, Field, Value, Ctx) :- !,
    maplist(eval_obj_field_p1(Field, Weak, Ctx), List, Value).
 
+eval_obj_field(list_to_unfold, List, Weak, Field, Value, Ctx) :- !,
+   unfold(eval_obj_field_p1(Field, Weak, Ctx), List, [], Value).
+
 eval_obj_field(compound, Compound, Weak, Field, Value, Ctx) :- !,
    Compound =.. [Functor|Expr_List],
    eval_obj_field(list, Expr_List, Weak, Field, Val_List, Ctx),
@@ -875,6 +891,14 @@ eval_obj_field(variable, _, fail, _, _, _) :-
 
 eval_obj_field_p1(Field, Weak, Ctx, Element, Value) :-
    eval_obj_expr_cmn(Element / Field, Weak, Value, _, Ctx).
+
+:- meta_predicate unfold(2, +, +, -).
+
+unfold(_, [], L, L) :- !.
+unfold(Pred, [A|TA], L0, L) :-
+   call(Pred, A, LA),
+   append(L0, LA, L1),
+   unfold(Pred, TA, L1, L).
 
 % eval_list_obj_expr(+FieldsList, +Object, +Weak, -ValList0, -ValList1, +Ctx)
 % It is called for Object / List
