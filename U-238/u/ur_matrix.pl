@@ -1,13 +1,15 @@
 :- module(ur_matrix,
-          [mapmatrix/3,  % :Pred, ?M1, ?M2
-           propagate/3,  % +Vector, +Multiply, -Matrix
-           propagate/4,  % :Copy, +Vector, +Multiply, -Matrix
-           unify/2       % ?M1, ?M2
+          [mapmatrix/3,      % :Pred, ?M1, ?M2
+           propagate/3,      % +Vector, +Multiply, -Matrix
+           propagate/4,      % :Copy, +Vector, +Multiply, -Matrix
+           skip_mapmatrix/3, % :Pred, ?M1, ?M2
+           unify/2           % ?M1, ?M2
           ]).
 
 :- use_module(library(error)).
 :- use_module(library(clpfd)). % for transpose
 :- use_module(u(internal/check_arg)).
+%:- use_module(u(ur_lists)).
 
 %% propagate(+Vector, +Multiply, -Matrix) is det.
 %
@@ -55,12 +57,30 @@ propagate_vertically(Copy, V, K, M0, M) :-
 
 %% mapmatrix(:Pred, ?M1, ?M2) is det.
 %
-% The same as maplist/3 but for matrix.
+% The same as maplist/3 but for matrices.
 %
 mapmatrix(_, [], []) :- !.
 mapmatrix(Pred, [V1|T1], [V2|T2]) :-
    maplist(Pred, V1, V2),
    mapmatrix(Pred, T1, T2).
+
+
+:- meta_predicate skip_mapmatrix(2, ?, ?).
+
+%% skip_mapmatrix(:Pred, ?M1, ?M2) is det.
+%
+% The same as skip_maplist/3 but for matrices.
+%
+skip_mapmatrix(_, [], []) :- !.
+skip_mapmatrix(Pred, M1, M2) :-
+   (  M1 = [V1|T1],
+      M2 = [V2|T2],
+      maplist(Pred, V1, V2)
+   -> skip_mapmatrix(Pred, T1, T2)
+   ;  ur_lists:skip_one_element(M1, MM1),
+      ur_lists:skip_one_element(M2, MM2),
+      skip_mapmatrix(Pred, MM1, MM2)
+   ).
 
 %% unify(?M1, ?M2) is semidet.
 %
