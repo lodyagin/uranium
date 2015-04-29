@@ -16,4 +16,8 @@ test(propagate_vertically, M==[[a, b, c], [a, b, c]]) :-
 test(propagate_horisontally, M==[[a, a], [b, b], [c, c]]) :-
    propagate([[a], [b], [c]], 2, M).
 
+test(mapmatrix, M2 == [[2,3], [12, 13]]) :-
+   M1 = [[1,2], [11, 12]],
+   mapmatrix(succ, M1, M2).
+
 :- end_tests(ur_matrix).
