@@ -51,8 +51,8 @@ propagate_vertically(Copy, V, K, M0, M) :-
 
 
 
-%% unify(+M1, +M2) is det.
+%% unify(+M1, +M2) is semidet.
 %
-% Unify cells of M1 with the first free variables of M2. If M2 have no 
-% free variables but M1 has do it in other direction.
-%
+% Unify cells of M2 with the first free variables of M1. If M1 have no 
+% free variables but M2 has do it in other direction. If both have not
+% than fails.
