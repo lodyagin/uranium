@@ -71,6 +71,10 @@ mapmatrix(Pred, [V1|T1], [V2|T2]) :-
 % If M1 or M2 is just a matrix of free variables 
 % it works exactly as mapmatrix((=), M1, M2).
 %
-%unify(M1, M2) :-
-%   Ctx = context(unify/2, _),
-%   term_variables(M1, 
+unify(M1, M2) :-
+   mapmatrix(unify_cell, M1, M2).
+
+unify_cell(C1, C2) :-
+   term_variables(C1, [C2|_]), !.
+unify_cell(C1, C2) :-
+   term_variables(C2, [C1|_]).

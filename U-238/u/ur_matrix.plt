@@ -20,4 +20,28 @@ test(mapmatrix, M2 == [[2,3], [12, 13]]) :-
    M1 = [[1,2], [11, 12]],
    mapmatrix(succ, M1, M2).
 
+test(unify1, A == [[0.5, 6], [16, 13]]) :-
+   M = [[_/2, 3*_], [_+5, _+1]],
+   unify([[1, 2], [11, 12]], M),
+   mapmatrix(is, A, M).
+
+test(unify2, A == [[0.5, 6], [16, 13]]) :-
+   M = [[_/2, 3*_], [_+5, _+1]],
+   unify(M, [[1, 2], [11, 12]]),
+   mapmatrix(is, A, M).
+
+test(unify3, fail) :-
+   M = [[_/2, 3], [_+5, _+1]],
+   unify(M, [[1, 2], [11, 12]]).
+
+test(unify4, M1 == M2) :-
+   M1 = [[1, 2], [11, 12]],
+   M2 = [[_, _], [_, _]],
+   unify(M1, M2).
+
+test(unify5, M1 == M2) :-
+   M2 = [[1, 2], [11, 12]],
+   M1 = [[_, _], [_, _]],
+   unify(M1, M2).
+
 :- end_tests(ur_matrix).
