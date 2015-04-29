@@ -1,5 +1,6 @@
 :- module(ur_matrix,
-          [propagate/3   % +Vector, +Multiply, -Matrix
+          [compose/2,    % +M1, +M2
+           propagate/3   % +Vector, +Multiply, -Matrix
           ]).
 
 :- use_module(library(error)).
@@ -34,3 +35,8 @@ propagate_vertically(V, K, M0, M) :-
 
 
 
+%% compose(+M1, +M2) is det.
+%
+% Unify cells of M1 with the first free variables of M2. If M2 have no 
+% free variables but M1 has do it in other direction.
+%
