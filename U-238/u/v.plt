@@ -3,6 +3,7 @@
 :- use_module(u(internal/objects_i)).
 :- use_module(u(http/v/http_user_v)).
 :- use_module(u(util/lambda)).
+:- use_module(u(ur_lists)).
 
 test(class_create1, [setup(reload_classes)]) :-
    % test class_create/3 version
@@ -341,6 +342,17 @@ test(eval_obj_expr12, L2 == [m1, m1, m1]) :-
    maplist(obj_construct(man_v, [name], [m1]), L), 
    obj_construct(man_v, [sex], [L], M2), 
    M2 / sex / name ^= L2.
+
+test(eval_obj_expr13, NL == [m1]) :-
+   obj_construct(man_v, [name], [m1], V1),
+   obj_construct(www_address_v, [], [], V2),
+   skip_maplist(\V^N^((V, fail)/name^=N), [V1, V2], NL).
+
+%test(eval_obj_expr14, NL == [m1]) :-
+%   obj_construct(man_v, [name], [[W1, W2]], V1),
+%   obj_construct(www_address_v, [], [], W1),
+%   obj_construct(man_v, [name], [m1], W2),
+%   skip_maplist(\V^N^((V / name, skip) / name ^= N), V1, NL).
 
 test(obj_construct_with_evals1) :-
 

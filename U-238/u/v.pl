@@ -754,7 +754,7 @@ obj_sort_parents(Obj0, Class_Order, Obj) :-
 
 eval_obj_expr(Expr, Value) :-
    Ctx = context(eval_obj_expr/2, _),
-   eval_obj_expr_cmn(Expr, throw, Value, _, Ctx).
+   eval_obj_expr_cmn(Expr, throw, _, Value, _, Ctx).
 
 % Weak = hold - do not process the value at all
 
@@ -762,9 +762,9 @@ eval_obj_expr(Expr, Weak0, Value) :-
    Ctx = context(eval_obj_expr/3, _),
    decode_arg([[throw, strict],
                [weak],
-	       [hold],
+	       [hold], % hold means keep the unresolved expression as it is
                [fail]], Weak0, Weak, Ctx),
-   eval_obj_expr_cmn(Expr, Weak, Value, _, Ctx).
+   eval_obj_expr_cmn(Expr, Weak, _, Value, _, Ctx).
 
 value_type(Variable, variable) :- var(Variable), !.
 value_type([], list) :- !.
@@ -773,15 +773,15 @@ value_type(Object, object) :- u_object(Object), !.
 value_type(Compound, compound) :- compound(Compound), !.
 value_type(_, value).
 
-% eval_obj_expr_cmn(?Variable, +Weak, -Variable, -Type, +Ctx)
-eval_obj_expr_cmn(Variable, _, Variable, variable, _) :-
+% eval_obj_expr_cmn(?Variable, +Weak0, -Weak, -Variable, -Type, +Ctx)
+eval_obj_expr_cmn(Variable, Weak, Weak, Variable, variable, _) :-
    var(Variable), !.
 
-eval_obj_expr_cmn(_ / [], _, [], [], _) :- !.
+eval_obj_expr_cmn(_ / [], Weak, Weak, [], [], _) :- !.
 
-eval_obj_expr_cmn(Obj_Expr / Fields, Weak, Value, list, Ctx) :-
+eval_obj_expr_cmn(Obj_Expr / Fields, Weak0, Weak, Value, list, Ctx) :-
    Fields = [_|_], !,
-   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type1, Ctx),
+   eval_obj_expr_cmn(Obj_Expr, Weak0, Weak, Value1, Type1, Ctx),
    (   Type1 == object
    ->  eval_list_obj_expr(Fields, Value1, Weak, [], Value, Ctx)
    ;   Type1 == db
@@ -790,9 +790,9 @@ eval_obj_expr_cmn(Obj_Expr / Fields, Weak, Value, list, Ctx) :-
    ).
 
 % NB with Weak = weak '/' is the same as '//'
-eval_obj_expr_cmn(Obj_Expr / Field, Weak, Value, Type, Ctx) :-
+eval_obj_expr_cmn(Obj_Expr / Field, Weak0, Weak, Value, Type, Ctx) :-
    !,
-   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type1, Ctx),
+   eval_obj_expr_cmn(Obj_Expr, Weak0, Weak, Value1, Type1, Ctx),
    (   eval_obj_field(Type1, Value1, Weak, Field, Value, Ctx)
    *-> value_type(Value, Type)
    ;   Weak == hold
@@ -800,17 +800,17 @@ eval_obj_expr_cmn(Obj_Expr / Field, Weak, Value, Type, Ctx) :-
    ;   fail
    ).
 
-eval_obj_expr_cmn(Obj_Expr // Field, Weak, Value, Type, Ctx) :-
+eval_obj_expr_cmn(Obj_Expr // Field, Weak0, Weak, Value, Type, Ctx) :-
    !,
-   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type1, Ctx),
+   eval_obj_expr_cmn(Obj_Expr, Weak0, Weak, Value1, Type1, Ctx),
    (  Weak == hold -> Weak1 = hold ; Weak1 = weak ),
    eval_obj_field(Type1, Value1, Weak1, Field, Value, Ctx),
    value_type(Value, Type).
 
 % unfold list one level
-eval_obj_expr_cmn(Obj_Expr />< Field, Weak, Value, Type, Ctx) :-
+eval_obj_expr_cmn(Obj_Expr />< Field, Weak0, Weak, Value, Type, Ctx) :-
    !,
-   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type1, Ctx),
+   eval_obj_expr_cmn(Obj_Expr, Weak0, Weak, Value1, Type1, Ctx),
    (   Type1 \== list -> Type2 = Type1 ; Type2 = list_to_unfold ),
    (   eval_obj_field(Type2, Value1, Weak, Field, Value, Ctx)
    *-> value_type(Value, Type)
@@ -819,33 +819,42 @@ eval_obj_expr_cmn(Obj_Expr />< Field, Weak, Value, Type, Ctx) :-
    ;   fail
    ).
 
-eval_obj_expr_cmn(List, _, List, list, _) :-
+% change the weakness
+eval_obj_expr_cmn((Obj_Expr, Weak0), _, Weak, Value, Type, Ctx) :-
+   !,
+   decode_arg([[throw, strict],
+               [weak],
+	       [hold],
+               [fail]], Weak0, Weak1, Ctx),
+   eval_obj_expr_cmn(Obj_Expr, Weak1, Weak, Value, Type, Ctx).
+
+eval_obj_expr_cmn(List, Weak, Weak, List, list, _) :-
    nonvar(List), List = [], !.
 
-eval_obj_expr_cmn(List, _, Value, list, Ctx) :-
+eval_obj_expr_cmn(List, Weak, Weak, Value, list, Ctx) :-
    nonvar(List), List = [_|_], !,
    maplist(eval_obj_expr_cmn_p1(Ctx), List, Value).
 
 %TODO all evals to u(vexpr)
-eval_obj_expr_cmn(@(DB_Key), _, @(DB_Key), db, Ctx) :- !,
+eval_obj_expr_cmn(@(DB_Key), Weak, Weak, @(DB_Key), db, Ctx) :- !,
    check_db_key(DB_Key, Ctx).
 
-eval_obj_expr_cmn(@(DB_Key)->Object, _, @(DB_Key)->Object, db, Ctx) :- !,
+eval_obj_expr_cmn(@(DB_Key)->Object, Weak, Weak, @(DB_Key)->Object, db, Ctx) :- !,
    check_db_key(DB_Key, Ctx).
 
-eval_obj_expr_cmn(Object, _, Object, object, _) :-
+eval_obj_expr_cmn(Object, Weak, Weak, Object, object, _) :-
    u_object(Object), !.
 
-eval_obj_expr_cmn(Compound, _, Value, compound, Ctx) :-
+eval_obj_expr_cmn(Compound, Weak, Weak, Value, compound, Ctx) :-
    compound(Compound), !,
    Compound =.. [Fun|List],
-   eval_obj_expr_cmn(List, _, Value_List, _, Ctx),
+   eval_obj_expr_cmn(List, _, _, Value_List, _, Ctx),
    Value =.. [Fun|Value_List].
 
-eval_obj_expr_cmn(Value, _, Value, value, _) :- !.
+eval_obj_expr_cmn(Value, Weak, Weak, Value, value, _) :- !.
 
 eval_obj_expr_cmn_p1(Ctx, Obj_Expr, Value) :-
-   eval_obj_expr_cmn(Obj_Expr, hold, Value, _, Ctx).
+   eval_obj_expr_cmn(Obj_Expr, hold, _, Value, _, Ctx).
 
 eval_obj_field(db, @(DB_Key)->Object, _, Field, Value, _) :-
    named_args_unify(DB_Key, _, [Field], [Value], Object).
@@ -890,7 +899,7 @@ eval_obj_field(variable, _, fail, _, _, _) :-
    !, fail.
 
 eval_obj_field_p1(Field, Weak, Ctx, Element, Value) :-
-   eval_obj_expr_cmn(Element / Field, Weak, Value, _, Ctx).
+   eval_obj_expr_cmn(Element / Field, Weak, _, Value, _, Ctx).
 
 :- meta_predicate unfold(2, +, +, -).
 
@@ -906,7 +915,7 @@ eval_list_obj_expr([], _, _, Value, Value, _).
 eval_list_obj_expr([Expr_Tail|Tail], Obj, Weak, Value0,
                    [V|Value1], Ctx) :-
    eval_list_build_obj_expr(Obj, Expr_Tail, Expr),
-   eval_obj_expr_cmn(Expr, Weak, V, _, Ctx),
+   eval_obj_expr_cmn(Expr, Weak, _, V, _, Ctx),
    eval_list_obj_expr(Tail, Obj, Weak, Value0, Value1, Ctx).
 
 eval_list_build_obj_expr(Obj, Field, Obj / Field) :-
@@ -1168,7 +1177,7 @@ field_pretty_print(Options, Object, Field) :-
   ),
 
   (  var(Pretty_Value)
-  -> term_attvars(Pretty_Value, Pretty_Value_Attr_Vars)
+  -> true %term_attvars(Pretty_Value, Pretty_Value_Attr_Vars)
   ;  u_object(Pretty_Value)
   -> log_piece([Field, ':'], Options),
      change_indent(Options, O2, 2),
@@ -1410,12 +1419,12 @@ A ^= B :-
    A1 = B1.
 
 eval_obj_expr_both_sides(A, B, A1, B1, Ctx) :-
-   eval_obj_expr_cmn(A, throw, A1, _, Ctx),
+   eval_obj_expr_cmn(A, throw, _, A1, _, Ctx),
    (  % prevent eval_obj_expr_cmn hangup when B is [...| Tail ] (incomplete)
       nonvar(A1), ( A1 = [] ; A1 = [_|_] )
    -> length(A1, AL), length(B, AL)
    ;  true
    ),
-   eval_obj_expr_cmn(B, throw, B1, _, Ctx).
+   eval_obj_expr_cmn(B, throw, _, B1, _, Ctx).
 
 :- initialization clear_decode_arg.
