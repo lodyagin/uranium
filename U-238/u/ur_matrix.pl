@@ -9,6 +9,7 @@
 :- use_module(library(error)).
 :- use_module(library(clpfd)). % for transpose
 :- use_module(u(internal/check_arg)).
+:- use_module(u(ur_lambda)).
 %:- use_module(u(ur_lists)).
 
 %% propagate(+Vector, +Multiply, -Matrix) is det.
