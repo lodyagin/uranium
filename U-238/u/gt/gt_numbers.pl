@@ -43,6 +43,7 @@ random_number(Number) :-
    random_number_cmn([], _, Number, Number, Ctx).
 
 :- meta_predicate random_number(:, -, -).
+:- meta_predicate random_number(:, -, ?, -).
 
 %% random_number(+Options0, -Options, -Number) is nondet.
 %
@@ -94,18 +95,18 @@ random_number_cmn(OM:Options0, Options, Num, Num, _) :-
    ).
 
 random_number_integer(Opt, Det, Generator, Seed1, Seed, Num) :-
-   obj_field(Opt, pattern, Patterns),
-
-   % NB Patterns are always non-empty due to defaults
-   random_member(Pattern1, Patterns, Det, Generator, Seed1, Seed2),
-
-   (  Pattern1 = range(Drep)
-   -> context_module(That),
-      Pattern = That:range_pattern(Drep)
-   ;  pattern(Pattern) = Pattern1,
-      must_be(callable, Pattern)
+   (  obj_field(Opt, fail, pattern, Patterns)
+   ->
+      random_member(Pattern1, Patterns, Det, Generator, Seed1, Seed2),
+      (  Pattern1 = range(Drep)
+      -> context_module(That),
+         Pattern = That:range_pattern(Drep)
+      ;  pattern(Pattern) = Pattern1,
+         must_be(callable, Pattern)
+      ),
+      call(Pattern, Num)
+   ;  true % suppose Num is already restricted to some clpfd domain
    ),
-   call(Pattern, Num),
    LogOpts ^= Opt // global_options // log_options,
    fd_random(LogOpts, Generator, Seed2, Seed, Num),
    (  Det == semidet -> ! ; true ).
