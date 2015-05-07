@@ -519,24 +519,8 @@ obj_construct_int(Class_Id, Field_Names, Weak, Field_Values,
    obj_unify_int(Class_Id, Field_Names, Weak1, Object,
                  Field_Values, Ctx).
 
-% obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx)
-% :-
-
-%    % whether to be det or nondet
-%    (   nonvar(Field_Name) -> Det = t ; Det = f ),
-%    (   objects:field_info(Class_Id, Field_Name, Type, _, Is_Eval),
-%        (  Is_Eval == true
-%        -> once(objects:field(Class_Id, Field_Name, Obj, Value))
-%        ;  objects:field(Class_Id, Field_Name, Obj, Value)
-%        )
-%    *-> (Det = t -> ! ; true)
-%    ;   obj_field_int_error(Class_Id, Weak, Field_Name, Det, Ctx)
-%    ).
-
 obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx) :-
-
    (   nonvar(Field_Name) -> Det = t ; Det = f ),
-
    (   objects:field_info(Class_Id, Field_Name, Type, _, Is_Eval)
    *->
        (   Is_Eval == true
@@ -545,7 +529,9 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx) :-
            once(objects:field(Class_Id, Field_Name, Obj, Value)),
            debug(evals, 'After the call: ~p',
                  [field(Class_Id, Field_Name, Obj, Value)])
-       ;   objects:field(Class_Id, Field_Name, Obj, Value)
+       ;   (  objects:field(Class_Id, Field_Name, Obj, Value)
+           -> true
+           ;  Weak == ignore )
        )
    ;
        obj_field_int_error(Weak, Field_Name, Obj, Ctx)

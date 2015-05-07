@@ -390,12 +390,12 @@ test(obj_construct_with_evals1) :-
 
 
 test(obj_construct_bug1) :-
-
    class_fields(man_v, Field_Names),
    obj_construct(man_v, Field_Names, Field_Names, Obj),
    Obj =.. [man_v, _|Field_Names2],
-
-   assertion(Field_Names == Field_Names2).
+   msort(Field_Names, Field_Names_S),
+   msort(Field_Names2, Field_Names2_S),
+   assertion(Field_Names_S == Field_Names2_S).
 
 test(obj_copy1) :-
 
@@ -463,11 +463,12 @@ test(obj_downcast2_rebased,
    arg(1, CC, CC_Class_Id),
    assertion(C2_Class_Id =\= CC_Class_Id).
 
-test(obj_field1, [Flds == Vals]) :-
-
+test(obj_field1, [FldsS == ValsS]) :-
    class_fields(citizen_v, Flds),
    obj_construct(citizen_v, Flds, Flds, Obj),
-   findall(Val, (obj_field(Obj, Fld, Val), member(Fld, Flds)), Vals).
+   findall(Val, (obj_field(Obj, Fld, Val), member(Fld, Flds)), Vals),
+   msort(Flds, FldsS),
+   msort(Vals, ValsS).
 
 test(obj_field2, [Flds3 == Flds4]) :-
 % Each eval field must be evaluable only once
@@ -485,6 +486,18 @@ test(obj_field3, [Surname == 'Grisha']) :-
    obj_field(Man, surname, Name),
    Name = 'Grisha',
    obj_field(Man, surname, Surname).
+
+test(obj_field_weak1) :-
+   obj_construct(man_v, [], [], M), 
+   obj_field(M, weak, mmm, _).
+
+test(obj_field_weak2, fail) :-
+   obj_construct(man_v, [name], [s], M), 
+   obj_field(M, weak, name, d).
+
+test(obj_field_ignore1) :-
+   obj_construct(man_v, [name], [s], M), 
+   obj_field(M, ignore, name, d).
 
 test(obj_field_bug1, [fail]) :-
 

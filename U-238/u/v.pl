@@ -146,6 +146,7 @@
 % This is standard Weak arg values used in this module
 std_weak_arg_values([[throw, throws, strict, s],
                      [unbound, weak, w],
+                     [ignore],
                      [fail, false, f]
                     ]).
 
