@@ -91,7 +91,9 @@ retractall_objects :-
    retractall(pretty_print(_, _, _, _)),
    retractall(rebased_class(_, _, _)),
    retractall(reinterpret(_, _, _, _)),
-   retractall(typedef_flag(_, _)).
+   retractall(typedef_flag(_, _)),
+   retractall(value_set(_, _, _, _, _)),
+   retractall(value_options(_, _, _)).
 
 
            

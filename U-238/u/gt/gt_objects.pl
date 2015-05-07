@@ -15,6 +15,7 @@
 :- use_module(library(assoc)).
 :- use_module(u(internal/check_arg)).
 :- use_module(u(internal/objects_i)).
+:- use_module(u(internal/ur_debug)).
 :- use_module(u(ur_option)).
 :- use_module(u(v)).
 :- use_module(u(logging)).
@@ -62,15 +63,36 @@ obj_fill_random_req([v(Name,Value0,Type)|T], Assoc, Module, GO0, GO,
    -> copy_term(O0, O1, _)
    ;  O1 = []
    ),
-   options_to_object(global:Name, Module:O1, O2),
-   obj_field(O2, global_options, GO0),
+   % merge defaults in assoc
+   (   u_object(O1) -> O2 = O1
+   ;   options_object(global:Name, Module:O1, strict, false, O2)
+   ),
+   options_object(global:Name, Module:[], Defaults0),
+
+   (  objects:value_options(Type, OptsPred, DefaultOptsModule:DefaultOpts0)
+   -> options_object(OptsPred,DefaultOptsModule:DefaultOpts0,DefaultOpts),
+      % reassert options as an object
+      retract(objects:value_options(Type, OptsPred, _)),
+      assertz_pred(classes,
+                   objects:value_options(Type, OptsPred, DefaultOpts))
+   ;  true
+   ),
+   (  % get default type options in a form of an object
+      objects:value_options(Type, _, DefaultOpts)
+   -> overwrite_options(Defaults0, DefaultOpts, Defaults1)
+   ;  Defaults1 = Defaults0
+   ),
+   overwrite_options(Defaults1, O2, O3),
+
+   obj_field(O3, global_options, GO0),
    % process gtrace option
-   obj_field(O2, gtrace, GTrace),
+   obj_field(O3, gtrace, GTrace),
    (  nonvar(GTrace) -> gtrace ; true ),
    % Replace the value of the field.
    % We always do replays to allow downcast of modified sub-values
    obj_rewrite(Obj0, [Name], [Value0], [Value1], Obj1),
-   objects:value_set(Type, Module:O2, Module:O, Value0, Value1),
+
+   objects:value_set(Type, Module:O3, Module:O, Value0, Value1),
    obj_field(O, global_options, GO1),
    obj_fill_random_req(T, Assoc, Module, GO1, GO, Obj1, Obj).
 

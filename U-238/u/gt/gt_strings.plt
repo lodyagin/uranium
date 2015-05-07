@@ -15,7 +15,6 @@ test(all_different_full) :-
   % Codes must be always a permutation of the Etalon
 
 test(empty_atom) :-
-  gtrace,
   findall(A, (between(1, 100, _),
 	      random_string([empty], _, atom(A))),
 	  AL),

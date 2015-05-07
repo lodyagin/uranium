@@ -47,7 +47,7 @@ new_class(ur_options_v, object_v,
            nested,         % nested (associative) options (when passed
                            % to ac class this part is for fields, it
                            % is a list of field_name - options_list pairs)
-           global_options
+           global_options,
            %gtrace         % if bound we will start gtrace in some
                            % places (like random generation
                            % procedures). This definition is silently
@@ -55,6 +55,7 @@ new_class(ur_options_v, object_v,
                            % option(gtrace/0)]. This field really
                            % absent in ur_options_v but will be added
                            % to classes generated with ur_options/2.
+           ignore_defaults % don't set default values if it is bound
           ]).
 
 new_class(gt_strings__random_string_options_v,
@@ -79,10 +80,12 @@ new_class(group_option_rule_v, option_rule_v, []).
 new_class(multi_group_option_rule_v, option_rule_v, []).
 
 'ur_options_v?'(Obj0, options_out, Obj) :-
-
-   obj_unify(Obj0, [class, options_in, weak], [Class, Options, Weak]),
+   obj_unify(Obj0, [class, options_in, weak, ignore_defaults], 
+             [Class, Options, Weak, IgnoreDefaults]),
    process_options(Options, Class, Weak, Obj0, Obj),
-   set_defaults(Class, Obj).
+   (  var(IgnoreDefaults)
+   -> set_defaults(Class, Obj)
+   ;  true ).
 
 set_defaults(DB, Obj) :-
 
@@ -97,16 +100,18 @@ set_defaults(DB, Obj) :-
           ).
 
 process_options([], _, _, Obj, Obj) :- !.
-
 process_options([K-V0|T], DB, Weak, Obj0, Obj) :- !,
-   obj_rewrite(Obj0, [nested, context_module], [Nested0, OptsModule], [Nested, OptsModule], Obj1),
+   obj_rewrite(Obj0, [nested, context_module], 
+               [Nested0, OptsModule], [Nested, OptsModule], Obj1),
    (  var(Nested0) -> empty_assoc(Nested1)
    ;  Nested1 = Nested0
    ),
-   options_to_object(global:K, OptsModule:V0, V),
+   (  u_object(V0) -> V = V0
+   ;  options_object(global:K, OptsModule:V0, strict, false, V)
+      % NB ignore defaults in assocs
+   ),
    put_assoc(K, Nested1, V, Nested), % accumulate assoc options
    process_options(T, DB, Weak, Obj1, Obj).
-
 process_options([Option|T], DB, Weak, Obj0, Obj) :-
    must_be(nonvar, Option),
    (  db_iterate(DB,

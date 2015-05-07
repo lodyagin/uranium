@@ -231,16 +231,26 @@ process_typedefs(Module) :-
 
      % value_set
      (  memberchk(value_set - VS_Head0, TD_List)
-     -> ( VS_Head0 = VS_Module:VS_Head -> true
+     -> ( VS_Head0 = ','(VS_Module:VS_Head, VS_Opts) -> true
+        ; VS_Head0 = ','(VS_Head, VS_Opts) -> VS_Module = Module
+        ; VS_Head0 = VS_Module:VS_Head -> true
         ; VS_Head0 = VS_Head, VS_Module = Module
         ),
         VS_Head =.. VS_Head_List,
-        append(VS_Head_List, [VS_Opt0, VS_Opt, VS_Value0, VS_Value], VS_Pred_List),
+        append(VS_Head_List, [VS_Opt0, VS_Opt, VS_Value0, VS_Value], 
+               VS_Pred_List),
         VS_Pred =.. VS_Pred_List,
-        Pred = (value_set(TD_Type, VS_Opt0, VS_Opt, VS_Value0, VS_Value) :- 
+        Pred = (value_set(TD_Type, VS_Opt0, VS_Opt, VS_Value0, VS_Value):- 
                 VS_Module:VS_Pred),
         objects:assertz(Pred),
-        debug(classes, 'objects:assertz(~p)', [Pred])
+        debug(classes, 'objects:assertz(~p)', [Pred]),
+        (  var(VS_Opts) -> true
+        ;  functor(VS_Pred, VS_Pred_Functor, _),
+           assertz_pred(classes, 
+                        objects:value_options(TD_Type, 
+                                              VS_Module:VS_Pred_Functor, 
+                                              Module:VS_Opts))
+        )
      ;  true
      ),
 
@@ -369,7 +379,8 @@ reload_all_classes :-
       % + reinterpret/4 :- ...
       % + typedef_flag/2
       % + pretty_print/4 :- ...
-      % + value_set/3 :- ...
+      % + value_set/5 :- ...
+      % + value_options/3
       % + db_pg:pl_pg_type/3
       % + downcast/4    :- ...
 

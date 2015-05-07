@@ -26,14 +26,16 @@
 :- module(ur_option,
           [extract_weak/5,       % :Pred, +Options0, -Options, -Weak, +Ctx
            options_group_list/3, % :Pred, +GroupName, -List
-           options_object/3,
-           options_object/4,
+           options_object/3,     % :Pred, +Options, -Object
+           options_object/5,     % :Pred, +Options, ?Weak0, ?UseDefaults0, 
+                                 % -Object
            options_predicate_to_options_class_name/2,
            options_to_object/3,  % :Pred, +Options, -Opt
            options_to_object/4,  % :Pred, +Options, +Weak, -Opt
+           overwrite_options/3,  % +Old, +New, -NewOpts
            retract_options/1,    % :Pred
-           ur_options/2         % :Pred, +Options
-           %ur_options_clear/1    % :Pred
+           ur_options/2          % :Pred, +Options
+           %ur_options_clear/1   % :Pred
            ]).
 
 /** <module> Options processing
@@ -44,6 +46,7 @@
 :- use_module(library(ordsets)).
 :- use_module(u(v)).
 :- use_module(u(vd)).
+:- use_module(u(util/lambda)).
 :- use_module(u(internal/decode_arg)).
 :- use_module(u(internal/check_arg)).
 :- use_module(u(internal/objects_i)).
@@ -54,9 +57,9 @@
 
 %% extract_weak(:Pred, +Options0, -Options, -Weak, +Ctx) is det.
 %
-% Extract weak options. As a side effect make sure that Options is an
-% option object corresponding to Options0.
-% @see std_weak_arg_values/1
+% Extract a how_weak options group. As a side effect make sure that
+% Options is an option object corresponding to Options0.  @see
+% std_weak_arg_values/1
 %
 extract_weak(Pred, Options0, Options, Weak, Ctx) :-
    options_to_object(Pred, Options0, Options),
@@ -85,6 +88,23 @@ options_group_list(Pred, GroupName, List) :-
 % Defines the option class naming rule
 options_predicate_to_options_class_name(Module:Pred, Class) :-
    format(atom(Class), '~a__~a_v', [Module, Pred]).
+
+%% overwrite_options(+Old, +New, -NewOpts) is det.
+%
+% Overwrite options values from Old by all bound values from New.
+%
+overwrite_options(Old, New, NewOpts) :-
+   findall_fields( \_^V^_^(nonvar(V), V \=@= [_]), % skip also 
+                                                   % not initialized
+                                                   % options multi_groups
+                   New, true, false, Vs),
+   findall(F, member(v(F, _, _), Vs), NewFields),
+   obj_combine(Old, New, NewFields, NewOpts).
+
+% C are combined fields from A and B.
+obj_combine(A, B, B_Fields, C) :-
+   obj_unify(B, B_Fields, B_Values),
+   obj_rewrite(A, B_Fields, _, B_Values, C).
 
 :- meta_predicate retract_options(:).
 
@@ -381,27 +401,34 @@ options_to_object(_, _:Object, _, Object) :-
    u_object(Object), !.
 options_to_object(Pred, M:Options, Weak, Object) :-
    must_be(list, Options),
-   options_object(Pred, M:Options, Weak, Object).
+   options_object(Pred, M:Options, Weak, true, Object).
 
 
 :- meta_predicate options_object(:, :, -).
+:- meta_predicate options_object(:, :, ?, +, -).
 
 options_object(Pred, Options, Object) :-
-   options_object_cmn(Pred, Options, strict, Object).
+   options_object_cmn(Pred, Options, strict, true, Object).
 
-options_object(Pred, Options, Weak0, Object) :-
-   Ctx = context(options_object/4, _),
+%% options_object(:Pred, +Options, ?Weak0, ?UseDefaults0, -Object) is det.
+options_object(Pred, Options, Weak0, UseDefaults0, Object) :-
+   Ctx = context(options_object/5, _),
    decode_arg([[strict],
                [_, weak]],
               Weak0, Weak, Ctx),
-   options_object_cmn(Pred, Options, Weak, Object).
+   decode_arg([[true, _, t],
+               [false, fail, f]],
+               UseDefaults0, UseDefaults, Ctx),
+   options_object_cmn(Pred, Options, Weak, UseDefaults, Object).
 
-options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak, Object) :-
+options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak, 
+                   UseDefaults, Object) :-
+   memberchk(UseDefaults-IgnoreDefaults, [true-_, false-ignore]),
    options_predicate_to_options_class_name(Pred_Module:Pred, Class),
    obj_construct(Class,
-                 [options_in, options_out, context_module, weak],
-                 [Options, Object, Opts_Module, Weak],
-                 _).
+      [options_in, options_out, context_module, weak, ignore_defaults],
+      [Options, Object, Opts_Module, Weak, IgnoreDefaults],
+      _).
 
 :- initialization clear_decode_arg.
 
