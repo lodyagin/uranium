@@ -504,6 +504,29 @@ test(obj_field_bug1, [fail]) :-
    obj_construct(citizen_v, [sex], [woman], Obj),
    obj_field(Obj, sex, man).
 
+test(obj_unify1, [Flds == Vals]) :-
+   class_fields(citizen_v, Flds),
+   obj_construct(citizen_v, Flds, Flds, Obj),
+   obj_unify(Obj, Flds, Vals).
+
+test(obj_unify2, [Surname == 'Grisha']) :-
+   obj_construct(man_v, [], [], Man),
+   obj_unify(Man, [name, surname], [Name, Name]),
+   Name = 'Grisha',
+   obj_field(Man, surname, Surname).
+
+test(obj_unify_weak1) :-
+   obj_construct(man_v, [name, surname], [s, l], M), 
+   obj_unify(M, weak, [name, mmm, surname], [s, a, l]).
+
+test(obj_unify_weak2, fail) :-
+   obj_construct(man_v, [name, surname], [s, l], M), 
+   obj_unify(M, weak, [name, surname], [a, _]).
+
+test(obj_unify_ignore1, [Surname == l]) :-
+   obj_construct(man_v, [name, surname], [s, l], M), 
+   obj_unify(M, ignore, [name, surname], [a, Surname]).
+
 test(findall_fields,
      [Flds =@= [v(height, H, _), v(name, 'Vasia', _), v(sex, _, man_v_sex_t),
              v(surname, 'Pupkin', _), v(weight, W, _)]])
