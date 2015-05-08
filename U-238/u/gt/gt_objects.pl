@@ -69,6 +69,7 @@ obj_fill_random_req([v(Name,Value0,Type)|T], Assoc, Module, GO0, GO,
    ),
    options_object(global:Name, Module:[], Defaults0),
 
+   AddFieldSet = [gtrace, nested],
    (  objects:value_options(Type, OptsPred, DefaultOptsModule:DefaultOpts0)
    -> options_object(OptsPred,DefaultOptsModule:DefaultOpts0,DefaultOpts),
       % reassert options as an object
@@ -79,10 +80,10 @@ obj_fill_random_req([v(Name,Value0,Type)|T], Assoc, Module, GO0, GO,
    ),
    (  % get default type options in a form of an object
       objects:value_options(Type, _, DefaultOpts)
-   -> overwrite_options(Defaults0, DefaultOpts, Defaults1)
+   -> overwrite_options(Defaults0, DefaultOpts, AddFieldSet, Defaults1)
    ;  Defaults1 = Defaults0
    ),
-   overwrite_options(Defaults1, O2, O3),
+   overwrite_options(Defaults1, O2, AddFieldSet, O3),
 
    obj_field(O3, global_options, GO0),
    % process gtrace option

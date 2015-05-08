@@ -27,12 +27,13 @@
           [extract_weak/5,       % :Pred, +Options0, -Options, -Weak, +Ctx
            options_group_list/3, % :Pred, +GroupName, -List
            options_object/3,     % :Pred, +Options, -Object
-           options_object/5,     % :Pred, +Options, ?Weak0, ?UseDefaults0, 
+           options_object/5,     % :Pred, +Options, ?Weak0, ?UseDefaults0,
                                  % -Object
            options_predicate_to_options_class_name/2,
            options_to_object/3,  % :Pred, +Options, -Opt
            options_to_object/4,  % :Pred, +Options, +Weak, -Opt
-           overwrite_options/3,  % +Old, +New, -NewOpts
+           overwrite_options/4,  % +Old, +New, +AddOverwriteFields,
+                                 % -NewOpts
            retract_options/1,    % :Pred
            ur_options/2          % :Pred, +Options
            %ur_options_clear/1   % :Pred
@@ -89,16 +90,19 @@ options_group_list(Pred, GroupName, List) :-
 options_predicate_to_options_class_name(Module:Pred, Class) :-
    format(atom(Class), '~a__~a_v', [Module, Pred]).
 
-%% overwrite_options(+Old, +New, -NewOpts) is det.
+%% overwrite_options(+Old, +New, +AddOverwriteFields, -NewOpts) is det.
 %
-% Overwrite options values from Old by all bound values from New.
+% Overwrite options values from Old by all bound values from New. Use
+% only options introduced in New class + AddOverwriteFields
 %
-overwrite_options(Old, New, NewOpts) :-
-   findall_fields( \_^V^_^(nonvar(V), V \=@= [_]), % skip also 
+overwrite_options(Old, New, AddOverwriteFields0, NewOpts) :-
+   findall_fields( \_^V^_^(nonvar(V), V \=@= [_]), % skip also
                                                    % not initialized
                                                    % options multi_groups
                    New, true, false, Vs),
-   findall(F, member(v(F, _, _), Vs), NewFields),
+   (   setof(F, V^T^member(v(F, V, T), Vs), NewFields1) -> true; NewFields1 = []),
+   sort(AddOverwriteFields0, AddOverwriteFields1),
+   ord_union(NewFields1, AddOverwriteFields1, NewFields),
    obj_combine(Old, New, NewFields, NewOpts).
 
 % C are combined fields from A and B.
@@ -421,7 +425,7 @@ options_object(Pred, Options, Weak0, UseDefaults0, Object) :-
                UseDefaults0, UseDefaults, Ctx),
    options_object_cmn(Pred, Options, Weak, UseDefaults, Object).
 
-options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak, 
+options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak,
                    UseDefaults, Object) :-
    memberchk(UseDefaults-IgnoreDefaults, [true-_, false-ignore]),
    options_predicate_to_options_class_name(Pred_Module:Pred, Class),
