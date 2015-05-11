@@ -105,7 +105,7 @@ random_number_integer(Opt, Det, Generator, Seed1, Seed, Num) :-
          must_be(callable, Pattern)
       ),
       call(Pattern, Num)
-   ;  true % suppose Num is already restricted to some clpfd domain
+   ;  Seed2 = Seed1 % suppose Num is already restricted to some clpfd domain
    ),
    LogOpts ^= Opt // global_options // log_options,
    fd_random(LogOpts, Generator, Seed2, Seed, Num),
