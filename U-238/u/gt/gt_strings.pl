@@ -41,6 +41,7 @@
 :- use_module(u(rand/randgen)).
 :- use_module(u(ur_option)).
 :- use_module(u(v)).
+:- use_module(u(dict/dict)).
 
 random_string(Str) :-
    Ctx = context(random_string/1, _),
@@ -79,7 +80,8 @@ random_string_cmn(OM:Options0, Options, Str, Str, _) :-
        Options0 = Options % skip string generation
    ;
    options_to_object(random_string, OM:Options0, Options1),
-   (  random_options(Options1, Options, Det, Generator, Seed1, Seed, phase_match)
+   (  random_options(Options1, Options, Det, Generator, Seed1, Seed, 
+                     phase_match)
    ->
       obj_unify(Options1, [length, pattern], [Lengths, Patterns]),
       % NB Lengths and Patterns are always non-empty due to defaults
@@ -96,13 +98,24 @@ random_string_cmn(OM:Options0, Options, Str, Str, _) :-
          -> regex_pattern(Reg, Pattern)
          ;  Pattern1 = range(Drep)
          -> Pattern = That:range_pattern(Drep)
+         ;  Pattern1 = dict(_,_)
+         -> Pattern1 = Pattern
+         ;  Pattern1 = dict(Wildcard)
+         -> Pattern  = dict(u('dict/zali_translit.txt'), Wildcard)
          ;  pattern(Pattern) = Pattern1,
             must_be(callable, Pattern)
          ),
 
 	 LogOpts ^= Options / global_options / log_options,
-         random_string_int(LogOpts, Pattern, Generator, Seed3, Seed, Length,
-                           Codes),
+         % Length should be properly distributed, 
+         % so fix the length before other things
+         random_string_template(Generator, Seed3, Seed4, Length, Codes),
+         (  Pattern = dict(VocabFile, Wildcard)
+         -> load_random_word(VocabFile, Wildcard, Generator, Seed4, Seed,
+                             Codes)
+         ;  random_string_int(LogOpts, Pattern, Generator, Seed3, Seed, 
+                              Codes)
+         ),
          (  Det == semidet -> ! ; true  ),
 
          (   nonvar(Str), Str = atom(Atom)
@@ -114,20 +127,21 @@ random_string_cmn(OM:Options0, Options, Str, Str, _) :-
    )
    ).
 
-random_string_int(LogOpts, Pattern, Generator, Seed0, Seed, Length, Str) :-
+%!!! make nondet.
+random_string_template(Generator, Seed0, Seed, Length, Templ) :-
+   choose_length(Generator, Seed0, Seed, Length, N),
+   length(Templ, N).
 
-   choose_length(Generator, Seed0, Seed1, Length, N),
-   (  N =:= 0
+random_string_int(LogOpts, Pattern, Generator, Seed0, Seed, Str) :-
+   must_be(nonvar, Str), % Str must be a list of defined length
+   (  Str == []
    ->
-      Str = [],
-      Seed = Seed1
+      Seed = Seed0
    ;
       % Generate a string equation
-      length(Str, N),
       call(Pattern, Str),
-
       % Make a selection
-      randsel(LogOpts, Str, Generator, Seed1, Seed)
+      randsel(LogOpts, Str, Generator, Seed0, Seed)
   ).
 
 :- meta_predicate randsel(:, +, :, +, -).
@@ -157,10 +171,8 @@ choose_length(_, Seed, Seed, empty, 0) :- !.
 choose_length(_, Seed, Seed, length(N), N) :- !.
 choose_length(_, Seed, Seed, length(N, N), N) :- !.
 choose_length(Gen, Seed0, Seed, length(From, To), N) :-
-   call(Gen, Seed0, Seed),
-   End is To - From + 1,
-   random_integer(Seed, End, N1),
-   N is From + N1.
+   N in From..To,
+   fd_random(Gen, Seed0, Seed, N).
 
 range_pattern(Drep, Str) :-
 
