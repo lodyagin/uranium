@@ -1,5 +1,6 @@
 :- module(dict,
           [load_random_word/5,  % +Pattern, :Generator, +Rand_State0, -Rand_State, -String
+           load_random_word/6,  % +FileSpec, +Pattern, :Generator, +Rand_State0, -Rand_State, -String
            load_random_words/2, % Num, -Words
            format_word_list/2
            ]).
@@ -11,7 +12,7 @@
 :- use_module(u(rand/randgen)).
 
 n_words(96238).
-dict_file_name(FN) :- absolute_file_name(u('dict/zali_translit.txt'), FN).
+dict_file_name(u('dict/zali_translit.txt')).
 
 :- meta_predicate load_random_word(+, 2, +, -, -).
 
@@ -20,8 +21,11 @@ dict_file_name(FN) :- absolute_file_name(u('dict/zali_translit.txt'), FN).
 % Randomly select any word from dictionary. Select all other words (randomly) on BT.
 %
 load_random_word(Pattern, Generator, Rand_State0, Rand_State, String) :-
+    dict_file_name(File_Spec),
+    load_random_word(File_Spec, Pattern, Generator, Rand_State0, Rand_State, String).
+load_random_word(File_Spec, Pattern, Generator, Rand_State0, Rand_State, String) :-
     prepare_random_state(Generator, Rand_State0, Rand_State1),
-    dict_file_name(File_Name),
+    absolute_file_name(File_Spec, File_Name),
     file_to_lines_list(File_Name, Pattern, List),
     random_select(String, List, _, Generator, Rand_State1, Rand_State).
 
