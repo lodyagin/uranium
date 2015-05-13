@@ -7,7 +7,7 @@
 :- use_module(u(ur_lists)).
 
 n_words(96238).
-dict_file_name('dict/zali_translit.txt').
+dict_file_name(FN) :- absolute_file_name(u('dict/zali_translit.txt'), FN).
 
 load_random_words(Num, Words) :-
     n_words(Ceil),

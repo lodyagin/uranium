@@ -200,8 +200,8 @@ pairs_replace_functor(New_Functor, [El1|T1], [El2|T2]) :-
    pairs_replace_functor(New_Functor, T1, T2).
 
 key_order_compare(Order_SSI, Ord, AI - _, BI - _) :-
-    ord_memberchk(AI - K1, Order_SSI),
-    ord_memberchk(BI - K2, Order_SSI),
+    memberchk(AI - K1, Order_SSI),
+    memberchk(BI - K2, Order_SSI),
     compare(Ord, K1, K2).
 
 %  return difference between elements for numeric lists, i.e.
@@ -265,7 +265,7 @@ replace_all_sublists_dcg(From, To, List0, List) -->
 replace_all_sublists_dcg(From, To, [C|List0], List) -->
    [C], !,
    replace_all_sublists_dcg(From, To, List0, List).
-   
+
 replace_all_sublists_dcg(_, _, List, List) -->
    [].
 
@@ -458,7 +458,7 @@ weak_maplist(Pred, [Head1|Tail1], [Head2|Tail2], [Head3|Tail3]) :-
 %
 skip_maplist(_, [], []) :- !.
 skip_maplist(Pred, L1, L2) :-
-  (  L1 = [H1|T1], 
+  (  L1 = [H1|T1],
      L2 = [H2|T2],
      call(Pred, H1, H2)
   -> skip_maplist(Pred, T1, T2)
@@ -473,7 +473,7 @@ skip_maplist(Pred, L1, L2) :-
 %
 skip_maplist(_, [], [], []) :- !.
 skip_maplist(Pred, L1, L2, L3) :-
-  (  L1 = [H1|T1], 
+  (  L1 = [H1|T1],
      L2 = [H2|T2],
      L3 = [H3|T3],
      call(Pred, H1, H2, H3)
@@ -490,7 +490,7 @@ skip_maplist(Pred, L1, L2, L3) :-
 %
 skip_maplist(_, [], [], [], []) :- !.
 skip_maplist(Pred, L1, L2, L3, L4) :-
-  (  L1 = [H1|T1], 
+  (  L1 = [H1|T1],
      L2 = [H2|T2],
      L3 = [H3|T3],
      L4 = [H4|T4],
