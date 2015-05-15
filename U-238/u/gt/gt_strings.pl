@@ -40,6 +40,7 @@
 :- use_module(u(regex/regex)).
 :- use_module(u(rand/randgen)).
 :- use_module(u(ur_option)).
+:- use_module(u(ur_atoms)).
 :- use_module(u(v)).
 :- use_module(u(dict/dict)).
 
@@ -53,7 +54,7 @@ random_string(Str) :-
 %
 % Generates a random string. It is semidet if `semidet' option passed.
 %
-random_string(OM:Options0, OM:Options, Str) :- 
+random_string(OM:Options0, OM:Options, Str) :-
    Ctx = context(random_string/3, _),
    (  nonvar(Options), Options = OM:Options1
    -> true
@@ -66,7 +67,7 @@ random_string(OM:Options0, OM:Options, Str) :-
 % Generates a random string. If Str0 is nonvar then Str = Str0.
 % It is semidet if `semidet' option passed.
 %
-random_string(OM:Options0, OM:Options, Str0, Str) :- 
+random_string(OM:Options0, OM:Options, Str0, Str) :-
    Ctx = context(random_string/4, _),
    (  nonvar(Options), Options = OM:Options1
    -> true
@@ -76,19 +77,22 @@ random_string(OM:Options0, OM:Options, Str0, Str) :-
 
 random_string_cmn(OM:Options0, Options, Str, Str, _) :-
    (   nonvar(Str), ( Str = [_|_] ; Str = [] )
-   ->  
+   ->
        Options0 = Options % skip string generation
    ;
    options_to_object(random_string, OM:Options0, Options1),
-   (  random_options(Options1, Options, Det, Generator, Seed1, Seed, 
+   (  random_options(Options1, Options, Det, Generator, Seed1, Seed,
                      phase_match)
    ->
-      obj_unify(Options1, [length, pattern], [Lengths, Patterns]),
+      obj_unify(Options1,
+                [length, pattern, out_type],
+                [Lengths, Patterns, OutType]),
       % NB Lengths and Patterns are always non-empty due to defaults
       random_member(Pattern1, Patterns, Det, Generator, Seed1, Seed2),
 
-      (  Pattern1 = static(Str)
-      -> Seed = Seed2 % Just return a static value
+      (  Pattern1 = static(StaticStr)
+      -> smth_codes(StaticStr, Codes), % Just return a static value
+         Seed = Seed2
       ;
          random_member(Length, Lengths, Det, Generator, Seed2, Seed3),
 
@@ -107,21 +111,25 @@ random_string_cmn(OM:Options0, Options, Str, Str, _) :-
          ),
 
 	 LogOpts ^= Options / global_options / log_options,
-         % Length should be properly distributed, 
+         % Length should be properly distributed,
          % so fix the length before other things
          random_string_template(Generator, Seed3, Seed4, Length, Codes),
          (  Pattern = dict(VocabFile, Wildcard)
          -> load_random_word(VocabFile, Wildcard, Generator, Seed4, Seed,
                              Codes)
-         ;  random_string_int(LogOpts, Pattern, Generator, Seed3, Seed, 
+         ;  random_string_int(LogOpts, Pattern, Generator, Seed3, Seed,
                               Codes)
-         ),
-         (  Det == semidet -> ! ; true  ),
-
-         (   nonvar(Str), Str = atom(Atom)
-         ->  atom_codes(Atom, Codes)
-         ;   Str = Codes
          )
+      ),
+      (  Det == semidet -> ! ; true  ),
+      (   nonvar(Str), Str = atom(Atom)
+      ->  atom_codes(Atom, Codes)
+      ;   OutType == atom
+      ->  atom_codes(Str, Codes)
+      ;   OutType == string
+      ->  string_codes(Str, Codes)
+      ;   OutType == codes
+      ->  Str = Codes
       )
    ;  Options0 = Options
    )

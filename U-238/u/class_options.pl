@@ -56,7 +56,10 @@ setup_options :-
                 meta_option(pattern/1),
                 option(static/1),
                 option(dict/2), option(dict/1),
-                default([range(32..126)])]
+                default([range(32..126)])],
+               [group(out_type),
+                option(atom/0), option(string/0), option(codes/0),
+                default(string)]
                | Random
               ]),
    ur_options(gt_numbers:random_number,

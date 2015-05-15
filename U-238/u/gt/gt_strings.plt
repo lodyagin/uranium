@@ -9,7 +9,7 @@ test(all_different_full) :-
   Length is Last - First + 1,
   numlist(First, Last, Etalon),
   random_string([pattern(all_different_pat(First..Last)),
-                 length(Length)], _,
+                 length(Length), codes], _,
 		Codes),
   perm_check(Codes, Etalon).
   % Codes must be always a permutation of the Etalon
@@ -62,6 +62,15 @@ test(random_string_nondet,
            L), 
    flatten(L, SL),
    concat_atom(SL, Atom).
+
+test(random_string_out_type1, Str = "abc") :-
+   random_string([static("abc"), codes], _, Str).
+test(random_string_out_type2, Str = abc) :-
+   random_string([static("abc"), atom], _, Str).
+test(random_string_out_type3, Str = abc) :-
+   random_string([static("abc")], _, Str0),
+   assertion(string(Str0)),
+   atom_string(Str, Str0).
 
 % add test on only one lenth option
 
