@@ -88,7 +88,12 @@ options_group_list(Pred, GroupName, List) :-
 
 % Defines the option class naming rule
 options_predicate_to_options_class_name(Module:Pred, Class) :-
+   atom(Pred), !,
    format(atom(Class), '~a__~a_v', [Module, Pred]).
+options_predicate_to_options_class_name(Module:Pred0, Class) :-
+   functor(Pred0, Pred, _),
+   options_predicate_to_options_class_name(Module:Pred, Class).
+
 
 %% overwrite_options(+Old, +New, +AddOverwriteFields, -NewOpts) is det.
 %

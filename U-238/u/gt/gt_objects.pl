@@ -63,11 +63,17 @@ obj_fill_random_req([v(Name,Value0,Type)|T], Assoc, Module, GO0, GO,
    -> copy_term(O0, O1, _)
    ;  O1 = []
    ),
+   % select the options definition source
+   options_predicate_to_options_class_name(global:Name, FldOptsClass0),
+   (  class_name(FldOptsClass0)
+   -> FldOptsPred = global:Name
+   ;  clause(objects:value_set(Type, _, _, _, _), FldOptsPred), !
+   ),
    % merge defaults in assoc
    (   u_object(O1) -> O2 = O1
-   ;   options_object(global:Name, Module:O1, strict, false, O2)
+   ;   options_object(FldOptsPred, Module:O1, strict, false, O2)
    ),
-   options_object(global:Name, Module:[], Defaults0),
+   options_object(FldOptsPred, Module:[], Defaults0),
 
    AddFieldSet = [gtrace, nested],
    (  objects:value_options(Type, OptsPred, DefaultOptsModule:DefaultOpts0)
