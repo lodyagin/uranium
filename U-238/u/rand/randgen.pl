@@ -294,11 +294,13 @@ prepare_random_state(randgen:pcg32_1,
                      pcg32_state(S, I)) :- !.
 prepare_random_state(randgen:pcg32_1,
                      pcg32_init(SI, I0),
-                     pcg32_state(S, I)) :-
+                     pcg32_state(S, I)) :- !,
   I is (I0 << 1) \/ 1,
   pcg32_1(pcg32_state(0, I), pcg32_state(S1, I)),
   S2 is S1 + SI,
   pcg32_1(pcg32_state(S2, I), pcg32_state(S, I)).
+prepare_random_state(_, Rand_State, _) :-
+  throw(error(domain_error(random_state, Rand_State), _)).
 
 
 %% random_seed(+End, -Seed) is det.
@@ -313,4 +315,5 @@ random_seed(End, Seed) :- Seed is random(End).
 % Otherwise checks that Seed0 is integern and then Seed = Seed0.
 %
 random_seed(End, random_seed, Seed) :- !, random_seed(End, Seed).
-random_seed(End, Seed0, Seed) :- integer(Seed0), Seed is Seed0 mod End.
+random_seed(End, Seed0, Seed) :- integer(Seed0), !, Seed is Seed0 mod End.
+random_seed(_, Seed, _) :- throw(error(domain_error(random_state, Seed), _)).
