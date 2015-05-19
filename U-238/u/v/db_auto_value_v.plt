@@ -75,6 +75,24 @@ test(db_bind_auto,
            LOL).
 
 
+test(db_last_auto_value, 
+     [setup(db_clear(people)),
+      Value == 3]
+     ) :-
+   gtrace,
+   add_bind_to_db(people, man_v, name, succ, 0),
+   obj_construct(man_v, [], [], Man1),
+   db_bind_auto(people, Man1),
+   db_put_object(people, Man1),
+   obj_construct(man_v, [], [], Man2),
+   db_bind_auto(people, Man2),
+   db_put_object(people, Man2),
+   obj_construct(man_v, [], [], Man3),
+   db_bind_auto(people, Man3),
+   db_put_object(people, Man3),
+   db_last_auto_value(people, man_v, name, Value).
+   
+
 people_db :-
 
    db_clear(people),

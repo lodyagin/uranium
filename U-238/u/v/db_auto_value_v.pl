@@ -28,7 +28,9 @@
 :- module(db_auto_value_v,
           [
            add_bind_to_db/5,
-           db_bind_auto/2      % +DB_Key, ?Obj
+           db_bind_auto/2,      % +DB_Key, ?Obj
+           db_last_auto_value/4 % +DB_Key, +Class_Name, +Field_Name, 
+                                % -Value
            ]).
 
 /** <module> Autogeneration of object field values when put objects into DB
@@ -161,4 +163,22 @@ db_bind_auto(DB_Key, Obj) :-
           ).
 
 
-   
+%% db_last_auto_value(+DB_Key, +Class_Name, +Field_Name, -Value) is det.
+%
+% Returns the last value autoset for Class_Name and Field_Name in DB_Key.
+%
+db_last_auto_value(DB_Key, Class_Name, Field_Name, Value) :-
+   Ctx = context(db_last_auto_value/4, _),
+   check_db_key(DB_Key, Ctx),
+   check_inst(Class_Name, Ctx),
+   check_existing_class_arg(Class_Name, Ctx),
+   check_field_name(Field_Name, Ctx),
+   (  named_args_unify(DB_Key, _, 
+                       [class_name, field_name, auto_value_seed],
+                       [Class_Name, Field_Name, Value], AV_Obj),
+      obj_same_or_descendant(AV_Obj, db_auto_value_v)
+   -> true
+   ;  throw(error(existence_error(db_auto_value_v, 
+                                  [DB_Key, Class_Name, Field_Name]),
+                  Ctx))
+   ).
