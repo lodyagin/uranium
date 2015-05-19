@@ -555,7 +555,8 @@ db_key_is_valid(DB_Key) :-
    ground(DB_Key),
    (  atom(DB_Key)
    ;  compound(DB_Key),
-      functor(DB_Key, pg, _)
+      functor(DB_Key, Funct, _),
+      ( Funct = pg ; Funct = odbc )
    ), !.
 
 % db_unify_int(+DB_Key, +Fields, +Weak, ?Values, -Object)
