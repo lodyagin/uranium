@@ -30,13 +30,15 @@
            prepare_random_state/3, % :Gen, +Rand_State0, -Rand_State
            random_generator/4,
            random_integer/3, % +State, +End, -Value
-           random_member/5,  % -X, +List, :Generator, +Rand_State0, -Rand_State
-           random_member/6,  % -X, +List, +Det, :Generator, +Rand_State0, -Rand_State
+           random_member/5,  % -X, +List, :Generator, +Rand_State0, 
+                             % -Rand_State
+           random_member/6,  % -X, +List, +Det, :Generator, +Rand_State0, 
+                             % -Rand_State
            random_options/7, % +Options0, -Options, -Det,
-                             % -Generator, -Rand_State0, -Rand_State, -Phase_Match
+                             % -Generator, -Rand_State0, -Rand_State, 
+                             % -Phase_Match
            random_select/6,  % -X, +List, -Rest, :Generator,
                              % +Rand_State0, -Rand_State
-
            % PRNG implementations
            lcq_gnu/2,
            lcq_knuth/2,
