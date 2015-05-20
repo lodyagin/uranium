@@ -31,9 +31,13 @@
           [
            arg_bac/3,
            arg_bca/3,
+           chain_call/4,       % :Chain, +Weak, ?In, ?Out
            weak_arg_bac/3,
+           replace_subterms/3, % :Replacer, @Term0, -Term
            setarg_tnv/3
           ]).
+
+:- use_module(library(error)).
 
 % like arg but with different orders
 arg_bac(B, A, C) :- arg(A, B, C).
@@ -44,6 +48,65 @@ weak_arg_bac(B, A, C) :- ground(A), arg(A, B, C).
 
 
 setarg_tnv(Term, Number, Value) :-
+   setarg(Number, Term, Value).
 
-    setarg(Number, Term, Value).
+:- meta_predicate replace_subterms(2, +, -).
 
+%% replace_subterms(:Replacer, @Term0, -Term) is nondet.
+%
+% For Term0 and all subterms it calls Replacer/2. If the Replacer
+% succeeds replaces the subterm with the second argument of the
+% Replacer. Outer terms have a chance to be replaced earlier
+% than subterms (it goes down recursively). Det/nondet depends
+% on the Replacer.
+%
+% @param Replacer Replacer(@From, -To). Must not alter From. 
+%                 Also it is possible to have Replacer as a list.
+%                 In this case it will substitute Replacer
+%                 with chain_call(Replacer, skip).
+%
+replace_subterms(_:[], Term, Term) :- !.
+replace_subterms(M:Replacers, Term0, Term) :-
+   Replacers = [_|_], !,
+   replace_subterms(chain_call(M:Replacers, skip), Term0, Term).
+replace_subterms(Replacer, Term0, Term) :-
+   var(Term0), !,
+   ignore(call(Replacer, _, Term)). % NB doesn't touch Term0
+replace_subterms(Replacer, Term0, Term) :-
+   (  call(Replacer, Term0, Term1) -> true
+   ;  Term1 = Term0 % No replace, go further down
+   ),
+   (  compound(Term1)
+   -> Term1 =.. [Head1|Tail1],
+      maplist(replace_subterms(Replacer), Tail1, Tail),
+      Term =.. [Head1|Tail]  % never replace a head
+   ;  Term = Term1
+   ).
+
+:- meta_predicate chain_call(:, +, ?, ?).
+
+%% chain_call(:Chain, +Weak, ?In, ?Out) is nondet.
+%
+% Chain must be a list of Pred/2. Calls all Pred and passes In
+% to the first arg of the first Pred, the second arg of Pred to
+% the first arg of the next Pred in chain and the second arg
+% of the last Pred unifies with Out. Det/nondet depends on preds
+% in the chain.
+%
+% @param Weak fail - fail the chain if at least one pred in the Chain
+%             fails, skip - skip the failing preds from the chain.
+%
+chain_call(_:[], _, A, A) :- !.
+chain_call(M0:[Pred0|ChainTail], Weak, In, Out) :-
+   (  Pred0 = _:_
+   -> Pred = Pred0 
+   ;  Pred = M0:Pred0
+   ),
+   (  Weak == fail
+   -> call(Pred, In, Pass)
+   ;  Weak == skip
+   -> (  call(Pred, In, Pass) -> true ; Pass = In )
+   ;  must_be(oneof([fail, skip]), Weak)
+   ),
+   chain_call(M0:ChainTail, Weak, Pass, Out).
+   
