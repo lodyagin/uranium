@@ -72,6 +72,11 @@ setup_options :-
                 default([range(-100..100)])]
                | Random
               ]),
+   ur_options(gt_lists:random_sublist,
+              [[multi_group(length),
+                option(length/1),
+                default([length(0..max)])] % up to full length of src list
+              | Random ]),
    ur_options(ixpath:ixpath,
               [[group(v),
                 option(v/0),
