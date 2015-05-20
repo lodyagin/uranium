@@ -121,8 +121,8 @@ random_member_int(X, N, List, Generator, Rand_State0, Rand_State) :-
 
 :- meta_predicate random_options(+, -, -, -, -, -, -).
 
-%% random_options(+Options0, -Options, -Det, -Generator, -Rand_State0, -Rand_State,
-%%                ?Phase_Match) is det.
+%% random_options(+Options0, -Options, -Det, -Generator, 
+%%                -Rand_State0, -Rand_State, ?Phase_Match) is det.
 %
 % Extracts common random options. It combines Options0 and Options0 /
 % global_options / rand_options values. Options0 (local) values
@@ -132,7 +132,8 @@ random_member_int(X, N, List, Generator, Rand_State0, Rand_State) :-
 %   Options0/global_options/rand_options contains rand_state/1,2 Options
 %   will contain the rewritten rand_state value:
 %     rand_state(Rand_State0) -> rand_state(Rand_State),
-%     rand_state(Rand_State0, Rand_State) -> rand_state(Rand_State, Rand_State1)
+%     rand_state(Rand_State0, Rand_State) 
+%         -> rand_state(Rand_State, Rand_State1)
 % @param Phase_Match bound to {phase_match,
 %   phase_mismatch, true, false} or is unbound. phase_match means
 %   that phase in global options matches that one in local
@@ -142,7 +143,6 @@ random_member_int(X, N, List, Generator, Rand_State0, Rand_State) :-
 random_options(Options0, Options, Det, Generator,
                Rand_State0, Rand_State, Phase_Match
               ) :-
-
    obj_rewrite(Options0, weak,
                [generator, rand_state, det, global_options, phase],
                [Generator_Opt0, Rand_State_Opt0, Det0, GO0, Req_Phase],
