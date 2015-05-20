@@ -1,5 +1,6 @@
 :- begin_tests(ur_terms).
 :- use_module(u(ur_terms)).
+:- use_module(library(clpfd)).
 
 test(chain_call1, A==B) :-
    chain_call([], fail, A, B).
