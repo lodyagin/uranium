@@ -102,7 +102,8 @@ random_member(X, List, Det, Generator, Rand_State0, Rand_State) :-
 
 :- meta_predicate random_member(-, +, :, +, -).
 
-%% random_member(-X, +List, :Generator, +Rand_State0, -Rand_State) is semidet.
+%% random_member(-X, +List, :Generator, +Rand_State0, -Rand_State) 
+%%              is semidet.
 %
 % X is a random member of List. It is like random_member/2 but uses the
 % defined Generator and Rand_State.
@@ -231,7 +232,8 @@ random_select_int(X, N, List, Rest, Generator, Rand_State0, Rand_State) :-
    nth0(Idx, List, X1, Rest1),
    (  X = X1, Rest = Rest1, Rand_State1 = Rand_State
    ;  succ(N1, N),
-      random_select_int(X, N1, Rest1, Rest, Generator, Rand_State1, Rand_State)
+      random_select_int(X, N1, Rest1, Rest, Generator, 
+                        Rand_State1, Rand_State)
    ).
 
 
