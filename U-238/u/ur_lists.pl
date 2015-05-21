@@ -55,6 +55,8 @@
            remove_options/3, % +List0, +Remove, -List
            replace_all_sublists/4,
            replace_tail/4, % Tail1, List1, Tail, List
+           sa_nth0/4,      % ?N, +List, ?Elem, ?Rest
+           sa_nth1/4,      % ?N, +List, ?Elem, ?Rest
            select_value/4, % +Selector, +Selectors, % ?Values,
                            % ?Value (det)
 
@@ -181,19 +183,56 @@ list_head2([El|List], N, [El|Head], M, M_In) :-
 % Converts between prolog list and optimized presentation
 % for e.g. random_select/6
 %
-list_subarray(List, s(A, Selected)) :-
+list_subarray(List, s(A, Selection)) :-
    nonvar(List), !,
    A =.. [a|List],
-   functor(A, _, N), 
-   Selected in 1..N.
+   functor(A, _, N),
+   (  Selection in 1..N -> true
+   ;  Selection = f ).
 list_subarray(List, Subarray) :-
    Ctx = context(list_subarray/2, _),
    nonvar(Subarray), !,
-   check_subarray(Subarray, Array, Selected, Ctx),
-   findall(X, arg(Selected, Array, X), List).
+   check_subarray(Subarray, Array, Selection, Ctx),
+   (  Selection == f
+   -> List = []
+   ;  findall(X, arg(Selection, Array, X), List)
+   ).
 list_subarray(_, _) :-
    throw(error(instantiation_error, context(list_subarray/2, _))).
 
+
+%% sa_nth0(?N, +List, ?Elem, ?Rest)
+%
+sa_nth0(N, List, Elem, Rest) :-
+   Ctx = context(sa_nth0/4, _),
+   N1 #= N + 1,
+   sa_nth1_cmn(N1, List, Elem, Rest, Ctx).
+
+%% sa_nth1(?N, +List, ?Elem, ?Rest)
+%
+sa_nth1(N, List, Elem, Rest) :-
+   Ctx = context(sa_nth1/4, _),
+   sa_nth1_cmn(N, List, Elem, Rest, Ctx).
+
+sa_nth1_cmn(_, List, _, _, Ctx) :-
+  var(List), !,
+  throw(error(instantiation_error, Ctx)).
+sa_nth1_cmn(N, _, _, _, Ctx) :-
+  var(N), !,
+  throw(error(not_implemented, Ctx)).
+sa_nth1_cmn(N, List, Elem, Rest, Ctx) :-
+  must_be(positive_integer, N),
+  find_nth1(N, List, Elem, Rest, Ctx).
+
+find_nth1(N, List, Elem, s(Array, Rest), Ctx) :-
+  check_subarray(List, Array, Selected, Ctx),
+  compound(Array),
+  arg(N, Array, Elem),
+  copy_term(Selected, Rest0),
+  (  Rest0 #\= N
+  -> Rest = Rest0
+  ;  Rest = f % special value for empty
+  ).
 
 %  mapkeys
 mapkeys(_, [], []) :- !.

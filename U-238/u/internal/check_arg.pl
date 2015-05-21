@@ -303,16 +303,19 @@ check_subarray(Subarray, Array, Selection, Ctx) :-
       ;  Array == a 
       -> N = 0
       ),
-      fd_var(Selection)
+      ( fd_var(Selection) ; integer(Selection) ; Selection == f)
    -> true
    ;  throw(error(type_error(subarray, Subarray), Ctx))
    ),
-   fd_inf(Selection, Inf),
-   fd_sup(Selection, Sup),
-   (  Inf >= 1, Sup =< N -> true
-   ;  fd_dom(Selection, Dom),
-      throw(error(domain_error(valid_subarray, s(Array,Selection in Dom)), 
-                  Ctx))
+   (  Selection == f -> true
+   ;  fd_inf(Selection, Inf),
+      fd_sup(Selection, Sup),
+      (  Inf >= 1, Sup =< N -> true
+      ;  fd_dom(Selection, Dom),
+         throw(error(domain_error(valid_subarray, 
+                                  s(Array,Selection in Dom)), 
+                     Ctx))
+      )
    ).   
 
 is_assoc_fast(t) :- !.
