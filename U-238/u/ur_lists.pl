@@ -47,6 +47,7 @@
            gen_memberchk/3,   % +Op, ?Member, +List
            index_list/4,
            list_head/4,
+           list_subarray/2,   % ?List, ?Subarray
            mapkeys/3,
            num_diff_list/2,
            pairs_replace_functor/3,
@@ -79,7 +80,9 @@
 
 :- use_module(library(error)).
 :- use_module(library(option)).
+:- use_module(library(clpfd)).
 :- use_module(u(logging)).
+:- use_module(u(internal/check_arg)).
 
 :- meta_predicate gen_memberchk(2, ?, ?).
 :- meta_predicate write_delimited(1, +, +).
@@ -171,6 +174,26 @@ list_head2([El|List], N, [El|Head], M, M_In) :-
 	succ(N1, N),
 	succ(M_In, M_In1),
 	list_head2(List, N1, Head, M, M_In1).
+
+
+%% list_subarray(?List, ?Subarray) is det.
+%
+% Converts between prolog list and optimized presentation
+% for e.g. random_select/6
+%
+list_subarray(List, s(A, Selected)) :-
+   nonvar(List), !,
+   A =.. [a|List],
+   functor(A, _, N), 
+   Selected in 1..N.
+list_subarray(List, Subarray) :-
+   Ctx = context(list_subarray/2, _),
+   nonvar(Subarray), !,
+   check_subarray(Subarray, Array, Selected, Ctx),
+   findall(X, arg(Selected, Array, X), List).
+list_subarray(_, _) :-
+   throw(error(instantiation_error, context(list_subarray/2, _))).
+
 
 %  mapkeys
 mapkeys(_, [], []) :- !.

@@ -95,4 +95,8 @@ test(skip_maplists_arity5, L == [2, 4]) :-
                 [2, 1, 3, 4], 
                 L).
 
+test(list_subarray1, Y==[1,2,3,4]) :-
+   list_subarray([1,2,3, 4], X), 
+   list_subarray(Y, X).
+
 :- end_tests(ur_lists).
