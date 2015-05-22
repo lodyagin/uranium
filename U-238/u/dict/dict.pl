@@ -25,12 +25,16 @@ load_random_word(Pattern, Generator, Rand_State0, Rand_State, String) :-
     load_random_word(File_Spec, Pattern, Generator, Rand_State0, Rand_State, String).
 load_random_word(File_Spec, Pattern, Generator, Rand_State0, Rand_State, String) :-
     prepare_random_state(Generator, Rand_State0, Rand_State1),
-    absolute_file_name(File_Spec, File_Name),
+    (  absolute_file_name(File_Spec, File_Name, [solutions(all)]),
+       exists_file(File_Name)
+    -> true
+    ;  throw(error(existence_error(source_sink, File_Spec), context(load_random_word/6, _)))
+    ),
     file_to_lines_list(File_Name, Pattern, List),
     random_select(String, List, _, Generator, Rand_State1, Rand_State).
 
 file_to_lines_list(File_Name, Pattern, Lines) :-
-    phrase_from_file(load_lines(Pattern, Lines), File_Name).
+    phrase_from_file(load_lines(Pattern, Lines), File_Name, [encoding(iso_latin_1)]).
 
 load_lines(Pattern, Lines) -->
     string_without("\n", Line), "\n", !,

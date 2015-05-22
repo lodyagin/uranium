@@ -21,7 +21,7 @@ random_sublist(List, OM:Options0, Options, Sublist) :-
    random_sublist_cmn(List, OM:Options0, Options1, Sublist, Sublist, Ctx).
 
 random_sublist_cmn(List, OM:Options0, Options, Sublist, Sublist, _) :-
-   (  nonvar(Sublist)
+   (  ground(Sublist)
    -> Options0 = Options
    ;
       options_to_object(random_sublist, OM:Options0, Options1),
@@ -29,8 +29,10 @@ random_sublist_cmn(List, OM:Options0, Options, Sublist, Sublist, _) :-
                         Seed0, Seed, phase_match)
       -> length(List, FullLength),
          obj_field(Options, length, Lengths),
-         random_member(length(LengthDom0), Lengths, Det, Generator, Seed0, Seed1),
-         replace_subterms([max_subst(FullLength), calculate], LengthDom0, LengthDom),
+         random_member(length(LengthDom0), Lengths,
+                       Det, Generator, Seed0, Seed1),
+         replace_subterms([max_subst(FullLength), calculate],
+                          LengthDom0, LengthDom),
          N in LengthDom,
          fd_random(Generator, Seed1, Seed2, N),
          random_sublist_int(List, N, Generator, Seed2, Seed, Sublist),
@@ -48,6 +50,6 @@ random_sublist_int(List, N, Generator, Seed0, Seed, [X|T]) :-
 
 max_subst(Max, max, Max).
 
-calculate(Expr, Result) :- 
+calculate(Expr, Result) :-
     catch(Result is Expr, _, Result = Expr).
 
