@@ -4,13 +4,13 @@
 %  test platform.
 
 %  Copyright (C) 2009, 2011  Sergei Lodyagin
-% 
+%
 %  This library is free software; you can redistribute it and/or
 %  modify it under the terms of the GNU Lesser General Public
 %  License as published by the Free Software Foundation; either
 %  version 2.1 of the License, or (at your option) any later
 %  version.
-%  
+%
 %  This library is distributed in the hope that it will be
 %  useful, but WITHOUT ANY WARRANTY; without even the implied
 %  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
@@ -21,7 +21,7 @@
 %  Public License along with this library; if not, write to the
 %  Free Software Foundation, Inc., 51 Franklin Street, Fifth
 %  Floor, Boston, MA 02110-1301 USA
-% 
+%
 %  e-mail: lodyagin@gmail.com
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 %  --------------------------------------------------------------
@@ -37,7 +37,7 @@
 % Invoke SWI-Prolog with -p log_path=<log file path>
 % if you want log in file.
 
-:- module(logging, 
+:- module(logging,
           [logged/1,        % :Goal (fail on exception)
            logged/2,        % :Goal, -?Exception (not fail)
            write_log/1,     % +Message
@@ -137,7 +137,7 @@ write_log(Message) :- write_log(Message, []).
 write_log(Message, Options) :-
 
     check_logger(Options) ->
-  
+
     open_log(Options),
     log_piece(Message, []),  %FIXME options
     close_log(Options)
@@ -154,7 +154,9 @@ write_piece(Stream, Options, Piece) :-
     format(Stream, "~q ", [Piece]).
 
 
-check_logger(Options) :-
+:- meta_predicate check_logger(:).
+
+check_logger(_:Options) :-
 
     % If logger/1 is present in options it should be enabled
     (   memberchk(logger(Logger_Name), Options)
@@ -162,7 +164,9 @@ check_logger(Options) :-
     ;  true
     ).
 
-check_log_options(Options_In, Options_Out) :-
+:- meta_predicate check_log_options(:, :).
+
+check_log_options(OM:Options_In, OM:Options_Out) :-
 
     /*check_option_list(Options_In,
                       [module(yes), module(no),
@@ -171,7 +175,7 @@ check_log_options(Options_In, Options_Out) :-
                        quoted(if_needed), quoted(no),
                        indent(_)
                       ]),*/
-    
+
     % Обработка lf/1, lf/2
 
     % lf/1 -> lf/2
@@ -188,23 +192,23 @@ check_log_options(Options_In, Options_Out) :-
 %       -> O3 = O2
 %       ;  O3 = [lf(1, after)|O2]  % default lf
 %       )
-    ),                         
+    ),
 
     Options_Out = O3.
 
-    
+
 open_log(Options_In) :-
 
     check_log_options(Options_In, Options),
 
     check_logger(Options) ->
-  
+
     nb_getval(logging_counter, Logging_Counter),
 
     (
         log_file(Stream),
         (
-           % lf(N, before) 
+           % lf(N, before)
            (  memberchk(lf(NLFB, before), Options),
               integer(NLFB),
               NLFB >= 0
@@ -223,13 +227,14 @@ open_log(Options_In) :-
 
     ; true.
 
+:- meta_predicate log_piece(+, :).
 
 log_piece(Message, Options_In) :-
 
-    check_log_options(Options_In, Options),
-  
-    check_logger(Options) ->
-  
+    check_log_options(Options_In, OM:Options),
+
+    check_logger(OM:Options) ->
+
     % Обработка quoted/1
     (   memberchk(quoted(Quoted), Options)
     ->  Qopt = quoted(Quoted)
@@ -247,14 +252,14 @@ log_piece(Message, Options_In) :-
               format('~s', [Spaces])
            ;  true
            ),
-         
+
            (  is_list(Message)
            -> maplist(logging:write_piece(Stream, [Qopt]), Message)
            ;  logging:write_piece(Stream, [Qopt], Message)
            )
         ),
 
-        % lf(N, after) 
+        % lf(N, after)
         (  memberchk(lf(NLFA, after), Options),
            integer(NLFA),
            NLFA >= 0
@@ -268,14 +273,14 @@ log_piece(Message, Options_In) :-
     )
 
     ; true.
-    
+
 
 close_log(Options_In) :-
 
     check_log_options(Options_In, Options),
 
     check_logger(Options) ->
-  
+
     context_module(Module),
     (
         log_file(Stream),
@@ -284,7 +289,7 @@ close_log(Options_In) :-
         -> format(" :[~a]", Module)
         ;  true
         ),
-    
+
         % lf(N, after)
 
         % if no defined add by default (back comp)
@@ -292,7 +297,7 @@ close_log(Options_In) :-
         -> O2 = Options
         ;  O2 = [lf(1, after)|Options]  % default lf
         ),
-     
+
         (  memberchk(lf(NLFA, after), O2),
            integer(NLFA),
            NLFA >= 0
@@ -307,16 +312,16 @@ close_log(Options_In) :-
     )
 
     ; true.
-  
+
 
 start_logging :-
         (
-         file_search_path(log_path, Path) 
+         file_search_path(log_path, Path)
       ->
          % If -p log_path is not given use the current
          % output string.
          open(Path, append, Stream),
-         
+
          get_time(TS), stamp_date_time(TS, Date_Time, local),
          format(Stream, "--- New log started at ~w~n", [Date_Time])
       ;
@@ -328,6 +333,6 @@ start_logging :-
         nb_setval(logging_counter, 1).
 %        nb_setval(logging_next_counter, 1).
 
-        
-        
-:- initialization start_logging.        
+
+
+:- initialization start_logging.

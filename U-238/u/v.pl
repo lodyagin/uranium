@@ -63,6 +63,8 @@
            obj_downcast/3,     % +Parent, +Class_To, -Descendant
            obj_field/3,        % +Obj, ?Field, ?Value
            obj_field/4,        % +Obj, +Weak, ?Field, ?Value
+           findall_fields/4,   % +Obj, ?Native, ?Eval, -Fields
+           findall_fields/5,   % :Filter, +Obj, ?Native, ?Eval, -Fields
            obj_key/2,          % +Object, -Key
            obj_key_value/2,    % +Object, -Key_Value
            obj_list/2,         % +Object, -List
@@ -86,10 +88,12 @@
            obj_pretty_print/2,
            obj_unify/3,
            obj_unify/4,
+           std_weak_arg_values/1,
 
            op(700, xfx, =^=),
            op(700, xfx, ^=),
            % todo: move to u(vexpr)
+           op(400, yfx, /><),
            op(200, fy, @),
 
            (=^=)/2,
@@ -125,7 +129,6 @@
 :- use_module(library(ordsets)).
 :- use_module(u(logging)).
 :- use_module(u(class_diagram)).
-:- use_module(u(util/lambda)).
 :- use_module(u(vd), [db_select/3, named_args_unify/5]).
 
 :- reexport(u(internal/objects_i),
@@ -143,6 +146,7 @@
 % This is standard Weak arg values used in this module
 std_weak_arg_values([[throw, throws, strict, s],
                      [unbound, weak, w],
+                     [ignore],
                      [fail, false, f]
                     ]).
 
@@ -228,6 +232,57 @@ obj_field(Obj, Weak, Field_Name, Value) :-
    ),
 
    obj_field_int(Class_Id, Field_Name, Weak1, Obj, Value, _, Ctx).
+
+%% findall_fields(+Obj, ?Native, ?Eval, -Fields) is det.
+%
+% Returns the Fields = [v(Name, Value, Type), ...].
+%
+% @param Native see class_fields/5
+% @param Eval see class_fields/5
+%
+findall_fields(Obj, Native, Eval, Fields) :-
+   Ctx = context(findall_field/4, _),
+   check_inst(Obj, Ctx),
+   check_object_arg(Obj, Ctx, Class_Id),
+   % NB: we can't get values with attached attributes with findall.
+   class_fields(_, Class_Id, Native, Eval, Fields1),
+   findall_fields_int(Obj, Class_Id, Fields1, Fields, Ctx).
+
+:- meta_predicate findall_fields(3, +, ?, ?, -).
+
+%% findall_fields(:Filter, +Obj, ?Native, ?Eval, -Fields) is det.
+%
+% Returns the Fields = [v(Name, Value, Type), ...].  Calls
+% Filter(Name, Value, Type). Includes only those fields for which
+% Filter is passed.
+%
+% @param Native see class_fields/5
+% @param Eval see class_fields/5
+%
+% @see findall_fields/4
+%
+findall_fields(Filter, Obj, Native, Eval, Fields) :-
+   Ctx = context(findall_field/5, _),
+   check_inst(Obj, Ctx),
+   check_object_arg(Obj, Ctx, Class_Id),
+   % NB: we can't get values with attached attributes with findall.
+   class_fields(_, Class_Id, Native, Eval, Fields1),
+   findall_fields_int(Filter, Obj, Class_Id, Fields1, Fields, Ctx).
+
+findall_fields_int(_, _, [], [], _) :- !.
+findall_fields_int(Obj, Class_Id, [Name|F], [v(Name, Value, Type)|V], Ctx):-
+   obj_field_int(Class_Id, Name, throw, Obj, Value, Type, Ctx),
+   findall_fields_int(Obj, Class_Id, F, V, Ctx).
+
+findall_fields_int(_, _, _, [], [], _) :- !.
+findall_fields_int(Pred, Obj, Class_Id, [Name|F], Vs, Ctx)
+:-
+   obj_field_int(Class_Id, Name, throw, Obj, Value, Type, Ctx),
+   (  call(Pred, Name, Value, Type)
+   -> Vs = [v(Name, Value, Type)|V]
+   ;  Vs = V
+   ),
+   findall_fields_int(Pred, Obj, Class_Id, F, V, Ctx).
 
 
 named_arg(Obj, Field, Value) :-
@@ -472,7 +527,7 @@ obj_downcast_int(From_Class-From_Class_Id, To_Class-To_Class_Id,
       reverse(Path2, Path),
       class_rebase_int(Path, [To_Class_Id|_], _, Ctx),
       From_Class_Id \== To_Class_Id % is it needed?
-   -> true 
+   -> true
    ;  throw(not_downcast(From_Class, To_Class))
    ),
 
@@ -700,7 +755,7 @@ obj_sort_parents(Obj0, Class_Order, Obj) :-
 
 eval_obj_expr(Expr, Value) :-
    Ctx = context(eval_obj_expr/2, _),
-   eval_obj_expr_cmn(Expr, throw, Value, _, Ctx).
+   eval_obj_expr_cmn(Expr, throw, _, Value, _, Ctx).
 
 % Weak = hold - do not process the value at all
 
@@ -708,18 +763,26 @@ eval_obj_expr(Expr, Weak0, Value) :-
    Ctx = context(eval_obj_expr/3, _),
    decode_arg([[throw, strict],
                [weak],
-	       [hold],
+	       [hold], % hold means keep the unresolved expression as it is
                [fail]], Weak0, Weak, Ctx),
-   eval_obj_expr_cmn(Expr, Weak, Value, _, Ctx).
+   eval_obj_expr_cmn(Expr, Weak, _, Value, _, Ctx).
 
-eval_obj_expr_cmn(Variable, _, Variable, variable, _) :-
+value_type(Variable, variable) :- var(Variable), !.
+value_type([], list) :- !.
+value_type([_|_], list) :- !.
+value_type(Object, object) :- u_object(Object), !.
+value_type(Compound, compound) :- compound(Compound), !.
+value_type(_, value).
+
+% eval_obj_expr_cmn(?Variable, +Weak0, -Weak, -Variable, -Type, +Ctx)
+eval_obj_expr_cmn(Variable, Weak, Weak, Variable, variable, _) :-
    var(Variable), !.
 
-eval_obj_expr_cmn(_ / [], _, [], [], _) :- !.
+eval_obj_expr_cmn(_ / [], Weak, Weak, [], [], _) :- !.
 
-eval_obj_expr_cmn(Obj_Expr / Fields, Weak, Value, list, Ctx) :-
+eval_obj_expr_cmn(Obj_Expr / Fields, Weak0, Weak, Value, list, Ctx) :-
    Fields = [_|_], !,
-   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type1, Ctx),
+   eval_obj_expr_cmn(Obj_Expr, Weak0, Weak, Value1, Type1, Ctx),
    (   Type1 == object
    ->  eval_list_obj_expr(Fields, Value1, Weak, [], Value, Ctx)
    ;   Type1 == db
@@ -728,47 +791,71 @@ eval_obj_expr_cmn(Obj_Expr / Fields, Weak, Value, list, Ctx) :-
    ).
 
 % NB with Weak = weak '/' is the same as '//'
-eval_obj_expr_cmn(Obj_Expr / Field, Weak, Value, Type, Ctx) :-
+eval_obj_expr_cmn(Obj_Expr / Field, Weak0, Weak, Value, Type, Ctx) :-
    !,
-   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type, Ctx),
-   (   eval_obj_field(Type, Value1, Weak, Field, Value, Ctx)
-   *-> true
+   eval_obj_expr_cmn(Obj_Expr, Weak0, Weak, Value1, Type1, Ctx),
+   (   eval_obj_field(Type1, Value1, Weak, Field, Value, Ctx)
+   *-> value_type(Value, Type)
    ;   Weak == hold
    ->  Value = Value1 / Field
    ;   fail
    ).
 
-eval_obj_expr_cmn(Obj_Expr // Field, Weak, Value, Type, Ctx) :-
+eval_obj_expr_cmn(Obj_Expr // Field, Weak0, Weak, Value, Type, Ctx) :-
    !,
-   eval_obj_expr_cmn(Obj_Expr, Weak, Value1, Type, Ctx),
+   eval_obj_expr_cmn(Obj_Expr, Weak0, Weak, Value1, Type1, Ctx),
    (  Weak == hold -> Weak1 = hold ; Weak1 = weak ),
-   eval_obj_field(Type, Value1, Weak1, Field, Value, Ctx).
+   eval_obj_field(Type1, Value1, Weak1, Field, Value, Ctx),
+   value_type(Value, Type).
 
-eval_obj_expr_cmn(List, _, List, list, _) :-
+% unfold list one level
+eval_obj_expr_cmn(Obj_Expr />< Field, Weak0, Weak, Value, Type, Ctx) :-
+   !,
+   eval_obj_expr_cmn(Obj_Expr, Weak0, Weak, Value1, Type1, Ctx),
+   (   Type1 \== list -> Type2 = Type1 ; Type2 = list_to_unfold ),
+   (   eval_obj_field(Type2, Value1, Weak, Field, Value, Ctx)
+   *-> value_type(Value, Type)
+   ;   Weak == hold
+   ->  Value = Value1 / Field
+   ;   fail
+   ).
+
+% change the weakness
+eval_obj_expr_cmn((Obj_Expr, Weak0), _, Weak, Value, Type, Ctx) :-
+   !,
+   decode_arg([[throw, strict],
+               [weak],
+	       [hold],
+               [fail]], Weak0, Weak1, Ctx),
+   eval_obj_expr_cmn(Obj_Expr, Weak1, Weak, Value, Type, Ctx).
+
+eval_obj_expr_cmn(List, Weak, Weak, List, list, _) :-
    nonvar(List), List = [], !.
 
-eval_obj_expr_cmn(List, _, Value, list, Ctx) :-
+eval_obj_expr_cmn(List, Weak, Weak, Value, list, Ctx) :-
    nonvar(List), List = [_|_], !,
-   maplist(Ctx+\Obj_Expr^V^eval_obj_expr_cmn(Obj_Expr, hold, V, _, Ctx),
-	   List, Value).
+   maplist(eval_obj_expr_cmn_p1(Ctx), List, Value).
 
 %TODO all evals to u(vexpr)
-eval_obj_expr_cmn(@(DB_Key), _, @(DB_Key), db, Ctx) :- !,
+eval_obj_expr_cmn(@(DB_Key), Weak, Weak, @(DB_Key), db, Ctx) :- !,
    check_db_key(DB_Key, Ctx).
 
-eval_obj_expr_cmn(@(DB_Key)->Object, _, @(DB_Key)->Object, db, Ctx) :- !,
+eval_obj_expr_cmn(@(DB_Key)->Object, Weak, Weak, @(DB_Key)->Object, db, Ctx) :- !,
    check_db_key(DB_Key, Ctx).
 
-eval_obj_expr_cmn(Object, _, Object, object, _) :-
+eval_obj_expr_cmn(Object, Weak, Weak, Object, object, _) :-
    u_object(Object), !.
 
-eval_obj_expr_cmn(Compound, _, Value, compound, Ctx) :-
+eval_obj_expr_cmn(Compound, Weak, Weak, Value, compound, Ctx) :-
    compound(Compound), !,
    Compound =.. [Fun|List],
-   eval_obj_expr_cmn(List, _, Value_List, _, Ctx),
+   eval_obj_expr_cmn(List, _, _, Value_List, _, Ctx),
    Value =.. [Fun|Value_List].
 
-eval_obj_expr_cmn(Value, _, Value, value, _) :- !.
+eval_obj_expr_cmn(Value, Weak, Weak, Value, value, _) :- !.
+
+eval_obj_expr_cmn_p1(Ctx, Obj_Expr, Value) :-
+   eval_obj_expr_cmn(Obj_Expr, hold, _, Value, _, Ctx).
 
 eval_obj_field(db, @(DB_Key)->Object, _, Field, Value, _) :-
    named_args_unify(DB_Key, _, [Field], [Value], Object).
@@ -790,9 +877,10 @@ eval_obj_field(object, Object, Weak, Field, Value, _) :- !,
 eval_obj_field(_, _, hold, _, _, _) :- !, fail.
 
 eval_obj_field(list, List, Weak, Field, Value, Ctx) :- !,
-   maplist(Field^Ctx+\Element^V^
-          eval_obj_expr_cmn(Element / Field, Weak, V, _, Ctx),
-           List, Value).
+   maplist(eval_obj_field_p1(Field, Weak, Ctx), List, Value).
+
+eval_obj_field(list_to_unfold, List, Weak, Field, Value, Ctx) :- !,
+   unfold(eval_obj_field_p1(Field, Weak, Ctx), List, [], Value).
 
 eval_obj_field(compound, Compound, Weak, Field, Value, Ctx) :- !,
    Compound =.. [Functor|Expr_List],
@@ -811,13 +899,24 @@ eval_obj_field(variable, Value, throw, _, _, Ctx) :-
 eval_obj_field(variable, _, fail, _, _, _) :-
    !, fail.
 
+eval_obj_field_p1(Field, Weak, Ctx, Element, Value) :-
+   eval_obj_expr_cmn(Element / Field, Weak, _, Value, _, Ctx).
+
+:- meta_predicate unfold(2, +, +, -).
+
+unfold(_, [], L, L) :- !.
+unfold(Pred, [A|TA], L0, L) :-
+   call(Pred, A, LA),
+   append(L0, LA, L1),
+   unfold(Pred, TA, L1, L).
+
 % eval_list_obj_expr(+FieldsList, +Object, +Weak, -ValList0, -ValList1, +Ctx)
 % It is called for Object / List
 eval_list_obj_expr([], _, _, Value, Value, _).
 eval_list_obj_expr([Expr_Tail|Tail], Obj, Weak, Value0,
                    [V|Value1], Ctx) :-
    eval_list_build_obj_expr(Obj, Expr_Tail, Expr),
-   eval_obj_expr_cmn(Expr, Weak, V, _, Ctx),
+   eval_obj_expr_cmn(Expr, Weak, _, V, _, Ctx),
    eval_list_obj_expr(Tail, Obj, Weak, Value0, Value1, Ctx).
 
 eval_list_build_obj_expr(Obj, Field, Obj / Field) :-
@@ -1066,7 +1165,9 @@ field_pretty_print(_, _, functor) :- !.
 field_pretty_print(Options, Object, Field) :-
 
   named_arg(Object, Field, Value, Type),
-  (  ( var(Value) ; memberchk(hide_field(Field), Options))
+  (  ( var(Value), term_attvars(Value, [])
+     ; memberchk(hide_field(Field), Options)
+     )
   -> true
   ;  var(Type)
   -> Pretty_Value = Value
@@ -1077,7 +1178,7 @@ field_pretty_print(Options, Object, Field) :-
   ),
 
   (  var(Pretty_Value)
-  -> true
+  -> true %term_attvars(Pretty_Value, Pretty_Value_Attr_Vars)
   ;  u_object(Pretty_Value)
   -> log_piece([Field, ':'], Options),
      change_indent(Options, O2, 2),
@@ -1085,9 +1186,38 @@ field_pretty_print(Options, Object, Field) :-
      %exclude_lf(Options, O2),
      obj_pretty_print(O2, Pretty_Value)
      %log_piece([], Options)
+  ;  Pretty_Value = [_|_]
+  -> log_piece([Field, ':'], Options),
+     change_indent(Options, O2, 2),
+     maplist(type_pretty_print(O2), Pretty_Value)
   ;  log_piece([Field, ':', Pretty_Value], Options)
   ).
+  % print attributes
+  %(  nonvar(Pretty_Value_Attr_Vars),
+  %   Pretty_Value_Attr_Vars \== []
+  %-> log_piece('[attrs]', Options)
+  %; true
+  %-> writeln('Attrs found')
+%attrs_pretty_print(Options, Pretty_Value_Attr_Vars)
+  %;  true, writeln('!!!! attrs not found')
+  %).
 
+attrs_pretty_print(Opts, Var) :-
+  var(Var), !,
+  (  get_attrs(Var, Attrs)
+  -> log_piece(Attrs, Opts)
+  ;  true
+  ).
+attrs_pretty_print(Opts, Term) :-
+  term_attvars(Term, Vars),
+  maplist(attrs_pretty_print(Opts), Vars).
+
+
+type_pretty_print(Opts, T) :-
+  u_object(T), !,
+  obj_pretty_print(Opts, T).
+type_pretty_print(Opts, T) :-
+  log_piece(T, Opts).
 
 % C = A unify B
 
@@ -1290,12 +1420,12 @@ A ^= B :-
    A1 = B1.
 
 eval_obj_expr_both_sides(A, B, A1, B1, Ctx) :-
-   eval_obj_expr_cmn(A, throw, A1, _, Ctx),
+   eval_obj_expr_cmn(A, throw, _, A1, _, Ctx),
    (  % prevent eval_obj_expr_cmn hangup when B is [...| Tail ] (incomplete)
       nonvar(A1), ( A1 = [] ; A1 = [_|_] )
    -> length(A1, AL), length(B, AL)
    ;  true
    ),
-   eval_obj_expr_cmn(B, throw, B1, _, Ctx).
+   eval_obj_expr_cmn(B, throw, _, B1, _, Ctx).
 
 :- initialization clear_decode_arg.

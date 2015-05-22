@@ -519,24 +519,8 @@ obj_construct_int(Class_Id, Field_Names, Weak, Field_Values,
    obj_unify_int(Class_Id, Field_Names, Weak1, Object,
                  Field_Values, Ctx).
 
-% obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx)
-% :-
-
-%    % whether to be det or nondet
-%    (   nonvar(Field_Name) -> Det = t ; Det = f ),
-%    (   objects:field_info(Class_Id, Field_Name, Type, _, Is_Eval),
-%        (  Is_Eval == true
-%        -> once(objects:field(Class_Id, Field_Name, Obj, Value))
-%        ;  objects:field(Class_Id, Field_Name, Obj, Value)
-%        )
-%    *-> (Det = t -> ! ; true)
-%    ;   obj_field_int_error(Class_Id, Weak, Field_Name, Det, Ctx)
-%    ).
-
 obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx) :-
-
    (   nonvar(Field_Name) -> Det = t ; Det = f ),
-
    (   objects:field_info(Class_Id, Field_Name, Type, _, Is_Eval)
    *->
        (   Is_Eval == true
@@ -545,7 +529,9 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx) :-
            once(objects:field(Class_Id, Field_Name, Obj, Value)),
            debug(evals, 'After the call: ~p',
                  [field(Class_Id, Field_Name, Obj, Value)])
-       ;   objects:field(Class_Id, Field_Name, Obj, Value)
+       ;   (  objects:field(Class_Id, Field_Name, Obj, Value)
+           -> true
+           ;  Weak == ignore )
        )
    ;
        obj_field_int_error(Weak, Field_Name, Obj, Ctx)
@@ -557,15 +543,13 @@ obj_field_int(Class_Id, Field_Name, Weak, Obj, Value, Type, Ctx) :-
 % Field_Name must be checked with
 % objects:field_info(Class_Id, Field_Name, _, _, Eval)
 % before the call
-obj_field_int_part(false, Class_Id, Field_Name, Obj, Value) :-
+obj_field_int_part(false, Class_Id, Field_Name, Weak, Obj, Value) :-
+   (  objects:field(Class_Id, Field_Name, Obj, Value) -> true
+   ;  Weak == ignore ).
 
-   objects:field(Class_Id, Field_Name, Obj, Value).
-
-obj_field_int_part(true, Class_Id, Field_Name, Obj, Value) :-
-
-   once(objects:field(Class_Id, Field_Name, Obj, Value)).
-
-
+obj_field_int_part(true, Class_Id, Field_Name, Weak, Obj, Value) :-
+   (  once(objects:field(Class_Id, Field_Name, Obj, Value)) -> true
+   ;  Weak == ignore ).
 
 obj_field_int_error(Weak, Field_Name, Obj, Ctx) :-
 
@@ -617,11 +601,11 @@ obj_unify_int(Class_Id, Fields, Weak, Term, Values, Ctx) :-
    nonvar(Fields), % it protects from wrong results
 
    % unify noneval first (they can change result for evals)
-   obj_unify_int(Fields, [], Fields1, Class_Id, false,
+   obj_unify_int(Fields, [], Fields1, Weak, Class_Id, false,
                  Term, Values, [], Values1),
 
    % Fields1 are the fields not found by the prev call
-   obj_unify_int(Fields1, [], Fields2, Class_Id, true,
+   obj_unify_int(Fields1, [], Fields2, Weak, Class_Id, true,
                  Term, Values1, [], _),
 
    (   Fields2 = [] -> true % all fields are used
@@ -630,22 +614,22 @@ obj_unify_int(Class_Id, Fields, Weak, Term, Values, Ctx) :-
        obj_field_int_error(Weak, Error_Field, Term, Ctx)
    ).
 
-obj_unify_int([], AF, AF, _, _, _, [], VF, VF).
+obj_unify_int([], AF, AF, _, _, _, _, [], VF, VF).
 
-obj_unify_int([Field|FT], AF0, AF, Class_Id, Eval, Term,
+obj_unify_int([Field|FT], AF0, AF, Weak, Class_Id, Eval, Term,
               [Value|VT], VF0, VF) :-
 
-   obj_unify_one(Field, AF0, AF1, Class_Id, Eval, Term,
+   obj_unify_one(Field, Weak, AF0, AF1, Class_Id, Eval, Term,
                  Value, VF0, VF1),
-   obj_unify_int(FT, AF1, AF, Class_Id, Eval, Term, VT, VF1, VF).
+   obj_unify_int(FT, AF1, AF, Weak, Class_Id, Eval, Term, VT, VF1, VF).
 
-obj_unify_one(Field, AF0, AF, Class_Id, Eval, Term, Value,
+obj_unify_one(Field, Weak, AF0, AF, Class_Id, Eval, Term, Value,
               VF0, VF) :-
 
    (   nonvar(Field) -> Det = t ; Det = f ),
 
    (   objects:field_info(Class_Id, Field, _, _, Eval)
-   *-> obj_field_int_part(Eval, Class_Id, Field, Term, Value),
+   *-> obj_field_int_part(Eval, Class_Id, Field, Weak, Term, Value),
        AF = AF0, VF = VF0
    ;   AF = [Field|AF0], VF = [Value|VF0]
    ),

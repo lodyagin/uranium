@@ -50,8 +50,11 @@
            check_object_arg/3,         % +Obj, +Ctx, -Class_Id inst-
            check_rebase_rule/4,  % +Rule, +Ctx, -Old_Base, -New_Base
                                  % -inst+
+           check_subarray/4,     % +Subarray, -Array, -Selection, +Ctx inst-
 
-           error:has_type/2
+           error:has_type/2,
+           is_assoc_fast/1,
+           is_list_fast/1
            ]).
 
 :- reexport(u(internal/db_i), [db_key_is_valid/1]).
@@ -288,4 +291,36 @@ check_rebase_rule(Rebase_Rule, Ctx, Old_Base, New_Base) :-
    check_existing_class_arg(Old_Base, Ctx),
    check_existing_class_arg(New_Base, Ctx).
 
+%% check_subarray(+Subarray, -Array, -Selection, +Ctx) is det.
+%
+check_subarray(Subarray, Array, Selection, Ctx) :-
+   Subarray = s(Array, Selection),
+   (  nonvar(Array) -> true
+   ;  throw(error(instantiation_error, Ctx))
+   ),
+   (  (  compound(Array) 
+      -> functor(Array, a, N)
+      ;  Array == a 
+      -> N = 0
+      ),
+      ( fd_var(Selection) ; integer(Selection) ; Selection == f)
+   -> true
+   ;  throw(error(type_error(subarray, Subarray), Ctx))
+   ),
+   (  Selection == f -> true
+   ;  fd_inf(Selection, Inf),
+      fd_sup(Selection, Sup),
+      (  Inf >= 1, Sup =< N -> true
+      ;  fd_dom(Selection, Dom),
+         throw(error(domain_error(valid_subarray, 
+                                  s(Array,Selection in Dom)), 
+                     Ctx))
+      )
+   ).   
+
+is_assoc_fast(t) :- !.
+is_assoc_fast(t(_,_,_,_,_)).
+
+is_list_fast([]) :- !.
+is_list_fast([_|_]).
 

@@ -3,6 +3,7 @@
 :- use_module(u(internal/objects_i)).
 :- use_module(u(http/v/http_user_v)).
 :- use_module(u(util/lambda)).
+:- use_module(u(ur_lists)).
 
 test(class_create1, [setup(reload_classes)]) :-
    % test class_create/3 version
@@ -87,12 +88,12 @@ test(class_create_key_inheritance,
 %   obj_rebase((object_v -> callup_v), V, _),
 %   findall(X, class_descendant(callup_v, X), List).
 
-test(obj_reinterpret1, L == [man_v]) :-
+test(obj_reinterpret1, [L == [man_v]]) :-
   obj_construct(man_v, [], [], M),
   findall(C, obj_reinterpret(M, C, _), L1),
   sort(L1, L).
 
-test(obj_reinterpret2, L == [man_v, passport_v]) :-
+test(obj_reinterpret2, [L == [man_v, passport_v], blocked(rebase_family)]) :-
   obj_construct(man_v, [name, surname, sex], ['Sergei', 'Lodyagin', max], M),
   findall(C, obj_reinterpret(M, C, _), L1),
   sort(L1, L).
@@ -230,7 +231,6 @@ test(eval_obj_expr4_compound1,
    (p(M1, A1) = p(M2, _)) / name ^= _.
 
 test(eval_obj_expr4_compound2) :-
-
    obj_construct(man_v, [name], ['Sergei'], M1),
    obj_construct(man_v, [name], ['Artemiy'], M2),
    obj_construct(www_address_v, [http_request_url],
@@ -337,6 +337,23 @@ test(eval_obj_expr11_1, [fail]) :-
 test(eval_obj_expr11_2, [fail]) :-
    eval_obj_expr(_ / fld, fail, _).
 
+test(eval_obj_expr12, L2 == [m1, m1, m1]) :-
+   length(L, 3), 
+   maplist(obj_construct(man_v, [name], [m1]), L), 
+   obj_construct(man_v, [sex], [L], M2), 
+   M2 / sex / name ^= L2.
+
+test(eval_obj_expr13, NL == [m1]) :-
+   obj_construct(man_v, [name], [m1], V1),
+   obj_construct(www_address_v, [], [], V2),
+   skip_maplist(\V^N^((V, fail)/name^=N), [V1, V2], NL).
+
+%test(eval_obj_expr14, NL == [m1]) :-
+%   obj_construct(man_v, [name], [[W1, W2]], V1),
+%   obj_construct(www_address_v, [], [], W1),
+%   obj_construct(man_v, [name], [m1], W2),
+%   skip_maplist(\V^N^((V / name, skip) / name ^= N), V1, NL).
+
 test(obj_construct_with_evals1) :-
 
     obj_construct(citizen_v,
@@ -373,12 +390,12 @@ test(obj_construct_with_evals1) :-
 
 
 test(obj_construct_bug1) :-
-
    class_fields(man_v, Field_Names),
    obj_construct(man_v, Field_Names, Field_Names, Obj),
    Obj =.. [man_v, _|Field_Names2],
-
-   assertion(Field_Names == Field_Names2).
+   msort(Field_Names, Field_Names_S),
+   msort(Field_Names2, Field_Names2_S),
+   assertion(Field_Names_S == Field_Names2_S).
 
 test(obj_copy1) :-
 
@@ -429,10 +446,10 @@ test(obj_downcast_rebased,
    obj_rebase((object_v -> db_object_v), C0, C1),
    obj_downcast(C1, callup_v, C2),
    obj_construct(callup_v, [], [], CC),
-   arg(1, C2, C2_Class_Id), 
+   arg(1, C2, C2_Class_Id),
    arg(1, CC, CC_Class_Id),
    assertion(C2_Class_Id =\= CC_Class_Id).
-   
+
 % Downcast of rebased object
 test(obj_downcast2_rebased,
      [% birthday, country, db_key, db_ref, fit_..., height, id, name, sex, surname, weight
@@ -442,15 +459,16 @@ test(obj_downcast2_rebased,
    obj_rebase((object_v -> db_object_v), C0, C1),
    obj_downcast(C1, C2),
    obj_construct(callup_v, [], [], CC),
-   arg(1, C2, C2_Class_Id), 
+   arg(1, C2, C2_Class_Id),
    arg(1, CC, CC_Class_Id),
    assertion(C2_Class_Id =\= CC_Class_Id).
-   
-test(obj_field1, [Flds == Vals]) :-
 
+test(obj_field1, [FldsS == ValsS]) :-
    class_fields(citizen_v, Flds),
    obj_construct(citizen_v, Flds, Flds, Obj),
-   findall(Val, (obj_field(Obj, Fld, Val), member(Fld, Flds)), Vals).
+   findall(Val, (obj_field(Obj, Fld, Val), member(Fld, Flds)), Vals),
+   msort(Flds, FldsS),
+   msort(Vals, ValsS).
 
 test(obj_field2, [Flds3 == Flds4]) :-
 % Each eval field must be evaluable only once
@@ -469,10 +487,66 @@ test(obj_field3, [Surname == 'Grisha']) :-
    Name = 'Grisha',
    obj_field(Man, surname, Surname).
 
+test(obj_field_weak1) :-
+   obj_construct(man_v, [], [], M), 
+   obj_field(M, weak, mmm, _).
+
+test(obj_field_weak2, fail) :-
+   obj_construct(man_v, [name], [s], M), 
+   obj_field(M, weak, name, d).
+
+test(obj_field_ignore1) :-
+   obj_construct(man_v, [name], [s], M), 
+   obj_field(M, ignore, name, d).
+
 test(obj_field_bug1, [fail]) :-
 
    obj_construct(citizen_v, [sex], [woman], Obj),
    obj_field(Obj, sex, man).
+
+test(obj_unify1, [Flds == Vals]) :-
+   class_fields(citizen_v, Flds),
+   obj_construct(citizen_v, Flds, Flds, Obj),
+   obj_unify(Obj, Flds, Vals).
+
+test(obj_unify2, [Surname == 'Grisha']) :-
+   obj_construct(man_v, [], [], Man),
+   obj_unify(Man, [name, surname], [Name, Name]),
+   Name = 'Grisha',
+   obj_field(Man, surname, Surname).
+
+test(obj_unify_weak1) :-
+   obj_construct(man_v, [name, surname], [s, l], M), 
+   obj_unify(M, weak, [name, mmm, surname], [s, a, l]).
+
+test(obj_unify_weak2, fail) :-
+   obj_construct(man_v, [name, surname], [s, l], M), 
+   obj_unify(M, weak, [name, surname], [a, _]).
+
+test(obj_unify_ignore1, [Surname == l]) :-
+   obj_construct(man_v, [name, surname], [s, l], M), 
+   obj_unify(M, ignore, [name, surname], [a, Surname]).
+
+test(findall_fields,
+     [Flds =@= [v(height, H, _), v(name, 'Vasia', _), v(sex, _, man_v_sex_t),
+             v(surname, 'Pupkin', _), v(weight, W, _)]])
+:-
+    obj_construct(man_v,
+                  [name, surname, height, weight],
+                  ['Vasia', 'Pupkin', H, W],
+                  M),
+    findall_fields(M, _, false, Flds),
+    memberchk(v(height, F, _), Flds),
+    assertion(F==H).
+
+test(findall_fields_nonvar_only,
+     [Flds =@= [v(name, 'Vasia', _), v(surname, 'Pupkin', _)]])
+:-
+    obj_construct(man_v,
+                  [name, surname],
+                  ['Vasia', 'Pupkin'],
+                  M),
+    findall_fields(\_^V^_^nonvar(V), M, _, false, Flds).
 
 test(obj_is_descendant1, [List == [object_base_v, object_v]]) :-
 
@@ -901,13 +975,18 @@ test(obj_rewrite_with_evals4) :-
    obj_construct(citizen_v, [sex, birthday], [man, 1994], O),
    obj_rewrite(O, [class], [_], [_], _).
 
+test(obj_rewrite_old_new_unify, Man0 == Man) :-
+   obj_construct(man_v, [], [], Man0),
+   obj_rewrite(Man0, [name], [A], [A], Man).
+
 test(obj_sort_parents1,
      [P4 == [http_invalid_mixed_headers_v,
              http_invalid_headers_v,
              http_request_headers_v,
              http_response_headers_v,
              http_headers_v,
-             object_v, object_base_v]]
+             object_v, object_base_v],
+      blocked(rebase_family)]
      ) :-
 
    obj_construct(http_request_headers_v, [], [], V1),
@@ -953,7 +1032,7 @@ test(obj_sort_parents2,
    obj_sort_parents(V3, Order, _).
 
 
-test(obj_sort_parents_bug1) :-
+test(obj_sort_parents_bug1, blocked(rebase_family)) :-
 
    new_http_user(HTTP_User),
    obj_rebase((object_v -> citizen_v),
@@ -1018,7 +1097,7 @@ test(eval_fields1, [Class == callup_v]) :-
    obj_field(C, class, Class).
 
 
-test(eval_fields2) :-
+test(eval_fields2, blocked(rebase_family)) :-
 
    % man_v doesn't define class eval, so in this example
    % the eval from citizen_v is always used.

@@ -24,9 +24,19 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(ur_option,
-          [ur_options/2,
-           options_object/3,
-           options_object/4
+          [extract_weak/5,       % :Pred, +Options0, -Options, -Weak, +Ctx
+           options_group_list/3, % :Pred, +GroupName, -List
+           options_object/3,     % :Pred, +Options, -Object
+           options_object/5,     % :Pred, +Options, ?Weak0, ?UseDefaults0,
+                                 % -Object
+           options_predicate_to_options_class_name/2,
+           options_to_object/3,  % :Pred, +Options, -Opt
+           options_to_object/4,  % :Pred, +Options, +Weak, -Opt
+           overwrite_options/4,  % +Old, +New, +AddOverwriteFields,
+                                 % -NewOpts
+           retract_options/1,    % :Pred
+           ur_options/2          % :Pred, +Options
+           %ur_options_clear/1   % :Pred
            ]).
 
 /** <module> Options processing
@@ -37,9 +47,83 @@
 :- use_module(library(ordsets)).
 :- use_module(u(v)).
 :- use_module(u(vd)).
+:- use_module(u(util/lambda)).
 :- use_module(u(internal/decode_arg)).
+:- use_module(u(internal/check_arg)).
 :- use_module(u(internal/objects_i)).
 :- use_module(v(ur_options_v)).
+
+
+:- meta_predicate extract_weak(:, :, -, -, +).
+
+%% extract_weak(:Pred, +Options0, -Options, -Weak, +Ctx) is det.
+%
+% Extract a how_weak options group. As a side effect make sure that
+% Options is an option object corresponding to Options0.  @see
+% std_weak_arg_values/1
+%
+extract_weak(Pred, Options0, Options, Weak, Ctx) :-
+   options_to_object(Pred, Options0, Options),
+   obj_field(Options, how_weak, Weak1),
+   std_weak_arg_values(LOL),
+   decode_arg(LOL, Weak1, Weak, Ctx).
+
+:- meta_predicate options_group_list(:, +, -).
+
+%% options_group_list(:Pred, ?GroupName, -List) is nondet.
+%
+% If Pred has an option with {multi_}group GroupName returns all
+% members of that group as a List.
+%
+options_group_list(Pred, GroupName, List) :-
+   (  Pred = _:class(Class) -> true
+   ; options_predicate_to_options_class_name(Pred, Class)
+   ),
+   bagof(E,
+         O^( db_iterate(Class, group_name(GroupName), O),
+           obj_field(O, pattern, E) ),
+         List).
+
+:- meta_predicate options_predicate_to_options_class_name(:, -).
+
+% Defines the option class naming rule
+options_predicate_to_options_class_name(Module:Pred, Class) :-
+   atom(Pred), !,
+   format(atom(Class), '~a__~a_v', [Module, Pred]).
+options_predicate_to_options_class_name(Module:Pred0, Class) :-
+   functor(Pred0, Pred, _),
+   options_predicate_to_options_class_name(Module:Pred, Class).
+
+
+%% overwrite_options(+Old, +New, +AddOverwriteFields, -NewOpts) is det.
+%
+% Overwrite options values from Old by all bound values from New. Use
+% only options introduced in New class + AddOverwriteFields
+%
+overwrite_options(Old, New, AddOverwriteFields0, NewOpts) :-
+   findall_fields( \_^V^_^(nonvar(V), V \=@= [_]), % skip also
+                                                   % not initialized
+                                                   % options multi_groups
+                   New, true, false, Vs),
+   (   setof(F, V^T^member(v(F, V, T), Vs), NewFields1) -> true; NewFields1 = []),
+   sort(AddOverwriteFields0, AddOverwriteFields1),
+   ord_union(NewFields1, AddOverwriteFields1, NewFields),
+   obj_combine(Old, New, NewFields, NewOpts).
+
+% C are combined fields from A and B.
+obj_combine(A, B, B_Fields, C) :-
+   obj_unify(B, B_Fields, B_Values),
+   obj_rewrite(A, B_Fields, _, B_Values, C).
+
+:- meta_predicate retract_options(:).
+
+%% retract_options(:Pred) is det.
+%
+% Remove all options registered for Pred.
+%
+retract_options(Pred) :-
+   options_predicate_to_options_class_name(Pred, Class),
+   db_clear(Class).
 
 :- meta_predicate ur_options(:, :).
 
@@ -65,11 +149,11 @@
 %           ]).
 % ==
 
-ur_options(Pred, _:Options) :-
-
-   Ctx = context(ur_options/3, Details),
-   strip_module(Pred, Pred_Module, Pred1),
-   format(atom(Class), '~a__~a_v', [Pred_Module, Pred1]),
+ur_options(Pred, _:Options0) :-
+   Ctx = context(ur_options/2, Details),
+   options_predicate_to_options_class_name(Pred, Class),
+   % Add default options
+   Options = [[group(gtrace), option(gtrace/0)] | Options0],
    ( class_name(Class) -> true
    ; db_clear(Class),
      catch(
@@ -84,8 +168,11 @@ ur_options(Pred, _:Options) :-
                         Ctx),
              throw(Err)
            )),
-     setof(Field, db_select(Class, [group_name], [Field]),
-           Fields),
+     (  setof(Field, db_select(Class, [group_name], [Field]),
+              Fields1)
+     -> Fields = Fields1
+     ;  Fields = []
+     ),
      class_primary_id(ur_options_v, Ur_Options_Class_Id),
      class_fields(_, Ur_Options_Class_Id, _, _, Parent_Fields),
      ord_intersection(Parent_Fields, Fields, Overriding),
@@ -96,7 +183,17 @@ ur_options(Pred, _:Options) :-
         throw(error(invalid_option_definition(Options), Ctx))
      ),
      class_create(Class, ur_options_v, Fields)
+   ),
+   % Assert enums if group(list) exists
+   (  options_group_list(class(Class), list, Enums)
+   -> assert_enum(Class:Enums)
+   ;  true
    ).
+
+%:- meta_predicate ur_options_clear(:).
+
+%ur_options_clear(Pred) :-
+%   options_predicate_to_options_class_name(Pred, Class),
 
 assert_rules([], _, _, _) :- !.
 assert_rules([Rule0|T], DB, Ctx, Details) :-
@@ -104,7 +201,7 @@ assert_rules([Rule0|T], DB, Ctx, Details) :-
    must_be(list, Rule0),
    Err = error(invalid_option_definition(Rule0), Ctx),
    assert_rule(Rule0, DB, Details, Err),
-   assert_rules(T, DB, Details, Err).
+   assert_rules(T, DB, Ctx, Details).
 
 % single group
 assert_rule(Rule0, DB, Details, Err) :-
@@ -282,7 +379,7 @@ assert_group_options(_, _, _, _, _, Rule, Rule, _, _).
 select_default(Rule0, Rule, Default, Details, Err) :-
 
    (  select_option(default(Default), Rule0, Rule)
-   -> (  compound(Default) -> true
+   -> (  (compound(Default);atom(Default)) -> true
       ;  Details = 'invalid default value', throw(Err)
       )
    ;  Rule = Rule0
@@ -295,59 +392,52 @@ check_rest(Rejected, Details, Err) :-
           [Rejected]),
    throw(Err).
 
+:- meta_predicate options_to_object(:, :, -).
+:- meta_predicate options_to_object(:, :, +, -).
+
+%% options_to_object(:Pred, +Options, -Opt) is det.
+%
+% Converts Options to options object if needed
+%
+options_to_object(Pred, Options, Opt) :-
+   options_to_object(Pred, Options, strict, Opt).
+
+%% options_to_object(:Pred, +Options, +Weak, -Opt) is det.
+%
+% Converts Options to options object if needed
+%
+options_to_object(_, _:Object, _, Object) :-
+   u_object(Object), !.
+options_to_object(Pred, M:Options, Weak, Object) :-
+   must_be(list, Options),
+   options_object(Pred, M:Options, Weak, true, Object).
+
+
 :- meta_predicate options_object(:, :, -).
+:- meta_predicate options_object(:, :, ?, +, -).
 
 options_object(Pred, Options, Object) :-
-   options_object_cmn(Pred, Options, strict, Object).
-   
-options_object(Pred, Options, Weak0, Object) :-
-   Ctx = context(options_object/4, _),
+   options_object_cmn(Pred, Options, strict, true, Object).
+
+%% options_object(:Pred, +Options, ?Weak0, ?UseDefaults0, -Object) is det.
+options_object(Pred, Options, Weak0, UseDefaults0, Object) :-
+   Ctx = context(options_object/5, _),
    decode_arg([[strict],
                [_, weak]],
               Weak0, Weak, Ctx),
-   options_object_cmn(Pred, Options, Weak, Object).
-   
-options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak, Object) :-
-   format(atom(Class), '~a__~a_v', [Pred_Module, Pred]),
+   decode_arg([[true, _, t],
+               [false, fail, f]],
+               UseDefaults0, UseDefaults, Ctx),
+   options_object_cmn(Pred, Options, Weak, UseDefaults, Object).
+
+options_object_cmn(Pred_Module:Pred, Opts_Module:Options, Weak,
+                   UseDefaults, Object) :-
+   memberchk(UseDefaults-IgnoreDefaults, [true-_, false-ignore]),
+   options_predicate_to_options_class_name(Pred_Module:Pred, Class),
    obj_construct(Class,
-                 [options_in, options_out, context_module, weak],
-                 [Options, Object, Opts_Module, Weak],
-                 _).
-
-% TODO check all this functionality is realized in the new module ur_option:
-
-% override_(+Option0, +Value, +Options, -Option)
-%
-% @param Option0 can have one of these forms:
-%  $ default(Opt) : the default value for Opt
-%  $ default_to_multi(List) : the default for muli-option
-%  $ user(Opt) : user defined value for Opt
-%  $ multi(List) : list of options of one group
-%   (like [empty, length(4), length(6, 7)]).
-%
-% @param Value processed option (like length(1, 5))
-%
-% @param Options the full option list (for error reporting)
-%
-% @param Option will be one of [user(Opt), multi(List)]
-
-% process opt(match(Val)) expression, Val will be unified with
-% non-multy _(opt(Val)) option,
-/*
-override_(Prev_Stu, Stu, _, Prev_Stu) :-
-	functor(Prev_Stu, _, 1),      %e.g. user(opt(Val))
-	functor(Stu, _, 1),           %e.g. opt(match(Val))
-	arg(1, Stu, match(Val)),
-	!,
-	arg(1, Prev_Stu, Opt),
-	functor(Opt, _, 1),
-	arg(1, Opt, Val).
-
-override_(default_to_multi(_), Value, _, multi([Value])) :- !.
-override_(multi([]), Value, _, multi([Value])) :- !.
-override_(multi([V1|T]), Value, _, multi([Value, V1|T])) :- !.
-*/
-
+      [options_in, options_out, context_module, weak, ignore_defaults],
+      [Options, Object, Opts_Module, Weak, IgnoreDefaults],
+      _).
 
 :- initialization clear_decode_arg.
 

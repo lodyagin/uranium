@@ -1,7 +1,83 @@
 :- use_module(ur_option).
+:- use_module(library(assoc)).
 :- use_module(u(v)).
 
 :- begin_tests(ur_option, [setup(setup_options)]).
+
+test(options_to_assoc1) :-
+   options_object(test_pred1, [], O),
+   O / [options_in, nested] ^= [In, Nested],
+   assertion(In == []),
+   is_assoc(Nested),
+   assoc_to_list(Nested, NL),
+   assertion(NL == []).
+
+test(options_to_assoc2) :-
+   options_object(test_pred1, [length(1)], O),
+   O / nested ^= Nested,
+   is_assoc(Nested),
+   assoc_to_list(Nested, NL),
+   assertion(NL == []).
+
+test(options_to_assoc3) :-
+   options_object(test_pred10, [length(1), empty], O),
+   O / nested ^= Nested,
+   is_assoc(Nested),
+   assoc_to_list(Nested, NL),
+   assertion(NL == []).
+
+test(options_to_assoc4) :-
+   options_object(test_pred10, [test_pred10_a-[z]], O),
+   O / nested ^= Nested,
+   is_assoc(Nested),
+   assoc_to_list(Nested, [test_pred10_a-NO]),
+   assertion(NO/z =^= z).
+
+test(options_to_assoc5) :-
+   options_object(test_pred10, [test_pred10_a-[z], test_pred10_b-[zz]], O),
+   O / nested ^= Nested,
+   is_assoc(Nested),
+   get_assoc(test_pred10_a, Nested, NO1),
+   get_assoc(test_pred10_b, Nested, NO2),
+   assertion(NO1/z =^= z),
+   assertion(NO2/zz =^= zz).
+
+test(options_to_assoc6) :-
+   options_object(test_pred10, 
+                  mod1:[test_pred10_a-[z], test_pred10_b-[zz]], 
+                  O),
+   O / [context_module, nested] ^= [Module, Nested],
+   assertion(Module == mod1),
+   is_assoc(Nested),
+   get_assoc(test_pred10_a, Nested, NO1),
+   get_assoc(test_pred10_b, Nested, NO2),
+   assertion(NO1/z =^= z),
+   assertion(NO2/zz =^= zz).
+
+test(options_to_assoc7) :-
+   options_object(test_pred10, 
+                  [empty, test_pred10_a-[z], test_pred10_b-[zz]], 
+                  O),
+   O / [nested, length] ^= [Nested, Length],
+   assertion(Length == [empty]),
+   is_assoc(Nested),
+   get_assoc(test_pred10_a, Nested, NO1),
+   get_assoc(test_pred10_b, Nested, NO2),
+   assertion(NO1/z =^= z),
+   assertion(NO2/zz =^= zz).
+
+test(options_to_assoc8) :-
+   options_object(test_pred10, 
+                  [test_pred10_a-[z], length(4), 
+                   test_pred10_b-[zz], length(5)], O),
+   O / [nested, length] ^= [Nested, Length1],
+   msort(Length1, Length),
+   assertion(Length == [length(4), length(5)]),
+   is_assoc(Nested),
+   get_assoc(test_pred10_a, Nested, NO1),
+   get_assoc(test_pred10_b, Nested, NO2),
+   assertion(NO1/z =^= z),
+   assertion(NO2/zz =^= zz).
 
 test(single_option_nonrep, [setup(setup_options)]) :-
 
@@ -123,7 +199,7 @@ test(group_option1) :-
 
 test(group_option2,
     [error(domain_error(one_option_per_group, _), _)]) :-
-   
+
    options_object(test_pred9,
                   [empty, generator(test_pred1),
                    length(1)], _).
@@ -131,7 +207,7 @@ test(group_option2,
 test(group_option3) :-
    options_object(test_pred9, [], Obj),
    assertion(Obj / length =^= _).
-   
+
 test(multi_group_option1) :-
 
    OL = [empty, length(5), length(5), length(9)],
@@ -173,6 +249,24 @@ test(multi_group_option5,
         default([length/1, width/2])],
    ur_options(test_pred14, [O]).
 
+test(options_group_list1, [List =@= [length(_)]]) :-
+   options_group_list(test_pred1, length, List1),
+   msort(List1, List).
+
+test(options_group_list2, List =@= [generator(_)]) :-
+   options_group_list(test_pred2, generator, List1),
+   msort(List1, List).
+
+test(options_group_list3,
+     List =@= [empty, length(_), length_pred(_), length(_, _)]) :-
+   options_group_list(test_pred9, length, List1),
+   msort(List1, List).
+
+test(options_group_list4,
+     List =@= [empty, length(_), length_pred(_), length(_, _)]) :-
+   options_group_list(test_pred10, length, List1),
+   msort(List1, List).
+
 setup_options :-
 
    current_prolog_flag(verbose, Old_Verbose),
@@ -196,7 +290,9 @@ setup_options :-
                 option(length/1), option(length/2),
                 default([empty, length(1, 80)]),
                 meta_option(length_pred/1)],
-               [meta_option(generator/1)]]).
+               [meta_option(generator/1)]]),
+   ur_options(global:test_pred10_a, [[option(z/0)]]),
+   ur_options(global:test_pred10_b, [[option(zz/0)]]).
 
 test_pred1(_).
 test_pred2(_).

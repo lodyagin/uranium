@@ -74,15 +74,15 @@ new_class(http_connect_request_v, http_request_v, []).
 
 typedef(http_method, [value_set - http_method_set_gen]).
 
-:- meta_predicate http_method_set_gen(:, -).
+:- meta_predicate http_method_set_gen(:, -, ?, -).
 
-http_method_set_gen(Options, Value) :-
+http_method_set_gen(Options, Options, Value, Value) :-
 
-   options_object(http_method_set_gen, Options, Opt),
+   options_to_object(http_method_set_gen, Options, Opt),
 
    obj_unify(Opt,
-             [http_method_type, length, generator, seed],
-             [Method_Types, Length, Generator, Seed]),
+             [http_method_type, length, generator, rand_state],
+             [Method_Types, Length, Generator, Rand_State]),
 
    random_member(Method_Type, Method_Types),
 
@@ -103,7 +103,7 @@ http_method_set_gen(Options, Value) :-
               \/ 0'" \/ 0'/ \/ 0'[ \/ 0'] \/ 0'? \/ 0'= \/ 0'{ \/ 0'} %'"
               \/ 32 \/ 9,
       fd_dom(C, Token_Chars),
-      random_string([Length, Generator, Seed, range(Token_Chars)],
-                    atom(Value))
+      random_string([Length, Generator, Rand_State, range(Token_Chars)], 
+                    _, atom(Value))
    ).
 

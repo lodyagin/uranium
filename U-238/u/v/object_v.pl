@@ -64,6 +64,11 @@
 :- use_module(u(v)).
 :- use_module(library(clpfd)).
 :- use_module(u(ur_option)).
+:- use_module(u(rand/randgen)).
+:- use_module(u(gt/gt_numbers)).
+:- use_module(u(logging)).
+:- use_module(u(internal/objects_i)).
+:- use_module(u(ur_enums)).
 
 %
 % the class evaluation can be overrided
@@ -95,22 +100,114 @@ new_class(object_v, object_base_v, []).
 
 
 typedef(nonneg, [value_set - nonneg_set_gen]).
+typedef(string, [pretty_print - string_pretty_print(string)]). % TODO string
 
+:- meta_predicate nonneg_set_gen(:, -, ?, -).
 
-:- meta_predicate nonneg_set_gen(:, -).
-
-nonneg_set_gen(Options, Value) :-
-
-   options_object(nonneg_set_gen, Options, Opt),
-
-   obj_unify(Opt,
-             [range, generator, seed],
-             [range(From, To), generator(Gen), seed(Seed0)]),
-
-   (  Seed0 < 0
-   -> Seed is random(4 * 10**9)
-   ;  Seed = Seed0
-   ),
+nonneg_set_gen(Options0, Options, Value, Value) :-
+   options_to_object(nonneg_set_gen, Options0, Options1),
+   obj_field(Options1, range, range(From, To)),
    Value in From .. To,
-   call(Gen, Seed, _, Value).
+   random_number(Options1, Options, Value).
+
+:- meta_predicate v_gen(+, :, -, ?, -).
+
+v_gen(Class, OM:Opts, OM:Options, Obj0, Obj) :-
+   options_to_object(global:Class, Opts, Options0),
+   obj_rewrite(Options0, [global_options], [GO0], [GO2], Options1),
+   (   var(GO0) -> obj_construct(global_options_v, [], [], GO1)
+   ;   GO1 = GO0
+   ),
+   obj_rewrite(GO1, [log_options], [LogOpts0], [LogOpts2], GO2),
+   (  nonvar(LogOpts0) -> LogOpts1 = LogOpts0 ; LogOpts1 = [] ),
+   log_piece(['v_gen(', Class, ', ..., ...)'], LogOpts1),
+   change_indent(LogOpts1, LogOpts2, 2),
+   (   var(Obj0)
+   ->  obj_construct(Class, [], [], Obj0)
+   ;   true
+   ),
+   obj_fill_downcast_random(Options1, Options2, Obj0, Obj),
+   obj_rewrite(Options2, [global_options], [GO3], [GO4], Options),
+   obj_rewrite(GO3, [log_options], [LogOpts3], [LogOpts4], GO4),
+   change_indent(LogOpts3, LogOpts4, -2).
+
+:- meta_predicate list_member_gen(+, :, -, ?, -).
+
+% TODO add Class parameter
+list_member_gen(Field, OM:Options0, OM:Options, Value, Value) :-
+   (   nonvar(Value) -> Options = Options0
+   ;
+   options_to_object(global:Field, Options0, Options1),
+   Options1 // global_options // log_options ^= LogOpts,
+   (   nonvar(LogOpts) -> LogOpts1 = LogOpts ; LogOpts1 = [lf(1)] ),
+   (  random_options(Options1, Options, Det, Gen, Seed0, Seed, phase_match)
+   -> obj_field(Options1, list, Types),
+      random_member(Value, Types, Det, Gen, Seed0, Seed),
+      log_piece(['list_member_gen(', Field, ', ...,', Value, ')'], LogOpts1)
+   ;  Options0 = Options
+   )
+   ).
+
+:- meta_predicate enum_member_gen(+, :, -, ?, -).
+
+enum_member_gen(Field, OM:Options0, OM:Options,
+                enum(Enum, Integer), enum(Enum, Integer))
+:-
+   options_to_object(global:Field, Options0, Options1),
+   functor(Options1, OptionsClass, _),
+   (   ( nonvar(Integer) ; nonvar(Enum) )
+   ->  enum_integer(OptionsClass:Enum, OptionsClass:Integer),
+       Options = Options1
+   ;
+   Options1 // global_options // log_options ^= LogOpts,
+   (   nonvar(LogOpts) -> LogOpts1 = LogOpts ; LogOpts1 = [lf(1)] ),
+   log_piece(['list_member_gen(', Field, ', ..., ...)'], LogOpts1),
+   (  random_options(Options1, Options, Det, Gen, Seed0, Seed, phase_match)
+   -> obj_field(Options1, list, Types),
+      random_member(Enum, Types, Det, Gen, Seed0, Seed),
+      enum_integer(OptionsClass:Enum, OptionsClass:Integer), !
+   ;
+      Options0 = Options
+   )
+   ).
+
+:- meta_predicate vs_gen(+, +, :, -, ?, -).
+
+% Generates list of homogeneous objects of Class
+vs_gen(Field, Class, OM:Options0, OM:Options, Objs0, Objs) :-
+   options_to_object(global:Field, OM:Options0, Options1),
+   Options1 / global_options / log_options ^= LogOpts,
+   log_piece(['vs_gen(', Field, ', ', Class, ', ..., ...)'], LogOpts),
+   (   var(Objs0)
+   ->  % generate a list of random size
+       options_predicate_to_options_class_name(global:Field, OptClass1),
+       options_predicate_to_options_class_name(gt_numbers:random_number, OptClass2),
+       obj_rebase((OptClass1 -> OptClass2), Options1, Options2),
+       % Convert options length(Range) -> range(Range)
+       obj_field(Options1, length, Lengths),
+       obj_unify(Options2, [pattern, domain], [Ranges, [integer]]),
+       findall(range(Range), member(length(Range), Lengths), Ranges),
+       % Get the number of objects
+       random_number(Options2, Options3, N),
+       log_piece([N, ':'], LogOpts),
+       % Copy fields left in Options1
+       obj_rebase((OptClass2 -> OptClass1), Options3, Options4),
+       unbounded_fields(Options4, FieldsToRestore),
+       obj_unify(Options1, FieldsToRestore, ValuesToRestore),
+       obj_unify(Options4, FieldsToRestore, ValuesToRestore),
+       % Generate N random objects
+       bagof(V,
+             L^( length(L, N),
+                 member(V, L),
+                 obj_construct(Class, [], [], V)
+               ),
+             Objs1),
+       obj_fill_downcast_random_list(Options4, Options, Objs1, Objs)
+   ;
+       obj_fill_random_list(Options1, Options, Objs0, Objs)
+   ).
+
+string_pretty_print(Field, _, Value, Options) :-
+   atom_string(Atom, Value),
+   log_piece([Field, ':', Atom], Options).
 

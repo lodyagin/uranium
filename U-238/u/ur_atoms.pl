@@ -36,7 +36,8 @@
            remove_quotes/2,
            replace_char/4,
            replace_chars/4,
-           replace_all/4
+           replace_all/4,
+           smth_codes/2   % +Smth, -Codes
 ]).
 
 /** <module> Operations with atoms
@@ -142,4 +143,17 @@ replace_all(From, Atom1, To, Atom2) :-
    atom_codes(Atom2, Atom2_Codes).
 
    
+%% smth_codes(+Smth, -Codes) is det.
+%
+% Smth is atom, string or code list. 
+% Codes is a code list.
+%
+smth_codes(Codes, Codes) :- 
+   nonvar(Codes), (Codes = [] ; Codes = [_|_]), !.
+smth_codes(Atom, Codes) :- 
+   atom(Atom), !, atom_codes(Atom, Codes).
+smth_codes(String, Codes) :- 
+   string(String), !, string_codes(String, Codes).
+
+
    

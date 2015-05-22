@@ -47,6 +47,7 @@
            gen_memberchk/3,   % +Op, ?Member, +List
            index_list/4,
            list_head/4,
+           list_subarray/2,   % ?List, ?Subarray
            mapkeys/3,
            num_diff_list/2,
            pairs_replace_functor/3,
@@ -54,6 +55,8 @@
            remove_options/3, % +List0, +Remove, -List
            replace_all_sublists/4,
            replace_tail/4, % Tail1, List1, Tail, List
+           sa_nth0/4,      % ?N, +List, ?Elem, ?Rest
+           sa_nth1/4,      % ?N, +List, ?Elem, ?Rest
            select_value/4, % +Selector, +Selectors, % ?Values,
                            % ?Value (det)
 
@@ -65,7 +68,12 @@
            switch_by_value/4,
            transpose_list_matrix/2,
            trim_list/4,
-           weak_maplist/3,
+           weak_maplist/2,       % :Pred, ?L1
+           weak_maplist/3,       % :Pred, ?L1, ?L2
+           weak_maplist/4,       % :Pred, ?L1, ?L2, ?L3
+           skip_maplist/3,       % :Pred, ?L1, ?L2
+           skip_maplist/4,       % :Pred, ?L1, ?L2, ?L3
+           skip_maplist/5,       % :Pred, ?L1, ?L2, ?L3, ?L4
            write_delimited/3     % +Write_Pred, +Delimiter, +List
 ]).
 
@@ -74,12 +82,14 @@
 
 :- use_module(library(error)).
 :- use_module(library(option)).
+:- use_module(library(clpfd)).
 :- use_module(u(logging)).
+:- use_module(u(internal/check_arg)).
 
 :- meta_predicate gen_memberchk(2, ?, ?).
 :- meta_predicate write_delimited(1, +, +).
 
-:- module_transparent switch_by_value/4, weak_maplist/3.
+:- module_transparent switch_by_value/4.
 
 
 %% common_head(+List1, +List2, ?Head)
@@ -167,6 +177,63 @@ list_head2([El|List], N, [El|Head], M, M_In) :-
 	succ(M_In, M_In1),
 	list_head2(List, N1, Head, M, M_In1).
 
+
+%% list_subarray(?List, ?Subarray) is det.
+%
+% Converts between prolog list and optimized presentation
+% for e.g. random_select/6
+%
+list_subarray(List, s(A, Selection)) :-
+   nonvar(List), !,
+   A =.. [a|List],
+   functor(A, _, N),
+   (  Selection in 1..N -> true
+   ;  Selection = f ).
+list_subarray(List, Subarray) :-
+   Ctx = context(list_subarray/2, _),
+   nonvar(Subarray), !,
+   check_subarray(Subarray, Array, Selection, Ctx),
+   (  Selection == f
+   -> List = []
+   ;  findall(X, arg(Selection, Array, X), List)
+   ).
+list_subarray(_, _) :-
+   throw(error(instantiation_error, context(list_subarray/2, _))).
+
+
+%% sa_nth0(?N, +List, ?Elem, ?Rest)
+%
+sa_nth0(N, List, Elem, Rest) :-
+   Ctx = context(sa_nth0/4, _),
+   N1 #= N + 1,
+   sa_nth1_cmn(N1, List, Elem, Rest, Ctx).
+
+%% sa_nth1(?N, +List, ?Elem, ?Rest)
+%
+sa_nth1(N, List, Elem, Rest) :-
+   Ctx = context(sa_nth1/4, _),
+   sa_nth1_cmn(N, List, Elem, Rest, Ctx).
+
+sa_nth1_cmn(_, List, _, _, Ctx) :-
+  var(List), !,
+  throw(error(instantiation_error, Ctx)).
+sa_nth1_cmn(N, _, _, _, Ctx) :-
+  var(N), !,
+  throw(error(not_implemented, Ctx)).
+sa_nth1_cmn(N, List, Elem, Rest, Ctx) :-
+  must_be(positive_integer, N),
+  find_nth1(N, List, Elem, Rest, Ctx).
+
+find_nth1(N, List, Elem, s(Array, Rest), Ctx) :-
+  check_subarray(List, Array, Selected, Ctx),
+  compound(Array),
+  arg(N, Array, Elem),
+  copy_term(Selected, Rest0),
+  (  Rest0 #\= N
+  -> Rest = Rest0
+  ;  Rest = f % special value for empty
+  ).
+
 %  mapkeys
 mapkeys(_, [], []) :- !.
 
@@ -195,8 +262,8 @@ pairs_replace_functor(New_Functor, [El1|T1], [El2|T2]) :-
    pairs_replace_functor(New_Functor, T1, T2).
 
 key_order_compare(Order_SSI, Ord, AI - _, BI - _) :-
-    ord_memberchk(AI - K1, Order_SSI),
-    ord_memberchk(BI - K2, Order_SSI),
+    memberchk(AI - K1, Order_SSI),
+    memberchk(BI - K2, Order_SSI),
     compare(Ord, K1, K2).
 
 %  return difference between elements for numeric lists, i.e.
@@ -260,11 +327,11 @@ replace_all_sublists_dcg(From, To, List0, List) -->
 replace_all_sublists_dcg(From, To, [C|List0], List) -->
    [C], !,
    replace_all_sublists_dcg(From, To, List0, List).
-   
+
 replace_all_sublists_dcg(_, _, List, List) -->
    [].
 
-%% replace_tail(Tail1, List1, Tail, List) is undet.
+%% replace_tail(Tail1, List1, Tail, List) is nondet.
 %  List1 = [head |Tail1], List = [head |Tail]
 %  Attention! Gives infinite number of solutions, use with cut.
 replace_tail(Tail1, Tail1, Tail, Tail) :- acyclic_term(Tail1).
@@ -404,20 +471,102 @@ prop_list_replace([Prop_In|Tail_In],
         prop_list_replace(Tail_In, Tail_Out, From, To).
 
 
-%
-% weak_maplist(:Pred, ?List1, ?List2)
+:- meta_predicate weak_maplist(1, ?).
+:- meta_predicate weak_maplist(2, ?, ?).
+
+%% weak_maplist(:Pred, ?List1        )
 %
 % The same as standard maplist but if Pred fails don't
 % unify list elements.
 %
+weak_maplist(_, []    ) :- !.
+weak_maplist(Pred, [Head1|Tail1]) :-
+  ignore(call(Pred, Head1)),
+  weak_maplist(Pred, Tail1).
 
+%% weak_maplist(:Pred, ?List1, ?List2)
+%
+% The same as standard maplist but if Pred fails don't
+% unify list elements.
+%
 weak_maplist(_, [], []) :- !.
-
 weak_maplist(Pred, [Head1|Tail1], [Head2|Tail2]) :-
-
   ignore(call(Pred, Head1, Head2)),
   weak_maplist(Pred, Tail1, Tail2).
 
+
+:- meta_predicate weak_maplist(3, ?, ?, ?).
+
+%
+% weak_maplist(:Pred, ?List1, ?List2, ?List3)
+%
+% The same as standard maplist but if Pred fails don't
+% unify list elements.
+%
+weak_maplist(_, [], [], []) :- !.
+weak_maplist(Pred, [Head1|Tail1], [Head2|Tail2], [Head3|Tail3]) :-
+  ignore(call(Pred, Head1, Head2, Head3)),
+  weak_maplist(Pred, Tail1, Tail2, Tail3).
+
+
+% NB no skip_maplist/2, use weak_maplist/2 instead
+:- meta_predicate skip_maplist(2, ?, ?).
+:- meta_predicate skip_maplist(3, ?, ?, ?).
+:- meta_predicate skip_maplist(4, ?, ?, ?, ?).
+
+%% skip_maplist(:Pred, ?List1, ?List2)
+%
+% The same as standard maplist but if Pred fails skip this list element.
+%
+skip_maplist(_, [], []) :- !.
+skip_maplist(Pred, L1, L2) :-
+  (  L1 = [H1|T1],
+     L2 = [H2|T2],
+     call(Pred, H1, H2)
+  -> skip_maplist(Pred, T1, T2)
+  ;  skip_one_element(L1, M1),
+     skip_one_element(L2, M2),
+     skip_maplist(Pred, M1, M2)
+  ).
+
+%% skip_maplist(:Pred, ?List1, ?List2, ?List3)
+%
+% The same as standard maplist but if Pred fails skip this list element.
+%
+skip_maplist(_, [], [], []) :- !.
+skip_maplist(Pred, L1, L2, L3) :-
+  (  L1 = [H1|T1],
+     L2 = [H2|T2],
+     L3 = [H3|T3],
+     call(Pred, H1, H2, H3)
+  -> skip_maplist(Pred, T1, T2, T3)
+  ;  skip_one_element(L1, M1),
+     skip_one_element(L2, M2),
+     skip_one_element(L3, M3),
+     skip_maplist(Pred, M1, M2, M3)
+  ).
+
+%% skip_maplist(:Pred, ?List1, ?List2, ?List3, ?List4)
+%
+% The same as standard maplist but if Pred fails skip this list element.
+%
+skip_maplist(_, [], [], [], []) :- !.
+skip_maplist(Pred, L1, L2, L3, L4) :-
+  (  L1 = [H1|T1],
+     L2 = [H2|T2],
+     L3 = [H3|T3],
+     L4 = [H4|T4],
+     call(Pred, H1, H2, H3, H4)
+  -> skip_maplist(Pred, T1, T2, T3, T4)
+  ;  skip_one_element(L1, M1),
+     skip_one_element(L2, M2),
+     skip_one_element(L3, M3),
+     skip_one_element(L4, M4),
+     skip_maplist(Pred, M1, M2, M3, M4)
+  ).
+
+skip_one_element(L, L) :- var(L), !.
+skip_one_element([_|T], T).
 
 write_delimited(_:atom(Atom), Delimiter, List) :- !,
 

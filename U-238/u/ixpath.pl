@@ -177,7 +177,7 @@ ixpath(Spec, Options, Dom, Result) :-
    ixpath_cmn(Spec, Options, Dom, Result, Ctx).
 
 ixpath_cmn(Spec, Options0, Dom, Result, Ctx) :-
-   options_object(ixpath, Options0, Options),
+   options_to_object(ixpath, Options0, Options),
    ixpath2(Spec, Options, Dom, Result, Ctx).
 
 
