@@ -57,6 +57,9 @@
            replace_tail/4, % Tail1, List1, Tail, List
            sa_nth0/4,      % ?N, +List, ?Elem, ?Rest
            sa_nth1/4,      % ?N, +List, ?Elem, ?Rest
+           sa_check/4,     % +Subarray, -Array, -Selection,
+                           % +Ctx inst-
+
            select_value/4, % +Selector, +Selectors, % ?Values,
                            % ?Value (det)
 
@@ -84,7 +87,7 @@
 :- use_module(library(option)).
 :- use_module(library(clpfd)).
 :- use_module(u(logging)).
-:- use_module(u(internal/check_arg)).
+:- use_module(u(ur_intervals)).
 
 :- meta_predicate gen_memberchk(2, ?, ?).
 :- meta_predicate write_delimited(1, +, +).
@@ -192,14 +195,43 @@ list_subarray(List, s(A, Selection)) :-
 list_subarray(List, Subarray) :-
    Ctx = context(list_subarray/2, _),
    nonvar(Subarray), !,
-   check_subarray(Subarray, Array, Selection, Ctx),
+   sa_check(Subarray, Array, Selection, Ctx),
    (  Selection == f
    -> List = []
-   ;  findall(X, arg(Selection, Array, X), List)
+   ;  findall( X,
+               ( indomain(Selection),
+                 arg(Selection, Array, X) ),
+               List)
    ).
 list_subarray(_, _) :-
    throw(error(instantiation_error, context(list_subarray/2, _))).
 
+%% sa_check(+Subarray, -Array, -Selection, +Ctx) is det.
+%
+sa_check(Subarray, Array, Selection, Ctx) :-
+   Subarray = s(Array, Selection),
+   (  nonvar(Array) -> true
+   ;  throw(error(instantiation_error, Ctx))
+   ),
+   (  (  compound(Array) 
+      -> functor(Array, a, N)
+      ;  Array == a 
+      -> N = 0
+      ),
+      ( fd_var(Selection) ; integer(Selection) ; Selection == f)
+   -> true
+   ;  throw(error(type_error(subarray, Subarray), Ctx))
+   ),
+   (  Selection == f -> true
+   ;  fd_inf(Selection, Inf),
+      fd_sup(Selection, Sup),
+      (  Inf >= 1, Sup =< N -> true
+      ;  fd_dom(Selection, Dom),
+         throw(error(domain_error(valid_subarray, 
+                                  s(Array,Selection in Dom)), 
+                     Ctx))
+      )
+   ).   
 
 %% sa_nth0(?N, +List, ?Elem, ?Rest)
 %
@@ -225,11 +257,13 @@ sa_nth1_cmn(N, List, Elem, Rest, Ctx) :-
   find_nth1(N, List, Elem, Rest, Ctx).
 
 find_nth1(N, List, Elem, s(Array, Rest), Ctx) :-
-  check_subarray(List, Array, Selected, Ctx),
+  sa_check(List, Array, Selected, Ctx),
   compound(Array),
-  arg(N, Array, Elem),
+  fd_dom(Selected, Dom),
+  dom_nth1(N, Dom, K),
+  arg(K, Array, Elem),
   copy_term(Selected, Rest0),
-  (  Rest0 #\= N
+  (  Rest0 #\= K
   -> Rest = Rest0
   ;  Rest = f % special value for empty
   ).
