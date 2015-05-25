@@ -40,61 +40,69 @@ test(fd_random1_pcg32_1) :-
 test(fd_random2, [L == "bdfhjlnprtvxzciouamyqkwesg"]) :-
    random_generator(test, sequence1, G, _),
    X in 0'a..0'z,
-   findall(X, fd_random(G, 0, _, X), L).
+   findall(X, fd_random(G, 0, _, X), L0),
+   string_codes(L, L0).
 
 test(random_member1, [fail]) :-
    random_generator(test, sequence1, G, _),
-   random_member(_, "", G, 0, _).
+   random_member(_, [], G, 0, _).
 
 test(random_member2) :-
    random_generator(test, sequence1, G, _),
-   random_member(X, "a", G, 0, S),
+   random_member(X, [0'a], %'
+                 G, 0, S),
    assertion(S == 0), %NB seed is unchanged
-   assertion(X == 0'a).
+   assertion(X == 0'a). %'
 
 test(random_member3) :-
    random_generator(test, sequence1, G, _),
-   random_member(X, "aBcDeFgHiJkLmNoPqRsTuVwXyZ", G, 0, S),
+   string_codes("aBcDeFgHiJkLmNoPqRsTuVwXyZ", Cs),
+   random_member(X, Cs, G, 0, S),
    assertion(S == 1),
-   assertion(X == 0'B).
+   assertion(X == 0'B). %'
 
 test(random_member1_det1, [fail]) :-
    random_generator(test, sequence1, G, _),
-   random_member(_, "", semidet, G, 0, _).
+   random_member(_, [], semidet, G, 0, _).
 
 test(random_member1_det2, [fail]) :-
    random_generator(test, sequence1, G, _),
-   random_member(_, "", nondet, G, 0, _).
+   random_member(_, [], nondet, G, 0, _).
 
 test(random_member2_det) :-
    random_generator(test, sequence1, G, _),
-   random_member(X1, "a", semidet, G, 0, S1),
+   random_member(X1, [a], semidet, G, 0, S1),
    assertion(S1 == 0),
-   assertion(X1 == 0'a),
-   findall(p(X, S), random_member(X, "a", nondet, G, 0, S), L),
-   assertion(L == [p(0'a, 0)]).
+   assertion(X1 == a),
+   findall(p(X, S), random_member(X, [a], nondet, G, 0, S), L),
+   assertion(L == [p(a, 0)]).
 
 test(random_member3_det) :-
    random_generator(test, sequence1, G, _),
-   random_member(X1, "aBcDeFgHiJkLmNoPqRsTuVwXyZ", G, 0, S1),
+   string_codes("aBcDeFgHiJkLmNoPqRsTuVwXyZ", Cs),
+   random_member(X1, Cs, G, 0, S1),
    assertion(S1 == 1),
-   assertion(X1 == 0'B),
+   assertion(X1 == 0'B), %'
    findall(X,
-           random_member(X, "aBcDeFgHiJkLmNoPqRsTuVwXyZ",nondet,G, 0, _),
+           random_member(X, Cs,nondet,G, 0, _),
            L),
-   assertion(L == "BDFHJLNPRTVXZciouamyqkwesg").
+   string_codes("BDFHJLNPRTVXZciouamyqkwesg", ExpCs),
+   assertion(L == ExpCs).
 
-test(random_select1, [L == ""]) :-
+test(random_select1, [L == []]) :-
    random_generator(test, sequence1, G, _),
-   findall(X, random_select(X, "", _, G, 0, _), L).
+   findall(X, random_select(X, [], _, G, 0, _), L).
 
-test(random_select2, [L == [p(0'a, [])]]) :-
+test(random_select2, [L == [p(0'a, [])]]) :- %'
    random_generator(test, sequence1, G, _),
-   findall(p(X, R), random_select(X, "a", R, G, 0, _), L).
+   findall(p(X, R), random_select(X, [0'a], %'
+                                  R, G, 0, _), L).
 
-test(random_select3, [L == "BDFHJLNPRTVXZciouamyqkwesg"]) :-
+test(random_select3, [L == ExpCs]) :-
    random_generator(test, sequence1, G, _),
-   findall(X, random_select(X, "aBcDeFgHiJkLmNoPqRsTuVwXyZ",_,G, 0, _), L).
+   string_codes("aBcDeFgHiJkLmNoPqRsTuVwXyZ", Cs),
+   findall(X, random_select(X, Cs, _, G, 0, _), L),
+   string_codes("BDFHJLNPRTVXZciouamyqkwesg", ExpCs).
 
 test(random_options1_local_only) :-
     options_object(test_pred1, [rand_state(5, Seed2), nondet,

@@ -47,7 +47,8 @@
            gen_memberchk/3,   % +Op, ?Member, +List
            index_list/4,
            list_head/4,
-           list_subarray/2,   % ?List, ?Subarray
+           list_subarray/2,     % ?List, ?Subarray
+           list_to_subarray/3,  % +List, -Subarray, ?Ctx
            mapkeys/3,
            num_diff_list/2,
            pairs_replace_functor/3,
@@ -55,7 +56,9 @@
            remove_options/3, % +List0, +Remove, -List
            replace_all_sublists/4,
            replace_tail/4, % Tail1, List1, Tail, List
+           sa_nth0/3,      % ?N, +List, ?Elem
            sa_nth0/4,      % ?N, +List, ?Elem, ?Rest
+           sa_nth1/3,      % ?N, +List, ?Elem
            sa_nth1/4,      % ?N, +List, ?Elem, ?Rest
            sa_check/4,     % +Subarray, -Array, -Selection,
                            % +Ctx inst-
@@ -207,16 +210,34 @@ list_subarray(List, Subarray) :-
 list_subarray(_, _) :-
    throw(error(instantiation_error, context(list_subarray/2, _))).
 
+%% list_to_subarray(+List, -Subarray, ?Ctx) is det.
+%
+% If List is a subarray check it and unifies it with Subarray.
+% If List is an array calls list_subarray/2.
+%
+list_to_subarray(List, Subarray, Ctx) :-
+   (  nonvar(List) -> true
+   ;  throw(error(instantiation_error, Ctx))
+   ),
+   (  List = s(_, _)
+   -> sa_check(List, _, _, Ctx),
+      Subarray = List
+   ;  list_subarray(List, Subarray)
+   ).
+
+
 %% sa_check(+Subarray, -Array, -Selection, +Ctx) is det.
 %
 sa_check(Subarray, Array, Selection, Ctx) :-
-   Subarray = s(Array, Selection),
+   (  Subarray = s(Array, Selection) -> true
+   ;   throw(error(type_error(subarray, Subarray), Ctx))
+   ),
    (  nonvar(Array) -> true
    ;  throw(error(instantiation_error, Ctx))
    ),
-   (  (  compound(Array) 
+   (  (  compound(Array)
       -> functor(Array, a, N)
-      ;  Array == a 
+      ;  Array == a
       -> N = 0
       ),
       ( fd_var(Selection) ; integer(Selection) ; Selection == f)
@@ -228,11 +249,11 @@ sa_check(Subarray, Array, Selection, Ctx) :-
       fd_sup(Selection, Sup),
       (  Inf >= 1, Sup =< N -> true
       ;  fd_dom(Selection, Dom),
-         throw(error(domain_error(valid_subarray, 
-                                  s(Array,Selection in Dom)), 
+         throw(error(domain_error(valid_subarray,
+                                  s(Array,Selection in Dom)),
                      Ctx))
       )
-   ).   
+   ).
 
 %% sa_length(+Subarray, -Length)
 %
@@ -247,12 +268,25 @@ sa_length(Subarray, Length) :-
    ;  fd_size(Selection, Length)
    ).
 
+%% sa_nth0(?N, +List, ?Elem)
+%
+sa_nth0(N, List, Elem) :-
+   Ctx = context(sa_nth0/3, _),
+   N1 #= N + 1,
+   sa_nth1_cmn(N1, List, Elem, _, Ctx).
+
 %% sa_nth0(?N, +List, ?Elem, ?Rest)
 %
 sa_nth0(N, List, Elem, Rest) :-
    Ctx = context(sa_nth0/4, _),
    N1 #= N + 1,
    sa_nth1_cmn(N1, List, Elem, Rest, Ctx).
+
+%% sa_nth1(?N, +List, ?Elem)
+%
+sa_nth1(N, List, Elem) :-
+   Ctx = context(sa_nth1/3, _),
+   sa_nth1_cmn(N, List, Elem, _, Ctx).
 
 %% sa_nth1(?N, +List, ?Elem, ?Rest)
 %

@@ -1,3 +1,5 @@
+%  -*-coding: mule-utf-8-unix; fill-column: 65-*-
+%
 %  This file is a part of Uranium, a general-purpose functional
 %  test platform.
 %
@@ -24,19 +26,21 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(randgen,
-          [fd_random/4,      % :Generator, +Rand_State0, -Rand_State, -X
+          [fd_random/4,      % :Generator, +Rand_State0,
+                             % -Rand_State, -X
            fd_random/5,      % +Opts, :Generator, +Rand_State0,
                              % -Rand_State, -X
-           prepare_random_state/3, % :Gen, +Rand_State0, -Rand_State
+           prepare_random_state/3, % :Gen, +Rand_State0,
+                                   % -Rand_State
            random_generator/4,
            random_integer/3, % +State, +End, -Value
-           random_member/5,  % -X, +List, :Generator, +Rand_State0, 
-                             % -Rand_State
-           random_member/6,  % -X, +List, +Det, :Generator, +Rand_State0, 
-                             % -Rand_State
+           random_member/5,  % -X, +List, :Generator,
+                             % +Rand_State0, -Rand_State
+           random_member/6,  % -X, +List, +Det, :Generator,
+                             % +Rand_State0, -Rand_State
            random_options/7, % +Options0, -Options, -Det,
-                             % -Generator, -Rand_State0, -Rand_State, 
-                             % -Phase_Match
+                             % -Generator, -Rand_State0,
+                             % -Rand_State, -Phase_Match
            random_select/6,  % -X, +List, -Rest, :Generator,
                              % +Rand_State0, -Rand_State
            % PRNG implementations
@@ -53,6 +57,8 @@
 :- use_module(library(clpfd)).
 :- use_module(u(v)).
 :- use_module(u(logging)).
+:- use_module(u(ur_lists)).
+:- use_module(u(ur_option)).
 
 :- multifile random_generator/4.
 :- multifile prepare_random_state/3.
@@ -78,26 +84,30 @@ fd_random(LogOpts, Generator, Rand_State0, Rand_State, X) :-
 
 fd_random_cmn(_, Generator, Rand_State0, Rand_State, X) :-
    prepare_random_state(Generator, Rand_State0, Rand_State1),
-   %fd_size(X, N_),
-   %log_piece(['enumerating the domain of ', N_, ' elements'], LogOpts),
    findall(X, indomain(X), All_Possible_Values), !,
-   random_select(X, All_Possible_Values, _, Generator, Rand_State1, Rand_State).
+   random_select(X, All_Possible_Values, _, Generator,
+                 Rand_State1, Rand_State).
 
 
 :- meta_predicate random_member(-, +, +, :, +, -).
 
-%% random_member(-X, +List, +Det, :Generator, +Rand_State0, -Rand_State).
+%% random_member(-X, +List, +Det, :Generator, +Rand_State0,
+%                -Rand_State).
 %
 % X is a random member of List.
 % @param Det nondet or semidet. It selects random_member/5 or
 %   random_select/6 internally depending on this parameter.
 %
-random_member(X, List, Det, Generator, Rand_State0, Rand_State) :-
-   length(List, N),
+random_member(X, List0, Det, Generator, Rand_State0, Rand_State) :-
+   Ctx = context(random_member/6, _),
+   list_to_subarray(List0, List, Ctx),
+   sa_length(List, N),
    N > 0,
    (  Det == nondet
-   -> random_select_int(X, N, List, _, Generator, Rand_State0, Rand_State)
-   ;  random_member_int(X, N, List, Generator, Rand_State0, Rand_State)
+   -> random_select_int(X, N, List, _, Generator, Rand_State0,
+                        Rand_State)
+   ;  random_member_int(X, N, List, Generator, Rand_State0,
+                        Rand_State)
    ).
 
 :- meta_predicate random_member(-, +, :, +, -).
@@ -105,19 +115,24 @@ random_member(X, List, Det, Generator, Rand_State0, Rand_State) :-
 %% random_member(-X, +List, :Generator, +Rand_State0, -Rand_State) 
 %%              is semidet.
 %
-% X is a random member of List. It is like random_member/2 but uses the
-% defined Generator and Rand_State.
+% X is a random member of List. It is like random_member/2 but uses
+% the defined Generator and Rand_State.
 %
-random_member(X, List, Generator, Rand_State0, Rand_State) :-
-   length(List, N),
-   random_member_int(X, N, List, Generator, Rand_State0, Rand_State).
+random_member(X, List0, Generator, Rand_State0, Rand_State) :-
+   Ctx = context(random_member/5, _),
+   list_to_subarray(List0, List, Ctx),
+   sa_length(List, N),
+   random_member_int(X, N, List, Generator, Rand_State0,
+                     Rand_State).
 
-random_member_int(X, 1, [X], _, Rand_State, Rand_State) :- !.
-random_member_int(X, N, List, Generator, Rand_State0, Rand_State) :-
+random_member_int(X, 1, List, _, Rand_State, Rand_State) :- !,
+   sa_nth1(1, List, X).
+random_member_int(X, N, List, Generator, Rand_State0, Rand_State)
+:-
    N > 0,
    call(Generator, Rand_State0, Rand_State),
    random_integer(Rand_State, N, Idx),
-   nth0(Idx, List, X).
+   sa_nth0(Idx, List, X).
 
 
 :- meta_predicate random_options(+, -, -, -, -, -, -).
@@ -215,21 +230,27 @@ random_options(Options0, Options, Det, Generator,
 
 :- meta_predicate random_select(-, +, -, :, +, -).
 
-%% random_select(-X, +List, -Rest, :Generator, +Rand_State0, -Rand_State) is nondet.
+%% random_select(-X, +List, -Rest, :Generator, +Rand_State0,
+%                -Rand_State) is nondet.
 %
 % Randomly select an element. It selects other elements randomly on
-% BT. Fails if List is the empty list.
+% BT. Fails if List is an empty list.
 %
-random_select(X, List, Rest, Generator, Rand_State0, Rand_State) :-
-   length(List, N),
-   random_select_int(X, N, List, Rest, Generator, Rand_State0, Rand_State).
+random_select(X,List0, Rest, Generator, Rand_State0, Rand_State) :-
+   Ctx = context(random_select/6, _),
+   list_to_subarray(List0, List, Ctx),
+   sa_length(List, N),
+   random_select_int(X, N, List, Rest, Generator, Rand_State0,
+                     Rand_State).
 
-random_select_int(X, 1, [X], [], _, Rand_State, Rand_State) :- !.
-random_select_int(X, N, List, Rest, Generator, Rand_State0, Rand_State) :-
+random_select_int(X, 1, List, [], _, Rand_State, Rand_State) :- !,
+   sa_nth1(1, List, X).
+random_select_int(X, N, List, Rest, Generator, Rand_State0,
+                  Rand_State) :-
    N > 0,
    call(Generator, Rand_State0, Rand_State1),
    random_integer(Rand_State1, N, Idx),
-   nth0(Idx, List, X1, Rest1),
+   sa_nth0(Idx, List, X1, Rest1),
    (  X = X1, Rest = Rest1, Rand_State1 = Rand_State
    ;  succ(N1, N),
       random_select_int(X, N1, Rest1, Rest, Generator, 

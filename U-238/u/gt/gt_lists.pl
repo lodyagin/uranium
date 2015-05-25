@@ -5,6 +5,9 @@
 :- use_module(library(error)).
 :- use_module(u(rand/randgen)).
 :- use_module(u(ur_terms)).
+:- use_module(u(ur_option)).
+:- use_module(u(v)).
+:- use_module(u(ur_lists)).
 
 :- meta_predicate random_sublist(+, :, -, -).
 
@@ -18,16 +21,20 @@ random_sublist(List, OM:Options0, Options, Sublist) :-
    -> true
    ;  Options = Options1
    ),
-   random_sublist_cmn(List, OM:Options0, Options1, Sublist, Sublist, Ctx).
+   random_sublist_cmn(List, OM:Options0, Options1, Sublist,
+                      Sublist, Ctx).
 
-random_sublist_cmn(List, OM:Options0, Options, Sublist, Sublist, _) :-
+random_sublist_cmn(List0, OM:Options0, Options, Sublist, Sublist,
+                   Ctx)
+:-
    (  ground(Sublist)
    -> Options0 = Options
    ;
       options_to_object(random_sublist, OM:Options0, Options1),
       (  random_options(Options1, Options, Det, Generator,
                         Seed0, Seed, phase_match)
-      -> length(List, FullLength),
+      -> list_to_subarray(List0, List, Ctx),
+         sa_length(List, FullLength),
          obj_field(Options, length, Lengths),
          random_member(length(LengthDom0), Lengths,
                        Det, Generator, Seed0, Seed1),
@@ -35,7 +42,8 @@ random_sublist_cmn(List, OM:Options0, Options, Sublist, Sublist, _) :-
                           LengthDom0, LengthDom),
          N in LengthDom,
          fd_random(Generator, Seed1, Seed2, N),
-         random_sublist_int(List, N, Generator, Seed2, Seed, Sublist),
+         random_sublist_int(List, N, Generator, Seed2, Seed,
+                            Sublist),
          (  Det == semidet -> ! ; true )
       ;  Options1 = Options
       )
