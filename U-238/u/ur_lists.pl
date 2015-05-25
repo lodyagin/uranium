@@ -59,6 +59,7 @@
            sa_nth1/4,      % ?N, +List, ?Elem, ?Rest
            sa_check/4,     % +Subarray, -Array, -Selection,
                            % +Ctx inst-
+           sa_length/2,    % +Subarray, -Length
 
            select_value/4, % +Selector, +Selectors, % ?Values,
                            % ?Value (det)
@@ -232,6 +233,19 @@ sa_check(Subarray, Array, Selection, Ctx) :-
                      Ctx))
       )
    ).   
+
+%% sa_length(+Subarray, -Length)
+%
+% Gets length of subarray (the length of used interval)
+%
+sa_length(Subarray, Length) :-
+   Ctx = context(sa_length/2, _),
+   must_be(nonvar, Subarray),
+   sa_check(Subarray, _, Selection, Ctx),
+   (  Selection == f
+   -> Length = 0
+   ;  fd_size(Selection, Length)
+   ).
 
 %% sa_nth0(?N, +List, ?Elem, ?Rest)
 %

@@ -103,6 +103,28 @@ test(list_subarray2, Y==[]) :-
    list_subarray([], X), 
    list_subarray(Y, X).
 
+test(sa_length1, N1 == 0) :-
+   list_subarray([], SA1),
+   sa_length(SA1, N1),
+   assertion(N1 == 0).
+
+test(sa_length2, N1 == 2) :-
+   list_subarray([a, b], SA1),
+   sa_length(SA1, N1),
+   assertion(N1 == 2).
+
+test(sa_length3) :-
+   list_subarray([a, b, c], SA1),
+   sa_nth1(2, SA1, _, SA2),
+   sa_length(SA2, N2),
+   assertion(N2 == 2),
+   sa_nth1(2, SA2, _, SA3),
+   sa_length(SA3, N3),
+   assertion(N3 == 1),
+   sa_nth1(1, SA3, _, SA4),
+   sa_length(SA4, N4),
+   assertion(N4 == 0).
+
 test(sa_nth1_1, fail) :-
    list_subarray([], SA),
    sa_nth1(1, SA, _, _).
