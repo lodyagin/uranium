@@ -37,11 +37,11 @@ test(fd_random1_pcg32_1) :-
    assertion(X1 == 12),
    assertion(X2 == 10).
 
-test(fd_random2, [L == "bdfhjlnprtvxzciouamyqkwesg"]) :-
+test(fd_random2, [L == ExpCs]) :-
    random_generator(test, sequence1, G, _),
    X in 0'a..0'z,
-   findall(X, fd_random(G, 0, _, X), L0),
-   string_codes(L, L0).
+   findall(X, fd_random(G, 0, _, X), L),
+   string_codes("bdfhjlnprtvxzciouamyqkwesg", ExpCs).
 
 test(random_member1, [fail]) :-
    random_generator(test, sequence1, G, _),
