@@ -77,6 +77,11 @@ setup_options :-
                 option(length/1),
                 default([length(0..max)])] % up to full length of src list
               | Random ]),
+   ur_options(gt_db:db_copy_random,
+              [[multi_group(length),
+                option(length/1),
+                default([length(0..max)])] % up to full length of src list
+              | Random ]),
    ur_options(ixpath:ixpath,
               [[group(v),
                 option(v/0),
