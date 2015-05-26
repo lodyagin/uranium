@@ -32,9 +32,11 @@
            arg_bac/3,
            arg_bca/3,
            chain_call/4,       % :Chain, +Weak, ?In, ?Out
-           weak_arg_bac/3,
            replace_subterms/3, % :Replacer, @Term0, -Term
-           setarg_tnv/3
+           seeded_rep/5,       % :GenPred, :AccPred, +Count, 
+                               % +Seed0, -Seed
+           setarg_tnv/3,
+           weak_arg_bac/3
           ]).
 
 :- use_module(library(error)).
@@ -82,6 +84,28 @@ replace_subterms(Replacer, Term0, Term) :-
       Term =.. [Head1|Tail]  % never replace a head
    ;  Term = Term1
    ).
+
+:- meta_predicate seeded_rep(3, 1, +, +, -).
+
+%% seeded_rep(:GenPred, :AccPred, +Count, +Seed0, -Seed) is det.
+%
+% Calls GenPred(Seed0, Seed1, X) and then AccPred(X) Count times.
+% Pass Seed1 as Seed0 to the next call. Unifies Seed 
+% with Seed1 of the last GenPred called.
+%
+seeded_rep(_, _, 0, Seed, Seed) :- !.
+seeded_rep(GenPred, AccPred, Count, Seed0, Seed) :-
+   (  integer(Count), Count > 0 -> true
+   ;  must_be(nonneg, Count) 
+   ),
+   (  call(GenPred, Seed0, Seed1, X) -> true
+   ;  throw(error(pred_fails(GenPred), contex(seeded_rep/5, _)))
+   ),
+   (  call(AccPred, X) -> true
+   ;  throw(error(pred_fails(AccPred), contex(seeded_rep/5, _)))
+   ),
+   succ(Count1, Count),
+   seeded_rep(GenPred, AccPred, Count1, Seed1, Seed).
 
 :- meta_predicate chain_call(:, +, ?, ?).
 
