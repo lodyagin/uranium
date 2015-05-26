@@ -20,21 +20,28 @@ dict_file_name(u('dict/zali_translit.txt')).
 %
 % Randomly select any word from dictionary. Select all other words (randomly) on BT.
 %
-load_random_word(Pattern, Generator, Rand_State0, Rand_State, String) :-
+load_random_word(Pattern, Generator, Rand_State0, Rand_State, 
+                 String) 
+:-
     dict_file_name(File_Spec),
-    load_random_word(File_Spec, Pattern, Generator, Rand_State0, Rand_State, String).
-load_random_word(File_Spec, Pattern, Generator, Rand_State0, Rand_State, String) :-
+    load_random_word(File_Spec, Pattern, Generator, Rand_State0, 
+                     Rand_State, String).
+load_random_word(File_Spec, Pattern, Generator, Rand_State0, 
+                 Rand_State, String) :-
     prepare_random_state(Generator, Rand_State0, Rand_State1),
     (  absolute_file_name(File_Spec, File_Name, [solutions(all)]),
        exists_file(File_Name)
     -> true
-    ;  throw(error(existence_error(source_sink, File_Spec), context(load_random_word/6, _)))
+    ;  throw(error(existence_error(source_sink, File_Spec), 
+                   context(load_random_word/6, _)))
     ),
     file_to_lines_list(File_Name, Pattern, List),
-    random_select(String, List, _, Generator, Rand_State1, Rand_State).
+    random_select(String, List, _, Generator, Rand_State1, 
+                  Rand_State).
 
 file_to_lines_list(File_Name, Pattern, Lines) :-
-    phrase_from_file(load_lines(Pattern, Lines), File_Name, [encoding(iso_latin_1)]).
+    phrase_from_file(load_lines(Pattern, Lines), File_Name, 
+                     [encoding(iso_latin_1)]).
 
 load_lines(Pattern, Lines) -->
     string_without("\n", Line), "\n", !,
@@ -49,9 +56,11 @@ load_random_words(Num, Words) :-
     dict_file_name(File_Name),
     random_list(Num, Ceil, Idx_L), 
     sort(Idx_L, Idx_L_Sorted), 
-    num_diff_list([-1|Idx_L_Sorted], Idx_Diff), % -1 - indexing from 0
+    num_diff_list([-1|Idx_L_Sorted], Idx_Diff), % -1 - indexing 
+                                                % from 0
     open(File_Name, read, Stream),
-    load_lines_by_idx(Stream, Idx_L_Sorted, Idx_Diff, Indexed_Words),
+    load_lines_by_idx(Stream, Idx_L_Sorted, Idx_Diff, 
+                      Indexed_Words),
     extract_by_key_order(Idx_L, Indexed_Words, OI_Words),
     maplist(dekeying, OI_Words, Words),
     close(Stream).
