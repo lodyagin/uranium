@@ -95,8 +95,8 @@ obj_fill_random_req([v(Name,Value0,Type)|T], Assoc, Module, GO0, GO,
    % process gtrace option
    obj_field(O3, gtrace, GTrace),
    (  var(GTrace) -> true
-   ;  (  random_options(O3, _, _, _, _, _, phase_mismatch) -> true
-      ;  gtrace )
+   ;  (  random_options(O3, _, _, _, _, _, phase_match) -> gtrace
+      ;  true )
    ),
    % Replace the value of the field.
    % We always do replays to allow downcast of modified sub-values

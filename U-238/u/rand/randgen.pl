@@ -112,7 +112,7 @@ random_member(X, List0, Det, Generator, Rand_State0, Rand_State) :-
 
 :- meta_predicate random_member(-, +, :, +, -).
 
-%% random_member(-X, +List, :Generator, +Rand_State0, -Rand_State) 
+%% random_member(-X, +List, :Generator, +Rand_State0, -Rand_State)
 %%              is semidet.
 %
 % X is a random member of List. It is like random_member/2 but uses
@@ -137,7 +137,7 @@ random_member_int(X, N, List, Generator, Rand_State0, Rand_State)
 
 :- meta_predicate random_options(+, -, -, -, -, -, -).
 
-%% random_options(+Options0, -Options, -Det, -Generator, 
+%% random_options(+Options0, -Options, -Det, -Generator,
 %%                -Rand_State0, -Rand_State, ?Phase_Match) is det.
 %
 % Extracts common random options. It combines Options0 and Options0 /
@@ -148,7 +148,7 @@ random_member_int(X, N, List, Generator, Rand_State0, Rand_State)
 %   Options0/global_options/rand_options contains rand_state/1,2 Options
 %   will contain the rewritten rand_state value:
 %     rand_state(Rand_State0) -> rand_state(Rand_State),
-%     rand_state(Rand_State0, Rand_State) 
+%     rand_state(Rand_State0, Rand_State)
 %         -> rand_state(Rand_State, Rand_State1)
 % @param Phase_Match bound to {phase_match,
 %   phase_mismatch, true, false} or is unbound. phase_match means
@@ -253,7 +253,7 @@ random_select_int(X, N, List, Rest, Generator, Rand_State0,
    sa_nth0(Idx, List, X1, Rest1),
    (  X = X1, Rest = Rest1, Rand_State1 = Rand_State
    ;  succ(N1, N),
-      random_select_int(X, N1, Rest1, Rest, Generator, 
+      random_select_int(X, N1, Rest1, Rest, Generator,
                         Rand_State1, Rand_State)
    ).
 

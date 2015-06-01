@@ -76,7 +76,7 @@ random_string(OM:Options0, OM:Options, Str0, Str) :-
    random_string_cmn(OM:Options0, Options1, Str0, Str, Ctx).
 
 random_string_cmn(OM:Options0, Options, Str, Str, _) :-
-   (   nonvar(Str), ( Str = [_|_] ; Str = [] )
+   (   nonvar(Str), ( atomic(Str); Str = [_|_] ; Str = [] )
    ->
        Options0 = Options % skip string generation
    ;

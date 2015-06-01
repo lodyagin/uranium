@@ -100,15 +100,19 @@ options_predicate_to_options_class_name(Module:Pred0, Class) :-
 % Overwrite options values from Old by all bound values from New. Use
 % only options introduced in New class + AddOverwriteFields
 %
-overwrite_options(Old, New, AddOverwriteFields0, NewOpts) :-
+overwrite_options(Old, New, AddOverwriteFields, NewOpts) :-
    findall_fields( \_^V^_^(nonvar(V), V \=@= [_]), % skip also
                                                    % not initialized
                                                    % options multi_groups
-                   New, true, false, Vs),
+                   New, true, false, Vs1),
+   findall( v(F, V, T),
+	    ( member(F, AddOverwriteFields),
+	      named_arg(New, F, V, T),
+	      nonvar(V) ),
+	    Vs2 ),
+   append(Vs1, Vs2, Vs),
    (   setof(F, V^T^member(v(F, V, T), Vs), NewFields1) -> true; NewFields1 = []),
-   sort(AddOverwriteFields0, AddOverwriteFields1),
-   ord_union(NewFields1, AddOverwriteFields1, NewFields),
-   obj_combine(Old, New, NewFields, NewOpts).
+   obj_combine(Old, New, NewFields1, NewOpts).
 
 % C are combined fields from A and B.
 obj_combine(A, B, B_Fields, C) :-
