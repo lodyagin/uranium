@@ -16,10 +16,11 @@
 % @author Sergei Lodyagin
 
 :- module(ur_intervals,
-          [dom_member/2, % ?El, +Dom
-           dom_nth0/3, % ?Idx, +Dom, ?N
-           dom_nth1/3,  % ?Idx, +Dom, ?N
-           interval_size  % +Interval, -Size
+          [any_to_intervals/2, % +Any, -Intervals
+           intervals_member/2, % ?El, +Dom
+           intervals_nth0/3, % ?Idx, +Dom, ?N
+           intervals_nth1/3,  % ?Idx, +Dom, ?N
+           intervals_size/2  % +Interval, -Size
           ]).
 
 :- use_module(library(error)).
@@ -40,65 +41,63 @@ intervals_size(from_to(From, To), Size) :- !,
 intervals_size(Term, _) :-
   domain_error(uranium_intervals, Term).
 
-%% dom_member(?El, +Dom) is nondet.
+%% intervals_member(?El, +Interval) is nondet.
 %
-dom_member(El, Dom) :-
-  Ctx = context(dom_member/2, _),
-  any_to_intervals(Dom, Intervals, Ctx),
-  dom_member_int(El, Intervals).
-
-dom_member_int(Y, from_to(From, To)) :- !,
+intervals_member_int(Y, from_to(From, To)) :- !,
   between(From, To, Y).
-dom_member_int(Y, split(_, Left, Right, _)) :-
-  (  dom_member_int(Y, Left)
-  ;  dom_member_int(Y, Right)
+intervals_member_int(Y, split(_, Left, Right, _)) :-
+  (  intervals_member_int(Y, Left)
+  ;  intervals_member_int(Y, Right)
   ).
 
-dom_member_int(Y, [n(From)-n(To)|T]) :-
-  (  between(From, To, Y)
-  ;  dom_member_int(Y, T)
-  ).
-
-%% dom_nth0(?Idx, +Dom, ?N)
+%% intervals_nth0(?Idx, +Interval, ?N)
 %
-dom_nth0(Idx, Dom, N) :-
-  Ctx = context(dom_nth0/3, _),
-  dom_nth0_cmn(Idx, Dom, N, Ctx).
+intervals_nth0(Idx, Interval, N) :-
+  Ctx = context(intervals_nth0/3, _),
+  intervals_nth0_cmn(Idx, Interval, N, Ctx).
 
-%% dom_nth1(?Idx, +Dom, ?N)
+%% intervals_nth1(?Idx, +Interval, ?N)
 %
-dom_nth1(Idx, Dom, N) :-
-  Ctx = context(dom_nth0/3, _),
+intervals_nth1(Idx, Interval, N) :-
+  Ctx = context(intervals_nth0/3, _),
   Idx0 #= Idx - 1,
-  dom_nth0_cmn(Idx0, Dom, N, Ctx).
+  intervals_nth0_cmn(Idx0, Interval, N, Ctx).
 
-dom_nth0_cmn(Idx, _, _, Ctx) :-
+intervals_nth0_cmn(Idx, _, _, Ctx) :-
   var(Idx), !,
   throw(error(not_implemented, Ctx)).
-dom_nth0_cmn(Idx, Dom0, N, Ctx) :-
+intervals_nth0_cmn(Idx, Interval, N, Ctx) :-
   must_be(nonneg, Idx),
-  any_to_intervals(Dom0, Intervals, Ctx),
-  dom_nth0_int(Idx, Intervals, N).
+  intervals_nth0_int(Idx, Intervals, N).
      
-dom_nth0_int(_, [], _) :- !, fail.
-dom_nth0_int(K, [n(N)-n(M)|T], El) :-
-  L is M - N + 1,
-  (  K < L
-  -> El is N + K
-  ;  K1 is K - L,
-     dom_nth0_int(K1, T, El)
+intervals_nth0_int(Idx, from_to(From, To), Value) :-
+  Value is From + Idx,
+  Value <= To.
+intervals_nth0_int(Idx, split(_, Left, Right, Size), Value) :-
+  intervals_size(Left, LeftSize),
+  (  Idx < LeftSize
+  -> intervals_nth0_int(Idx, Left, Value)
+  ;  Idx < Size
+  -> Idx1 is Idx - LeftSize,
+     intervals_nth0_int(Idx, Right, Value)
   ).
 
-any_to_intervals(Any, Intervals, Ctx) :- 
+%% clpfd_domain(?Any, -Domain) is det.
+%
+% Converts different types to clpfd domain
+%
+clpfd_domain(Any, Domain) :-
   (  var(Any)
   -> (  fd_var(Any)
-     -> clpfd:fd_get(Any, Dom, _),
-        clpfd:domain_intervals(Dom, Intervals)
-     ;  throw(error(instantiation_error, Ctx))
+     -> clpfd:fd_get(Any, Domain, _),
+     ;  instantiation_error(Any)
      )
-  ;  (  Any = [_|_], Any == [] )
-  -> Intervals = Any
   ;  clpfd:is_drep(Any)
+  -> 
+
+any_to_intervals(Any, Intervals) :- 
+        clpfd_domain_intervals(Dom, Intervals)
+     )
   -> phrase(clpfd:drep_to_intervals(Any), Intervals)
   ;  clpfd:domain_intervals(Any, Intervals)
   -> true  
