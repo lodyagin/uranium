@@ -16,7 +16,8 @@
 % @author Sergei Lodyagin
 
 :- module(ur_intervals,
-          [any_to_intervals/2, % +Any, -Intervals
+          [%any_to_intervals/2, % +Any, -Intervals
+           clpfd_domain_intervals/2, % +Dom, -Intervals
            intervals_member/2, % ?El, +Dom
            intervals_nth0/3, % ?Idx, +Dom, ?N
            intervals_nth1/3,  % ?Idx, +Dom, ?N
@@ -30,7 +31,7 @@
 %
 % Size is a number of elements in Intervals.
 %
-intervals_size(Intervals, Size) :-
+intervals_size(Intervals, _) :-
   var(Intervals), !,
   instantiation_error(Intervals).
 intervals_size(split(_, _, _, Size), Size) :- !.
@@ -46,9 +47,20 @@ intervals_size(Term, _) :-
 intervals_member_int(Y, from_to(From, To)) :- !,
   between(From, To, Y).
 intervals_member_int(Y, split(_, Left, Right, _)) :-
+  var(Y), !,
   (  intervals_member_int(Y, Left)
   ;  intervals_member_int(Y, Right)
   ).
+intervals_member_int(Y, split(N, Left, Right, _)) :-
+  nonvar(Y),
+  (   Y < N
+  ->  intervals_member_int(Y, Left)
+  ;   intervals_member_int(Y, Right)
+  ).
+
+intervals_member(El, Interval) :-
+  must_be(ground, Interval),
+  intervals_member_int(El, Interval).
 
 %% intervals_nth0(?Idx, +Interval, ?N)
 %
@@ -66,41 +78,65 @@ intervals_nth1(Idx, Interval, N) :-
 intervals_nth0_cmn(Idx, _, _, Ctx) :-
   var(Idx), !,
   throw(error(not_implemented, Ctx)).
-intervals_nth0_cmn(Idx, Interval, N, Ctx) :-
+intervals_nth0_cmn(Idx, Intervals, N, _) :-
   must_be(nonneg, Idx),
   intervals_nth0_int(Idx, Intervals, N).
-     
+
 intervals_nth0_int(Idx, from_to(From, To), Value) :-
   Value is From + Idx,
-  Value <= To.
+  Value =< To.
 intervals_nth0_int(Idx, split(_, Left, Right, Size), Value) :-
   intervals_size(Left, LeftSize),
   (  Idx < LeftSize
   -> intervals_nth0_int(Idx, Left, Value)
   ;  Idx < Size
   -> Idx1 is Idx - LeftSize,
-     intervals_nth0_int(Idx, Right, Value)
+     intervals_nth0_int(Idx1, Right, Value)
   ).
+intervals_nth0_int(_, empty) :- fail.
+intervals_nth0_int(_, I) :- domain_error(intervals, I).
 
 %% clpfd_domain(?Any, -Domain) is det.
 %
 % Converts different types to clpfd domain
 %
-clpfd_domain(Any, Domain) :-
-  (  var(Any)
-  -> (  fd_var(Any)
-     -> clpfd:fd_get(Any, Domain, _),
-     ;  instantiation_error(Any)
-     )
-  ;  clpfd:is_drep(Any)
-  -> 
+% clpfd_domain(Any, Domain) :-
+%   (  var(Any)
+%   -> (  fd_var(Any)
+%      -> clpfd:fd_get(Any, Domain, _),
+%      ;  instantiation_error(Any)
+%      )
+%   ;  clpfd:is_drep(Any)
+%   ->
 
-any_to_intervals(Any, Intervals) :- 
-        clpfd_domain_intervals(Dom, Intervals)
-     )
-  -> phrase(clpfd:drep_to_intervals(Any), Intervals)
-  ;  clpfd:domain_intervals(Any, Intervals)
-  -> true  
-  ;  domain_error(clpfd_domain, Any)
-  ).
-    
+% any_to_intervals(Any, Intervals) :-
+%         clpfd_domain_intervals(Dom, Intervals)
+%      )
+%   -> phrase(clpfd:drep_to_intervals(Any), Intervals)
+%   ;  clpfd:domain_intervals(Any, Intervals)
+%   -> true
+%   ;  domain_error(clpfd_domain, Any)
+%   ).
+
+%% cplfd_domain_intervals(?Dom, ?Intervals) is det.
+%
+% Converts between clpfd domain and an uranium interval.
+clpfd_domain_intervals(Dom, Intervals) :-
+   clpfd_domain_intervals_int(Dom, Intervals, _).
+
+clpfd_domain_intervals_int(D, I, _) :- var(D), var(I), !,
+   instantiation_error(_).
+clpfd_domain_intervals_int(empty, empty, 0) :- !.
+clpfd_domain_intervals_int(from_to(n(F), n(T)), from_to(F, T), S) :- !,
+   S is T - F + 1,
+   S > 0.
+clpfd_domain_intervals_int(D, split(N, L, R, Size), Size) :-
+   D = split(N, L1, R1), !,
+   clpfd_domain_intervals_int(L1, L, S1),
+   clpfd_domain_intervals_int(R1, R, S2),
+   Size is S1 + S2.
+clpfd_domain_intervals_int(D, I, _) :-
+   (  var(D)
+   -> domain_error(intervals, I)
+   ;  domain_error(finite_clfd_domain, D)
+   ).
