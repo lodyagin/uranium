@@ -122,20 +122,20 @@ intervals_nth0_int(_, I) :- domain_error(intervals, I).
 %
 % Converts between clpfd domain and an uranium interval.
 clpfd_domain_intervals(Dom, Intervals) :-
-   clpfd_domain_intervals_int(Dom, Intervals, 0, _).
+   clpfd_domain_intervals_int(Dom, Intervals, _).
 
-clpfd_domain_intervals_int(D, I, _, _) :- var(D), var(I), !,
+clpfd_domain_intervals_int(D, I, _) :- var(D), var(I), !,
    instantiation_error(_).
-clpfd_domain_intervals_int(empty, empty, S, S) :- !.
-clpfd_domain_intervals_int(from_to(n(F), n(T)), from_to(F, T), S0, S) :- !,
-   S1 is T - F + 1,
-   S1 > 0,
-   S is S0 + S1.
-clpfd_domain_intervals_int(D, split(N, L, R, Size), Size0, Size) :-
+clpfd_domain_intervals_int(empty, empty, 0) :- !.
+clpfd_domain_intervals_int(from_to(n(F), n(T)), from_to(F, T), S) :- !,
+   S is T - F + 1,
+   S > 0.
+clpfd_domain_intervals_int(D, split(N, L, R, Size), Size) :-
    D = split(N, L1, R1), !,
-   clpfd_domain_intervals_int(L1, L, Size0, Size1),
-   clpfd_domain_intervals_int(R1, R, Size1, Size).
-clpfd_domain_intervals_int(D, I, _, _) :-
+   clpfd_domain_intervals_int(L1, L, S1),
+   clpfd_domain_intervals_int(R1, R, S2),
+   Size is S1 + S2.
+clpfd_domain_intervals_int(D, I, _) :-
    (  var(D)
    -> domain_error(intervals, I)
    ;  domain_error(finite_clfd_domain, D)
