@@ -2,6 +2,7 @@
           [random_sublist/4  % +List, +Options0, -Options, -Sublist
           ]).
 
+:- use_module(library(clpfd)).
 :- use_module(library(error)).
 :- use_module(u(rand/randgen)).
 :- use_module(u(ur_terms)).

@@ -1,5 +1,6 @@
 :- module(citizen_v, []).
 
+:- use_module(library(clpfd)).
 :- use_module(u(v)).
 
 % TODO

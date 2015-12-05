@@ -3,7 +3,7 @@
 :- use_module(library(clpfd)).
 
 test(intervals_nth0) :-
-  intervals1(Intervals1),
+  intervals1(Dom1, Intervals1),
   findall( El,
            ( between(0, 6, Idx),
              intervals_nth0(Idx, Intervals1, El) ),
@@ -12,10 +12,10 @@ test(intervals_nth0) :-
   clpfd:list_to_drep(List, Intervals2),
   A in Intervals2,
   fd_dom(A, Intervals3),
-  assertion(Intervals1 == Intervals3).
+  assertion(Dom1 == Intervals3).
   
 test(intervals_nth1) :-
-  intervals1(Intervals1),
+  intervals1(Dom1, Intervals1),
   findall( El,
            ( between(1, 7, Idx),
              intervals_nth1(Idx, Intervals1, El) ),
@@ -24,7 +24,7 @@ test(intervals_nth1) :-
   clpfd:list_to_drep(List, Intervals2),
   A in Intervals2,
   fd_dom(A, Intervals3),
-  assertion(Intervals1 == Intervals3).
+  assertion(Dom1 == Intervals3).
 
 test(clpfd_domain_intervals_varvar, [error(instantiation_error,_)]) :-
    clpfd_domain_intervals(_, _).
@@ -56,8 +56,10 @@ test(clpfd_domain_intervals_split,
    clpfd_domain_intervals(Dom, Is).
 
 
-intervals1(Intervals) :- 
-   A in 1..10, A#\=3, A#\=6, A#\=9, clpfd:fd_get(A, Dom, _),
-   clpfd_domain_intervals(Dom, Intervals).
-  
+intervals1(Dom, Intervals) :- 
+   A in 1..10, A#\=3, A#\=6, A#\=9,
+   fd_dom(A, Dom),
+   clpfd:fd_get(A, D, _),
+   clpfd_domain_intervals(D, Intervals).
+
 :- end_tests(ur_intervals).
