@@ -84,6 +84,18 @@ test(any_to_intervals_inst, [error(instantiation_error,_)]) :-
 test(any_to_intervals_dom, [error(domain_error(_,_),_)]) :-
    any_to_intervals(a+b+c, _).
 
+test(intervals_member1, L == []) :-
+   drep_intervals(10..5, I),
+   findall(X, intervals_member(X, I), L).
+   
+test(intervals_member3, L == [3, 4, 5]) :-
+   drep_intervals(3..5, I),
+   findall(X, intervals_member(X, I), L).
+   
+test(intervals_member3, L == [1, 3, 4, 5, 8, 9, 10]) :-
+   drep_intervals(1 \/ 3..5 \/ 8..10, I),
+   findall(X, intervals_member(X, I), L).
+   
 intervals1(Dom, Intervals) :- 
    A in 1..10, A#\=3, A#\=6, A#\=9,
    fd_dom(A, Dom),

@@ -26,17 +26,16 @@ list_subarray(List, s(A, Selection)) :-
    nonvar(List), !,
    A =.. [a|List],
    functor(A, _, N),
-   (  N > 0, Selection = [n(1)-n(N)]
-   ;  Selection = [] ).
+   drep_intervals(1..N, Selection).
 list_subarray(List, Subarray) :-
    Ctx = context(list_subarray/2, _),
    nonvar(Subarray), !,
    sa_check(Subarray, Array, Selection, Ctx),
-   (  Selection == []
+   (  Selection == empty
    -> List = []
    ;  findall( X,
-               ( dom_member(X, Selection),
-                 arg(Selection, Array, X) ),
+               ( intervals_member(K, Selection),
+                 arg(K, Array, X) ),
                List)
    ).
 list_subarray(_, _) :-
@@ -72,14 +71,16 @@ sa_check(Subarray, Array, Selection, Ctx) :-
       ;  Array == a
       -> N = 0
       ),
-      ( clpfd:intervals_to_domain(Selection, Dom)
-   -> true
-   ;  throw(error(type_error(subarray, Subarray), Ctx))
+      (  clpfd_domain_intervals(Dom, Selection)
+      -> true
+      ;  throw(error(type_error(subarray, Subarray), Ctx))
+      )
    ),
    (  Dom == empty -> true
-   ;  clpfd:domain_infinum(Dom, Inf),
-      clpfd:domain_supremum(Dom, Sup),
-      (  Inf >= 1, Sup =< N -> true
+   ;  clpfd:domain_infimum(Dom, Inf0),
+      clpfd:domain_supremum(Dom, Sup0),
+      (  Inf0 = n(Inf), Sup0 = n(Sup),
+         Inf >= 1, Sup =< N -> true
       ;  throw(error(domain_error(valid_subarray,
                                   s(Array, Selection)),
                      Ctx))
@@ -94,7 +95,7 @@ sa_length(Subarray, Length) :-
    Ctx = context(sa_length/2, _),
    must_be(nonvar, Subarray),
    sa_check(Subarray, _, Selection, Ctx),
-   clpfd:domain_num_elements(Selection, Length).
+   intervals_size(Selection, Length).
 
 %% sa_nth0(?N, +List, ?Elem)
 %
@@ -132,14 +133,14 @@ sa_nth1_cmn(N, List, Elem, Rest, Ctx) :-
   must_be(positive_integer, N),
   find_nth1(N, List, Elem, Rest, Ctx).
 
-generate_nth1(N, List, Elem, Rest, Ctx) :-
-%  sa_check(Rest, Array, Selected, Ctx), 
-  sa_select_all(Rest, Full),
-
-  functor(Array, _, FullLength),
-  (  FullLength == 0
-  -> N = 1, list_subarray([Elem], List)
-  ;  AllSelected in 1..FullLength,
+%generate_nth1(N, List, Elem, Rest, Ctx) :-
+%%%%  sa_check(Rest, Array, Selected, Ctx), 
+%  sa_select_all(Rest, Full),
+%
+%  functor(Array, _, FullLength),
+%  (  FullLength == 0
+%  -> N = 1, list_subarray([Elem], List)
+%  ;  AllSelected in 1..FullLength,
 
 find_nth1(N, List, Elem, s(Array, Rest), Ctx) :-
   sa_check(List, Array, Selected, Ctx),
