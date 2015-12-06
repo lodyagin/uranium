@@ -16,8 +16,9 @@
 % @author Sergei Lodyagin
 
 :- module(ur_intervals,
-          [%any_to_intervals/2, % +Any, -Intervals
-           clpfd_domain_intervals/2, % +Dom, -Intervals
+          [any_to_intervals/2, % +Any, -Intervals
+           clpfd_domain_intervals/2, % ?Dom, ?Intervals
+           drep_intervals/2, % ?Drep, ?Intervals
            intervals_member/2, % ?El, +Dom
            intervals_nth0/3, % ?Idx, +Dom, ?N
            intervals_nth1/3,  % ?Idx, +Dom, ?N
@@ -96,27 +97,35 @@ intervals_nth0_int(Idx, split(_, Left, Right, Size), Value) :-
 intervals_nth0_int(_, empty) :- fail.
 intervals_nth0_int(_, I) :- domain_error(intervals, I).
 
-%% clpfd_domain(?Any, -Domain) is det.
+%% any_to_clpfd_domain(?Any, -Domain) is det.
 %
 % Converts different types to clpfd domain
 %
-% clpfd_domain(Any, Domain) :-
-%   (  var(Any)
-%   -> (  fd_var(Any)
-%      -> clpfd:fd_get(Any, Domain, _),
-%      ;  instantiation_error(Any)
-%      )
-%   ;  clpfd:is_drep(Any)
-%   ->
+any_to_clpfd_domain(Any, Domain) :-
+  (  var(Any)
+  -> (  fd_var(Any)
+     -> clpfd:fd_get(Any, Domain, _)
+     ;  instantiation_error(Any)
+     )
+  ;  clpfd:is_drep(Any)
+  -> clpfd:drep_to_domain(Any, Domain)
+  ;  domain_error(convertible_to_clpfd_domain, Any)
+  ).
 
-% any_to_intervals(Any, Intervals) :-
-%         clpfd_domain_intervals(Dom, Intervals)
-%      )
-%   -> phrase(clpfd:drep_to_intervals(Any), Intervals)
-%   ;  clpfd:domain_intervals(Any, Intervals)
-%   -> true
-%   ;  domain_error(clpfd_domain, Any)
-%   ).
+% drep_intervals(?Drep, ?Intervals) is det.
+%
+drep_intervals(Drep, Intervals) :-
+   nonvar(Drep), !,
+   clpfd:drep_to_domain(Drep, Dom),
+   clpfd_domain_intervals(Dom, Intervals).
+drep_intervals(Drep, Intervals) :-
+   nonvar(Intervals), !,
+   clpfd_domain_intervals(Dom, Intervals),
+   clpfd:domain_to_drep(Dom, Drep).
+
+any_to_intervals(Any, Intervals) :-
+   any_to_clpfd_domain(Any, Dom),
+   clpfd_domain_intervals(Dom, Intervals).
 
 %% cplfd_domain_intervals(?Dom, ?Intervals) is det.
 %

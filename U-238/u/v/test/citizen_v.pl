@@ -2,6 +2,7 @@
 
 :- use_module(library(clpfd)).
 :- use_module(u(v)).
+:- use_module(u(ur_option)).
 
 % TODO
 % Class eval should be always coded with clpfd

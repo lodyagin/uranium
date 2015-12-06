@@ -9,6 +9,7 @@
 :- use_module(u(ur_option)).
 :- use_module(u(v)).
 :- use_module(u(ur_lists)).
+:- use_module(u(ur_subarrays)).
 
 :- meta_predicate random_sublist(+, :, -, -).
 

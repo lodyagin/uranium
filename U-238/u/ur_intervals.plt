@@ -55,6 +55,34 @@ test(clpfd_domain_intervals_split,
    A in 1..10, A#\=3, clpfd:fd_get(A, Dom, _),
    clpfd_domain_intervals(Dom, Is).
 
+test(drep_intervals_l) :-
+   Drep = 1..5 \/ 10,
+   drep_intervals(Drep, I),
+   I = split(S, from_to(1, 5), from_to(10, 10), 6),
+   assertion(S < 10),
+   assertion(S > 5).
+
+test(drep_intervals_r, D == 1..5 \/ 10) :-
+   drep_intervals(D, split(7, from_to(1, 5), from_to(10, 10), 6)).
+   
+test(any_to_intervals_var) :-
+   Drep = 1..5 \/ 10,
+   V in Drep,
+   any_to_intervals(V, Intervals),
+   drep_intervals(Drep2, Intervals),
+   assertion(Drep == Drep2).
+
+test(any_to_intervals_drep) :-
+   Drep = 1..5 \/ 10,
+   any_to_intervals(Drep, Intervals),
+   drep_intervals(Drep2, Intervals),
+   assertion(Drep == Drep2).
+
+test(any_to_intervals_inst, [error(instantiation_error,_)]) :-
+   any_to_intervals(_, _).
+
+test(any_to_intervals_dom, [error(domain_error(_,_),_)]) :-
+   any_to_intervals(a+b+c, _).
 
 intervals1(Dom, Intervals) :- 
    A in 1..10, A#\=3, A#\=6, A#\=9,
