@@ -21,7 +21,9 @@
            drep_intervals/2, % ?Drep, ?Intervals
            intervals_member/2, % ?El, +Dom
            intervals_nth0/3, % ?Idx, +Dom, ?N
+           intervals_nth0/4, % ?Idx, +Dom, ?N, ?Rest
            intervals_nth1/3,  % ?Idx, +Dom, ?N
+           intervals_nth1/4,  % ?Idx, +Dom, ?N, ?Rest
            intervals_size/2  % +Interval, -Size
           ]).
 
@@ -69,24 +71,47 @@ intervals_nth0(Idx, Interval, N) :-
   Ctx = context(intervals_nth0/3, _),
   intervals_nth0_cmn(Idx, Interval, N, Ctx).
 
+%% intervals_nth0(?Idx, +Interval, ?N, ?Rest)
+%
+intervals_nth0(Idx, Interval, N, Rest) :-
+  Ctx = context(intervals_nth0/4, _),
+  intervals_nth0_cmn(Idx, Interval, N, Rest, Ctx).
+
 %% intervals_nth1(?Idx, +Interval, ?N)
 %
 intervals_nth1(Idx, Interval, N) :-
-  Ctx = context(intervals_nth0/3, _),
+  Ctx = context(intervals_nth1/3, _),
   Idx0 #= Idx - 1,
   intervals_nth0_cmn(Idx0, Interval, N, Ctx).
+
+%% intervals_nth1(?Idx, +Interval, ?N, ?Rest)
+%
+intervals_nth1(Idx, Interval, N, Rest) :-
+  Ctx = context(intervals_nth1/4, _),
+  Idx0 #= Idx - 1,
+  intervals_nth0_cmn(Idx0, Interval, N, Rest, Ctx).
 
 intervals_nth0_cmn(Idx, _, _, Ctx) :-
   var(Idx), !,
   throw(error(not_implemented, Ctx)).
-intervals_nth0_cmn(Idx, Intervals, N, _) :-
-  must_be(nonneg, Idx),
-  intervals_nth0_int(Idx, Intervals, N).
+intervals_nth0_cmn(Idx, Intervals, N, Ctx) :-
+  (  has_type(nonneg, Idx)
+  -> intervals_nth0_int(Idx, Intervals, N)
+  ;  throw(error(domain_error(nonneg, Idx), Ctx))
+  ).
+intervals_nth0_cmn(Idx, _, _, _, Ctx) :-
+  var(Idx), !,
+  throw(error(not_implemented, Ctx)).
+intervals_nth0_cmn(Idx, Intervals, N, Rest, Ctx) :-
+  (  has_type(nonneg, Idx)
+  -> intervals_nth0_int(Idx, Intervals, N, Rest)
+  ;  throw(error(domain_error(nonneg, Idx), Ctx))
+  ).
 
-intervals_nth0_int(Idx, from_to(From, To), Value) :-
+intervals_nth0_int(Idx, from_to(From, To), Value) :- !,
   Value is From + Idx,
   Value =< To.
-intervals_nth0_int(Idx, split(_, Left, Right, Size), Value) :-
+intervals_nth0_int(Idx, split(_, Left, Right, Size), Value) :- !,
   intervals_size(Left, LeftSize),
   (  Idx < LeftSize
   -> intervals_nth0_int(Idx, Left, Value)
@@ -94,8 +119,45 @@ intervals_nth0_int(Idx, split(_, Left, Right, Size), Value) :-
   -> Idx1 is Idx - LeftSize,
      intervals_nth0_int(Idx1, Right, Value)
   ).
-intervals_nth0_int(_, empty) :- fail.
-intervals_nth0_int(_, I) :- domain_error(intervals, I).
+intervals_nth0_int(_, empty, _) :- !, fail.
+intervals_nth0_int(_, I, _) :- domain_error(intervals, I).
+intervals_nth0_int(Idx, from_to(From, To), Value, Rest) :- !,
+   (  Idx == 0
+   -> Value = From,
+      succ(From, From1),
+      (  From1 =< To -> Rest = from_to(From1, To) ; Rest = empty )
+   ;  MaxIdx is To - From,
+      (  Idx == MaxIdx
+      -> Value = To,
+         succ(To1, To),
+         (  To1 >= From -> Rest = from_to(From, To1) ; Rest = empty )
+      ;  Idx < MaxIdx,
+         Value is From + Idx,
+         succ(To1, Value), succ(Value, From2),
+         Rest = split(Value, from_to(From, To1), from_to(From2, To),
+                      MaxIdx)
+      )
+   ).
+intervals_nth0_int(Idx, split(Hole, Left, Right, Size), Value, Rest) :-
+  !,
+  succ(Size1, Size),
+  intervals_size(Left, LeftSize),
+  (  Idx < LeftSize
+  -> intervals_nth0_int(Idx, Left, Value, RestLeft),
+     (  RestLeft == empty
+     -> Rest = Right
+     ;  Rest = split(Hole, RestLeft, Right, Size1)
+     )
+  ;  Idx < Size
+  -> Idx1 is Idx - LeftSize,
+     intervals_nth0_int(Idx1, Right, Value, RestRight),
+     (  RestRight == empty
+     -> Rest = Left
+     ;  Rest = split(Hole, Rest, RestRight, Size1)
+     )
+  ).
+intervals_nth0_int(_, empty, _, _) :- !, fail.
+intervals_nth0_int(_, I, _, _) :- domain_error(intervals, I).
 
 %% any_to_clpfd_domain(?Any, -Domain) is det.
 %

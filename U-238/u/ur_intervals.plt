@@ -13,7 +13,99 @@ test(intervals_nth0) :-
   A in Intervals2,
   fd_dom(A, Intervals3),
   assertion(Dom1 == Intervals3).
-  
+
+test(intervals_nth0_empty, fail) :-
+  intervals_nth0(0, empty, _).  
+
+test(intervals_nth0_rest_empty, fail) :-
+  intervals_nth0(0, empty, _, _).  
+
+test(intervals_nth0_1element_1, V == 4) :-
+  any_to_intervals(4, Is),
+  intervals_nth0(0, Is, V).
+
+test(intervals_nth0_1element_2, fail) :-
+  any_to_intervals(4, Is),
+  intervals_nth0(1, Is, _).
+
+test(intervals_nth0_1element_3, error(domain_error(nonneg, -1), _)) :-
+  any_to_intervals(4, Is),
+  intervals_nth0(-1, Is, _).
+
+test(intervals_nth0_rest_1element_1, [V-R == 4-empty]) :-
+  any_to_intervals(4, Is),
+  intervals_nth0(0, Is, V, R).
+
+test(intervals_nth0_1element_2, fail) :-
+  any_to_intervals(4, Is),
+  intervals_nth0(1, Is, _, _).
+
+test(intervals_nth0_1element_3, error(domain_error(nonneg, -1), _)) :-
+  any_to_intervals(4, Is),
+  intervals_nth0(-1, Is, _, _).
+
+test(intervals_nth0_from_to_de, error(domain_error(nonneg, -1), _)) :-
+  any_to_intervals(4..6, Is),
+  intervals_nth0(-1, Is, _).
+
+test(intervals_nth0_from_to_1, fail) :-
+  any_to_intervals(4..6, Is),
+  intervals_nth0(3, Is, _).
+
+test(intervals_nth0_from_to_2, [forall(member(P, [0-4, 1-5, 2-6]))]) :-
+  any_to_intervals(4..6, Is),
+  P = Idx-Val, 
+  intervals_nth0(Idx, Is, V),
+  assertion(V == Val).
+
+test(intervals_nth0_rest_from_to_de, error(domain_error(nonneg, -1), _)) :-
+  any_to_intervals(4..6, Is),
+  intervals_nth0(-1, Is, _, _).
+
+test(intervals_nth0_rest_from_to_1, fail) :-
+  any_to_intervals(4..6, Is),
+  intervals_nth0(3, Is, _, _).
+
+test(intervals_nth0_rest_from_to_2,
+     [forall(member(P, [0-4, 1-5, 2-6]))]) :-
+  P = Idx-Val,
+  Dom in 4..6,
+  any_to_intervals(Dom, Is),
+  intervals_nth0(Idx, Is, V, Rest),
+  assertion(V == Val),
+  Dom #\= Val,
+  any_to_intervals(Dom, Is1),
+  assertion(Is1 == Rest).
+
+test(intervals_nth0_split_1,
+     forall(member(Idx-Descr-Val,
+     [  1 - 1..3 \/ 5..8 - 2,
+        3 - 1..3 \/ 5..8 - 5,
+        0 - 1 \/ 5..8 - 1,
+        1 - 1 \/ 4 - 4
+     ]))
+) :-
+  Dom in Descr,
+  any_to_intervals(Dom, Is),
+  intervals_nth0(Idx, Is, V),
+  assertion(V == Val).
+
+test(intervals_nth0_rest_split_1,
+     forall(member(Idx-Descr-Val,
+     [  1 - 1..3 \/ 5..8 - 2,
+        3 - 1..3 \/ 5..8 - 5,
+        0 - 1 \/ 5..8 - 1,
+        1 - 1 \/ 4 - 4
+     ]))
+) :-
+  Dom in Descr,
+  any_to_intervals(Dom, Is),
+  intervals_nth0(Idx, Is, V, Rest),
+  assertion(V == Val),
+  Dom#\= Val,
+  any_to_intervals(Dom, Is1),
+  assertion(Is1, Rest).
+
 test(intervals_nth1) :-
   intervals1(Dom1, Intervals1),
   findall( El,
@@ -95,7 +187,11 @@ test(intervals_member3, L == [3, 4, 5]) :-
 test(intervals_member3, L == [1, 3, 4, 5, 8, 9, 10]) :-
    drep_intervals(1 \/ 3..5 \/ 8..10, I),
    findall(X, intervals_member(X, I), L).
-   
+
+test(intervals_size, S == 7) :-
+   intervals1(_, Is),
+   intervals_size(Is, S).
+
 intervals1(Dom, Intervals) :- 
    A in 1..10, A#\=3, A#\=6, A#\=9,
    fd_dom(A, Dom),

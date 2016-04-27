@@ -9,9 +9,9 @@
            sa_nth1/4,      % ?N, +List, ?Elem, ?Rest
            sa_check/4,     % +Subarray, -Array, -Selection,
                            % +Ctx inst-
-           sa_length/2,    % +Subarray, -Length
+           sa_length/2    % +Subarray, -Length
 
-           sa_select_all/2 % +Subarray, -AllSelected
+           %sa_select_all/2 % +Subarray, -AllSelected
           ]).
 
 :- use_module(library(clpfd)).
@@ -145,13 +145,8 @@ sa_nth1_cmn(N, List, Elem, Rest, Ctx) :-
 find_nth1(N, List, Elem, s(Array, Rest), Ctx) :-
   sa_check(List, Array, Selected, Ctx),
   compound(Array),
-  dom_nth1(N, Selected, K),
-  arg(K, Array, Elem),
-  copy_term(Selected, Rest0),
-  (  Rest0 #\= K
-  -> Rest = Rest0
-  ;  Rest = f % special value for empty
-  ).
+  intervals_nth1(N, Selected, K, Rest),
+  arg(K, Array, Elem).
 
 
 
