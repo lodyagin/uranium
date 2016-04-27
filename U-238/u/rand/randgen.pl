@@ -59,6 +59,7 @@
 :- use_module(u(logging)).
 :- use_module(u(ur_lists)).
 :- use_module(u(ur_option)).
+:- use_module(u(ur_subarrays)).
 
 :- multifile random_generator/4.
 :- multifile prepare_random_state/3.

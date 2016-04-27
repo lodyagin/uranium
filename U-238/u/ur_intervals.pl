@@ -153,7 +153,7 @@ intervals_nth0_int(Idx, split(Hole, Left, Right, Size), Value, Rest) :-
      intervals_nth0_int(Idx1, Right, Value, RestRight),
      (  RestRight == empty
      -> Rest = Left
-     ;  Rest = split(Hole, Rest, RestRight, Size1)
+     ;  Rest = split(Hole, Left, RestRight, Size1)
      )
   ).
 intervals_nth0_int(_, empty, _, _) :- !, fail.
