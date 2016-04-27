@@ -16,6 +16,8 @@
 %% random_sublist(+List, +Options0, -Options, -Sublist) is nondet.
 %
 % Randomly selects random number of elements from List as Sublist.
+% The order is arbitrary, treat a list as a set, if nondet is given
+% never return the same set of elements on BT.
 %
 random_sublist(List, OM:Options0, Options, Sublist) :-
    Ctx = context(random_sublist/4, _),
