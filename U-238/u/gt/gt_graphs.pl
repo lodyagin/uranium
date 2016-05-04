@@ -1,9 +1,11 @@
 :- module(gt_graphs,
-          [random_triangulated_planar_graph/6 % +Opts0, -Opts, +K,
-                                              % -Graph, -Outer, -Emb)
+          [random_triangulated_planar_graph/7, % +Opts0, -Opts, +K,
+                                    % -Graph, -DoubleEdges, -Outer, -Emb)
+           draw_graph/4
            ]).
 
 :- use_module(library(dialect/hprolog)).
+:- use_module(library(ordsets)).
 :- use_module(library(ugraphs)).
 :- use_module(u(gt/gt_numbers)).
 :- use_module(u(v)).
@@ -43,12 +45,16 @@ add_point_rec(O0, O, K0, K, G0, G, Outer0, Outer, Emb0, Emb) :-
 :- meta_predicate random_triangulated_planar_graph(:, -, +, -, -, -).
 
 %% random_triangulated_planar_graph(+Opts0, -Opts, +K, -Graph,
-%%                                  -Outer, -Emb)
+%%                                  -DoubleEdges, -Outer, -Emb)
 %
 % It is det/nondet depending on Opts0
-random_triangulated_planar_graph(O0, O, K, G, Outer, Emb) :-
-   obj_construct(grid_embedding_v, [], [], Emb0),
-   random_triangulated_planar_graph_int(O0, O, K, G, Outer, Emb0, Emb).
+random_triangulated_planar_graph(O0, O, K, G, DoubleEdges, Outer, Emb) :-
+   obj_construct(grid_embedding_v, [curved_edges], [CurvedEdges], Emb0),
+   random_triangulated_planar_graph_int(O0,O1, K, G1, Outer1, Emb0, Emb),
+   length(Outer1, NO),
+   add_outer_triangles(O1, O, NO, Outer1, Outer, G1, G,
+                       [], DoubleEdges, [], CurvedEdges).
+   %O1 = O, Outer1 = Outer, G1 = G, [] = DoubleEdges, [] = CurvedEdges.
 
 random_triangulated_planar_graph_int(O, O, 3, G, Outer, Emb, Emb) :- !,
    Outer=[1, 3, 2],
@@ -59,11 +65,36 @@ random_triangulated_planar_graph_int(O0, O, K, G, Outer, Emb0, Emb) :-
    K >= 3,   
    random_triangulated_planar_graph_int(O0, O1, 3, G0, Outer0, Emb0,
                                         Emb1),
-   add_point_rec(O1, O, 3, K, G0, G1, Outer0, Outer, Emb1, Emb),
-   add_outer_triangles(G1, G).
+   add_point_rec(O1, O, 3, K, G0, G, Outer0, Outer, Emb1, Emb).
 
-add_outer_triangles(G, G). % FIXME
+add_outer_triangles(O, O, 3, Outer, Outer, G, G, DE, DE, CE, CE) :- !.
+add_outer_triangles(O0, O, NO0, Outer0, Outer, G0, G, DE0, DE, CE0, CE):-
+   NO0 > 3,
+   succ(NO1, NO0),
+   P in 0..NO1,
+   random_number(O0, O1, P),
+   cover_outer_point(P, NO1, Outer0, Outer1, G0, G1, DE0, DE1, CE0, CE1),
+   add_outer_triangles(O1, O, NO1, Outer1, Outer, G1, G, DE1, DE,CE1,CE).
 
+cover_outer_point(P, NewN, Outer0, Outer, G0, G, DE0, DE, CE0, CE) :-
+   append(Outer0, Cycle, Cycle),
+   P1 is P + NewN,
+   succ(NewN, OldN),
+   split_at(P1, Cycle, L, [VP, _, VQ|R]),
+   append(L, [VP], L1),
+   append(L1, [VQ|R], Cycle1),
+   drop(OldN, Cycle1, Cycle2),
+   take(NewN, Cycle2, Outer),
+   add_edges(G0, [VP-VQ, VQ-VP], G),
+   (  G == G0
+   -> % double edges
+      ord_add_element(DE0, VP-VQ, DE1),
+      ord_add_element(DE1, VQ-VP, DE)
+   ;  DE=DE0
+   ),
+   ord_add_element(CE0, VP-VQ, CE1),
+   ord_add_element(CE1, VQ-VP, CE).
+   
 % This is Fraysseix's shift algorithm implementation
 shift(WP, WQ, Emb0, Emb) :-
    obj_rewrite(Emb0, [coords], [Coords0], [Coords], Emb),
@@ -103,11 +134,11 @@ mu(p(X1, Y1), p(X2, Y2), p(X, Y)) :-
    X is (X1 - Y1 + X2 + Y2) / 2,
    Y is (-X1 + Y1 + X2 + Y2) / 2.
 
-draw_graph(P, G, Emb) :-
-   obj_field(Emb, norm_coords, Coords),
+draw_graph(P, G, DE, Emb) :-
+   obj_unify(Emb, [coords, curved_edges], [Coords, CurvedEdges]),
    draw_vertices(P, Coords),
    edges(G, Edges),
-   draw_edges(P, Edges, Coords).
+   draw_edges(P, Edges, DE, Coords, CurvedEdges).
 
 draw_vertices(_, []) :- !.
 draw_vertices(Ref, [P|T]) :-
@@ -116,17 +147,40 @@ draw_vertices(Ref, [P|T]) :-
    send(V, fill_pattern, colour(red)),
    draw_vertices(Ref, T).
 
-draw_edges(_, [], _) :- !.
-draw_edges(P, [E|T], Coords) :-
-   draw_edge(P, E, Coords),
-   draw_edges(P, T, Coords).
+draw_edges(_, [], _, _, _) :- !.
+draw_edges(P, [E|T], DoubleEdges, Coords, CurvedEdges0) :-
+   ( ord_memberchk(E, CurvedEdges0) -> DrawCurved = t ; DrawCurved = f ),
+   ( ord_memberchk(E, DoubleEdges) -> DrawStraight = t; true ),
+   ( DrawCurved == t -> ignore(DrawStraight = f); DrawStraight = t),
 
-draw_edge(Ref, A-B, Coords) :-
+   (  DrawCurved == t
+   -> ord_del_element(CurvedEdges0, E, CurvedEdges1),
+      E=EP-EQ,
+      (  EP < EQ % draw once (undirected)
+      -> draw_edge(curved, P, E, Coords)
+      ; true )
+   ;
+      CurvedEdges1 = CurvedEdges0
+   ),
+
+   (  DrawStraight == t
+   -> draw_edge(straight, P, E, Coords)
+   ;  true 
+   ),
+   draw_edges(P, T, DoubleEdges, Coords, CurvedEdges1).
+
+draw_edge(Type, Ref, A-B, Coords) :-
    nth1(A, Coords, PA),
    nth1(B, Coords, PB),
    calc_display_coord(PA, disp(XA, YA)),
    calc_display_coord(PB, disp(XB, YB)),
-   send(Ref, display, new(_, line(XA, YA, XB, YB, second))).
+   (  Type == straight
+   -> new(Arc, line(XA, YA, XB, YB, second))
+   ;  new(Arc, arc),
+      send(Arc, points(XA, YA, XB, YB, 25)),
+      send(Arc, colour(blue))
+   ),
+   send(Ref, display, Arc).
 
 calc_display_coord(p(X0, Y0), disp(X, Y)) :-
    X is X0 * 50 + 10 + 150,

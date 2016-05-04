@@ -5,11 +5,7 @@
 :- use_module(u(v)).
 
 new_class(grid_embedding_v, object_v,
-          [coords]).
+          [coords, curved_edges]).
 
-'grid_embedding_v?'(Obj, norm_coords, Coords) :-
-   obj_field(Obj, coords, Coords0),
-   normalize(Coords0, Coords).
 
-normalize(C, C). % TODO
 
