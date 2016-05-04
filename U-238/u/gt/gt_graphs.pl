@@ -12,27 +12,27 @@
 % Adds a new vertex in canonical order
 % to a triangulated planar graph
 add_point(O0, O, V, G0, G, Outer0, Outer, Emb0, Emb) :-
-   succ(N, V),
+   length(Outer0, N),
    M in 2..N, % the number of covered points
    random_number(O0, O1, M),
    PMax is N - M + 1,
    P in 1..PMax,
    random_number(O1, O, P),
-   Q is P + M - 1, succ(P, P1), succ(Q1, Q),
-   succ(P10, P1),
-   split_at(P10, Outer0, Left, Right0),
-   (  Q1 >= P1
-   -> QQ is Q1 - P1,
-      split_at(QQ, Right0, _, Right)
+   Q is P + M - 1, 
+   succ(P0, P),
+   split_at(P0, Outer0, Left, [VP|Right0]),
+   (  Q > P
+   -> QQ is Q - P - 1,
+      split_at(QQ, Right0, _Middle, [VQ|Right])
    ;  Right = Right0
    ),
-   append(Left, [V|Right], Outer),
+   append(Left, [VP, V, VQ|Right], Outer),
    % modify graph
    add_vertices(G0, [V], G1),
    findall(E, (between(P, Q, K), nth1(K, Outer0, X), (E=V-X; E=X-V)), NewEdges),
    add_edges(G1, NewEdges, G),
    % modify embedding
-   shift(P, Q, Emb0, Emb).
+   shift(VP, VQ, Emb0, Emb).
 
 add_point_rec(O, O, K, K, G, G, Outer, Outer, Emb, Emb) :- !.
 add_point_rec(O0, O, K0, K, G0, G, Outer0, Outer, Emb0, Emb) :-
@@ -65,33 +65,39 @@ random_triangulated_planar_graph_int(O0, O, K, G, Outer, Emb0, Emb) :-
 add_outer_triangles(G, G). % FIXME
 
 % This is Fraysseix's shift algorithm implementation
-shift(P, Q, Emb0, Emb) :-
-   P >= 1, Q > P,
+shift(WP, WQ, Emb0, Emb) :-
    obj_rewrite(Emb0, [coords], [Coords0], [Coords], Emb),
-   shift_left(P, Coords0, Left1, [WP|Right1]),
-   QQ is Q - P - 1,
-   split_at(QQ, Right1, Middle, [WQ2|Right2]),
-   shift_right([WQ2|Right2], [WQ|Right3]),
-   append([Left1, [WP], Middle, [WQ|Right3], [Vk]], Coords),
-   mu(WP, WQ, Vk).
+   nth1(WQ, Coords0, p(WQX0, WQY)),
+   nth1(WP, Coords0, p(WPX, WPY)),
+   shift_right2(WQX0, Coords0, Coords1),
+   WQX is WQX0 + 2,
+   shift_right1(WPX, WQX, Coords1, Coords2),
+   mu(p(WPX, WPY), p(WQX, WQY), VC),
+   append(Coords2, [VC], Coords).
 
-%% shift_left(+P, +Coords, -Shifted, -Rest) is det.
+%% shift_right2(+StartX, +Coords, -Shifted) is det.
 %
-% shifts P first coordinates one point left. 
-shift_left(1, [p(X, Y)|T], [], [p(XS, Y)|T]) :- !,
-   XS is X - 1.
-shift_left(P, [p(X, Y)|Coords], [p(XS, Y)|LeftShifted], Right) :-
-   XS is  X - 1,
-   succ(P1, P),
-   shift_left(P1, Coords, LeftShifted, Right).
+% shifts Coords two points right
+shift_right2(_, [], []) :- !.
+shift_right2(WQX, [p(X0, Y)|T0], [p(X, Y)|T]) :-
+   (  X0 >= WQX
+   -> X is X0 + 2
+   ;  X = X0
+   ),
+   shift_right2(WQX, T0, T).
 
-%% shift_right(+Coords, -Shifted) is det.
+%% shift_right1(+StartX, +StopX, +Coords, -Shifted) is det.
 %
 % shifts Coords one point right
-shift_right([], []) :- !.
-shift_right([p(X, Y)|Coords], [p(XS, Y)|Shifted]) :-
-   succ(X, XS),
-   shift_right(Coords, Shifted).
+shift_right1(_, _, [], []) :- !.
+shift_right1(WPX, WQX, [p(X0, Y)|T0], [p(X, Y)|T]) :-
+   succ(WPX, WPX1),
+   succ(WQX1, WQX),
+   (  between(WPX1, WQX1, X0)
+   -> succ(X0, X)
+   ;  X = X0
+   ),
+   shift_right1(WPX, WQX, T0, T).
 
 mu(p(X1, Y1), p(X2, Y2), p(X, Y)) :-
    X is (X1 - Y1 + X2 + Y2) / 2,
