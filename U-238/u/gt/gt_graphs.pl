@@ -72,7 +72,10 @@ add_outer_triangles(O0, O, NO0, Outer0, Outer, G0, G, DE0, DE, CE0, CE):-
    NO0 > 3,
    succ(NO1, NO0),
    P in 0..NO1,
-   random_number(O0, O1, P),
+   (  NO0 =:= 4
+   -> once(random_number(O0, O1, P))
+   ;  random_number(O0, O1, P)
+   ),
    cover_outer_point(P, NO1, Outer0, Outer1, G0, G1, DE0, DE1, CE0, CE1),
    add_outer_triangles(O1, O, NO1, Outer1, Outer, G1, G, DE1, DE,CE1,CE).
 
@@ -183,7 +186,7 @@ draw_edge(Type, Ref, A-B, Coords) :-
    send(Ref, display, Arc).
 
 calc_display_coord(p(X0, Y0), disp(X, Y)) :-
-   X is X0 * 50 + 10 + 150,
-   Y is Y0 * 50 + 10 + 150.
+   X is X0 * 50 + 60,
+   Y is Y0 * 50 + 60.
       
    
