@@ -42,6 +42,7 @@
            convert_prop_list/3, % +Prop_List, +Functor, -List2
            corteging/4,       % ?Functor, ?List1, ?List2, ?List3
            count_el/3,
+           count_els/2,       % +List, -Pairs
            decode_prop_list/3,
            extract_by_key_order/3,
            gen_memberchk/3,   % +Op, ?Member, +List
@@ -78,6 +79,7 @@
 /** <module> Auxiliary list operations
 */
 
+%:- use_module(library(assoc)).
 :- use_module(library(error)).
 :- use_module(library(option)).
 :- use_module(library(clpfd)).
@@ -363,6 +365,22 @@ count_el2([H | T], El, Already_Count, Count) :-
    (H = El  -> Count1 is Already_Count + 1; Count1 = Already_Count),
    count_el2(T, El, Count1, Count).
 
+%% count_els(+List, -Pairs) is det.
+%
+% Make assoc as element-count
+% Requires msorted List.
+% Example [1,2,2,5,5,5] -> [1-1, 2-2, 3-5]
+count_els([], []) :- !.
+count_els([I|T], Assoc) :-
+   count_els_int(I, 1, T, [], Assoc).
+
+count_els_int(I, K, [], Assoc0, [I-K|Assoc0]) :- !.
+count_els_int(I, K, [I1|T], Assoc0, Assoc) :-
+   I == I1, !,
+   succ(K, K1),
+   count_els_int(I, K1, T, Assoc0, Assoc).
+count_els_int(I, K, [J|T], Assoc0, Assoc) :-
+   count_els_int(J, 1, T, [I-K|Assoc0], Assoc).
 
 trim_list(_, _, [], []) :- !.
 
