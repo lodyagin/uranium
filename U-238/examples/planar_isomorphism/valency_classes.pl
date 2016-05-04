@@ -1,0 +1,1 @@
+show_valency_classes :- DE=[], between(3, 100, N), random_options(1, O), findall(NLS, (random_triangulated_planar_graph([nondet|O], O1, N, G, DE, Outer, Emb), findall(NL, (between(1, N, V), neighbours(V, G, Nbs), length(Nbs, NL)), NLS0), msort(NLS0, NLS1), count_els(NLS1, NLS)), NLSS0), msort(NLSS0, NLSS1), count_els(NLSS1, NLSS), format('~d ~p~n', [N, NLSS]), fail; true.
