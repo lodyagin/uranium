@@ -1,13 +1,19 @@
 :- module(gt_graphs,
           [random_triangulated_planar_graph/7, % +Opts0, -Opts, +K,
-                                    % -Graph, -DoubleEdges, -Outer, -Emb)
-           draw_graph/4
+                                % -Graph, -DoubleEdges, -Outer, -Emb)
+           random_path/6, % +Opts0, -Opts, +Graph, +StartVertex, +StopVertex, -Path
+           draw_graph/4,
+           draw_path/3,
+           path_to_edges/3,
+           embedded_distance/3 % +Path, +Emb, -D
            ]).
 
 :- use_module(library(dialect/hprolog)).
 :- use_module(library(ordsets)).
 :- use_module(library(ugraphs)).
+:- use_module(u(gt/gt_lists)).
 :- use_module(u(gt/gt_numbers)).
+:- use_module(u(ur_option)).
 :- use_module(u(v)).
 
 %
@@ -137,11 +143,40 @@ mu(p(X1, Y1), p(X2, Y2), p(X, Y)) :-
    X is (X1 - Y1 + X2 + Y2) / 2,
    Y is (-X1 + Y1 + X2 + Y2) / 2.
 
+%% random_path(+Opts0, -Opts, +Graph, +StartVertex, +StopVertex, -Path)
+%
+% Doesn't visit a vertex twice
+:- meta_predicate random_path(:, -, +, +, +, -).
+random_path(OM:O0, O, Graph, StartVertex, StopVertex, Path) :-
+   options_to_object(random_path, OM:O0, O1),
+   random_options(O1, O, Det, Gen, RSt0, RSt, _),
+   random_path_int(Det, Gen, RSt0, RSt, Graph,
+                   StartVertex, StopVertex, [StartVertex], Path).
+   
+random_path_int(_, _, RSt, RSt, _, V, V, _, [V]) :- !.
+random_path_int(Det, Gen, RSt0, RSt, G, V0, V, Visited0, [V0|Path1]):-
+   neighbours(V0, G, V1s),
+   random_member(V1, V1s, Det, Gen, RSt0, RSt1),
+   \+ ord_memberchk(V1, Visited0),
+   ord_add_element(Visited0, V1, Visited),
+   random_path_int(Det, Gen, RSt1, RSt, G, V1, V, Visited, Path1).
+
 draw_graph(P, G, DE, Emb) :-
    obj_unify(Emb, [coords, curved_edges], [Coords, CurvedEdges]),
    draw_vertices(P, Coords),
    edges(G, Edges),
-   draw_edges(P, Edges, DE, Coords, CurvedEdges).
+   draw_edges(P, Edges, DE, Coords, CurvedEdges, 1).
+
+draw_path(P, Path, Emb) :-
+   obj_unify(Emb, [coords, curved_edges], [Coords, CurvedEdges]),
+   path_to_edges(Path, [], Edges),
+   draw_edges(P, Edges, [], Coords, CurvedEdges, 3).
+
+% NB returns edges in reverse order
+path_to_edges([], E, E) :- !.
+path_to_edges([_], E, E) :- !.
+path_to_edges([A, B|T], E0, E) :-
+   path_to_edges([B|T], [A-B|E0], E).
 
 draw_vertices(_, []) :- !.
 draw_vertices(Ref, [P|T]) :-
@@ -150,8 +185,8 @@ draw_vertices(Ref, [P|T]) :-
    send(V, fill_pattern, colour(red)),
    draw_vertices(Ref, T).
 
-draw_edges(_, [], _, _, _) :- !.
-draw_edges(P, [E|T], DoubleEdges, Coords, CurvedEdges0) :-
+draw_edges(_, [], _, _, _, _) :- !.
+draw_edges(P, [E|T], DoubleEdges, Coords, CurvedEdges0, Thickness) :-
    ( ord_memberchk(E, CurvedEdges0) -> DrawCurved = t ; DrawCurved = f ),
    ( ord_memberchk(E, DoubleEdges) -> DrawStraight = t; true ),
    ( DrawCurved == t -> ignore(DrawStraight = f); DrawStraight = t),
@@ -160,19 +195,19 @@ draw_edges(P, [E|T], DoubleEdges, Coords, CurvedEdges0) :-
    -> ord_del_element(CurvedEdges0, E, CurvedEdges1),
       E=EP-EQ,
       (  EP < EQ % draw once (undirected)
-      -> draw_edge(curved, P, E, Coords)
+      -> draw_edge(curved, P, E, Coords, blue, Thickness)
       ; true )
    ;
       CurvedEdges1 = CurvedEdges0
    ),
 
    (  DrawStraight == t
-   -> draw_edge(straight, P, E, Coords)
+   -> draw_edge(straight, P, E, Coords, black, Thickness)
    ;  true 
    ),
-   draw_edges(P, T, DoubleEdges, Coords, CurvedEdges1).
+   draw_edges(P, T, DoubleEdges, Coords, CurvedEdges1, Thickness).
 
-draw_edge(Type, Ref, A-B, Coords) :-
+draw_edge(Type, Ref, A-B, Coords, Colour, Thickness) :-
    nth1(A, Coords, PA),
    nth1(B, Coords, PB),
    calc_display_coord(PA, disp(XA, YA)),
@@ -180,13 +215,24 @@ draw_edge(Type, Ref, A-B, Coords) :-
    (  Type == straight
    -> new(Arc, line(XA, YA, XB, YB, second))
    ;  new(Arc, arc),
-      send(Arc, points(XA, YA, XB, YB, 25)),
-      send(Arc, colour(blue))
+      send(Arc, points(XA, YA, XB, YB, 25))
    ),
+   send(Arc, colour(Colour)),
+   send(Arc, pen(Thickness)),
    send(Ref, display, Arc).
 
 calc_display_coord(p(X0, Y0), disp(X, Y)) :-
    X is X0 * 50 + 60,
    Y is Y0 * 50 + 60.
-      
-   
+
+% For debug purposes
+embedded_distance(Edges, Emb, D) :-
+   obj_field(Emb, coords, Coords),
+   embedded_distance_int(Edges, Coords, 0.0, D).
+
+embedded_distance_int([], _, D, D) :- !.
+embedded_distance_int([A-B|T], Coords, D0, D) :- 
+   nth1(A, Coords, p(XA, YA)),
+   nth1(B, Coords, p(XB, YB)),
+   D1 is D0 + sqrt((XA-XB)**2 + (YA-YB)**2),
+   embedded_distance_int(T, Coords, D1, D).
