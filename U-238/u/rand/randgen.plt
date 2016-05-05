@@ -117,8 +117,8 @@ test(random_options1_local_only) :-
                                     rand_state(O2SeedVal1, O2SeedVal2)],
     assertion([O1Det, O1Gen, O1Seed] == [Det,generator(Gen),rand_state(5, Seed)]),
     assertion([O1Det, O1Gen] == [O2Det, O2Gen]),
-    assertion(O2SeedVal1 == 5),
-    assertion(Seed2 == O2SeedVal2),
+    assertion(O2SeedVal1 == Seed2),
+    assertion(var(O2SeedVal2)),
     assertion(var(Phase_Match)).
 
 test(random_options1_global_only) :-
@@ -165,13 +165,12 @@ test(random_options1_local_overwrite) :-
     O2 / global_options ^= GlobalOptsOut,
     assertion([O1Det, O1Gen, O1Seed] == [Det,generator(Gen),rand_state(5, Seed)]),
     assertion([O1Det, O1Gen] == [O2Det, O2Gen]),
-    assertion(O2SeedVal1 == 5),
-    assertion(O2SeedVal2 == Seed1),
+    assertion(O2SeedVal1 == Seed1),
+    assertion(var(O2SeedVal2)),
     obj_rewrite(GlobalOpts, [rand_options], [RO0], [_], GlobalOptsC),
     obj_rewrite(GlobalOptsOut, [rand_options], [ROOut], [_], GlobalOptsOutC),
     assertion(GlobalOptsC =@= GlobalOptsOutC),
     options_object(randgen:random_options, randgen:RO0, RO),
-    assertion(rand_state(Seed, _) =^= ROOut/rand_state),
     ROOut/rand_state ^= RO/rand_state,
     assertion(RO =@= ROOut),
     assertion(var(Phase_Match)).

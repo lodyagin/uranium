@@ -163,8 +163,9 @@ random_options(Options0, Options, Det, Generator,
    obj_rewrite(Options0, weak,
                [generator, rand_state, det, global_options, phase],
                [Generator_Opt0, Rand_State_Opt0, Det0, GO0, Req_Phase],
-               [Generator_Opt0, Rand_State_Opt0, Det0, GO, Req_Phase],
-               % NB all local opts values are repeated
+               [Generator_Opt0, Rand_State_Opt_LocalOut, Det0, GO, Req_Phase],
+               % NB all local opts values are repeated except
+               % Rand_State
                Options
                ),
    % Get the global random options
@@ -206,9 +207,11 @@ random_options(Options0, Options, Det, Generator,
    must_be(callable, Generator),
    % rand_state
    (  nonvar(Rand_State_Opt0)
-   -> Rand_State_Opt = Rand_State_Opt0
+   -> Rand_State_Opt = Rand_State_Opt0,
+      Rand_State_Opt_Out = Rand_State_Opt_LocalOut
    ;  nonvar(Rand_State_Opt3)
-   -> Rand_State_Opt = Rand_State_Opt3
+   -> Rand_State_Opt = Rand_State_Opt3,
+      Rand_State_Opt_Out = Rand_State_Opt_GlobOut
    ;  Rand_State_Opt = rand_state(random_seed)
    ),
    memberchk(Rand_State_Opt,
@@ -225,8 +228,8 @@ random_options(Options0, Options, Det, Generator,
    % make the new options object
    functor(Rand_State_Opt, _, Rand_State_Arity),
    (  Rand_State_Arity == 1
-   -> Rand_State_Opt_GlobOut = rand_state(Rand_State)
-   ;  Rand_State_Opt_GlobOut = rand_state(Rand_State, _)
+   -> Rand_State_Opt_Out = rand_state(Rand_State)
+   ;  Rand_State_Opt_Out = rand_state(Rand_State, _)
    ).
 
 :- meta_predicate random_select(-, +, -, :, +, -).
@@ -300,7 +303,9 @@ random_integer(pcg32_state(State, _), End, Value) :- !,
   Xor_Shifted is (((State >> 18) xor State) >> 27) /\ 0xffffffff,
   Rot is State >> 59,
   Value0 is ((Xor_Shifted >> Rot) \/ (Xor_Shifted << ((-Rot) /\ 31))) /\ 0xffffffff,
-  Value is Value0 mod End.
+  Value is Value0 mod End,
+  debug(randgen, "pcg32_state(~p, _) -> ~d mod ~d -> ~d",
+        [State, Value0, End, Value]).
 random_integer(State, End, Value) :-
   integer(State), !,
   Value is State mod End.
