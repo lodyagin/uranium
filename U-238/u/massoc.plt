@@ -72,6 +72,10 @@ test(del4, fail) :-
    massoc1(MA),
    del_massoc(4, MA, _,  _).
 
+test(min_massoc, KVs == [1-a]) :-
+   massoc1(MA),
+   findall(K-V, min_massoc(MA, K, V), KVs).
+
 empty_massoc(MA) :-
    list_to_assoc([], MA).
 
