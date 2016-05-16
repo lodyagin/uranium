@@ -1,4 +1,4 @@
-:- use_module(ur_option).
+:- use_module(u(ur_option)).
 :- use_module(library(assoc)).
 :- use_module(u(v)).
 
