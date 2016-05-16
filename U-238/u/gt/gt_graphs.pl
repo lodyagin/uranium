@@ -225,6 +225,8 @@ calc_display_coord(p(X0, Y0), disp(X, Y)) :-
    X is X0 * 50 + 60,
    Y is Y0 * 50 + 60.
 
+%% embedded_distance(+Path, +Emb, -D)
+%
 % For debug purposes
 embedded_distance(Edges, Emb, D) :-
    obj_field(Emb, coords, Coords),
