@@ -1,7 +1,8 @@
 % It is a multimap implementation.
 
 :- module(massoc,
-          [del_massoc/4, %+Key, +MAssoc0, ?Value, -MAssoc
+          [empty_massoc/1, %-MAssoc
+           del_massoc/4, %+Key, +MAssoc0, ?Value, -MAssoc
            get_massoc/3, %+Key, +MAssoc, -Value
            get_massoc/5, %+Key, +MAssoc0, ?Val, -MAssoc, +NewVal
            min_massoc/3, %+MAssoc, -Key, -Value
@@ -9,6 +10,10 @@
           ]).
 
 :- use_module(library(assoc)).
+
+%% empty_massoc(-MAssoc) is det.
+empty_massoc(MAssoc) :-
+   empty_assoc(MAssoc).
 
 %% get_massoc(+Key, +MAssoc0, ?Val, -MAssoc, +NewVal) is nondet.
 %

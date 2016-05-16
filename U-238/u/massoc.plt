@@ -76,9 +76,6 @@ test(min_massoc, KVs == [1-a]) :-
    massoc1(MA),
    findall(K-V, min_massoc(MA, K, V), KVs).
 
-empty_massoc(MA) :-
-   list_to_assoc([], MA).
-
 massoc1(MAssoc) :-
    list_to_assoc([1-[a], 2-[a, b], 3-[a, b, a]], MAssoc).   
 
