@@ -66,6 +66,7 @@
 :- use_module(u(ur_option)).
 :- use_module(u(rand/randgen)).
 :- use_module(u(gt/gt_numbers)).
+:- use_module(u(gt/gt_objects)).
 :- use_module(u(logging)).
 :- use_module(u(internal/objects_i)).
 :- use_module(u(ur_enums)).
