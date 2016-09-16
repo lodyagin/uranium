@@ -28,16 +28,19 @@
                                         % :Checking_Pred
 
            check_downcast_impl/1,       % +Clause
-           reload_all_classes/0
+	   load_class_module/1,            % +FileName
+           reload_all_classes/0,
+	   unload_class_module/1           % +FileName
            ]).
 
-:- use_module(u(ur_lists)).
-:- use_module(u(util/lambda)).
-:- use_module(u(internal/objects)).
-:- use_module(u(internal/objects_i)).
+:- use_module(library(error)).
 :- use_module(u(internal/class_create)).
 :- use_module(u(internal/db_vocab)).
+:- use_module(u(internal/objects)).
+:- use_module(u(internal/objects_i)).
 :- use_module(u(internal/ur_debug)).
+:- use_module(u(ur_lists)).
+:- use_module(u(util/lambda)).
 
 :- dynamic user:portray/1, user:file_search_path/2.
 
@@ -64,6 +67,18 @@ assert_class_modules :-
       fail ; true
    ).
 
+assert_all_module_class_defs(Main_Class) :-
+   forall(
+     (  module_new_class_def(Main_Class, Class, Parent),
+        (  objects:clause(module_class_def(Class, _, _), _)
+        -> throw(error(class_exists(Class), _))
+        ;  true
+        )),
+      assertz_pred(classes,
+                   objects:module_class_def(Class, Parent,
+                                            Main_Class))
+   ).
+
 % all_classes(-All_Classes) is det.
 % All_Classes will contain class names in the order to create
 all_classes(All_Classes) :-
@@ -71,23 +86,19 @@ all_classes(All_Classes) :-
      % associate each class with a module it is defined
      % add relation to parent classes
      (  objects:module(Main_Class, _),
-        module_new_class_def(Main_Class, Class, Parent),
-        (  objects:clause(module_class_def(Class, _, _), _)
-        -> throw(error(class_exists(Class), _))
-        ;  true
-        ),
-        assertz_pred(classes,
-                     objects:module_class_def(Class, Parent,
-                                              Main_Class)),
+        assert_all_module_class_defs(Main_Class),
         fail ; true
      ),
 
      % TODO check no Main_Class repeats
      % TODO check no class name repeats
 
+     all_classes_by_module(_, All_Classes). % all classes
+     
+all_classes_by_module(MainClass, All_Classes) :-
      % represet parent relations as a graph edges
      findall(Parent - Class,
-             objects:module_class_def(Class, Parent, _),
+             objects:module_class_def(Class, Parent, MainClass),
              Edges),
 
      vertices_edges_to_ugraph([], Edges, Graph),
@@ -315,6 +326,59 @@ assert_clause_int(Module_From:Clause, Module_To, Checking_Pred) :-
    ),
    assertz_pred(classes, Module_To:(Term :- Module_From:Body)).
 
+normalize_file_name(FileName0, FileName) :-
+    absolute_file_name(FileName0, FileName1),
+    (   atom_concat(_, '.pl', FileName1)
+    ->  FileName = FileName1
+    ;   atom_concat(FileName1, '.pl', FileName)
+    ).
+
+%% load_class_module(+FileName) is det.
+% Load class(es) definition file.
+% The file can have non standard name and be in non standard directory.
+load_class_module(FileName) :-
+    Ctx = context(load_class_def/2, _),
+    must_be(ground, FileName),
+    catch(
+	    load_class_module_int(FileName, Ctx),
+	    Ex,
+	    (  unload_class_module(FileName), % rollback
+	       throw(Ex) )
+	).
+
+    
+load_class_module_int(FileName, Ctx) :-
+    normalize_file_name(FileName, FileName2),
+    consult(FileName2),
+    module_property(MainClass, file(FileName2)), !, %NB MainClass must be the module name
+    (   objects:module(MainClass, _)
+     -> throw(error(class_exists(MainClass), Ctx))
+     ;  true
+    ),
+    assertz_pred(classes, objects:module(MainClass, FileName2)),
+    % load all classes from the file
+    assert_all_module_class_defs(MainClass),
+    all_classes_by_module(MainClass, ModuleClasses),
+    forall( member(Class, ModuleClasses), process_class_def(Class) ),
+    process_module_def(MainClass).
+    
+%% unload_class_module(+FileName) is det.
+unload_class_module(FileName) :-
+    normalize_file_name(FileName, FileName2),
+    module_property(MainClass, file(FileName2)), !,
+    must_be(atom, MainClass), % for sure
+    all_classes_by_module(MainClass, ModuleClasses),
+    forall(
+	    ( member(new_class(Class, _, _, _), ModuleClasses), class_id(ClassId, Class) ),
+	    retract_object(ClassId, Class) % fixme no typedefs cleared
+	),
+    forall(
+	    module_new_class_def(MainClass, Class, _),
+	    retractall(objects:module_class_def(Class, _, _))
+	),
+    retractall(objects:module(MainClass, _)),
+    unload_file(FileName2).
+    
 %% reload_all_classes is det.
 % Reload all class definitions.
 reload_all_classes :-

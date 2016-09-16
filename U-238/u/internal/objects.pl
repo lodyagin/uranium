@@ -54,6 +54,7 @@
            reinterpret/4,
            typedef_flag/2,
 
+	   retract_object/2,    % ?ClassId, ?Class
            retractall_objects/0
           ]).
 
@@ -75,25 +76,31 @@
            typedef_flag/2.
 
 retractall_objects :-
-
-   retractall(arity(_, _)),
-   retractall(class_id(_, _, _)),
-   retractall(copy(_, _, _, _)),
-   retractall(downcast(_, _, _, _)),
-   retractall(eval_field(_, _, _, _, _)),
-   retractall(field(_, _, _, _)),
-   retractall(field_info(_, _, _, _, _)),
-   retractall(key(_, _, _)),
-   retractall(module(_, _)),
-   retractall(module_class_def(_, _, _)),
+   retract_object(_, _),
    retractall(next_class_id(_)),
-   retractall(parent_(_, _)),
    retractall(pretty_print(_, _, _, _)),
-   retractall(rebased_class(_, _, _)),
-   retractall(reinterpret(_, _, _, _)),
    retractall(typedef_flag(_, _)),
    retractall(value_set(_, _, _, _, _)),
    retractall(value_options(_, _, _)).
+
+retract_object(ClassId, Class) :-
+   retractall(arity(ClassId, _)),
+   retractall(class_id(ClassId, _, _)),
+   retractall(class_id(_, _, Class)),
+   retractall(copy(ClassId, _, _, _)),
+   retractall(downcast(Class, _, _, _)),
+   retractall(downcast(_, Class, _, _)),
+   retractall(eval_field(Class, _, _, _, _)),
+   retractall(field(ClassId, _, _, _)),
+   retractall(field_info(ClassId, _, _, _, _)),
+   retractall(key(ClassId, _, _)),
+   retractall(module(Class, _)),
+   retractall(module_class_def(Class, _, _)),
+   retractall(parent_(ClassId, _)),
+   retractall(rebased_class(_, _, ClassId)),
+   retractall(reinterpret(Class, _, _, _)),
+   retractall(reinterpret(_, Class, _, _)).
+
 
 
            

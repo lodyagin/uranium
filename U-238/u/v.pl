@@ -139,7 +139,7 @@
             ]).
 
 :- reexport(u(internal/object_module),
-            [reload_all_classes/0]).
+            [load_class_module/1, reload_all_classes/0]).
 
 :- op(200, fy, @).
 
