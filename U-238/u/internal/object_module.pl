@@ -264,6 +264,12 @@ process_typedefs(Module) :-
      ; true
      ),
 
+     % oracle types
+     (  memberchk(plsql - arg(PLSQL_Type, PLSQL_InOut), TD_List)
+     -> assertz(plsql_argument(TD_Type, PLSQL_Type, PLSQL_InOut))
+     ;  true
+     ),     
+
      fail
   ;
      true
@@ -319,6 +325,7 @@ reload_all_classes :-
    % clear the db
    retractall_objects,
    retractall(db_pg:pl_pg_type(_, _, _)),
+   retractall(object_module:plsql_argument(_, _, _)),
 
    % Assert definitions for object_base_v
    objects:assertz(arity(0, 1)),
