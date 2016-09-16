@@ -2,7 +2,7 @@
           [nulls_to_unbounds_obj/2,
 	   nulls_to_unbounds_fields/2,
 
-	   odbc_table_column_ext/4,
+	   odbc_table_column_ext/7,
 	   table_column_ext/4,
 
 	   odbc_connection/3,
@@ -28,10 +28,14 @@
 % library(odbc) extension
 %
 
+%% odbc_table_column_ext(+Connection, -Schema, ?Table, ?Column, -Type, -Length, -Precision).
 % Extends odbc:odbc_table_column to views also
-odbc_table_column_ext(Connection, Schema, Table, Column) :-
+odbc_table_column_ext(Connection, Schema, Table, Column, Type, Length, Precision) :-
     table_column_ext(Connection, Table, Column, Row),
-    arg(2, Row, Schema).
+    odbc:column_facet(table_owner(Schema), Row),
+    odbc:column_facet(type_name(Type), Row),
+    odbc:column_facet(length(Length), Row),
+    odbc:column_facet(precision(Precision), Row).
 
 % Extends odbc:table_column to views also
 table_column_ext(Connection, Table, Column, Tuple) :-
@@ -211,18 +215,22 @@ table_class_name(TableU, Class) :-
 table_class_create(Connection, Schema, Table, Class, Parent) :-
    upcase_atom(Table, TableU),
    upcase_atom(Schema, SchemaU),
-   findall(C,
-           odbc_table_column_ext(Connection, SchemaU, TableU, C),
-           Fields),
-   maplist(downcase_atom, Fields, FieldsL),
+   findall(C:T,
+           (
+	       odbc_table_column_ext(Connection, SchemaU, TableU, C0, T0, L, Prec),
+	       downcase_atom(C0, C),
+	       oracle_table_v:data_type(T0, T0, L, Prec, T1),
+	       functor(T, T1, _)
+	   ),
+           FieldsTypes),
    (
        odbc_table_primary_key(Connection, TableU, Key0)
    ->
        (  Key0 == [_|_] -> Key = Key0 ; Key = [Key0] ),
        maplist(downcase_atom, Key, KeyL),
-       class_create(Class, Parent, FieldsL, KeyL)
+       class_create(Class, Parent, FieldsTypes, KeyL)
    ;
-       class_create(Class, Parent, FieldsL)
+       class_create(Class, Parent, FieldsTypes)
    ).	       
 
 %% update_password(+DSN, +User, +Password) is det.
