@@ -73,6 +73,9 @@ prolog:message(no_object_field(Object, Field_Name)) -->
    ['There is no such field `~a'' in the object ~p'
     - [Field_Name, Object]].
 
+prolog:message(class_field_required) -->
+   ['The class field must contain a class name'].
+
 prolog:message(undef_operation(Op_Name, Class_Id)) -->
 
    ['The operation `~a'' is not defined for class id ~d'

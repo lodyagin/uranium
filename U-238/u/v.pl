@@ -129,6 +129,7 @@
 :- use_module(library(ordsets)).
 :- use_module(u(logging)).
 :- use_module(u(class_diagram)).
+:- use_module(u(ur_lists)).
 :- use_module(u(vd), [db_select/3, named_args_unify/5]).
 
 :- reexport(u(internal/objects_i),
@@ -332,7 +333,7 @@ named_args_weak_unify(Term, Field_List, Value_List) :-
 
 named_args_unify2(Term, Field_List, Value_List, Weak, Ctx) :-
 
-   (  (var(Term) ; var(Field_List))
+   (  var(Field_List)
    -> throw(error(instantiation_error, Ctx))
    ;  true ),
    check_fields_arg(Field_List, Ctx),
@@ -340,7 +341,20 @@ named_args_unify2(Term, Field_List, Value_List, Weak, Ctx) :-
    (  var(Value_List) -> true
    ;  check_values_arg(Field_List, Value_List, Ctx)
    ),
-   check_object_arg(Term, Ctx, Class_Id),
+   (   nonvar(Term)
+   ->  check_object_arg(Term, Ctx, Class_Id)
+   ;   (
+           select_value(class, Field_List, Value_List, Class),
+           atom(Class), class_id(Class_Id, Class)
+       ->
+           % object creation, see also obj_construct_int/5
+           class_arity(Class_Id, Arity),
+           functor(Term, Class, Arity),
+           arg(1, Term, Class_Id)
+       ;
+           throw(error(class_field_required, Ctx))
+       )
+   ),
 
    std_weak_arg_values(LOL),
    Self_Ctx = context(named_args_unify2/5, _),
