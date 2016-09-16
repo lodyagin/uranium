@@ -527,6 +527,10 @@ test(obj_unify_ignore1, [Surname == l]) :-
    obj_construct(man_v, [name, surname], [s, l], M), 
    obj_unify(M, ignore, [name, surname], [a, Surname]).
 
+test(obj_unify_construct1, [A =@= B]) :-
+   obj_unify(Obj, [name, class, surname], ['Boele', man_v, A]),
+   obj_unify(Obj, [name, class, surname], ['Boele', man_v, B]).
+
 test(findall_fields,
      [Flds =@= [v(height, H, _), v(name, 'Vasia', _), v(sex, _, man_v_sex_t),
              v(surname, 'Pupkin', _), v(weight, W, _)]])

@@ -292,7 +292,7 @@ select_option_req(Option, List0, List) :-
 
 
 % select_value(+Selector, +Selector_List, +Value_List, -Value) :-
-% det
+% semidet
 %
 % Выбор значения из списка на основе списка селекторов
 %
