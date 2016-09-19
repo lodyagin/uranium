@@ -198,6 +198,9 @@ prolog:message(db_invalid_query(DB_Key, Query)) -->
 
    ['Invalid query ~w on DB ~a' - [Query, DB_Key]].
 
+prolog:message(db_no_such_table(DB_Key, Table)) -->
+   ['The table ~a does not exist in the DB ~p' - [Table, DB_Key]].
+
 %prolog:message(db_ungrounded_key(Key, Key_Value, Action)) -->
 
 %   ['When try ~a the ungrounded key ~p = ~p was found'

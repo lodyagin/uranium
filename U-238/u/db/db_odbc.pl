@@ -1,15 +1,15 @@
 :- module(db_odbc,
-          [nulls_to_unbounds_obj/2,
+          [
+	   map_db_type/2, % ?Type, ?DB_Type
 	   nulls_to_unbounds_fields/2,
-
-	   odbc_table_column_ext/8,
-	   table_column_ext/4,
-
+	   nulls_to_unbounds_obj/2,
 	   odbc_connection/3,
 	   odbc_erase/3,     % +ODBC_Db, +Obj, +Ctx
+	   odbc_table_column_ext/8,
            odbc_recorded/3,  % +ODBC_Db, +Obj, +Ctx
            table_class/3,    % +ODBC_Db, +Table, -Class
            table_class/4,    % +ODBC_Db, +Schema, +Table, -Class
+           table_column_ext/4,
            update_password/3 % +DSN, +User, +Password
           ]).
 
@@ -56,6 +56,7 @@ table_column_ext(Connection, Table, Column, Tuple) :-
 %
 %
 
+%% odbc_db_key(DB, DSN, User) is semidet.
 odbc_db_key(odbc(DSN, User), DSN, User) :- !.
 odbc_db_key(odbc(DSN, User, Password), DSN, User) :-
    update_password(DSN, User,Password).
@@ -190,9 +191,8 @@ sql_value(Value) -->
 %
 table_class(ODBC_Db, Table, Class) :-
    Ctx = context(table_class/3),
-   odbc_db_key(ODBC_Db, DSN, User),
-   dsn_user_connection(DSN, User, Connection, Ctx),
-   table_class_int(Connection, User, Table, Class).
+   odbc_db_key(ODBC_Db, _, User), 
+   table_class_int(ODBC_Db, User, Table, Class, Ctx).
 
 %% table_class(+ODBC_Db, +Schema, +Table, -Class) is det.
 %
@@ -201,15 +201,13 @@ table_class(ODBC_Db, Table, Class) :-
 table_class(ODBC_Db, Schema, Table, Class) :-
    Ctx = context(table_class/3),
    must_be(nonvar, Schema), 
-   odbc_db_key(ODBC_Db, DSN, User),
-   dsn_user_connection(DSN, User, Connection, Ctx),
-   table_class_int(Connection, Schema, Table, Class).
+   table_class_int(ODBC_Db, Schema, Table, Class, Ctx).
 
-table_class_int(Connection, Schema, Table, Class) :-
+table_class_int(ODBC_Db, Schema, Table, Class, Ctx) :-
    table_class_name(Table, Class),
    (  class_name(Class)
    -> true % the Class already exists
-   ;  table_class_create(Connection, Schema, Table, Class, odbc_table_v)
+   ;  table_class_create(ODBC_Db, Schema, Table, Class, odbc_table_v, Ctx)
    ).
 
 table_class_name(Table, Class) :-
@@ -220,7 +218,8 @@ table_class_name(TableU, Class) :-
    atom_concat(TableL, '_v', Class),
    upcase_atom(TableL, TableU).
 
-table_class_create(Connection, Schema, Table, Class, Parent) :-
+table_class_create(ODBC_Db, Schema, Table, Class, Parent, Ctx) :-
+   odbc_connection(ODBC_Db, Connection, Ctx),
    upcase_atom(Table, TableU),
    upcase_atom(Schema, SchemaU),
    findall(C:T,
@@ -232,7 +231,10 @@ table_class_create(Connection, Schema, Table, Class, Parent) :-
 	       ;  T = error
 	       )
 	   ),
-           FieldsTypes), 
+           FieldsTypes),
+   (  FieldsTypes == [] -> throw(error(db_no_such_table(ODBC_Db, TableU), Ctx))
+    ; true
+    ),
    (
        odbc_table_primary_key(Connection, TableU, Key0)
    ->
@@ -276,4 +278,3 @@ nulls_to_unbounds_obj(Obj0, Obj) :-
 
 nulls_to_unbounds_fields(Values0, Values) :-
     findall(V, ( member(V0, Values0), (V0 == '$null$' -> true; V0=V) ), Values).
-

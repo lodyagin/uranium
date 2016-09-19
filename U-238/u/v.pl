@@ -63,6 +63,7 @@
            obj_downcast/3,     % +Parent, +Class_To, -Descendant
            obj_field/3,        % +Obj, ?Field, ?Value
            obj_field/4,        % +Obj, +Weak, ?Field, ?Value
+           obj_field/5,        % +Obj, +Weak, ?Field, ?Value, ?Type
            findall_fields/4,   % +Obj, ?Native, ?Eval, -Fields
            findall_fields/5,   % :Filter, +Obj, ?Native, ?Eval, -Fields
            obj_key/2,          % +Object, -Key
@@ -234,6 +235,22 @@ obj_field(Obj, Weak, Field_Name, Value) :-
 
    obj_field_int(Class_Id, Field_Name, Weak1, Obj, Value, _, Ctx).
 
+
+%% obj_field(+Obj, +Weak, ?Field_Name, ?Value, ?Type)
+% @see named_arg/4
+obj_field(Obj, Weak, Field_Name, Value, Type) :-
+   Ctx = context(obj_field/5, _),
+   check_inst(Obj, Ctx),
+   std_weak_arg_values(LOL),
+   decode_arg(LOL, Weak, Weak1, Ctx),
+   check_object_arg(Obj, Ctx, Class_Id),
+   (  var(Field_Name) -> true
+   ;  check_field_name(Field_Name, Ctx)
+   ),
+
+   obj_field_int(Class_Id, Field_Name, Weak1, Obj, Value, Type, Ctx).
+
+
 %% findall_fields(+Obj, ?Native, ?Eval, -Fields) is det.
 %
 % Returns the Fields = [v(Name, Value, Type), ...].
@@ -292,7 +309,7 @@ named_arg(Obj, Field, Value) :-
 
 
 % named_arg(+Term, +Field_Name, ?Value, -Type)
-
+% @see obj_field/5
 named_arg(Term, Field_Name, Value, Type) :-
 
    Ctx = context(named_arg/4, _),
