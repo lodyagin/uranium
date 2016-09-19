@@ -2,7 +2,7 @@
           [nulls_to_unbounds_obj/2,
 	   nulls_to_unbounds_fields/2,
 
-	   odbc_table_column_ext/7,
+	   odbc_table_column_ext/8,
 	   table_column_ext/4,
 
 	   odbc_connection/3,
@@ -30,12 +30,13 @@
 
 %% odbc_table_column_ext(+Connection, -Schema, ?Table, ?Column, -Type, -Length, -Precision).
 % Extends odbc:odbc_table_column to views also
-odbc_table_column_ext(Connection, Schema, Table, Column, Type, Length, Precision) :-
+odbc_table_column_ext(Connection, Schema, Table, Column, Type, Length, Precision, Scale) :-
     table_column_ext(Connection, Table, Column, Row),
     odbc:column_facet(table_owner(Schema), Row),
     odbc:column_facet(type_name(Type), Row),
     odbc:column_facet(length(Length), Row),
-    odbc:column_facet(precision(Precision), Row).
+    odbc:column_facet(precision(Precision), Row),
+    ignore(odbc:column_facet(scale(Scale), Row)).
 
 % Extends odbc:table_column to views also
 table_column_ext(Connection, Table, Column, Tuple) :-
@@ -87,11 +88,18 @@ odbc_recorded(ODBC_Db, Obj, Ctx) :-
   odbc_db_key(ODBC_Db, DSN, User),
   dsn_user_connection(DSN, User, Connection, Ctx),
   obj_sql(Obj, Fields, SQL),
-  odbc_query(Connection, SQL, Row),
+  findall_fields(Obj, true, false, VFields),
+  findall(DBType, ( member(v(_, _, Type), VFields), map_db_type(Type, DBType) ), Types),
+  odbc_query(Connection, SQL, Row, [types(Types), null(_)]),
   Row =.. [_|Values],
   obj_unify(Obj, 
             [db_key|Fields], 
             [odbc(DSN, User)|Values]).
+
+map_db_type(varchar2, string) :- !.
+map_db_type(char, string) :- !.
+map_db_type(fload, double) :- !.
+map_db_type(X, X).
 
 obj_sql(Obj, Fields, SQL) :-
   functor(Obj, Class, _),
@@ -217,12 +225,14 @@ table_class_create(Connection, Schema, Table, Class, Parent) :-
    upcase_atom(Schema, SchemaU),
    findall(C:T,
            (
-	       odbc_table_column_ext(Connection, SchemaU, TableU, C0, T0, L, Prec),
+	       odbc_table_column_ext(Connection, SchemaU, TableU, C0, T0, L, Prec, Scale),
 	       downcase_atom(C0, C),
-	       oracle_table_v:data_type(T0, T0, L, Prec, T1),
-	       functor(T, T1, _)
+	       (  oracle_table_v:data_type(T0, T0, L, Prec, Scale, T1) 
+	       -> functor(T1, T, _)
+	       ;  T = error
+	       )
 	   ),
-           FieldsTypes),
+           FieldsTypes), 
    (
        odbc_table_primary_key(Connection, TableU, Key0)
    ->
