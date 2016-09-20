@@ -99,7 +99,7 @@ odbc_recorded(ODBC_Db, Obj, Ctx) :-
 
 map_db_type(varchar2, string) :- !.
 map_db_type(char, string) :- !.
-map_db_type(fload, double) :- !.
+%map_db_type(float, double) :- !. Not in packages-odbc V7.2.3
 map_db_type(X, X).
 
 obj_sql(Obj, Fields, SQL) :-
@@ -172,6 +172,10 @@ sql_value(null(_)) -->
 sql_value(Value) -->
   { atom(Value), !,
     format(codes(Str), "'~a'", Value) },
+  Str.
+sql_value(Value) -->
+  { string(Value), !,
+    format(codes(Str), "'~s'", Value) },
   Str.
 sql_value(Value) -->
   { integer(Value), !,
