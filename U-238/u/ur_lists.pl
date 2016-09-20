@@ -62,6 +62,7 @@
            select_value/6, % ?Selector, +Selectors, %
                            % -Selectors_Rest, ?Values, %
                            % ?Values_Rest, ?Value (nondet)
+	   selectchk_several/3,  
            sort_linked/2,
            swap_keyed_list/2,
            switch_by_value/4,
@@ -325,6 +326,10 @@ select_value(Selector, [SH|ST], [SH|SR],
              [VH|VT], [VH|VR], Value) :-
 
    select_value(Selector, ST, SR, VT, VR, Value).
+
+selectchk_several([], List, List) :- !.
+selectchk_several([A|T], List1, List) :- selectchk(A, List1, List2), selectchk_several(T, List2, List).
+
 
 %
 % Оператор case (switch)
