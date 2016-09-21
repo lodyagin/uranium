@@ -213,7 +213,7 @@ right_side(A) -->
     { number(A), !, atom_codes(A, AC) },
     AC.
 right_side(A) -->
-    { atom(A), !, atom_codes(A, AC) },
+    { ( atom(A) ; string(A) ), !, atom_codes(A, AC) },
     "'", AC, "'".
 right_side(timestamp(Y,Mo,D,H,Mi,S,_)) --> !,
     { format_time(codes(SC), "%F %T", date(Y, Mo, D, H, Mi, S, 0, -, false))
