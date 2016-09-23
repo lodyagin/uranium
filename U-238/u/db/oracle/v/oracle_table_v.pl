@@ -10,7 +10,9 @@ data_type(_, 'CHAR',     Length, _, _,     char(Length)) :- !.
 data_type(_, 'INTEGER',  _,      _, _,     integer) :- !.
 data_type(_, 'LONG',     _,      _, _,     integer) :- !.
 data_type(_, 'DECIMAL',  _,      _, 0,     integer) :- !.
+data_type(_, 'DECIMAL',   _,     _, Scale, rational(Scale)) :- nonvar(Scale), !.
 data_type(_, 'NUMBER',   _,      _, Scale, float) :- var(Scale), !.
+data_type(_, 'DATE',     _,      _, _,     date) :- !.
     
 
 
