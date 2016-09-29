@@ -165,6 +165,10 @@ sql_where_condition(v(Name, Value, _)) -->
   { Value=='$null$', !, atom_codes(Name, NameC) },
   NameC, " is null ".
 sql_where_condition(v(Name, Value, _)) -->
+  { Value=[_|_], !, atom_codes(Name, NameC) },
+  NameC, " in ",
+  sql_value_list(Value).
+sql_where_condition(v(Name, Value, _)) -->
   { atom_codes(Name, NameC) },
   NameC, "=",
   sql_value(Value).
@@ -190,6 +194,12 @@ sql_value(Value) -->
     Float.
 sql_value(Value) -->
   { throw(error(domain_error(sql_type, Value), _)) }.
+
+sql_value_list([V|T]) -->
+    "(", sql_value(V), sql_value_list2(T), ")".
+sql_value_list2([]) --> [].
+sql_value_list2([V|T]) -->
+    ",", sql_value(V), sql_value_list2(T).
 
 %% table_class(+ODBC_Db, +Table, -Class) is det.
 %
