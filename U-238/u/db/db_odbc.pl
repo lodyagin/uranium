@@ -97,11 +97,11 @@ odbc_recorded(ODBC_Db, Obj, Ctx) :-
             [db_key|Fields], 
             [odbc(DSN, User)|Values]).
 
-map_db_type(varchar2, string) :- !.
-map_db_type(char, string) :- !.
+map_db_type(varchar2, atom) :- !.
+map_db_type(char, atom) :- !.
 %map_db_type(float, double) :- !. Not in packages-odbc V7.2.3
-map_db_type(rational, string) :- !.
-map_db_type(date, string) :- !.
+map_db_type(rational, atom) :- !.
+map_db_type(date, timestamp) :- !.
 map_db_type(X, X).
 
 obj_sql(Obj, Fields, SQL) :-

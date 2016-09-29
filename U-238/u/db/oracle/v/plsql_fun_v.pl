@@ -17,15 +17,15 @@ new_class(plsql_fun_v, plsql_proc_v, []).
     obj_field(Obj, '#pkg', Package), nonvar(Package),
     obj_field(Obj, '#db', DB), nonvar(DB),
     table_class(DB, sys, all_arguments, AAClass),
-    upcase_atom(Proc, ProcU),
-    upcase_atom(Package, PackageU),
+    upcase_atom(Proc, ProcU), 
+    upcase_atom(Package, PackageU), 
     obj_construct(AAClass,
 		  [object_name, package_name, data_level, argument_name,
-		   data_length, data_precision, data_type, pls_type],
+		   data_length, data_precision, data_scale, data_type, pls_type],
 		  [ProcU, PackageU, 0.0, '$null$',
-		  Length, Precision, DataType, PlsType], AA),
+		  Length, Precision, Scale, DataType, PlsType], AA),
     odbc_recorded(DB, AA, _), !,
-    oracle_table_v:data_type(DataType, PlsType, Length, Precision, ReturnType).
+    oracle_table_v:data_type(DataType, PlsType, Length, Precision, Scale, ReturnType).
 
 
 execute_fun(Obj, Result) :-
