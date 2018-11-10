@@ -34,6 +34,7 @@
 :- use_module(u(internet/rfc6454)). % origin
 :- use_module(u(http/cookies_man)).
 :- use_module(u(logging)).
+:- use_module(u(internal/objects_i)).
 
 new_class(www_address_v, object_v,
           [http_request_url,  % original URL of the request

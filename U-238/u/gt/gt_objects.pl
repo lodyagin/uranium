@@ -20,6 +20,7 @@
 :- use_module(u(v)).
 :- use_module(u(logging)).
 :- use_module(u(util/lambda)).
+:- use_module(u(rand/randgen)).
 
 :- meta_predicate obj_fill_random(:, -, +).
 

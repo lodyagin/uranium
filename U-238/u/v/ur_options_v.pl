@@ -30,6 +30,8 @@
 :- use_module(library(assoc)).
 :- use_module(u(v)).
 :- use_module(u(vd)).
+:- use_module(u(ur_option)).
+:- use_module(u(internal/objects_i)).
 
 :- discontiguous new_class/3, new_class/4.
 

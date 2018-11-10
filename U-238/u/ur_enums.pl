@@ -10,9 +10,11 @@
 :- use_module(library(aggregate)).
 :- use_module(library(error)).
 :- use_module(library(pairs)).
+:- use_module(library(clpfd)).
 :- use_module(u(util/lambda)).
 :- use_module(u(ur_option)).
 :- use_module(u(internal/decode_arg)).
+:- use_module(u(v)).
 
 % 'enum_integer#'(Module, Enum, Integer)
 :- dynamic 'enum_integer#'/3.

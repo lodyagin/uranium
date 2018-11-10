@@ -133,7 +133,7 @@ declare_par(Var, Type) -->
 
 findall_objval_fields(Obj, FldVals) :-
     findall(Name-Value,
-	    (   used_field(Obj, Name, Value),
+	    (   used_field(Obj, Name, Value, _),
 		u_object(Value)
 	    ), FldVals).
 

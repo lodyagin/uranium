@@ -112,6 +112,7 @@
 :- use_module(u(v)).
 :- use_module(u(ur_option)).
 :- use_module(u(internal/check_arg)).
+:- use_module(u(internal/objects_i)).
 :- use_module(u(ur_messages)).
 
 :- reexport(u(ur_messages), [prolog:message//1]).

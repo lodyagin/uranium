@@ -126,9 +126,10 @@ sa_nth1(N, List, Elem, Rest) :-
 %sa_nth1_cmn(_, List, _, _, Ctx) :-
 %  var(List), !,
 %  throw(error(instantiation_error, Ctx)).
-sa_nth1_cmn(N, List, Elem, Rest, Ctx) :-
-  var(N), !,
-  generate_nth1(N, List, Elem, Rest, Ctx).
+
+%sa_nth1_cmn(N, List, Elem, Rest, Ctx) :-
+%  var(N), !,
+%  generate_nth1(N, List, Elem, Rest, Ctx).
 sa_nth1_cmn(N, List, Elem, Rest, Ctx) :-
   must_be(positive_integer, N),
   find_nth1(N, List, Elem, Rest, Ctx).
