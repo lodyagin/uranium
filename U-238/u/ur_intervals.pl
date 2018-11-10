@@ -95,7 +95,7 @@ intervals_nth0_cmn(Idx, _, _, Ctx) :-
   var(Idx), !,
   throw(error(not_implemented, Ctx)).
 intervals_nth0_cmn(Idx, Intervals, N, Ctx) :-
-  (  has_type(nonneg, Idx)
+  (  error:has_type(nonneg, Idx)
   -> intervals_nth0_int(Idx, Intervals, N)
   ;  throw(error(domain_error(nonneg, Idx), Ctx))
   ).
@@ -103,7 +103,7 @@ intervals_nth0_cmn(Idx, _, _, _, Ctx) :-
   var(Idx), !,
   throw(error(not_implemented, Ctx)).
 intervals_nth0_cmn(Idx, Intervals, N, Rest, Ctx) :-
-  (  has_type(nonneg, Idx)
+  (  error:has_type(nonneg, Idx)
   -> intervals_nth0_int(Idx, Intervals, N, Rest)
   ;  throw(error(domain_error(nonneg, Idx), Ctx))
   ).
