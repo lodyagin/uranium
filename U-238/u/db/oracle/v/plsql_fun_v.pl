@@ -29,7 +29,7 @@ new_class(plsql_fun_v, plsql_proc_v, []).
 
 
 execute_fun(Obj, Result) :-
-    Obj/['#out_args', '#inout_args'] ^= [[],[]], !, % no out pars
+%    Obj/['#out_args', '#inout_args'] ^= [[],[]], !, % no out pars
     Obj/['#conn', '#return_type'] ^= [Conn, Type],
     phrase(fun_block(Type, Obj), LC),
     string_codes(LS, LC),
@@ -44,6 +44,7 @@ execute_fun(Obj, Result) :-
 convert_result(integer, Result0, Result) :- !,
     atom_number(Result0, Result).
 convert_result(varchar2(_), Result, Result) :- !.
+convert_result(float, Result, Result) :- !.
 
 fun_block(ResultType, Obj) -->
     "declare\n", "res ", result_type(ResultType), ";\n\t", plsql_proc_v:declare_pars(Obj), !,
@@ -70,9 +71,12 @@ result_table(RT) -->
 
 result_type(integer) -->
     !, "integer".
+result_type(float) -->
+    !, "number".
 result_type(varchar2(R)) -->
     { N is round(R), atom_codes(N, NC) },
     "varchar2(", NC, ")".
 
 result_type_table_subname(varchar2(_)) --> "varchar2".
 result_type_table_subname(integer) --> "integer".
+result_type_table_subname(float) --> "number".

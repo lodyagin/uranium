@@ -124,6 +124,9 @@ declare_pars2([Var-Type|T]) -->
     declare_par(Var, Type),
     declare_pars2(T).
 
+declare_par(Var, varchar2) --> !,
+    { atom_codes(Var, VarC) },
+    "\t", VarC, " varchar2(512);\n".
 declare_par(Var, Type) -->
     { atom_codes(Var, VarC), atom_codes(Type, TypeC) },
     "\t", VarC, " ", TypeC, ";\n".
@@ -230,3 +233,4 @@ typedef(boolean_in, [plsql - arg(boolean, in)]).
 typedef(number_in,  [plsql - arg(number, in)]).
 typedef(number_out, [plsql - arg(number, out)]).
 typedef(varchar2_in, [plsql - arg(varchar2, in)]).
+typedef(varchar2_out, [plsql - arg(varchar2, out)]).
