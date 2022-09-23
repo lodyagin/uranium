@@ -43,15 +43,15 @@
 % Все запрошенные колонки должны присутствовать
 
 html_page_find(DB_In, DB_Out, table_v, Column_List) :-
-
     db_search(DB_In, DB_Out, table_match(Column_List)), !.
 
-table_match(Column_List, Table) :-
+html_page_find(DB_In, DB_Out, html_tag_li_v, Test_Pred) :-
+    db_search(DB_In, DB_Out, call(Test_Pred)).
 
+table_match(Column_List, Table) :-
     obj_field(Table, header, Header),
     maplist(table_header_match(Header), Column_List).
 
 table_header_match(Header, Column) :-
-
     arg(_, Header, Column), !.
 

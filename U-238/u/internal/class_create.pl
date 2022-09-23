@@ -360,10 +360,10 @@ class_rebase_int([Class|Parents],
                  [Class_New_Id|Parents_Ids],
                  New_Class, Ctx) :-
 
-   (  cycle_in_parents([Class|Parents], Inv_Child, Inv_Parent)
-   -> throw(error(class_inheritance_cycle([Class|Parents], Inv_Child, Inv_Parent), Ctx))
-   ;  true
-   ),
+   % (  cycle_in_parents([Class|Parents], Inv_Child, Inv_Parent)
+   % -> throw(error(class_inheritance_cycle([Class|Parents], Inv_Child, Inv_Parent), Ctx))
+   % ;  true
+   % ),
    
    % The recursion into parents
    class_rebase_int(Parents, Parents_Ids, New_Class_For_Parent, Ctx),
