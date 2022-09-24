@@ -27,7 +27,8 @@
 %  post:   49017 Ukraine, Dnepropetrovsk per. Kamenski, 6
 
 :- module(html_page_parse,
-          [html_page_parse/3
+          [html_page_parse/3,
+					 html_page_parse/4
           ]).
 
 /** <module> Parse page_v objects.
@@ -52,27 +53,36 @@
 % element_type_tag/3.
 
 html_page_parse(DB_Key, Page, Elements_To_Extract) :-
-
   Ctx = context(html_page_parse/3, _),
+  html_page_parse_int(DB_Key, Page, Elements_To_Extract, _, Ctx).
+
+html_page_parse(DB_Key, Page, Elements_To_Extract, Filter) :-
+  Ctx = context(html_page_parse/4, _),
+  html_page_parse_int(DB_Key, Page, Elements_To_Extract, Filter, Ctx).
+
+html_page_parse_int(DB_Key, Page, Elements_To_Extract, Filter, Ctx) :-
   check_db_key(DB_Key, Ctx),
   check_object_arg(Page, Ctx, _),
   check_list_fast_arg(Elements_To_Extract, Ctx),
   list_to_set(Elements_To_Extract, Elements_Set),
-  maplist(extract_elements(DB_Key, Page), Elements_Set).
+  maplist(extract_elements(DB_Key, Page, Filter), Elements_Set).
 
-extract_elements(DB_Key, Page, Class) :-
+extract_elements(DB_Key, Page, Filter, Class) :-
 
   db_put_objects(DB_Key,
-		 extract_element(Page, Class),
+		 extract_element(Page, Class, Filter),
 		 ignore).
 
 
 % extract_element(+Page, +Class, -Object) is nondet.
-extract_element(Page, Class, Object) :-
+extract_element(Page, Class, Filter, Object) :-
   obj_field(Page, www_address, WWW_Address),
   element_type_tag(Class, Tag),
-  ixpath(//Tag, [vixc], Page, Object1),
-  %atom_concat(Cmn_Class, '_parse', Pred),
+	( %var(Filter) ->
+		ixpath(//Tag, [vixc], Page, Object1)
+	%; ixpath(Tag(Tag), [vixc], Page, Object1)
+	),
+	  %atom_concat(Cmn_Class, '_parse', Pred),
   %atom_concat('parser/html/', Pred, Module),
   %use_module(u(Module), [Pred/2]),
   %debug(html_page_parse, 'Call ~a for ~p', [Pred, Object1]),

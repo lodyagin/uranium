@@ -1,7 +1,7 @@
 % Template for parsing html lists (<li> -> object)
 
 :- module(find_all_list_rows,
-					[find_all_list_rows/4,
+					[find_all_list_rows/5,
 					 reparse/2
 					]).
 
@@ -11,16 +11,17 @@
 :- use_module(u(parser/html/html_tag_li_v_parse)).
 
 
-:- meta_predicate find_all_list_rows(+, +, 1, +).
+:- meta_predicate find_all_list_rows(+, +, 1, +, +).
 
-find_all_list_rows(DB_Key, Page, Mod:Test_Pred, Class) :-
+find_all_list_rows(DB_Key, Page, Mod:Test_Pred, Class, Filter) :-
 
     % extract all <li> from the page
     atom_concat(DB_Key, '.all_list_items', DB2_Key),
     db_clear(DB2_Key),
     html_page_parse(DB2_Key,
                     Page,
-                    [html_tag_li_v]),
+                    [html_tag_li_v],
+										Filter),
 
     dump_db(DB2_Key),
 
@@ -34,11 +35,16 @@ find_all_list_rows(DB_Key, Page, Mod:Test_Pred, Class) :-
 
     dump_db(DB3_Key),
 
+		atom_concat(DB_Key, '.orig', DB4_Key),
+
     % concat all found lists and make objects
     (
      db_recorded(DB3_Key, List_Item),
-
      html_tag_li_v_parse(List_Item, Class, Object0),
+		 ( obj_field(Object0, fail, name, _) -> true
+		 ; write_log(['Object ', Object0, ' has no a book name']), fail
+		 ),
+		 db_put_object(DB4_Key, Object0, _),
 		 obj_downcast(Object0, Object),
 		 db_put_object(DB_Key, Object, _),
 		 fail

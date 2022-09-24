@@ -27,8 +27,9 @@ html_tag_li_v_parse(Object0, Class, Object) :-
 	obj_construct(Class, [], [], Object),
 	foreach(
 					(xpath(Data, //meta, element(meta, L, _)),
-					 memberchk(itemprop=Field, L),
-					 memberchk(content=Value, L)
+					 memberchk(itemprop=Field0, L),
+					 memberchk(content=Value, L),
+					 trim_atom(both, [32], Field0, Field)
 					),
 					(
 					 obj_field(Object, fail, Field, Value) -> true
