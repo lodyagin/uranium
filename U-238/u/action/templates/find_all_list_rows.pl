@@ -1,6 +1,9 @@
 % Template for parsing html lists (<li> -> object)
 
-:- module(find_all_list_rows, [find_all_list_rows/4]).
+:- module(find_all_list_rows,
+					[find_all_list_rows/4,
+					 reparse/2
+					]).
 
 :- use_module(u(vd)).
 :- use_module(u(parser/html/html_page_parse)).
@@ -30,6 +33,24 @@ find_all_list_rows(DB_Key, Page, Mod:Test_Pred, Class) :-
                    Mod:Test_Pred),
 
     dump_db(DB3_Key),
+
+    % concat all found lists and make objects
+    (
+     db_recorded(DB3_Key, List_Item),
+
+     html_tag_li_v_parse(List_Item, Class, Object0),
+		 obj_downcast(Object0, Object),
+		 db_put_object(DB_Key, Object, _),
+		 fail
+		;
+		 true
+		),
+
+    dump_db(DB_Key).
+
+reparse(DB_Key, Class) :-
+
+    atom_concat(DB_Key, '.matched_list_items', DB3_Key),
 
     % concat all found lists and make objects
     (
