@@ -2,7 +2,7 @@
 
 :- module(find_all_list_rows,
 					[find_all_list_rows/5,
-					 reparse/2
+					 reparse/1
 					]).
 
 :- use_module(u(vd)).
@@ -45,8 +45,8 @@ find_all_list_rows(DB_Key, Page, Mod:Test_Pred, Class, Filter) :-
 		 ; write_log(['Object ', Object0, ' has no a book name']), fail
 		 ),
 		 db_put_object(DB4_Key, Object0, _),
-		 obj_downcast(Object0, Object),
-		 db_put_object(DB_Key, Object, _),
+		 %obj_downcast(Object0, Object),
+		 %db_put_object(DB_Key, Object, _),
 		 fail
 		;
 		 true
@@ -54,16 +54,15 @@ find_all_list_rows(DB_Key, Page, Mod:Test_Pred, Class, Filter) :-
 
     dump_db(DB_Key).
 
-reparse(DB_Key, Class) :-
+reparse(DB_Key) :-
+		atom_concat(DB_Key, '.orig', DB4_Key),
 
-    atom_concat(DB_Key, '.matched_list_items', DB3_Key),
-
-    % concat all found lists and make objects
+		db_clear(DB_Key),
+		
     (
-     db_recorded(DB3_Key, List_Item),
-
-     html_tag_li_v_parse(List_Item, Class, Object0),
-		 obj_downcast(Object0, Object),
+     db_recorded(DB4_Key, Object0),
+		 obj_reset_fields([db_ref, db_key, db_class], Object0, Object1),
+		 obj_downcast(Object1, Object),
 		 db_put_object(DB_Key, Object, _),
 		 fail
 		;
