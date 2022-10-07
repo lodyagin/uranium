@@ -45,14 +45,14 @@ find_all_list_rows(DB_Key, Page, Mod:Test_Pred, Class, Filter) :-
 		 ; write_log(['Object ', Object0, ' has no a book name']), fail
 		 ),
 		 db_put_object(DB4_Key, Object0, _),
-		 %obj_downcast(Object0, Object),
-		 %db_put_object(DB_Key, Object, _),
+		 obj_downcast(Object0, Object),
+		 db_put_object(DB_Key, Object, _),
 		 fail
 		;
 		 true
-		),
+		).
 
-    dump_db(DB_Key).
+
 
 reparse(DB_Key) :-
 		atom_concat(DB_Key, '.orig', DB4_Key),
