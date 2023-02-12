@@ -25,8 +25,9 @@ html_tag_li_v_parse(Object0, Class, Object) :-
 	check_existing_class_arg(Class, Ctx),
 	obj_field(Object0, '.@bulk', BulkList),
 	memberchk('data-csa-c-item-id'=Id0, BulkList),
-	sub_atom(Id0, Part2, _, _, '@'),
-	sub_atom(Id0, 0, Part2, _, Id),
+																%	sub_atom(Id0, Part2, _, _, '@'), % old AbeBooks style
+																%	sub_atom(Id0, 0, Part2, _, Id),
+	Id = Id0,
 	obj_construct(Class, [id], [Id], Object),
 	obj_field(Object0, dom, Data),
 	foreach(
