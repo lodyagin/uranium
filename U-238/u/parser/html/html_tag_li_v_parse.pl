@@ -23,8 +23,12 @@
 html_tag_li_v_parse(Object0, Class, Object) :-
 	Ctx = context(html_tag_li_v_parse/3, _),
 	check_existing_class_arg(Class, Ctx),
+	obj_field(Object0, '.@bulk', BulkList),
+	memberchk('data-csa-c-item-id'=Id0, BulkList),
+	sub_atom(Id0, Part2, _, _, '@'),
+	sub_atom(Id0, 0, Part2, _, Id),
+	obj_construct(Class, [id], [Id], Object),
 	obj_field(Object0, dom, Data),
-	obj_construct(Class, [], [], Object),
 	foreach(
 					(xpath(Data, //meta, element(meta, L, _)),
 					 memberchk(itemprop=Field0, L),
@@ -37,14 +41,3 @@ html_tag_li_v_parse(Object0, Class, Object) :-
 					)
 				 ).
 
-% html_tag_li_v_cast(DB_Key, List_Item, Class_To) :-
-
-%    Ctx = context(html_tag_li_v_cast/7, _),
-%    check_db_key(DB_Key, Ctx),
-%    check_inst(List_Item, Ctx),
-%    check_inst(Class_To, Ctx),
-%    check_object_arg(List_Item, Ctx, _),
-%    check_existing_class_arg(Class_To, Ctx),
-   
-% 	 html_tag_li_v_parse(List_Item, Class_To, Object),
-% 	 db_put_object(DB_Key, Object, _).
